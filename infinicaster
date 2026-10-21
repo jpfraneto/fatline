@@ -36,6 +36,11 @@ Setup (in this order on a new machine):
   ./infinicaster compute [--quote]   No suitable machine? Rent one with a single x402 USDC payment
   ./infinicaster up                  Install, build and start the indexer + apps on http://localhost:8787 (also: client)
 
+Posting (your client's own app key, no gas):
+  ./infinicaster identity            Type your seed phrase (hidden, never saved); registers an app key for your FID
+  ./infinicaster identity show       Is the key active?
+  ./infinicaster identity revoke     Remove the key from the network and from this machine
+
 Everyday:
   ./infinicaster status              Node sync and indexer health
   ./infinicaster dev                 Indexer + app with live reload (for changing the app)
@@ -100,6 +105,12 @@ YAML
   node "$ROOT/infra/config-tool.mjs" own-node "$network" "http://127.0.0.1:3381"
   bold "The node is starting. It downloads a snapshot first; this can take hours."
   echo "Watch progress with: ./infinicaster status   (healthy when blockDelay is near 0 on every shard)"
+}
+
+cmd_identity() {
+  need_node
+  install indexer
+  cd "$ROOT/indexer" && node --experimental-sqlite --no-warnings=ExperimentalWarning src/identity.mjs "$@"
 }
 
 cmd_up() {
@@ -204,6 +215,6 @@ command="${1:-help}"; shift || true
 case "$command" in
   help|-h|--help) cmd_help ;;
   client) cmd_up "$@" ;;  # for now the same as up; first-run identity setup comes next
-  doctor|init|node|up|dev|status|compute|test|contracts) "cmd_$command" "$@" ;;
+  doctor|init|node|up|dev|status|compute|test|contracts|identity) "cmd_$command" "$@" ;;
   *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
 esac

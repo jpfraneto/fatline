@@ -1,6 +1,7 @@
 // Voices (long-form, onchain) and My people (casts from the chosen network, without noise).
 import { parseAbi } from 'viem';
 import { $, api, el, label, short, showSource, state, store, t, timeAgo, wallet } from './lib.js';
+import { castActions, castComposer, followButton } from './post.js';
 
 const voicesAbi = parseAbi(['function say(string text, uint256 parentId, uint256 fid) returns (uint256)']);
 const MAX_BYTES = 16_384;
@@ -24,6 +25,7 @@ function card(item, users, { inThread = false } = {}) {
   if (isVoice && item.claimedFid && !item.verified) notes.push(el('p', { class: 'warn' }, t('claims', item.claimedFid, label(state.network))));
   const actions = el('div', { class: 'actions' },
     isVoice && !inThread ? el('a', { href: `#/voice/${item.id}` }, t('reply')) : null,
+    ...castActions(item),
     !isVoice ? el('a', { href: `https://farcaster.xyz/~/conversations/${item.id}`, target: '_blank', rel: 'noopener' }, t('open')) : null);
   return el('article', { class: `item ${item.kind}` }, meta, el('div', { class: 'text' }, item.text), ...notes, actions);
 }
@@ -116,6 +118,7 @@ export function peoplePage({ route }) {
   const input = el('input', { placeholder: t('addPlaceholder'), autocapitalize: 'off', autocomplete: 'off' });
   const status = el('p', { class: 'status' });
   const chips = el('div', { class: 'chips' }, ...state.people.map((p) => el('span', { class: 'chip' }, `@${p.username ?? p.fid}`,
+    followButton(p.fid),
     el('button', { type: 'button', 'aria-label': t('remove'), onclick: () => { state.people = state.people.filter((x) => x.fid !== p.fid); store.set('people', state.people); route(); } }, '×'))));
   const form = el('form', {
     class: 'add',
@@ -131,7 +134,9 @@ export function peoplePage({ route }) {
       }
     },
   }, input, el('button', { type: 'submit' }, t('add')));
-  const header = [el('p', { class: 'muted' }, t('peopleHelp')), form, status, chips];
-  if (!state.people.length) return main.replaceChildren(...header);
-  return feedPage({ fids: state.people.map((p) => p.fid), header, route });
+  const header = [castComposer({ onDone: () => setTimeout(route, 1500) }), el('p', { class: 'muted' }, t('peopleHelp')), form, status, chips];
+  // Your own casts show up among your people, so you can see what you posted.
+  const fids = [...new Set([...state.people.map((p) => p.fid), ...(state.me?.fid ? [state.me.fid] : [])])];
+  if (!fids.length) return main.replaceChildren(...header);
+  return feedPage({ fids, header, route });
 }

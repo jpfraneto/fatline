@@ -14,6 +14,7 @@ export const state = {
   network: null,
   lang: store.get('lang', navigator.language?.startsWith('es') ? 'es' : 'en'),
   people: store.get('people', []), // [{fid, username}]
+  me: null, // this client's posting identity: {fid, canWrite}
 };
 
 export const t = (key, ...args) => { const v = strings[state.lang][key]; return typeof v === 'function' ? v(...args) : v; };

@@ -8,6 +8,9 @@ import { Network } from './hub.mjs';
 import { VoicesIndex } from './voices.mjs';
 import { Launchpad } from './launchpad.mjs';
 import { Keeper } from './keeper.mjs';
+import { Writer, loadAppKey } from './writer.mjs';
+import { timingSafeEqual } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { ROOT } from './config.mjs';
 import { base, baseSepolia, foundry } from 'viem/chains';
 
@@ -18,6 +21,34 @@ const TYPES = {
 
 export function buildServer({ config, networks, voices, launchpad, keeper = null }) {
   const api = new Api({ config, networks, voices, launchpad });
+
+  // Posting signs with this client's app key, so only its owner may ask for it:
+  // requests made on this machine directly, or (behind a proxy, on a server) with the write token.
+  const writeToken = process.env.INFINICASTER_WRITE_TOKEN
+    ?? (existsSync(join(config.dataDir, 'write.token')) ? readFileSync(join(config.dataDir, 'write.token'), 'utf8').trim() : null);
+  const mayWrite = (req) => {
+    // Other websites open in the same browser must not be able to post through this client.
+    const origin = req.headers.origin;
+    if (origin) { // "null" too: sandboxed frames, like the apps shown inside this one
+      try { if (new URL(origin).host !== req.headers.host) return false; } catch { return false; }
+    }
+    if (req.method === 'POST' && !/^application\/json/.test(req.headers['content-type'] ?? '')) return false;
+    const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress) && !req.headers['x-forwarded-for']
+      && /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(req.headers.host ?? ''); // and not a rebound DNS name
+    if (local) return true;
+    const given = (req.headers.authorization ?? '').replace(/^Bearer /, '');
+    return Boolean(writeToken && given.length === writeToken.length && timingSafeEqual(Buffer.from(given), Buffer.from(writeToken)));
+  };
+  const writer = (network) => {
+    const key = loadAppKey(config.dataDir);
+    if (!key) throw Object.assign(new Error('This client has no app key yet. Run ./infinicaster identity on the machine that runs it.'), { status: 409 });
+    const name = network && networks[network] ? network : key.network;
+    return new Writer({ network: networks[name], key });
+  };
+  const write = (fn) => (q, m, body, req) => {
+    if (!mayWrite(req)) throw Object.assign(new Error('Posting is only allowed from this machine, or with its write token.'), { status: 401 });
+    return fn(writer(body?.network ?? q.get('network')), body ?? {});
+  };
 
   const routes = [
     ['GET', /^\/api\/health$/, () => ({ ok: true, voices: voices.status(), launchpad: launchpad.status(), keeper: keeper?.status() ?? null })],
@@ -40,6 +71,16 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/voices\/(\d+)$/, (q, [, id]) => api.voice(q.get('network'), id)],
     ['GET', /^\/api\/thread$/, (q) => api.thread(q.get('network'), { fid: q.get('fid'), hash: q.get('hash') })],
     ['GET', /^\/api\/user$/, (q) => api.resolve(q.get('network'), q.get('q') ?? q.get('fid'))],
+    ['GET', /^\/api\/me$/, (q, m, b, req) => {
+      const key = loadAppKey(config.dataDir);
+      if (!key) return { fid: null, canWrite: false };
+      return { fid: key.fid, network: key.network, publicKey: key.publicKey, scopes: key.scopes, state: key.state, canWrite: mayWrite(req) };
+    }],
+    ['POST', /^\/api\/cast$/, write((w, b) => w.cast({ text: b.text, parent: b.parent }))],
+    ['POST', /^\/api\/cast\/delete$/, write((w, b) => w.deleteCast({ hash: b.hash }))],
+    ['POST', /^\/api\/react$/, write((w, b) => w.react({ kind: b.kind, fid: b.fid, hash: b.hash, remove: Boolean(b.remove) }))],
+    ['POST', /^\/api\/follow$/, write((w, b) => w.follow({ fid: b.fid, remove: Boolean(b.remove) }))],
+    ['POST', /^\/api\/resend$/, write((w, b) => w.resend(b.message))],
   ];
 
   return createServer(async (req, res) => {
@@ -52,7 +93,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
       if (!route) return json(res, 404, { error: 'Not found' });
       try {
         const body = req.method === 'POST' ? await readJson(req) : null;
-        json(res, 200, await route[2](url.searchParams, url.pathname.match(route[1]), body));
+        json(res, 200, await route[2](url.searchParams, url.pathname.match(route[1]), body, req));
       } catch (err) {
         json(res, err.status ?? 502, { error: err.message });
       }

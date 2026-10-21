@@ -13,6 +13,7 @@
     "test": "node --experimental-sqlite --no-warnings=ExperimentalWarning --test test/*.test.mjs"
   },
   "dependencies": {
+    "@farcaster/core": "^0.20.0",
     "clanker-sdk": "4.2.19",
     "viem": "2.57.7"
   }

@@ -187,3 +187,18 @@ button.quiet { border: 1px solid var(--line); background: transparent; color: va
 .presence > .row > button:first-child { border: 0; border-radius: 999px; padding: 10px 16px; background: var(--accent); color: var(--accent-ink); font-weight: 600; cursor: pointer; }
 .presence .row { flex-wrap: wrap; }
 .presence .row button { white-space: nowrap; }
+
+/* Posting: actions under a cast read as quiet links; their state appears next to them. */
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; }
+button.link { border: 0; background: none; padding: 4px 0; color: var(--muted); font-size: 14px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+button.link:hover { color: var(--accent); }
+button.link:disabled { opacity: .5; cursor: default; }
+.status.inline { font-size: 13px; color: var(--muted); flex-basis: 100%; }
+.status.confirmed { color: var(--accent); }
+.reply-box { flex-basis: 100%; }
+.reply-box[hidden] { display: none; }
+.chip .follow { display: inline-flex; gap: 6px; align-items: center; margin: 0 6px; }
+.chip .follow .status:empty { display: none; }
+.hint { font-size: 14px; }
+.as { font-size: 13px; margin: 0 0 6px; }
+.status.inline:empty { display: none; }

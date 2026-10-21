@@ -113,6 +113,17 @@ More decisions that day:
 - Its seed phrase is only ever typed by the owner into a hidden local prompt: never in chat, logs, files or video.
 - Nothing is posted without the owner's explicit yes.
 
+## 6. Posting (Oct 21, night)
+
+- **What was built:**
+  - `./infinicaster identity` registers a **gasless** app key, following Snapchain's current writing guide: an EIP-712 `KEY_ADD` signed by the custody address. It needs no ETH and confirms in seconds.
+  - The key is scoped: it can't add or remove other keys.
+  - The client signs casts, replies, likes, recasts, follows and deletes. Each one is read back from the same node before it's shown as confirmed.
+- **Findings from the real network:**
+  - crackle (Farcaster's public node) validated our message formats.
+  - It also accepts submissions without a password: it refused a test only because the key wasn't registered. So the real @anky test doesn't have to wait for our own node.
+- **Security:** posting is allowed only from the same machine, or with a write token when the client runs behind a server's proxy. Other websites in the same browser are blocked.
+
 ## Start from scratch
 
 1. Read the bounty post, then [MASTER-PROMPT.md](MASTER-PROMPT.md), then this file.

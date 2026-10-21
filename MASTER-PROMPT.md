@@ -63,7 +63,8 @@ Not built or not proven, in bounty order:
     - A database with only the relevant casts is what the light path (indexer + public node) already is. It's fine for apps, but it doesn't count as the bounty's node.
   - **For the bounty, a node is required but who pays for it is not.** The tester must run the commands themselves. A machine we pay for is fine; it would be the first grant.
 - **J3:** a node has never been synced on a fresh machine by us.
-- **J5–J8:** the whole write path is missing: seed phrase, app key, cast, follow, like, client filter. `indexer/src/hub.mjs` only reads.
+- **J5–J7 built (2026-10-21):** `indexer/src/identity.mjs` (gasless KEY_ADD, scoped, hidden seed prompt, self-revoke) and `indexer/src/writer.mjs` (cast, reply, like, recast, follow, delete, confirm by read-back, resend the same bytes). The UI is in `apps/opinions/src/post.js`. Tested with unit tests, a fake node, and headless Chrome. **Still needed: the real run with @anky (FID 18350).** crackle accepts submissions without a password, so this can happen before our own node exists.
+- **J8 (client filter) not built.**
 - **J9:** no microsite. The README is not a tutorial.
 - **J11:** no tester yet. This is the critical path, and it needs days, because syncing a node takes hours.
 

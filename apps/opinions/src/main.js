@@ -2,6 +2,7 @@ import { appPage, appsPage, launchPage } from './apps.js';
 import { feedPage, peoplePage, voicePage } from './feed.js';
 import { $, api, el, showSource, state, store, t } from './lib.js';
 import { settingsPage } from './settings.js';
+import { loadMe } from './post.js';
 
 function renderChrome() {
   document.documentElement.lang = state.lang;
@@ -33,6 +34,7 @@ async function boot() {
   state.config = await api('/api/config');
   const saved = store.get('network', null);
   state.network = state.config.networks.some((n) => n.name === saved) ? saved : state.config.defaultNetwork;
+  await loadMe();
   renderChrome();
   window.addEventListener('hashchange', route);
   route();

@@ -15,11 +15,18 @@ export async function settingsPage({ onChange }) {
       onclick: () => { state.lang = code; store.set('lang', code); onChange(); },
     }, name)));
   const nodes = el('div', { class: 'nodes' }, el('p', { class: 'muted' }, '…'));
+  const token = el('input', { type: 'password', autocomplete: 'off', value: store.get('writeToken', ''), placeholder: '••••••' });
+  token.addEventListener('change', () => store.set('writeToken', token.value.trim()));
+  const identity = state.me?.fid
+    ? el('p', { class: 'muted small' }, t('postingAs', state.me.fid), ' ', el('span', { class: 'mono' }, `${state.me.publicKey.slice(0, 12)}…`))
+    : el('p', { class: 'muted small' }, t('needKey'));
   main.replaceChildren(
     el('h1', { class: 'app-title' }, t('settings')),
     el('h2', {}, t('network')), el('p', { class: 'muted small' }, t('networkHelp')), networks,
     el('h2', {}, t('nodes')), nodes,
     el('h2', {}, t('language')), langs,
+    el('h2', {}, 'Farcaster'), identity,
+    el('label', { class: 'muted small' }, t('writeToken'), token),
   );
   const status = await api('/api/networks').catch(() => []);
   nodes.replaceChildren(...status.filter((n) => n.name === state.network).flatMap((n) => n.nodes.map((node) => el('p', { class: `node ${node.status?.ok ? 'ok' : 'off'}` },
