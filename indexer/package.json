@@ -1,0 +1,19 @@
+{
+  "name": "@infinicaster/indexer",
+  "version": "0.1.0",
+  "description": "Reads Farcaster or Hypersnap and the Voices contract, and feeds the Infinicaster apps.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "start": "node --experimental-sqlite --no-warnings=ExperimentalWarning src/server.mjs",
+    "test": "node --experimental-sqlite --no-warnings=ExperimentalWarning --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "clanker-sdk": "4.2.19",
+    "viem": "2.57.7"
+  }
+}

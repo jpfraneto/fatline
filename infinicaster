@@ -1,0 +1,185 @@
+#!/usr/bin/env bash
+# Infinicaster: one command to check, build and run the whole system.
+# Run ./infinicaster help for the list of commands.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STATE="$ROOT/.infinicaster"
+mkdir -p "$STATE"
+
+bold() { printf '\033[1m%s\033[0m\n' "$*"; }
+fail() { printf '\033[31m%s\033[0m\n' "$*" >&2; exit 1; }
+
+need_node() {
+  command -v node >/dev/null || fail "Node.js 22.12+ is required. Install it from https://nodejs.org (or with nvm), then run this again."
+  node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit(a>22||(a===22&&b>=12)?0:1)' \
+    || fail "Node.js $(node -v) is too old. Install 22.12 or newer."
+}
+
+install() { # install <dir>: install exact locked dependencies once
+  local dir="$ROOT/$1"
+  if [ ! -d "$dir/node_modules" ] || [ "$dir/package-lock.json" -nt "$dir/node_modules" ]; then
+    (cd "$dir" && npm ci --no-audit --no-fund --loglevel=error)
+  fi
+}
+
+config_exists() { [ -f "$ROOT/infinicaster.config.json" ]; }
+
+cmd_help() {
+  cat <<'EOF'
+Infinicaster — read Farcaster or Hypersnap from your own machine, plus long-form voices onchain.
+
+Setup (in this order on a new machine):
+  ./infinicaster doctor              Check this machine and the networks; recommends full, light or rent
+  ./infinicaster init                Choose the default network (Farcaster or Hypersnap)
+  ./infinicaster node <network>      Run your own full node here (needs ~16 GB RAM, 1.5-2 TB disk, Docker)
+  ./infinicaster compute [--quote]   No suitable machine? Rent one with a single x402 USDC payment
+  ./infinicaster up                  Install, build and start the indexer + apps on http://localhost:8787 (also: client)
+
+Everyday:
+  ./infinicaster status              Node sync and indexer health
+  ./infinicaster dev                 Indexer + app with live reload (for changing the app)
+  ./infinicaster test                Run every test (contracts, indexer, infra)
+
+Contracts (Foundry):
+  ./infinicaster contracts fork      Fork Base locally (real Clanker + USDC, fake money) and deploy there
+  ./infinicaster contracts local     Plain local chain with mock USDC (apps without coins only)
+  ./infinicaster contracts deploy    Deploy Voices + AppFactory to Base (asks for the key; set BASE_RPC_URL)
+  ./infinicaster contracts split <addressA> <addressB>   Deploy a 50/50 PrizeSplit to Base
+EOF
+}
+
+cmd_doctor() { need_node; install infra; node "$ROOT/infra/doctor.mjs" "$@"; }
+
+cmd_init() { need_node; node "$ROOT/infra/config-tool.mjs" init "$@"; }
+
+cmd_node() {
+  local network="${1:-}"
+  case "$network" in
+    farcaster) URL="https://raw.githubusercontent.com/farcasterxyz/snapchain/refs/heads/main/scripts/snapchain-bootstrap.sh"; DIR="$HOME/snapchain" ;;
+    hypersnap) URL="https://raw.githubusercontent.com/farcasterorg/hypersnap/@latest/scripts/hypersnap-bootstrap.sh"; DIR="$HOME/hypersnap" ;;
+    *) fail "usage: ./infinicaster node farcaster|hypersnap" ;;
+  esac
+  docker info >/dev/null 2>&1 || fail "Docker must be installed and running. See https://docs.docker.com/engine/install/"
+  local other; other=$([ "$network" = farcaster ] && echo hypersnap || echo farcaster)
+  if docker ps --format '{{.Ports}}' | grep -q '3381'; then
+    fail "Something already uses port 3381 (maybe a $other node). The upstream scripts run one network per machine."
+  fi
+  bold "Downloading the official $network bootstrap script"
+  curl -fsSL "$URL" -o "$STATE/$network-bootstrap.sh"
+  echo "  from:   $URL"
+  echo "  sha256: $(shasum -a 256 "$STATE/$network-bootstrap.sh" | cut -d' ' -f1)"
+  echo "  it installs into $DIR and runs the node with Docker Compose on ports 3381-3383."
+  read -r -p "Read it at $STATE/$network-bootstrap.sh. Run it now? [y/N] " ok
+  [ "$ok" = "y" ] || [ "$ok" = "Y" ] || { echo "Stopped."; exit 0; }
+  bash "$STATE/$network-bootstrap.sh"
+  need_node
+  node "$ROOT/infra/config-tool.mjs" own-node "$network" "http://127.0.0.1:3381"
+  bold "The node is starting. It downloads a snapshot first; this can take hours."
+  echo "Watch progress with: ./infinicaster status   (healthy when blockDelay is near 0 on every shard)"
+}
+
+cmd_up() {
+  need_node
+  config_exists || cmd_init
+  bold "Installing"
+  install indexer
+  install apps/opinions
+  bold "Building the app"
+  (cd "$ROOT/apps/opinions" && npm run build --silent)
+  bold "Starting"
+  cd "$ROOT/indexer" && exec npm start --silent
+}
+
+cmd_dev() {
+  need_node
+  install indexer
+  install apps/opinions
+  (cd "$ROOT/indexer" && npm start --silent) &
+  trap 'kill %1 2>/dev/null' EXIT
+  cd "$ROOT/apps/opinions" && npx vite
+}
+
+cmd_status() {
+  local port; port=$(node -e 'try{console.log(require(process.argv[1]).port||8787)}catch{console.log(8787)}' "$ROOT/infinicaster.config.json")
+  bold "Your node"
+  if curl -fsS -m 3 http://127.0.0.1:3381/v1/info >/dev/null 2>&1; then
+    curl -fsS http://127.0.0.1:3381/v1/info | node -e '
+      let s=""; process.stdin.on("data",d=>s+=d).on("end",()=>{ const i=JSON.parse(s);
+        console.log("  version " + i.version);
+        for (const x of i.shardInfos) console.log(`  shard ${x.shardId}: height ${x.maxHeight}, blockDelay ${x.blockDelay}`); });'
+  else
+    echo "  no node on this machine (that is fine in light mode)"
+  fi
+  bold "Indexer"
+  if curl -fsS -m 3 "http://127.0.0.1:$port/api/networks" > "$STATE/status.json" 2>/dev/null; then
+    node -e '
+      for (const n of require(process.argv[1])) {
+        console.log(`  ${n.label}: ${n.using ? `reading ${n.using.node} (${n.using.own ? "yours" : "public"})` : "no reachable node"}`);
+      }' "$STATE/status.json"
+    curl -fsS "http://127.0.0.1:$port/api/health"; echo
+  else
+    echo "  not running on port $port. Start it with ./infinicaster up"
+  fi
+}
+
+cmd_compute() { need_node; install infra; node "$ROOT/infra/compute.mjs" "$@"; }
+
+cmd_test() {
+  need_node
+  bold "Contracts"; (cd "$ROOT/smart-contracts" && forge test)
+  bold "Indexer"; install indexer; (cd "$ROOT/indexer" && npm test --silent)
+  bold "Infra"; install infra; (cd "$ROOT/infra" && npm test --silent)
+}
+
+cmd_contracts() {
+  command -v forge >/dev/null || fail "Foundry is required: curl -L https://foundry.paradigm.xyz | bash && foundryup"
+  local sub="${1:-}"; shift || true
+  cd "$ROOT/smart-contracts"
+  case "$sub" in
+    test) forge test ;;
+    local)
+      if ! cast chain-id --rpc-url http://127.0.0.1:8545 >/dev/null 2>&1; then
+        anvil --silent > "$STATE/anvil.log" 2>&1 &
+        echo "Starting a local chain (anvil, pid $!)…"
+        for _ in $(seq 1 30); do cast chain-id --rpc-url http://127.0.0.1:8545 >/dev/null 2>&1 && break; sleep 1; done
+      fi
+      # Anvil's first default account: a public test key, never use it with real money.
+      local key=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+      LOCAL_DEV=true forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --private-key "$key" --broadcast --silent
+      need_node; node "$ROOT/infra/config-tool.mjs" contracts 31337 http://127.0.0.1:8545 ;;
+    fork)
+      # Everything real (Clanker, Uniswap, USDC on Base) except the money: a local fork of Base.
+      local rpc="${BASE_RPC_URL:-https://mainnet.base.org}"  # needs old-block (archive) access; public RPCs are slow and rate limited
+      if ! cast chain-id --rpc-url http://127.0.0.1:8545 >/dev/null 2>&1; then
+        anvil --fork-url "$rpc" --chain-id 8453 --compute-units-per-second 100 --retries 20 --fork-retry-backoff 2000 --timeout 120000 --silent > "$STATE/anvil.log" 2>&1 &
+        echo "Starting a local fork of Base (anvil, pid $!)…"
+        for _ in $(seq 1 60); do cast chain-id --rpc-url http://127.0.0.1:8545 >/dev/null 2>&1 && break; sleep 1; done
+      fi
+      local key=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+      forge script script/Deploy.s.sol --rpc-url http://127.0.0.1:8545 --private-key "$key" --broadcast --silent
+      need_node; node "$ROOT/infra/config-tool.mjs" contracts 8453 http://127.0.0.1:8545
+      # A fresh dev wallet (anvil's well-known keys have EIP-7702 code on Base, which breaks USDC permits).
+      [ -f "$STATE/dev.key" ] || { cast wallet new --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s)[0].private_key))' > "$STATE/dev.key"; chmod 600 "$STATE/dev.key"; }
+      local dev; dev=$(cast wallet address --private-key "$(cat "$STATE/dev.key")")
+      node "$ROOT/infra/dev-fund.mjs" "${1:-$dev}"
+      echo "Dev wallet key (fork only, import it into your browser wallet to try launching): $STATE/dev.key" ;;
+    deploy)
+      [ -n "${BASE_RPC_URL:-}" ] || fail "Set BASE_RPC_URL (for example https://mainnet.base.org) first."
+      echo "Deploying Voices and AppFactory to Base. You will be asked for the key."
+      forge script script/Deploy.s.sol --rpc-url "$BASE_RPC_URL" --broadcast --interactives 1
+      need_node; node "$ROOT/infra/config-tool.mjs" contracts 8453 "$BASE_RPC_URL" ;;
+    split)
+      [ $# -eq 2 ] || fail "usage: ./infinicaster contracts split <addressA> <addressB>"
+      [ -n "${BASE_RPC_URL:-}" ] || fail "Set BASE_RPC_URL first."
+      VOICES=false FACTORY=false SPLIT_A="$1" SPLIT_B="$2" forge script script/Deploy.s.sol --rpc-url "$BASE_RPC_URL" --broadcast --interactives 1 ;;
+    *) fail "usage: ./infinicaster contracts test|local|fork|deploy|split" ;;
+  esac
+}
+
+command="${1:-help}"; shift || true
+case "$command" in
+  help|-h|--help) cmd_help ;;
+  client) cmd_up "$@" ;;  # for now the same as up; first-run identity setup comes next
+  doctor|init|node|up|dev|status|compute|test|contracts) "cmd_$command" "$@" ;;
+  *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
+esac

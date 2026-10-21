@@ -1,0 +1,221 @@
+{
+  "research_date": "2026-10-18",
+  "generated_at_utc": "2026-10-18T12:48:41.572847+00:00",
+  "casts": {
+    "endpoint": "https://api.neynar.com/v2/farcaster/feed/user/casts",
+    "parameters": {
+      "fid": 37,
+      "limit": 150,
+      "include_replies": true
+    },
+    "retrieved_at_utc": "2026-10-18T12:42:21.438874+00:00",
+    "count": 150,
+    "newest": "2026-10-18T01:17:48.000Z",
+    "oldest": "2024-08-16T21:21:42.000Z",
+    "additional_history_available": true,
+    "output": "balaji-casts.ndjson",
+    "sha256": "9d202a3f3683ecf45edfdb1cd57e000701dd89e0282c63c829ac2aa4c0c28f0e"
+  },
+  "bounty_conversation": {
+    "endpoint": "https://api.neynar.com/v2/farcaster/cast/conversation/",
+    "parameters": {
+      "identifier": "0x50184b62b4c52fd76628713562e1eda3dccaf63d",
+      "type": "hash",
+      "reply_depth": 2,
+      "limit": 50,
+      "sort_type": "chron",
+      "include_chronological_parent_casts": true
+    },
+    "retrieved_at_utc": "2026-10-18T12:43:55.648195+00:00",
+    "returned_casts_including_root": 42,
+    "next_cursor": null,
+    "output": "bounty-thread.ndjson",
+    "sha256": "e6b5815c2f2b4174f652f30ac6ee9c3091ca78e6ab8d6b9b11be9fe0ed921156",
+    "limitation": "Depth and endpoint limits bound the returned conversation; this is not a promise of complete thread coverage."
+  },
+  "deadline": {
+    "basis": "API cast timestamp plus seven days, per original bounty text",
+    "post_timestamp_utc": "2026-10-17T14:47:30+00:00",
+    "deadline_utc": "2026-10-24T14:47:30+00:00",
+    "deadline_santiago": "2026-10-24T11:47:30-03:00"
+  },
+  "snapchain": {
+    "source_commit": "fc87f2686472598143062a00e1c2b2633b2d87ab",
+    "latest_release_at_retrieval": "v0.14.3",
+    "published_at": "2026-10-15T19:58:14Z",
+    "release_url": "https://github.com/farcasterxyz/snapchain/releases/tag/v0.14.3"
+  },
+  "sdk_versions": {
+    "@farcaster/core": "0.20.0",
+    "@farcaster/hub-nodejs": "0.17.0",
+    "@farcaster/hub-web": "0.13.0",
+    "checked": "npm metadata, type declarations, and core re-exports; no runtime integration"
+  },
+  "verification_limits": [
+    "No paid infrastructure provisioned",
+    "No self-hosted node synced or queried",
+    "No signer registered or account imported",
+    "No social messages submitted",
+    "No endorsement obtained or bounty entry posted",
+    "Validator inventory is documentation, not a live quorum audit",
+    "No independently verified acquisition closing or vote audit",
+    "No provider cost quote"
+  ],
+  "cached_sources": [
+    {
+      "path": "sources/client-license.txt",
+      "sha256": "f6c9b9972addbfbc9329bba10fd54a01ea8b1e334d5e4ce25e54c1945a55f0c6",
+      "bytes": 1069
+    },
+    {
+      "path": "sources/client-readme.txt",
+      "sha256": "34b29506d842e164c62c6b8aec12a84055dfb84d4ae8a49b2e0e772d874422bb",
+      "bytes": 1041
+    },
+    {
+      "path": "sources/code/site__docs__pages__guides__writing-messages.mdx",
+      "sha256": "203838663d757fe26c4728ccf6f1ac18a9b89cc5c241c454f46d7371003e5e5a",
+      "bytes": 19335
+    },
+    {
+      "path": "sources/code/site__docs__pages__node-types.mdx",
+      "sha256": "7db496d89fbcfb067ad9f5c5bbbf46507e225d9d20ccac32f0d23c2ca3875aab",
+      "bytes": 12109
+    },
+    {
+      "path": "sources/code/site__docs__pages__reference__httpapi__message.md",
+      "sha256": "6fa0289cdb11691c1efae50a505c446ddc7a5df48b7644d2036d9ff1a20d390a",
+      "bytes": 8712
+    },
+    {
+      "path": "sources/code/site__docs__pages__reference__httpapi__onchain.md",
+      "sha256": "e99a02e03946b06e6306e76370e01f3d8a800a0c1e38ac900910c543a270a7b0",
+      "bytes": 6058
+    },
+    {
+      "path": "sources/code/site__docs__pages__validators.mdx",
+      "sha256": "8c92a9387129c358437c6f0ff5466ba8ae1cedcf5746afc514e0769e6c2fb82d",
+      "bytes": 2743
+    },
+    {
+      "path": "sources/code/src__mempool__mempool.rs",
+      "sha256": "11cce6bdae206cadb24766794ea28881dc3481b8c5a33adf226c96f558dc99d0",
+      "bytes": 46477
+    },
+    {
+      "path": "sources/code/src__network__http_server.rs",
+      "sha256": "ce792da41a765c7b8c7d41318f55caaf5e953b33a874c396a19035f916d420f7",
+      "bytes": 233649
+    },
+    {
+      "path": "sources/code/src__network__server.rs",
+      "sha256": "3781ca429c48f05e7c41f7bf85b23dc36641c7f26ff1b5212ac225be8a69f6b5",
+      "bytes": 143676
+    },
+    {
+      "path": "sources/code/src__storage__constants.rs",
+      "sha256": "ea6a34cd5b8588cf3e91c41a9d34d233bec0d0f5216bebd913c0d792b97b2e91",
+      "bytes": 6593
+    },
+    {
+      "path": "sources/code/src__storage__store__account__active_key.rs",
+      "sha256": "d5e596de1c1b373d2b769166ec0f015eb89a449aafe8bf714dc3edf7b76873b6",
+      "bytes": 14014
+    },
+    {
+      "path": "sources/code/src__storage__store__account__gasless_key_merge.rs",
+      "sha256": "0d2b51aeb50763974edcc2386dd27abd1eebb82187f7a0bfe4ceb75a3701376e",
+      "bytes": 20903
+    },
+    {
+      "path": "sources/code/src__version__version.rs",
+      "sha256": "8ca6de5b2f215505083036f5146b145b6bee018045561ef1f45b70d83d7bb9a3",
+      "bytes": 49859
+    },
+    {
+      "path": "sources/compose-mainnet.txt",
+      "sha256": "fc7308875a62deee4bd97f08e96ac578c61b5a59d8bfe859f315202c68d083f8",
+      "bytes": 5848
+    },
+    {
+      "path": "sources/core-export-check.json",
+      "sha256": "37e3459f86d9ed7073e4f39c17181a619eede0e4bd2ae4725f8f0a041ec51d34",
+      "bytes": 344
+    },
+    {
+      "path": "sources/core-index.d.ts",
+      "sha256": "81464fde6a3c63aa34f7d3ee95215c03839ca6a3067aefc7de3397f01d29b2be",
+      "bytes": 4438219
+    },
+    {
+      "path": "sources/core-npm.json",
+      "sha256": "1fc5b885fcde5a4d0af54877acd0eaa403a7d0bc1eaab0ebfdd7af64baa6cc53",
+      "bytes": 3819
+    },
+    {
+      "path": "sources/hub-nodejs-export-check.json",
+      "sha256": "375867d1edd4f180510e6981db5cbddf90dcbb8391d54be88ef088b79d489275",
+      "bytes": 203
+    },
+    {
+      "path": "sources/hub-nodejs-index.d.ts",
+      "sha256": "69ce05cf702ddd662b88523a8a3a119e2057fdfc4ba3e977f526a9c3daaac2a1",
+      "bytes": 4843608
+    },
+    {
+      "path": "sources/hub-nodejs-npm.json",
+      "sha256": "149d79b390d21ec26e72a5cb20ac5c217bd552621ce00964e0e3c3879f18921b",
+      "bytes": 3893
+    },
+    {
+      "path": "sources/hub-web-export-check.json",
+      "sha256": "69650e43fe45b3ffa23ebee3d38efa76574e55422bffeb8402fe54c5570b8074",
+      "bytes": 197
+    },
+    {
+      "path": "sources/hub-web-index.d.ts",
+      "sha256": "01c4875b201774ae69e0e61f74e1e0b18a057b3f9fb2bf8e54bc203b01900a6f",
+      "bytes": 4807066
+    },
+    {
+      "path": "sources/hub-web-npm.json",
+      "sha256": "a96defe5afb546403aa0e94236da840c9bec7fa6c7558a732d093ef0d7cdaf4a",
+      "bytes": 3601
+    },
+    {
+      "path": "sources/snapchain-bootstrap.txt",
+      "sha256": "fe700921deafec0dceeecccb115bd00ce0fcbc05ceb7f076e7e5bb43bd7aa43d",
+      "bytes": 2319
+    },
+    {
+      "path": "sources/snapchain-docs.txt",
+      "sha256": "66b84a82a9228de95c14879e5cd8f0b469492095b8eb4cfec21043aab3595773",
+      "bytes": 212905
+    },
+    {
+      "path": "sources/snapchain-latest-release.json",
+      "sha256": "9194df3a499c83badb9d43ad379d561b0e279f2ac75b055ebcf7ea6ed8dba293",
+      "bytes": 2343
+    },
+    {
+      "path": "sources/snapchain-main-commit.json",
+      "sha256": "e9d88d145605aac594cfbeb3a4ba5f94196216e8bdaea1f16b8626e897abffd9",
+      "bytes": 7465
+    },
+    {
+      "path": "sources/snapchain-manager.txt",
+      "sha256": "cdeb51daf31ac01f25b4be3857eeec41e2e4685ca6e77e5f52959cb8065f553a",
+      "bytes": 20278
+    },
+    {
+      "path": "sources/snapchain-repo.json",
+      "sha256": "d691bcfa2fcdfc002cbf2e5434e45e176379a54a23ba0022ac250f399bff875e",
+      "bytes": 6525
+    },
+    {
+      "path": "sources/snapchain-tree.json",
+      "sha256": "f7a3c34fec9c68a4157fd4828a32e5310f560a29258a96db36123cf7c708d3f4",
+      "bytes": 100538
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "defaultNetwork": "farcaster",
+  "networks": {
+    "farcaster": {
+      "label": "Farcaster",
+      "about": "The Snapchain network maintained by Farcaster (Network School).",
+      "nodes": [
+        {
+          "url": "http://127.0.0.1:3381",
+          "own": true
+        },
+        {
+          "url": "https://crackle.farcaster.xyz:3381",
+          "own": false
+        }
+      ]
+    },
+    "hypersnap": {
+      "label": "Hypersnap",
+      "about": "A fork of Snapchain that keeps history unpruned, run by the farcasterorg community.",
+      "nodes": [
+        {
+          "url": "http://127.0.0.1:4381",
+          "own": true
+        },
+        {
+          "url": "https://haatz.quilibrium.com",
+          "own": false
+        }
+      ]
+    }
+  },
+  "voices": {
+    "chainId": 8453,
+    "rpc": "https://mainnet.base.org",
+    "address": null,
+    "fromBlock": 0
+  },
+  "launchpad": {
+    "chainId": 8453,
+    "rpc": "https://mainnet.base.org",
+    "factory": null,
+    "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "fromBlock": 0
+  },
+  "keeper": {
+    "vault": null
+  },
+  "port": 8787
+}

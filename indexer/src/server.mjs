@@ -1,0 +1,118 @@
+import { createReadStream, existsSync, statSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { extname, join, normalize } from 'node:path';
+import { Api } from './api.mjs';
+import { loadConfig } from './config.mjs';
+import { openDb } from './db.mjs';
+import { Network } from './hub.mjs';
+import { VoicesIndex } from './voices.mjs';
+import { Launchpad } from './launchpad.mjs';
+import { Keeper } from './keeper.mjs';
+import { ROOT } from './config.mjs';
+import { base, baseSepolia, foundry } from 'viem/chains';
+
+const TYPES = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml',
+  '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
+};
+
+export function buildServer({ config, networks, voices, launchpad, keeper = null }) {
+  const api = new Api({ config, networks, voices, launchpad });
+
+  const routes = [
+    ['GET', /^\/api\/health$/, () => ({ ok: true, voices: voices.status(), launchpad: launchpad.status(), keeper: keeper?.status() ?? null })],
+    ['GET', /^\/api\/apps$/, () => launchpad.list()],
+    ['GET', /^\/api\/apps\/(0x[0-9a-fA-F]{40})$/, async (q, [, address]) => {
+      const app = await launchpad.get(address);
+      if (!app) throw Object.assign(new Error('No app with that vault or coin'), { status: 404 });
+      return app;
+    }],
+    ['POST', /^\/api\/launch\/prepare$/, (q, m, body) => launchpad.prepare(body)],
+    ['POST', /^\/api\/apps\/(0x[0-9a-fA-F]{40})\/checkin$/, (q, [, vault], body) => launchpad.queueCheckIn(vault, body)],
+    ['GET', /^\/api\/config$/, () => api.config_()],
+    ['GET', /^\/api\/networks$/, () => api.networksStatus()],
+    ['GET', /^\/api\/feed$/, (q) => api.feed(q.get('network'), {
+      fids: (q.get('fids') ?? '').split(',').filter(Boolean),
+      before: q.get('before') ? Number(q.get('before')) : undefined,
+      limit: q.get('limit'),
+      replies: q.get('replies') === '1',
+    })],
+    ['GET', /^\/api\/voices\/(\d+)$/, (q, [, id]) => api.voice(q.get('network'), id)],
+    ['GET', /^\/api\/thread$/, (q) => api.thread(q.get('network'), { fid: q.get('fid'), hash: q.get('hash') })],
+    ['GET', /^\/api\/user$/, (q) => api.resolve(q.get('network'), q.get('q') ?? q.get('fid'))],
+  ];
+
+  return createServer(async (req, res) => {
+    const url = new URL(req.url, 'http://local');
+    res.setHeader('access-control-allow-origin', '*');
+    if (req.method === 'OPTIONS') return res.writeHead(204).end();
+
+    if (url.pathname.startsWith('/api/')) {
+      const route = routes.find(([m, re]) => m === req.method && re.test(url.pathname));
+      if (!route) return json(res, 404, { error: 'Not found' });
+      try {
+        const body = req.method === 'POST' ? await readJson(req) : null;
+        json(res, 200, await route[2](url.searchParams, url.pathname.match(route[1]), body));
+      } catch (err) {
+        json(res, err.status ?? 502, { error: err.message });
+      }
+      return;
+    }
+    serveApp(config.appDir, url.pathname, res);
+  });
+}
+
+async function readJson(req) {
+  let raw = '';
+  for await (const chunk of req) {
+    raw += chunk;
+    if (raw.length > 64_000) throw Object.assign(new Error('Body too large'), { status: 413 });
+  }
+  try { return JSON.parse(raw || '{}'); } catch { throw Object.assign(new Error('Invalid JSON'), { status: 400 }); }
+}
+
+function json(res, status, body) {
+  res.writeHead(status, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+  res.end(JSON.stringify(body, (_, v) => (typeof v === 'bigint' ? v.toString() : v)));
+}
+
+function serveApp(dir, pathname, res) {
+  if (!existsSync(dir)) {
+    res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+    return res.end('The indexer is running. The app is not built yet: run ./infinicaster up\nAPI: /api/networks, /api/feed\n');
+  }
+  let file = normalize(join(dir, decodeURIComponent(pathname)));
+  if (!file.startsWith(dir)) return res.writeHead(403).end();
+  if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
+  if (!existsSync(file)) file = join(dir, 'index.html'); // single-page app routes
+  res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
+  createReadStream(file).pipe(res);
+}
+
+export function start(config = loadConfig()) {
+  const db = openDb(config.dataDir);
+  const networks = Object.fromEntries(Object.entries(config.networks).map(([name, n]) => [name, new Network(name, n)]));
+  const voices = new VoicesIndex(db, config.voices);
+  voices.start(Number(process.env.VOICES_POLL_MS ?? 5_000));
+  const launchpad = new Launchpad(db, config.launchpad ?? {});
+  launchpad.start(Number(process.env.LAUNCHPAD_POLL_MS ?? 5_000));
+  let keeper = null;
+  const vault = process.env.KEEPER_VAULT ?? config.keeper?.vault;
+  if (process.env.KEEPER_PRIVATE_KEY && vault && launchpad.client) {
+    const chain = { 8453: base, 84532: baseSepolia, 31337: foundry }[launchpad.chainId];
+    keeper = new Keeper({ client: launchpad.client, chain, privateKey: process.env.KEEPER_PRIVATE_KEY, vault, root: ROOT, dataDir: config.dataDir, launchpad });
+    keeper.start(Number(process.env.KEEPER_INTERVAL_MS ?? 3_600_000), Number(process.env.CHECKIN_INTERVAL_MS ?? 300_000));
+  }
+  const server = buildServer({ config, networks, voices, launchpad, keeper });
+  server.listen(config.port, () => {
+    console.log(`Infinicaster indexer on http://localhost:${config.port}`);
+    console.log(`  config:   ${config.path}`);
+    console.log(`  networks: ${Object.keys(networks).join(', ')} (default: ${config.defaultNetwork})`);
+    console.log(`  apps:     ${launchpad.enabled ? `factory ${launchpad.factory} on chain ${launchpad.chainId}` : 'off (no factory address in config)'}`);
+    console.log(`  keeper:   ${keeper ? keeper.account.address : 'off'}`);
+    console.log(`  voices:   ${voices.enabled ? `${voices.address} on chain ${voices.chainId}` : 'off (no contract address in config)'}`);
+  });
+  return { server, voices, launchpad, keeper, db };
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) start();

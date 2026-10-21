@@ -1,0 +1,28 @@
+.env
+.env.*
+!.env.example
+node_modules/
+dist/
+.DS_Store
+
+# Your own settings and runtime state (rental credentials live in .infinicaster/compute.secret.json).
+infinicaster.config.json
+.infinicaster/
+
+# Foundry build output and local deployments
+smart-contracts/out/
+smart-contracts/cache/
+smart-contracts/broadcast/*/31337/
+
+# Upstream reference material is a local research cache, with upstream licenses.
+research/sources/
+# Full API envelopes contain unnecessary profile and embed metadata.
+research/balaji-recent-casts.json
+research/bounty-conversation.json
+
+# Not part of this repository: a separate site with its own history, and a personal script.
+apps/voice/
+apps/checklist/
+seppuku/
+# Fork and local deployments (real Base deployments get committed on purpose, later).
+smart-contracts/broadcast/

@@ -1,0 +1,61 @@
+{
+  "_note": "Compute sellers that accept x402. Checked 2026-10-21 by reading their docs and an unpaid 402 quote only. No paid rental has been tested from this repository.",
+  "providers": {
+    "vpsagent": {
+      "label": "VpsAgent (vps.phoneagent.xyz)",
+      "docs": "https://vps.phoneagent.xyz/llms.txt",
+      "rent": {
+        "method": "POST",
+        "url": "https://vps.phoneagent.xyz/rent"
+      },
+      "instance": "https://vps.phoneagent.xyz/instance/{rental_id}?token={root_token}",
+      "payOnSuccess": true,
+      "skus": {
+        "server_small_1mo": {
+          "vcpu": 4,
+          "ramGb": 8,
+          "diskGb": 100,
+          "days": 30,
+          "usd": 14.99
+        },
+        "server_medium_1mo": {
+          "vcpu": 6,
+          "ramGb": 12,
+          "diskGb": 200,
+          "days": 30,
+          "usd": 22.99
+        },
+        "server_large_1mo": {
+          "vcpu": 8,
+          "ramGb": 24,
+          "diskGb": 300,
+          "days": 30,
+          "usd": 44.99
+        },
+        "server_small_12mo": {
+          "vcpu": 4,
+          "ramGb": 8,
+          "diskGb": 100,
+          "days": 365,
+          "usd": 149.99
+        }
+      },
+      "defaultSku": "server_small_1mo",
+      "regions": [
+        "EU",
+        "US-central",
+        "US-east",
+        "US-west",
+        "SIN",
+        "UK",
+        "AUS",
+        "JPN",
+        "IND"
+      ],
+      "renew": {
+        "method": "POST",
+        "url": "https://vps.phoneagent.xyz/rentals/{rental_id}/renew?token={root_token}&periods=1"
+      }
+    }
+  }
+}

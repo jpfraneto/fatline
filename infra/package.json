@@ -1,0 +1,14 @@
+{
+  "name": "@infinicaster/infra",
+  "version": "0.1.0",
+  "description": "Machine checks, x402 compute rental and server setup for Infinicaster.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "viem": "2.57.7"
+  }
+}
