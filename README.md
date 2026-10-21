@@ -88,6 +88,7 @@ infra/                       machine doctor, x402 server rental, server setup, f
 research/                    the research this is built on
 MASTER-PROMPT.md             the plan: what we are building, in what order, and the rules
 STORY.md                     how we got here: decisions, numbers, and how to start from scratch
+AGENTS.md                    start here: for any agent or person continuing the work
 ```
 
 ---
