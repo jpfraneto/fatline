@@ -89,7 +89,23 @@ More decisions that day:
   - The owner funded a dedicated compute wallet, `0x754ab772Ee4E608A8c3E758AA6E91B6a82727F4E`, with 12 USDC.
   - The server rented fine: 4.20 USDC, `srv_ty63heep40jd`, paid until 2026-10-22 23:09 UTC.
   - AgentMetal's disk endpoint answered **HTTP 502** on every paid attempt. Nothing was charged for those attempts, because a payment only settles when the purchase succeeds.
-  - A background retry runs every 10 minutes. **Status at time of writing: waiting on the disk.**
+  - Retries were stopped when the owner chose to try a minimal node instead.
+
+### The "5 USDC node" experiment (Oct 21, late)
+
+- **The owner's idea:** a minimal Snapchain, so anyone could run a node plus Infinicaster for ~5 USDC a day.
+- **What we tried:** Snapchain's newer startup mode, `bootstrap_method = Replicate`, copies only the current state from other nodes, with no block history. We ran it on the server we had already paid for.
+- **Result:** it doesn't work today.
+  - The mode asks a peer's `ReplicationService`.
+  - Every public Farcaster node we could reach answers *Unimplemented* (gRPC code 12): rho, crackle, snap, and four validator IPs.
+  - We checked the call format against `HubService/GetInfo`, which answers.
+  - So no public node serves replication right now.
+- **The way it can work:**
+  1. Once one Infinicaster node is fully synced, *it* serves replication. The Snapchain default is `replication.enable = true`.
+  2. Every new node points `replication_peers` at it and starts from the current state only.
+  3. That one shared node is exactly what the grants treasury is for.
+  4. A second option: publish a pruned snapshot of our node.
+- Either way, someone has to do one full ~600 GB sync first.
 
 ## 5. Identity for the real test
 

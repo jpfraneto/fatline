@@ -45,7 +45,7 @@ Built and tested:
 Details are in the README's "tested / not tested" section.
 
 Not built or not proven, in bounty order:
-- **J2, in progress (2026-10-21):** AgentMetal rents by the day for USDC (x402) and sells disk volumes up to 1 TB at $0.01/GB/day. `compute --provider agentmetal --days 1 --disk 700 --node` costs ~11.20 USDC for one day (the owner chose the cheapest run), paid from a dedicated compute wallet (`compute wallet`). `infra/node-setup.sh` streams the snapshot (~600 GB unpacked) and adds swap, because their biggest plan has 8 GB of RAM and Snapchain asks for 16. Waiting on the owner to fund the wallet.
+- **J2, in progress (2026-10-21):** AgentMetal rents by the day for USDC (x402) and sells disk volumes up to 1 TB at $0.01/GB/day. `compute --provider agentmetal --days 1 --disk 700 --node` costs ~11.20 USDC for one day (the owner chose the cheapest run), paid from a dedicated compute wallet (`compute wallet`). `infra/node-setup.sh` streams the snapshot (~600 GB unpacked) and adds swap, because their biggest plan has 8 GB of RAM and Snapchain asks for 16. Server `srv_ty63heep40jd` was rented (4.20 USDC), but AgentMetal's disk endpoint returned HTTP 502 (not charged). The replication bootstrap was tried and is unavailable on public nodes; see STORY.md.
 - **Earlier finding:** no x402 seller found sells a server big enough for a node with its built-in disk. Checked 2026-10-21: VpsAgent goes up to 300 GB, VPSWolf up to 800 GB, and Snapchain asks for 2 TB.
   - For the bounty: script a regular cloud provider that offers attachable volumes or big disks (paid by card, the person's own account).
   - Ask the x402 sellers for a bigger plan (VpsAgent has a free `POST /feedback`).

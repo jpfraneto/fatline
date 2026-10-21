@@ -3,8 +3,9 @@
 # Run as root on the server. ./infinicaster compute --node does this for you.
 #
 #   INFINICASTER_BLOCKS=1day     keep this much block history (Snapchain pruning.block_retention); "all" keeps everything
-#   INFINICASTER_SNAPSHOT=stream stream the starting snapshot straight to disk (needs ~1 copy of space);
-#                        snapchain uses Snapchain's own download (keeps ~3 copies at its peak)
+#   INFINICASTER_SNAPSHOT=stream    stream the starting snapshot straight to disk (needs ~1 copy of space, ~600 GB)
+#                        replicate copy only the current state from other nodes, no old blocks (smallest; experimental)
+#                        snapchain use Snapchain's own download (keeps ~3 copies at its peak)
 #
 # Safe to re-run: finished steps are skipped, and an interrupted snapshot shard starts over.
 set -euo pipefail
@@ -47,7 +48,14 @@ curl -fsSL "https://raw.githubusercontent.com/farcasterxyz/snapchain/@latest/scr
 chmod +x snapchain.sh
 touch .env
 grep -q '^AGREE_NO_REWARDS_FOR_ME=' .env || echo 'AGREE_NO_REWARDS_FOR_ME=true' >> .env
-grep -q '^HUB_OPERATOR_FID=' .env || echo 'HUB_OPERATOR_FID=0' >> .env
+# Snapchain's weekly auto-upgrade picks its day from the operator's FID. Without one it stops, so skip it
+# (re-run ./snapchain.sh upgrade by hand) unless INFINICASTER_OPERATOR_FID is given.
+if [ -n "${INFINICASTER_OPERATOR_FID:-}" ]; then
+  grep -q '^HUB_OPERATOR_FID=' .env || echo "HUB_OPERATOR_FID=$INFINICASTER_OPERATOR_FID" >> .env
+else
+  grep -q '^HUB_OPERATOR_FID=' .env || echo 'HUB_OPERATOR_FID=0' >> .env
+  grep -q '^SKIP_CRONTAB=' .env || echo 'SKIP_CRONTAB=true' >> .env
+fi
 
 # 5. Our settings live in an override file that Snapchain's upgrades never touch.
 {
@@ -57,6 +65,7 @@ grep -q '^HUB_OPERATOR_FID=' .env || echo 'HUB_OPERATOR_FID=0' >> .env
   echo "    environment:"
   if [ "$BLOCKS" != all ]; then echo "      SNAPCHAIN_PRUNING__BLOCK_RETENTION: \"$BLOCKS\""; fi
   echo "      SNAPCHAIN_SNAPSHOT__LOAD_DB_FROM_SNAPSHOT: \"$([ "$SNAPSHOT" = snapchain ] && echo true || echo false)\""
+  if [ "$SNAPSHOT" = replicate ]; then echo "      SNAPCHAIN_SNAPSHOT__BOOTSTRAP_METHOD: \"Replicate\""; fi
 } > docker-compose.override.yml
 
 # 6. The starting snapshot, streamed: download -> unzip -> unpack, one copy on disk.
