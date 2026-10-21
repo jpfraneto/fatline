@@ -45,7 +45,7 @@ function args() {
     provider: get('provider', 'vpsagent'),
     sku: get('sku'),
     plan: get('plan'),
-    days: Number(get('days', '3')),
+    days: Number(get('days', '1')),
     disk: Number(get('disk', '0')),
     node: a.includes('--node'),
     region: get('region', 'EU'),
@@ -137,7 +137,7 @@ async function rentDaily(opts, p) {
 
   console.log(`
   What you get      ${spec.vcpu} vCPU · ${spec.ramGb} GB RAM · ${spec.diskGb} GB disk${disk ? ` + ${disk} GB volume` : ''}
-  How long          ${days} days. After that it is renewed a day at a time, or it dies (2 h grace).
+  How long          ${days} day${days === 1 ? "" : "s"}. Then it is renewed a day at a time, or it dies (2 h grace).
   Price             ${serverUsdc} USDC server${disk ? ` + ~${diskUsdc} USDC disk` : ''} = ~${total} USDC, prepaid, no refunds
   How               ${disk ? 'two signatures (server, then disk)' : 'one signature'}, USDC on Base, no ETH needed
   It will run       ${opts.node ? 'a Farcaster read node (Snapchain), keeping 1 day of blocks' : 'the indexer + apps, reading from a node'}

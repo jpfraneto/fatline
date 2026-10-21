@@ -27,10 +27,11 @@ say "Node data lives in $DATA ($(df -h "$DATA" | awk 'NR==2 {print $4}') free)"
 # 2. Snapchain asks for 16 GB of RAM. On smaller machines, add swap so it doesn't get killed.
 RAM_GB=$(awk '/MemTotal/ {print int($2/1024/1024)}' /proc/meminfo)
 if [ "$RAM_GB" -lt 15 ] && ! swapon --show | grep -q .; then
-  say "This machine has ${RAM_GB} GB of RAM; adding 16 GB of swap on the data disk"
-  fallocate -l 16G "$DATA/../swapfile" && chmod 600 "$DATA/../swapfile"
-  mkswap "$DATA/../swapfile" >/dev/null && swapon "$DATA/../swapfile"
-  grep -q swapfile /etc/fstab || echo "$(realpath "$DATA/../swapfile") none swap sw 0 0" >> /etc/fstab
+  # On the server's own disk, so every GB of the paid volume goes to the node.
+  say "This machine has ${RAM_GB} GB of RAM; adding 16 GB of swap"
+  fallocate -l 16G /swapfile && chmod 600 /swapfile
+  mkswap /swapfile >/dev/null && swapon /swapfile
+  grep -q '^/swapfile' /etc/fstab || echo "/swapfile none swap sw 0 0" >> /etc/fstab
 fi
 
 # 3. Tools.
