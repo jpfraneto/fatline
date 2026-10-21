@@ -32,7 +32,7 @@ Setup (in this order on a new machine):
   ./infinicaster doctor              Check this machine and the networks; recommends full, light or rent
   ./infinicaster init                Choose the default network (Farcaster or Hypersnap)
   ./infinicaster node <network>      Run your own read node here (16 GB RAM, Docker; disk: see README).
-                                     Deletes blocks older than 7 days by default; --keep-blocks keeps all
+                                     Deletes blocks older than 1 day by default; --keep-blocks keeps all
   ./infinicaster compute [--quote]   No suitable machine? Rent one with a single x402 USDC payment
   ./infinicaster up                  Install, build and start the indexer + apps on http://localhost:8787 (also: client)
 
@@ -67,8 +67,8 @@ cmd_node() {
   fi
   # Keep only recent blocks: a read node needs the current state, not years of old blocks.
   # Snapchain's own setting (pruning.block_retention), set in an override file its scripts never touch.
-  # Default 7 days (a node offline for a few days can still catch up). --keep-blocks keeps everything.
-  local keep="7days"
+  # Default 1 day. Validators keep every block, so a node that was offline longer still catches up from them. --keep-blocks keeps everything.
+  local keep="1day"
   [ "${2:-}" = "--keep-blocks" ] && keep=""
   [ "$network" = hypersnap ] && [ "${2:-}" != "--prune-blocks" ] && keep=""  # Hypersnap exists to keep full history
   mkdir -p "$DIR"
@@ -83,7 +83,7 @@ services:
     environment:
       SNAPCHAIN_PRUNING__BLOCK_RETENTION: "$keep"
 YAML
-      echo "  Old blocks: deleted after ${keep/days/ days} (Snapchain's pruning.block_retention). Your node keeps the full current state."
+      echo "  Old blocks: deleted after ${keep/day/ day} (Snapchain's pruning.block_retention). Your node keeps the full current state."
     fi
   else
     echo "  Old blocks: kept forever (needs the most disk)."

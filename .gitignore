@@ -20,9 +20,8 @@ research/sources/
 research/balaji-recent-casts.json
 research/bounty-conversation.json
 
-# Not part of this repository: a separate site with its own history, and a personal script.
+# Not part of this repository: separately hosted sites with their own history.
 apps/voice/
 apps/checklist/
-seppuku/
 # Fork and local deployments (real Base deployments get committed on purpose, later).
 smart-contracts/broadcast/

@@ -26,7 +26,7 @@ Status, honestly:
 | | Status |
 | --- | --- |
 | Machine check, and renting a server for USDC (x402) | Works. The rental is too small for a node: the largest x402 servers found are 300–800 GB. |
-| Read node | The command exists and deletes blocks older than 7 days by default (Snapchain's own `pruning.block_retention`). Next: sync one for real and measure the disk it actually needs. |
+| Read node | The command exists and deletes blocks older than 1 day by default (Snapchain's own `pruning.block_retention`). Next: sync one for real and measure the disk it actually needs. |
 | Client: reading, both networks | Works. |
 | Client: seed phrase → app key, post, follow, like, filter by client | Being built now. |
 | Tutorial site (English + Spanish) | Not started. |
