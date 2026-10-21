@@ -48,12 +48,19 @@ export class Keeper {
     if (!existsSync(secretFile)) return null; // not a rented server (or rented by hand)
     const secret = JSON.parse(readFileSync(secretFile, 'utf8'));
     const record = existsSync(publicFile) ? JSON.parse(readFileSync(publicFile, 'utf8')) : {};
-    const until = record.paidUntil ? Date.parse(record.paidUntil) : secret.expires_at;
-    if (!until || until - Date.now() > RENEW_BEFORE_MS) return null;
-
+    const until = record.paidUntil ? Date.parse(record.paidUntil) : Date.parse(secret.expires_at) || secret.expires_at;
     const provider = JSON.parse(readFileSync(join(this.root, 'infra/providers.json'), 'utf8')).providers[secret.provider];
-    const url = provider.renew.url.replace('{rental_id}', secret.rental_id).replace('{root_token}', encodeURIComponent(secret.root_token));
-    const first = await fetch(url, { method: provider.renew.method });
+    // Daily sellers are paid a day at a time, a day ahead: the money streams instead of being locked up for a month.
+    const renewBefore = provider.kind === 'daily' ? 26 * HOUR : RENEW_BEFORE_MS;
+    if (!until || until - Date.now() > renewBefore) return null;
+
+    const url = provider.renew.url.replace('{rental_id}', secret.rental_id).replace('{root_token}', encodeURIComponent(secret.root_token ?? ''));
+    const init = (headers = {}) => ({
+      method: provider.renew.method,
+      headers: { 'content-type': 'application/json', ...headers },
+      body: provider.renew.body ? JSON.stringify(provider.renew.body) : undefined,
+    });
+    const first = await fetch(url, init());
     if (first.status !== 402) throw new Error(`renew: expected a 402 quote, got ${first.status}`);
     const quote = await readQuote(first);
     const option = chooseOption(quote, [8453, 84532]);
@@ -63,7 +70,9 @@ export class Keeper {
       return null;
     }
     const header = await signPayment({ account: this.account, quote, option });
-    const paid = await fetch(url, { method: provider.renew.method, headers: { [header.name]: header.value } });
+    const headers = { [header.name]: header.value };
+    if (provider.paymentHeader) headers[provider.paymentHeader] = header.value;
+    const paid = await fetch(url, init(headers));
     if (!paid.ok) throw new Error(`renew refused: HTTP ${paid.status} ${await paid.text()}`);
     const body = await paid.json().catch(() => ({}));
     if (body.expires_at) record.paidUntil = new Date(body.expires_at).toISOString();

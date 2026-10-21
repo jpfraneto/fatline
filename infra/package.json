@@ -6,7 +6,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/*.test.mjs"
+    "test": "node --experimental-sqlite --test test/*.test.mjs"
   },
   "dependencies": {
     "viem": "2.57.7"

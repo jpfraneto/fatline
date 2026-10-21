@@ -25,8 +25,8 @@ Status, honestly:
 
 | | Status |
 | --- | --- |
-| Machine check, and renting a server for USDC (x402) | Works. The rental is too small for a node: the largest x402 servers found are 300–800 GB. |
-| Read node | The command exists and deletes blocks older than 1 day by default (Snapchain's own `pruning.block_retention`). Next: sync one for real and measure the disk it actually needs. |
+| Machine check, and renting a server for USDC (x402) | Works with mock sellers. New: rent **by the day** from AgentMetal (USDC, x402), add up to 1 TB of disk, and set up a read node unattended (`compute --provider agentmetal --days 3 --disk 1000 --node`). The keeper then renews one day at a time. Not yet run with real money. |
+| Read node | Keeps 1 day of blocks by default (Snapchain's own `pruning.block_retention`). On a rented server the starting snapshot (~400 GB compressed, ~600 GB unpacked) is **streamed** straight to disk, so it needs one copy of space instead of Snapchain's ~3. Next: sync one for real and measure. |
 | Client: reading, both networks | Works. |
 | Client: seed phrase → app key, post, follow, like, filter by client | Being built now. |
 | Tutorial site (English + Spanish) | Not started. |

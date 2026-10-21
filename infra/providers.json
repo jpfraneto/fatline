@@ -1,5 +1,5 @@
 {
-  "_note": "Compute sellers that accept x402. Checked 2026-10-21 by reading their docs and an unpaid 402 quote only. No paid rental has been tested from this repository.",
+  "_note": "Compute sellers that accept x402. Checked 2026-10-21 by reading their docs and unpaid 402 quotes. VpsAgent sells 30-day terms; AgentMetal sells by the day (1-30 days per payment) plus disk by the GB per day.",
   "providers": {
     "vpsagent": {
       "label": "VpsAgent (vps.phoneagent.xyz)",
@@ -55,6 +55,47 @@
       "renew": {
         "method": "POST",
         "url": "https://vps.phoneagent.xyz/rentals/{rental_id}/renew?token={root_token}&periods=1"
+      }
+    },
+    "agentmetal": {
+      "label": "AgentMetal (agentmetal.dev, Hetzner US underneath)",
+      "docs": "https://agentmetal.dev/llms-full.txt",
+      "kind": "daily",
+      "api": "https://api.agentmetal.dev",
+      "paymentHeader": "X-PAYMENT",
+      "plans": {
+        "nano": {
+          "vcpu": 2,
+          "ramGb": 2,
+          "diskGb": 40,
+          "usdPerDay": 1.2
+        },
+        "small": {
+          "vcpu": 3,
+          "ramGb": 4,
+          "diskGb": 80,
+          "usdPerDay": 2.2
+        },
+        "medium": {
+          "vcpu": 4,
+          "ramGb": 8,
+          "diskGb": 160,
+          "usdPerDay": 4.2
+        }
+      },
+      "defaultPlan": "medium",
+      "storage": {
+        "usdPerGbDay": 0.01,
+        "minGb": 10,
+        "maxGb": 1000
+      },
+      "maxDays": 30,
+      "renew": {
+        "method": "POST",
+        "url": "https://api.agentmetal.dev/v1/servers/{rental_id}/extend",
+        "body": {
+          "days": 1
+        }
       }
     }
   }
