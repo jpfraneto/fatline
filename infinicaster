@@ -31,7 +31,8 @@ Infinicaster — read Farcaster or Hypersnap from your own machine, plus long-fo
 Setup (in this order on a new machine):
   ./infinicaster doctor              Check this machine and the networks; recommends full, light or rent
   ./infinicaster init                Choose the default network (Farcaster or Hypersnap)
-  ./infinicaster node <network>      Run your own full node here (needs ~16 GB RAM, 1.5-2 TB disk, Docker)
+  ./infinicaster node <network>      Run your own read node here (16 GB RAM, Docker; disk: see README).
+                                     Deletes blocks older than 7 days by default; --keep-blocks keeps all
   ./infinicaster compute [--quote]   No suitable machine? Rent one with a single x402 USDC payment
   ./infinicaster up                  Install, build and start the indexer + apps on http://localhost:8787 (also: client)
 
@@ -63,6 +64,29 @@ cmd_node() {
   local other; other=$([ "$network" = farcaster ] && echo hypersnap || echo farcaster)
   if docker ps --format '{{.Ports}}' | grep -q '3381'; then
     fail "Something already uses port 3381 (maybe a $other node). The upstream scripts run one network per machine."
+  fi
+  # Keep only recent blocks: a read node needs the current state, not years of old blocks.
+  # Snapchain's own setting (pruning.block_retention), set in an override file its scripts never touch.
+  # Default 7 days (a node offline for a few days can still catch up). --keep-blocks keeps everything.
+  local keep="7days"
+  [ "${2:-}" = "--keep-blocks" ] && keep=""
+  [ "$network" = hypersnap ] && [ "${2:-}" != "--prune-blocks" ] && keep=""  # Hypersnap exists to keep full history
+  mkdir -p "$DIR"
+  if [ -n "$keep" ]; then
+    if [ -f "$DIR/docker-compose.override.yml" ] && ! grep -q "infinicaster" "$DIR/docker-compose.override.yml"; then
+      echo "  $DIR/docker-compose.override.yml exists and is yours; not touching it. Add SNAPCHAIN_PRUNING__BLOCK_RETENTION yourself if you want pruning."
+    else
+      cat > "$DIR/docker-compose.override.yml" <<YAML
+# Written by ./infinicaster node. Delete this file (or run with --keep-blocks) to keep every block.
+services:
+  snapchain:
+    environment:
+      SNAPCHAIN_PRUNING__BLOCK_RETENTION: "$keep"
+YAML
+      echo "  Old blocks: deleted after ${keep/days/ days} (Snapchain's pruning.block_retention). Your node keeps the full current state."
+    fi
+  else
+    echo "  Old blocks: kept forever (needs the most disk)."
   fi
   bold "Downloading the official $network bootstrap script"
   curl -fsSL "$URL" -o "$STATE/$network-bootstrap.sh"

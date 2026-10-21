@@ -26,7 +26,7 @@ Status, honestly:
 | | Status |
 | --- | --- |
 | Machine check, and renting a server for USDC (x402) | Works. The rental is too small for a node: the largest x402 servers found are 300–800 GB. |
-| Read node | The command exists. Next: turn on Snapchain's built-in pruning of old blocks, then sync one for real and measure the disk it actually needs. |
+| Read node | The command exists and deletes blocks older than 7 days by default (Snapchain's own `pruning.block_retention`). Next: sync one for real and measure the disk it actually needs. |
 | Client: reading, both networks | Works. |
 | Client: seed phrase → app key, post, follow, like, filter by client | Being built now. |
 | Tutorial site (English + Spanish) | Not started. |
@@ -115,7 +115,7 @@ git clone <this repository> infinicaster && cd infinicaster
 
 | Path | When | What runs where |
 | --- | --- | --- |
-| **Full** | 4+ CPUs, 16 GB RAM, 1.5 TB free (Farcaster) or 2 TB+ (Hypersnap), Docker running | Your own node, the indexer and the apps, all on this machine |
+| **Full** | 4+ CPUs, 16 GB RAM, Snapchain asks for 2 TB (to be measured with pruning on), Docker running | Your own node, the indexer and the apps, all on this machine |
 | **Light** | Node.js 22.12+, ~1 GB RAM, ~2 GB disk, and a reachable node | Indexer and apps here, reading from a node elsewhere (yours or public, always labeled) |
 | **Rent** | Neither of the above | One x402 USDC payment rents a server and sets the light system up on it |
 
