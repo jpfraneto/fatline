@@ -85,6 +85,7 @@ apps/opinions/               the web app: launchpad, app pages, voices, people, 
 infra/                       machine doctor, x402 server rental, server setup, fork tools
 research/                    the research this is built on
 MASTER-PROMPT.md             the plan: what we are building, in what order, and the rules
+STORY.md                     how we got here: decisions, numbers, and how to start from scratch
 ```
 
 ---

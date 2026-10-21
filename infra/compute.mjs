@@ -1,6 +1,7 @@
 // ./infinicaster compute [--quote] [--sku server_small_1mo] [--region EU] [--network farcaster] [--max-usdc 20] [--vault 0x…]
 // ./infinicaster compute --provider agentmetal --plan medium --days 3 --disk 1000 --node [--quote]
 // ./infinicaster compute wallet        (create or show this machine's paying wallet; fund it with USDC on Base)
+// ./infinicaster compute disk --disk 700 (buy or retry the extra disk, then set up)
 // ./infinicaster compute status        (how the rented server and its node are doing)
 // ./infinicaster compute deploy        (re-run only the setup step on the rented server)
 //
@@ -205,6 +206,17 @@ async function deployDaily(opts, p) {
   await deploy(opts);
 }
 
+/** Buys (or retries buying) the extra disk for the rented server, then continues the setup. */
+async function addDisk(opts) {
+  const secret = JSON.parse(readFileSync(SECRET_FILE, 'utf8'));
+  const p = JSON.parse(readFileSync(join(ROOT, 'infra/providers.json'), 'utf8')).providers[secret.provider];
+  if (p?.kind !== 'daily') throw new Error('Extra disk is only sold by daily providers.');
+  if (!opts.disk) throw new Error('Say how much: compute disk --disk 700');
+  const account = await payingAccount();
+  await buy({ url: `${p.api}/v1/servers/${secret.rental_id}/storage`, body: { gb: opts.disk }, account, provider: p, label: `${opts.disk} GB of disk` });
+  await deployDaily(opts, p);
+}
+
 async function status() {
   if (!existsSync(PUBLIC_FILE)) throw new Error('No rented server. Run ./infinicaster compute first.');
   const record = JSON.parse(readFileSync(PUBLIC_FILE, 'utf8'));
@@ -341,6 +353,7 @@ const opts = args();
 const commands = {
   rent,
   wallet,
+  disk: addDisk,
   status,
   deploy: async (o) => {
     const secret = existsSync(SECRET_FILE) ? JSON.parse(readFileSync(SECRET_FILE, 'utf8')) : {};
