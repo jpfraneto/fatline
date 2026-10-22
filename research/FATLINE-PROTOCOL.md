@@ -8,7 +8,7 @@ A Fatline is a link (ours: fatline.ink). Behind the link there is a node, and th
 
 ## How a Fatline comes into being
 
-1. **The 777.** The collection is a hall of fame: the top 777 Farcaster accounts in Farcaster's history, each one reserved for its FID. A Fatliner's rarity follows from that account's score, computed deterministically from the $SNAP allocation (the owner's method; its exact rule and data source still need writing down here).
+1. **The 777.** The collection is a hall of fame: the top 777 Farcaster accounts in Farcaster's history, each one reserved for its FID. A Fatliner's rarity follows from that account's score, computed deterministically from its $SNAP retro allocation (see "The $SNAP score" below).
 2. **Claiming it.** The person connects the wallet that owns their FID and signs there. Owning the FID is what matters, so the claim has to come from the FID's own wallet. The gas is paid for them (step 6).
 3. **Its code.** Every Fatliner starts as hello world: `FATLINER.sol` in `/smart-contract` at the root of the repo. To change what a Fatliner does, its owner forks the repo, edits `FATLINER.sol` and deploys it. The contract is the Fatliner's code.
 4. **The coin.** The owner launches that Fatliner's coin through the launchpad, paired with USDC on Base. Its address is `fatline.ink/base/0x…`.
