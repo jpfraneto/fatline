@@ -1,10 +1,10 @@
 {
-  "name": "Infinicaster",
-  "short_name": "Infinicaster",
-  "description": "Opinions without noise, from the network you choose.",
+  "name": "Farline",
+  "short_name": "Farline",
+  "description": "Farcaster clients that pay for their own life.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#16140f",
-  "theme_color": "#16140f",
+  "background_color": "#111820",
+  "theme_color": "#111820",
   "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
 }

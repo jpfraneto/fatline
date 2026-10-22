@@ -9,6 +9,8 @@ import { VoicesIndex } from './voices.mjs';
 import { Launchpad } from './launchpad.mjs';
 import { Keeper } from './keeper.mjs';
 import { Writer, loadAppKey } from './writer.mjs';
+import { NodeMonitor } from './nodes.mjs';
+import { Coins } from './coin.mjs';
 import { timingSafeEqual } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { ROOT } from './config.mjs';
@@ -19,8 +21,10 @@ const TYPES = {
   '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
 };
 
-export function buildServer({ config, networks, voices, launchpad, keeper = null }) {
+export function buildServer({ config, networks, voices, launchpad, keeper = null, nodes = null, coins = null }) {
   const api = new Api({ config, networks, voices, launchpad });
+  coins ??= nodes ? new Coins({ launchpad, nodes, networks, config, keeper }) : null;
+  const needCoins = () => { if (!coins) throw Object.assign(new Error('Node monitoring is not set up on this server.'), { status: 503 }); return coins; };
 
   // Posting signs with this client's app key, so only its owner may ask for it:
   // requests made on this machine directly, or (behind a proxy, on a server) with the write token.
@@ -58,6 +62,11 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
       if (!app) throw Object.assign(new Error('No app with that vault or coin'), { status: 404 });
       return app;
     }],
+    // Farline: a coin, its node and its money. Public and read-only; no wallet needed.
+    ['GET', /^\/api\/coin\/([^/]+)\/([^/]+)$/, (q, [, chainId, address]) => needCoins().get(chainId, address)],
+    ['GET', /^\/api\/coin\/([^/]+)\/([^/]+)\/activity$/, (q, [, chainId, address]) => needCoins().activity(chainId, address, { before: q.get('before'), limit: q.get('limit') })],
+    ['GET', /^\/api\/nodes$/, () => needCoins().overview()],
+    ['GET', /^\/api\/nodes\/([\w-]{1,64})$/, (q, [, id]) => needCoins().nodeDetail(id, { before: q.get('before') })],
     ['POST', /^\/api\/launch\/prepare$/, (q, m, body) => launchpad.prepare(body)],
     ['POST', /^\/api\/apps\/(0x[0-9a-fA-F]{40})\/checkin$/, (q, [, vault], body) => launchpad.queueCheckIn(vault, body)],
     ['GET', /^\/api\/config$/, () => api.config_()],
@@ -144,16 +153,19 @@ export function start(config = loadConfig()) {
     keeper = new Keeper({ client: launchpad.client, chain, privateKey: process.env.KEEPER_PRIVATE_KEY, vault, root: ROOT, dataDir: config.dataDir, launchpad });
     keeper.start(Number(process.env.KEEPER_INTERVAL_MS ?? 3_600_000), Number(process.env.CHECKIN_INTERVAL_MS ?? 300_000));
   }
-  const server = buildServer({ config, networks, voices, launchpad, keeper });
+  const nodes = new NodeMonitor(db, config.masterNodes ?? [], { intervalMs: Number(process.env.NODE_POLL_MS ?? 15_000), log: console.log });
+  nodes.start();
+  const server = buildServer({ config, networks, voices, launchpad, keeper, nodes });
   server.listen(config.port, () => {
     console.log(`Infinicaster indexer on http://localhost:${config.port}`);
     console.log(`  config:   ${config.path}`);
     console.log(`  networks: ${Object.keys(networks).join(', ')} (default: ${config.defaultNetwork})`);
     console.log(`  apps:     ${launchpad.enabled ? `factory ${launchpad.factory} on chain ${launchpad.chainId}` : 'off (no factory address in config)'}`);
     console.log(`  keeper:   ${keeper ? keeper.account.address : 'off'}`);
+    console.log(`  nodes:    ${nodes.nodes.length ? nodes.nodes.map((n) => n.id).join(', ') : 'none watched (add masterNodes to the config)'}`);
     console.log(`  voices:   ${voices.enabled ? `${voices.address} on chain ${voices.chainId}` : 'off (no contract address in config)'}`);
   });
-  return { server, voices, launchpad, keeper, db };
+  return { server, voices, launchpad, keeper, db, nodes };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) start();

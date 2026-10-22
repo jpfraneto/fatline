@@ -1,6 +1,20 @@
-# Infinicaster
+# Farline
 
-**A launchpad for apps that pay for their own life.** Every app is a Farcaster client with a USDC vault. Its server pays itself from that vault. If the vault runs dry, the app dies. If people feed it, it lives.
+**Your own Farcaster client that pays for its own life.** It reads from your own node, posts with its own app key, and lives on a USDC vault on Base: its server pays itself from that vault.
+
+```sh
+./infinicaster compute          # (0) a machine that can hold a node
+./infinicaster node farcaster   # (1) your own read node, no API keys (or: node hypersnap)
+./infinicaster client           # (2) your client on that node; its vault comes from "Launch an app" in it
+```
+
+Before them: `git clone https://github.com/jpfraneto/infinicaster && cd infinicaster`. You need git, Node.js 22.12+, and Docker on the machine that runs the node. The vault step is proven on a local fork of Base only: `AppFactory` is not deployed on Base mainnet yet (see "Status" below).
+
+Farline is where Infinicaster is going: infrastructure for autonomous apps, built on Farcaster identity, onchain money and software that keeps running on its own. The repository, the CLI (`./infinicaster`) and the contracts keep the Infinicaster name for now.
+
+## How it works
+
+Every app is a Farcaster client with a USDC vault. Its server pays itself from that vault. If the vault runs dry, the app dies. If people feed it, it lives.
 
 The person launching the app decides:
 
@@ -13,13 +27,7 @@ Everything that matters is enforced onchain on Base, and all the code is open so
 
 ## Where this is going
 
-This is our entry for [Balaji's Farcaster client prize](https://farcaster.xyz/balajis.eth/0x50184b62) (deadline 2026-10-24 14:47 UTC): go from nothing to **your own read node and your own client in three commands**. Then the client you just made can be born on the launchpad and pay for its own life.
-
-```
-./infinicaster compute          # (0) get a machine that can hold a node
-./infinicaster node farcaster   # (1) your own read node, no API keys (or: node hypersnap)
-./infinicaster client           # (2) your client, reading from your node, posting with its own app key
-```
+This is our entry for [Balaji's Farcaster client prize](https://farcaster.xyz/balajis.eth/0x50184b62) (deadline 2026-10-24 14:47 UTC): go from nothing to **your own read node and your own client in three commands** (the three at the top). Then the client you just made can be born on the launchpad and pay for its own life.
 
 Status, honestly:
 
@@ -40,6 +48,29 @@ Decided, not built yet:
 - **Grants.** A public treasury that pays apps' vaults daily, and pays for shared full nodes that small apps can read from.
 
 The full plan, rules and definition of done are in [MASTER-PROMPT.md](MASTER-PROMPT.md).
+
+## Is it alive? The coin and node pages
+
+Every coin has a public page at `#/coin/<chainId>/<address>` (the address can be the coin or the app's vault; old `#/app/<address>` links redirect there). No wallet is needed to read it. It shows, from top to bottom:
+
+- **The coin:** name, symbol, contract, vault, chain, and the creator's FID when the creator's wallet is that FID's current custody address.
+- **Its master node:** Online, Degraded, Offline or Unknown, with the last heartbeat, sync state, how many blocks behind, block heights per shard and version. A thin signal line moves while the node is healthy, slows when it is degraded and stops when the data is stale.
+- **Activity:** the app's birth, every USDC movement of its vault, and every change in its node's state. All of it comes from indexed chain events or the server's own record of its checks.
+- **Treasury:** USDC in the vault, trading fees still waiting in Clanker's fee locker (they reach the vault only when someone calls `harvest()`), runway at the current tier, and totals deposited, harvested, paid for compute and withdrawn.
+
+The main page shows a strip with every node this server watches. Each one links to `#/node/<id>`.
+
+**How the states are decided.** The server, not the browser, asks each node for Snapchain's `/v1/info` every 15 s (`NODE_POLL_MS`).
+- *Online* needs shard data, every shard within 200 blocks of the network, and block heights that keep moving. An HTTP 200 alone is not enough.
+- *Degraded:* it answers but is catching up, reports no shards, or its heights stopped for 5 minutes.
+- *Offline:* the connection was refused, the node answered with an error, or there has been no answer for 5 minutes.
+- *Unknown:* not checked yet, a short silence, or data older than 45 s. If the browser can't reach the server for 45 s, it shows Unknown too.
+
+**How a coin is tied to a node.** Never guessed. There are two ways, and the page says which one applies:
+1. The operator of the server lists the app's vault or coin under `masterNodes[].apps` in `infinicaster.config.json`.
+2. The app names its node's public URL when it is born ("Launch an app" → Advanced). That URL is stored onchain. The server only checks URLs that are in its own config; it never fetches a URL that comes from the chain.
+
+`masterNodes` in [`infinicaster.config.example.json`](infinicaster.config.example.json) lists the Farline master node. Nothing is tied to it yet: `$INFINICASTER` has not been launched. Set `"public": false` on a node to keep its URL off the page.
 
 ## How the money flows
 
@@ -189,10 +220,12 @@ Tested:
   - trades produced 40.05 USDC in fees, which `harvest()` moved into the vault;
   - the keeper paid itself 15.55 USDC, and the app page showed "Alive for 270 days more";
   - 25 people signed free check-ins through the API and the server refused a forged one. The keeper posted them in two batches (~35,000 gas per person), and the contract's `dauOf(today)` read 25.
+- **The coin and node pages:** 23 tests cover address and checksum checks, coin-to-node resolution, the four states, stale heartbeats, catching up and stalls, missing treasury data, API failures, starting deposits counted once, and that the probe URL never reaches the browser. On the Base fork, the vault's indexed history matched its live balance to the cent: 100 deposited + 40.05 fees − 15.55 compute = 124.50 USDC. Against the real master node, the page showed *Offline: the machine answered, but no node is listening*, which was true while its snapshot downloaded. `node apps/opinions/test/layout.mjs <url> "#/" "#/coin/…"` checks 360, 390, 768 and 1280 px in Chrome for sideways scrolling; all passed.
 - **Indexer and x402:** 8 indexer tests, and x402 v1 and v2 payments against mock sellers. The doctor and the UI were checked at desktop and phone widths.
 
 Not tested yet:
 
+- The coin page with a real coin on Base mainnet, and with our own master node *Online*. That state has only been seen against the public crackle node.
 - Anything with real money: deploying to Base, a real launch, a paid server rental, the keeper renewing a real rental.
 - `server-setup.sh` on a real server.
 - Launching from a real browser wallet. Both paths are written but have only been exercised from scripts: batched calls for smart wallets, and permit for normal wallets.

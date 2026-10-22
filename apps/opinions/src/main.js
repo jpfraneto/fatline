@@ -1,7 +1,8 @@
-import { appPage, appsPage, launchPage } from './apps.js';
+import { appsPage, launchPage } from './apps.js';
 import { feedPage, peoplePage, voicePage } from './feed.js';
 import { $, api, el, showSource, state, store, t } from './lib.js';
 import { settingsPage } from './settings.js';
+import { coinPage, leaveLive, nodePage } from './farline.js';
 import { loadMe } from './post.js';
 
 function renderChrome() {
@@ -18,9 +19,17 @@ function route() {
   document.querySelectorAll('#tabs a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.tab === tab)));
   if (tab !== 'voices' && tab !== 'people') showSource(null);
   window.scrollTo(0, 0);
+  leaveLive();
+  $('#main').classList.remove('farline-page');
 
+  // The canonical page of a coin (or of a coinless app's vault): #/coin/<chainId>/<address>.
+  const coin = hash.match(/^\/coin\/([^/]+)\/([^/?#]+)/);
+  if (coin) return coinPage(coin[1], coin[2]);
+  const node = hash.match(/^\/node\/([\w-]{1,64})/);
+  if (node) return nodePage(node[1]);
+  // Older links: #/app/<address> now lives at the coin route.
   const app = hash.match(/^\/app\/(0x[0-9a-fA-F]{40})/);
-  if (app) return appPage(app[1]).catch(fail);
+  if (app) { location.replace(`#/coin/${state.config.launchpad?.chainId ?? 8453}/${app[1]}`); return; }
   const voice = hash.match(/^\/voice\/(\d+)/);
   if (voice) return voicePage(voice[1]).catch(fail);
   if (hash.startsWith('/launch')) return launchPage();

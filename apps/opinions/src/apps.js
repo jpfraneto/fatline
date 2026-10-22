@@ -1,6 +1,7 @@
 // The launchpad: apps that pay for their own life.
 import { encodeFunctionData, parseAbi, parseSignature, parseUnits } from 'viem';
 import { $, api, date, duration, el, short, state, t, usdc, wallet } from './lib.js';
+import { nodeStrip } from './farline.js';
 
 const erc20 = parseAbi([
   'function approve(address spender, uint256 amount) returns (bool)',
@@ -85,7 +86,7 @@ function lifeBar(app) {
 
 function appCard(app) {
   const life = lifeOf(app);
-  return el('a', { class: 'app-card', href: `#/app/${app.coin ?? app.vault}` },
+  return el('a', { class: 'app-card', href: `#/coin/${state.config.launchpad.chainId}/${app.coin ?? app.vault}` },
     el('div', { class: 'app-head' },
       app.meta.image ? el('img', { src: app.meta.image, alt: '', loading: 'lazy', referrerpolicy: 'no-referrer' }) : el('span', { class: 'dot big' }),
       el('div', {}, el('strong', {}, app.meta.name ?? short(app.vault)), app.symbol ? el('span', { class: 'muted' }, ` $${app.symbol}`) : null,
@@ -98,10 +99,11 @@ export async function appsPage() {
   const main = $('#main');
   const top = el('div', { class: 'row spread' }, el('h2', { class: 'flush' }, t('tabApps')),
     state.config.launchpad ? el('a', { class: 'button', href: '#/launch' }, t('launch')) : null);
-  if (!state.config.launchpad) return main.replaceChildren(top, el('p', { class: 'muted' }, t('launchpadOff')));
-  main.replaceChildren(top, el('p', { class: 'muted' }, '…'));
+  const strip = nodeStrip();
+  if (!state.config.launchpad) return main.replaceChildren(strip, top, el('p', { class: 'muted' }, t('launchpadOff')));
+  main.replaceChildren(strip, top, el('p', { class: 'muted' }, '…'));
   const apps = await api('/api/apps');
-  main.replaceChildren(top, apps.length ? el('div', { class: 'apps' }, ...apps.map(appCard)) : el('p', { class: 'muted empty' }, t('noApps')));
+  main.replaceChildren(strip, top, apps.length ? el('div', { class: 'apps' }, ...apps.map(appCard)) : el('p', { class: 'muted empty' }, t('noApps')));
 }
 
 // ------------------------------------------------------------------ one app
@@ -111,7 +113,7 @@ function youtubeEmbed(url) {
   return m ? `https://www.youtube-nocookie.com/embed/${m[1]}` : null;
 }
 
-function experience(meta) {
+export function experience(meta) {
   const x = meta.experience;
   if (!x?.url || !/^https:\/\//.test(x.url)) return null;
   if (x.type === 'app') return el('iframe', { class: 'exp', src: x.url, sandbox: 'allow-scripts allow-forms allow-popups', loading: 'lazy', title: meta.name ?? 'app' });
@@ -124,7 +126,7 @@ function experience(meta) {
   return el('a', { class: 'exp link', href: x.url, target: '_blank', rel: 'noopener' }, x.url.replace(/^https:\/\//, ''), ' ↗');
 }
 
-function feedForm(app, onDone) {
+export function feedForm(app, onDone) {
   const amount = el('input', { type: 'number', min: '0.01', step: '0.01', value: '5', inputmode: 'decimal', 'aria-label': t('feedAmount') });
   const status = el('p', { class: 'status', role: 'status' });
   const button = el('button', { type: 'submit' }, t('feed'));
@@ -151,7 +153,7 @@ function feedForm(app, onDone) {
 
 // ------------------------------------------------------------------ daily users, onchain
 
-function presence(app, onDone) {
+export function presence(app, onDone) {
   const s = app.state;
   const max = Math.max(1, ...s.week.map((d) => d.users));
   const status = el('p', { class: 'status', role: 'status' });
@@ -192,39 +194,6 @@ function presence(app, onDone) {
     el('p', { class: 'muted small' }, t('presenceExplain'), Number(s.minCoinToCount) > 0 ? ` ${t('holdersOnly')}` : ''));
 }
 
-export async function appPage(address) {
-  const main = $('#main');
-  main.replaceChildren(el('p', { class: 'muted' }, '…'));
-  const app = await api(`/api/apps/${address}`);
-  const s = app.state;
-  const life = lifeOf(app);
-  const tiers = s?.tiers ?? [];
-  main.replaceChildren(...[
-    el('a', { href: '#/', class: 'back' }, t('back')),
-    experience(app.meta),
-    el('h1', { class: 'app-title' }, app.meta.name ?? short(app.vault), app.symbol ? el('span', { class: 'muted' }, ` $${app.symbol}`) : null),
-    app.meta.description ? el('p', {}, app.meta.description) : null,
-    app.coin ? el('a', { class: 'button trade', href: app.trade, target: '_blank', rel: 'noopener' }, t('trade', `$${app.symbol ?? ''}`)) : el('p', { class: 'muted' }, t('noCoin')),
-    s ? el('h2', {}, t('people')) : null,
-    s ? presence(app, () => appPage(address)) : null,
-    el('h2', {}, t('economy')),
-    el('section', { class: 'economy' },
-      lifeBar(app),
-      el('p', { class: `life-text big ${life.cls}` }, life.text),
-      s?.alive ? el('p', { class: 'muted small' }, t('paidThrough', date(s.paidThrough))) : null,
-      s ? el('dl', { class: 'stats' },
-        el('div', {}, el('dt', {}, `${usdc(s.balance)} USDC`), el('dd', {}, t('inVault'))),
-        el('div', {}, el('dt', {}, `${usdc(s.pendingFees)} USDC`), el('dd', {}, t('pendingFees'))),
-        el('div', {}, el('dt', {}, t('perMonth', tiers[s.tier]?.usdPer30Days.toFixed(2) ?? '?')), el('dd', {}, t('tier', t('tierNames')[s.tier] ?? s.tier, s.dau)))) : null,
-      el('ol', { class: 'tiers' }, ...tiers.map((tier, i) => el('li', { class: i === s.tier ? 'current' : '' },
-        el('strong', {}, t('tierNames')[i] ?? `#${i}`), ' · ', t('perMonth', tier.usdPer30Days.toFixed(2)),
-        tier.minDau ? el('span', { class: 'muted' }, ` · ${t('unlocks', tier.minDau)}`) : null))),
-      el('p', { class: 'muted small' }, t('vaultExplain')),
-      feedForm(app, () => appPage(address)),
-      el('p', { class: 'muted small mono' }, `vault ${app.vault}`, app.coin ? ` · coin ${app.coin}` : '', ` · owner ${short(app.owner)}`)),
-  ].filter(Boolean));
-}
-
 // ------------------------------------------------------------------ launch
 
 export function launchPage() {
@@ -243,6 +212,7 @@ export function launchPage() {
     owner: el('input', { placeholder: '0x… (default: you)' }),
     keeper: el('input', { placeholder: '0x… (default: you)' }),
     billing: el('input', { type: 'number', min: '1', max: '31', value: '30' }),
+    node: el('input', { type: 'url', placeholder: 'http://1.2.3.4:3381' }),
   };
   const symbolField = field('symbol', f.symbol);
   f.coin.addEventListener('change', () => { symbolField.hidden = !f.coin.checked; f.symbol.required = f.coin.checked; });
@@ -261,7 +231,7 @@ export function launchPage() {
           creator: w.account, owner: f.owner.value.trim() || w.account, keeper: f.keeper.value.trim() || w.account,
           name: f.name.value.trim(), symbol: f.symbol.value.trim().toUpperCase(), description: f.description.value.trim(),
           image: f.image.value.trim(), experience: f.expUrl.value.trim() ? { type: f.expType.value, url: f.expUrl.value.trim() } : null,
-          coin: f.coin.checked, billingDays: Number(f.billing.value) || 30,
+          coin: f.coin.checked, billingDays: Number(f.billing.value) || 30, node: f.node.value.trim() || null,
         });
         const params = { ...prep.params, billingPeriod: BigInt(prep.params.billingPeriod) };
         const deposit = parseUnits(f.deposit.value || '0', 6);
@@ -295,7 +265,7 @@ export function launchPage() {
   el('div', { class: 'row' }, field('expType', f.expType), field('expUrl', f.expUrl)),
   el('label', { class: 'check' }, f.coin, el('span', {}, t('withCoin'))),
   field('deposit', f.deposit),
-  el('details', {}, el('summary', {}, t('advanced')), field('ownerLabel', f.owner), field('keeperLabel', f.keeper), field('billing', f.billing)),
+  el('details', {}, el('summary', {}, t('advanced')), field('ownerLabel', f.owner), field('keeperLabel', f.keeper), field('billing', f.billing), field('nodeLabel', f.node)),
   el('p', { class: 'muted small' }, t('oneTx')),
   button, status);
   main.replaceChildren(el('a', { href: '#/', class: 'back' }, t('back')), el('h1', { class: 'app-title' }, t('launch')), form);

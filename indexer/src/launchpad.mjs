@@ -42,6 +42,17 @@ export const vaultAbi = parseAbi([
 ]);
 
 const CHUNK = 2_000n;
+const transferEvent = parseAbi(['event Transfer(address indexed from, address indexed to, uint256 value)'])[0];
+
+// The vault's own events: where its USDC came from and where it went. Indexed into vault_events.
+export const vaultEventsAbi = parseAbi([
+  'event Deposited(address indexed from, uint256 amount, string note)',
+  'event Harvested(uint256 amount)',
+  'event ComputePaid(address indexed keeper, uint256 amount, uint256 paidThrough)',
+  'event Withdrawn(address indexed to, uint256 amount)',
+  'event TierChanged(uint8 tier, uint256 ratePerSecond)',
+  'event KeeperChanged(address keeper)',
+]);
 
 /** Reads a data: URI (or plain JSON) describing the app. Remote URIs are left for the browser. */
 export function readUri(uri) {
@@ -53,14 +64,16 @@ export function readUri(uri) {
   return { link: uri };
 }
 
-export function appUri({ name, description = '', image = '', experience = null }) {
-  const json = JSON.stringify({ name, description, image, experience });
+export function appUri({ name, description = '', image = '', experience = null, node = null }) {
+  // node: the public URL of the read node this app runs on. Optional; a monitored URL links the app to it.
+  const json = JSON.stringify(node ? { name, description, image, experience, node } : { name, description, image, experience });
   return `data:application/json;base64,${Buffer.from(json).toString('base64')}`;
 }
 
 export class Launchpad {
-  constructor(db, { chainId, rpc, factory, fromBlock = 0 } = {}, { client } = {}) {
+  constructor(db, { chainId, rpc, factory, fromBlock = 0, usdc = null } = {}, { client } = {}) {
     this.db = db;
+    this.usdc = usdc ? getAddress(usdc) : null;
     this.chainId = Number(chainId ?? 0);
     this.factory = factory ? getAddress(factory) : null;
     this.fromBlock = BigInt(fromBlock ?? 0);
@@ -74,7 +87,18 @@ export class Launchpad {
       CREATE INDEX IF NOT EXISTS apps_coin ON apps (chain_id, coin);
       CREATE TABLE IF NOT EXISTS checkins (
         vault TEXT NOT NULL, day INTEGER NOT NULL, person TEXT NOT NULL, signature TEXT NOT NULL,
-        submitted INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (vault, day, person));`);
+        submitted INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (vault, day, person));
+      CREATE TABLE IF NOT EXISTS vault_events (
+        chain_id INTEGER NOT NULL, vault TEXT NOT NULL, block_number INTEGER NOT NULL, log_index INTEGER NOT NULL,
+        tx_hash TEXT NOT NULL, kind TEXT NOT NULL, account TEXT, amount TEXT, detail TEXT, at INTEGER NOT NULL,
+        PRIMARY KEY (chain_id, tx_hash, log_index));
+      CREATE INDEX IF NOT EXISTS vault_events_time ON vault_events (chain_id, vault, block_number DESC, log_index DESC);`);
+    this.vaultKey = `vaultEvents:${this.chainId}:${this.factory}`;
+    this.head = null;
+    this.lastSyncAt = null;
+    this.lastErrorAt = null;
+    this.intervalMs = 5_000;
+    this.cache = new Map(); // vault -> { at, value }: live reads, shared by every viewer for a few seconds
   }
 
   get enabled() {
@@ -118,14 +142,103 @@ export class Launchpad {
       }
       from = to + 1n;
     }
+    this.head = Number(head);
+    applied += await this.syncVaultEvents(head);
+    this.lastSyncAt = Date.now();
     this.lastError = null;
     return applied;
   }
 
+  /** Indexes every known vault's money events, up to the block the app list is synced to. */
+  async syncVaultEvents(head) {
+    const saved = getState(this.db, this.vaultKey);
+    let from = saved === null ? this.fromBlock : BigInt(saved) + 1n;
+    let applied = 0;
+    const insert = this.db.prepare(`INSERT OR IGNORE INTO vault_events (chain_id, vault, block_number, log_index, tx_hash, kind, account, amount, detail, at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+    while (from <= head) {
+      const to = from + CHUNK - 1n < head ? from + CHUNK - 1n : head;
+      const vaults = this.db.prepare('SELECT vault FROM apps WHERE chain_id = ? AND block_number <= ?').all(this.chainId, Number(to)).map((r) => r.vault);
+      const logs = vaults.length ? await this.client.getLogs({ address: vaults, events: vaultEventsAbi, fromBlock: from, toBlock: to }) : [];
+      // USDC that reaches a vault without a vault event: the starting deposit at birth (sent by the factory),
+      // or someone sending USDC straight to the vault's address. Deposits and harvests already have their own event.
+      if (vaults.length && this.usdc) {
+        const covered = new Set(logs.filter((l) => l.eventName === 'Deposited' || l.eventName === 'Harvested').map((l) => `${l.transactionHash}:${l.address.toLowerCase()}`));
+        const transfers = await this.client.getLogs({ address: this.usdc, event: transferEvent, args: { to: vaults }, fromBlock: from, toBlock: to });
+        for (const t of transfers) {
+          const vault = t.args.to.toLowerCase();
+          if (covered.has(`${t.transactionHash}:${vault}`)) continue;
+          // The factory moves the starting deposit in the birth transaction, from the creator (or from itself).
+          const app = this.db.prepare('SELECT creator, block_number FROM apps WHERE chain_id = ? AND vault = ?').get(this.chainId, vault);
+          const fromWho = t.args.from.toLowerCase();
+          const birth = app && Number(t.blockNumber) === app.block_number && (fromWho === app.creator || fromWho === this.factory.toLowerCase());
+          logs.push({ ...t, address: vault, eventName: birth ? 'StartingDeposit' : 'DirectTransfer', args: { from: birth ? app.creator : t.args.from, amount: t.args.value } });
+        }
+      }
+      const times = new Map();
+      for (const log of logs) {
+        if (!times.has(log.blockNumber)) times.set(log.blockNumber, Number((await this.client.getBlock({ blockNumber: log.blockNumber })).timestamp) * 1000);
+      }
+      this.db.exec('BEGIN');
+      try {
+        for (const log of logs) {
+          const a = log.args;
+          const [account, amount, detail] = {
+            Deposited: [a.from, a.amount, a.note],
+            StartingDeposit: [a.from, a.amount, null],
+            DirectTransfer: [a.from, a.amount, null],
+            Harvested: [null, a.amount, null],
+            ComputePaid: [a.keeper, a.amount, a.paidThrough?.toString()],
+            Withdrawn: [a.to, a.amount, null],
+            TierChanged: [null, a.ratePerSecond, String(a.tier)],
+            KeeperChanged: [a.keeper, null, null],
+          }[log.eventName] ?? [null, null, null];
+          insert.run(this.chainId, log.address.toLowerCase(), Number(log.blockNumber), Number(log.logIndex), log.transactionHash, log.eventName,
+            account ? account.toLowerCase() : null, amount === null || amount === undefined ? null : amount.toString(),
+            detail === null || detail === undefined ? null : String(detail).slice(0, 500), times.get(log.blockNumber));
+          applied++;
+        }
+        setState(this.db, this.vaultKey, to);
+        this.db.exec('COMMIT');
+      } catch (err) {
+        this.db.exec('ROLLBACK');
+        throw err;
+      }
+      from = to + 1n;
+    }
+    return applied;
+  }
+
+  vaultEvents(vault, { before = Infinity, limit = 50 } = {}) {
+    return this.db.prepare('SELECT * FROM vault_events WHERE chain_id = ? AND vault = ? AND at < ? ORDER BY block_number DESC, log_index DESC LIMIT ?')
+      .all(this.chainId, vault.toLowerCase(), Number.isFinite(before) ? before : Number.MAX_SAFE_INTEGER, limit)
+      .map((e) => ({ source: 'vault', at: e.at, kind: e.kind, account: e.account, amount: e.amount, detail: e.detail, tx: e.tx_hash, block: e.block_number }));
+  }
+
+  /** Totals per kind of money event, from the indexed history. */
+  vaultTotals(vault) {
+    const rows = this.db.prepare("SELECT kind, amount FROM vault_events WHERE chain_id = ? AND vault = ? AND kind IN ('Deposited','StartingDeposit','DirectTransfer','Harvested','ComputePaid','Withdrawn')")
+      .all(this.chainId, vault.toLowerCase());
+    const out = { Deposited: 0n, Harvested: 0n, ComputePaid: 0n, Withdrawn: 0n };
+    // Every way people put USDC in counts as "deposited by people"; trading fees are separate.
+    for (const r of rows) out[['StartingDeposit', 'DirectTransfer'].includes(r.kind) ? 'Deposited' : r.kind] += BigInt(r.amount ?? 0);
+    return Object.fromEntries(Object.entries(out).map(([k, v]) => [k, v.toString()]));
+  }
+
+  /** Live vault state, cached a few seconds so many viewers cost one set of RPC reads. */
+  async cachedVaultState(vault, ttlMs = 15_000) {
+    const hit = this.cache.get(vault);
+    if (hit && Date.now() - hit.at < ttlMs) return hit.value;
+    const value = await this.vaultState(vault);
+    this.cache.set(vault, { at: Date.now(), value });
+    return value;
+  }
+
   start(intervalMs = 5_000) {
     if (!this.enabled) return;
+    this.intervalMs = intervalMs;
     const tick = async () => {
-      try { await this.syncOnce(); } catch (err) { this.lastError = err.shortMessage ?? err.message; }
+      try { await this.syncOnce(); } catch (err) { this.lastError = err.shortMessage ?? err.message; this.lastErrorAt = Date.now(); }
       this.timer = setTimeout(tick, intervalMs);
     };
     tick();
@@ -207,12 +320,13 @@ export class Launchpad {
    * Everything the browser needs to launch an app in one transaction: the predicted vault, the
    * Clanker deployment (fees 100% to that vault, in USDC) and the app params.
    */
-  async prepare({ creator, owner, keeper, name, symbol, description = '', image = '', experience = null, coin = true, billingDays = 30, startMarketCapUsd = 25_000 }) {
+  async prepare({ creator, owner, keeper, name, symbol, description = '', image = '', experience = null, node = null, coin = true, billingDays = 30, startMarketCapUsd = 25_000 }) {
     if (!this.enabled) throw Object.assign(new Error('The launchpad is not configured (no factory address)'), { status: 503 });
     creator = getAddress(creator);
     const salt = keccak256(toHex(`${creator}:${name}:${Date.now()}`));
     const vault = await this.client.readContract({ address: this.factory, abi: factoryAbi, functionName: 'predictVault', args: [creator, salt] });
-    const uri = appUri({ name, description, image, experience });
+    if (node !== null && node !== '' && !/^https?:\/\/[^\s/]+(:\d+)?\/?$/.test(String(node))) throw Object.assign(new Error('The node must be a URL like http://1.2.3.4:3381'), { status: 400 });
+    const uri = appUri({ name, description, image, experience, node: node || null });
     const params = { owner: getAddress(owner ?? creator), keeper: getAddress(keeper ?? creator), billingPeriod: String(billingDays * 86_400), uri, salt };
     const out = { chainId: this.chainId, factory: this.factory, vault, params };
     if (coin) {
@@ -256,6 +370,28 @@ export class Launchpad {
 
   status() {
     return { enabled: this.enabled, factory: this.factory, chainId: this.chainId, synced: getState(this.db, this.stateKey), error: this.lastError };
+  }
+
+  /**
+   * Is this server's chain indexer keeping up? Healthy needs a recent successful pass and a small lag.
+   * A running process with an old cursor is not healthy.
+   */
+  indexerStatus(now = Date.now()) {
+    if (!this.enabled) return { state: 'off', reason: 'No launchpad contract is configured.' };
+    const synced = getState(this.db, this.stateKey);
+    const events = getState(this.db, this.vaultKey);
+    const cursor = synced === null ? null : Number(synced);
+    const lag = this.head !== null && cursor !== null ? Math.max(0, this.head - cursor) : null;
+    const staleMs = Math.max(6 * this.intervalMs, 60_000);
+    let state = 'ok';
+    let reason = 'Indexed up to the chain head.';
+    if (this.lastSyncAt === null) { state = 'unknown'; reason = this.lastError ? `No successful pass yet: ${this.lastError}` : 'No successful pass yet.'; }
+    else if (now - this.lastSyncAt > staleMs) { state = 'stale'; reason = `Last successful pass ${Math.round((now - this.lastSyncAt) / 1000)} s ago${this.lastError ? `: ${this.lastError}` : ''}.`; }
+    else if (lag !== null && lag > 50) { state = 'behind'; reason = `${lag} blocks behind the chain head.`; }
+    return {
+      state, reason, chainId: this.chainId, cursor, vaultEventsCursor: events === null ? null : Number(events), head: this.head, lag,
+      lastSyncAt: this.lastSyncAt, error: this.lastError, errorAt: this.lastErrorAt,
+    };
   }
 }
 

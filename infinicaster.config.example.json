@@ -46,5 +46,16 @@
   "keeper": {
     "vault": null
   },
+  "masterNodes": [
+    {
+      "id": "master",
+      "label": "Farline master node",
+      "network": "farcaster",
+      "url": "http://46.225.208.199:3381",
+      "operator": "Infinicaster",
+      "host": "Hetzner cax31, Nuremberg",
+      "apps": []
+    }
+  ],
   "port": 8787
 }

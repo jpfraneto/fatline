@@ -1,36 +1,25 @@
 :root {
-  --bg: #f6f3ee;
-  --surface: #fffdf9;
-  --text: #1d1b16;
-  --muted: #6f695d;
-  --line: #e4ded2;
-  --accent: #b5761a;
-  --accent-ink: #fff;
-  --voice: #8a5a12;
-  --cast: #5a4a8a;
-  --warn: #9a3b2a;
-  --ok: #2f6b3c;
-  --radius: 14px;
+  /* Farline: a quiet observation window. One palette, deep midnight. */
+  --bg: #111820;
+  --surface: #151e27;
+  --raise: #1a2530;
+  --text: #F3F0E8;
+  --muted: #8d9fa8; /* #667D89 lifted for small text contrast */
+  --slate: #667D89;
+  --line: rgba(102, 125, 137, 0.28);
+  --signal: #A6D8C2;
+  --accent: #A6D8C2;
+  --accent-ink: #111820;
+  --voice: #d9c79c;
+  --cast: #a9b8e8;
+  --warn: #e59a88;
+  --amber: #d9c38c;
+  --ok: #A6D8C2;
+  --radius: 12px;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #16140f;
-    --surface: #1f1c16;
-    --text: #eee8dc;
-    --muted: #a39b8b;
-    --line: #332e25;
-    --accent: #e8b14a;
-    --accent-ink: #16140f;
-    --voice: #e8b14a;
-    --cast: #b3a3e6;
-    --warn: #f08c74;
-    --ok: #8fd39d;
-    color-scheme: dark;
-  }
+  --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -49,8 +38,8 @@ body {
 a { color: inherit; }
 button, input, textarea { font: inherit; color: inherit; }
 
-.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
-.brand { display: flex; flex-direction: column; }
+.top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.brand { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .name { font: 600 22px/1.1 var(--serif); text-decoration: none; letter-spacing: -0.01em; }
 .tagline { color: var(--muted); font-size: 13px; }
 .controls { display: flex; gap: 8px; align-items: center; }
@@ -123,7 +112,7 @@ h2.flush { margin: 0; color: var(--text); font-size: 18px; }
   color: var(--accent-ink); font-weight: 600; white-space: nowrap;
 }
 .small { font-size: 13px; }
-.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; overflow-wrap: anywhere; }
+.mono { font-family: var(--mono); font-size: 12px; overflow-wrap: anywhere; }
 
 .apps { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
 .app-card { display: block; text-decoration: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
@@ -202,3 +191,103 @@ button.link:disabled { opacity: .5; cursor: default; }
 .hint { font-size: 14px; }
 .as { font-size: 13px; margin: 0 0 6px; }
 .status.inline:empty { display: none; }
+
+/* ---------- Farline: coin and node pages ---------- */
+.farline-page { letter-spacing: 0.005em; }
+.eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--slate); }
+.coin-head { margin: 8px 0 8px; }
+.coin-name { font: 500 34px/1.1 var(--serif); margin: 0 0 8px; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.coin-name .sym { color: var(--slate); font-weight: 400; }
+.lede { margin: 0 0 14px; color: var(--muted); }
+h2.section { font: 500 12px var(--sans); letter-spacing: 0.14em; text-transform: uppercase; color: var(--slate); margin: 40px 0 12px; padding-top: 14px; border-top: 1px solid var(--line); }
+h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
+.fine { font-size: 13px; color: var(--muted); margin: 6px 0; }
+.warn-text { color: var(--warn); }
+.banner { border: 1px solid var(--amber); color: var(--amber); border-radius: var(--radius); padding: 10px 14px; font-size: 13px; margin: 0 0 16px; }
+
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px 24px; margin: 14px 0 0; }
+.facts div { min-width: 0; }
+.facts dt { font-size: 12px; color: var(--slate); margin-bottom: 2px; }
+.facts dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.facts dd.fine { font-size: 12px; margin-top: 2px; }
+.facts.ident { grid-template-columns: 1fr; gap: 10px; }
+.facts a.mono, .facts .mono { font-size: 12.5px; color: var(--text); text-decoration-color: var(--line); text-underline-offset: 3px; }
+.big-num { font: 500 26px/1.2 var(--serif) !important; }
+
+/* The node, large: the centerpiece. */
+.node-status { position: relative; padding: 22px 20px 20px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(180deg, var(--surface), var(--bg)); margin-bottom: 14px; }
+.node-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--muted); }
+.node-net { color: var(--slate); text-transform: capitalize; }
+.state-word { display: flex; align-items: center; gap: 12px; margin: 10px 0 4px; font: 400 42px/1.05 var(--serif); letter-spacing: -0.015em; }
+.state-word.dim { font-size: 24px; color: var(--muted); }
+.reason { margin: 4px 0 0; color: var(--muted); font-size: 15px; min-height: 1.2em; }
+.lamp { width: 12px; height: 12px; border-radius: 50%; background: var(--slate); flex: none; }
+.lamp.small { width: 8px; height: 8px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+.online .lamp { background: var(--signal); box-shadow: 0 0 0 4px rgba(166, 216, 194, 0.14); }
+.degraded .lamp { background: var(--amber); }
+.offline .lamp { background: var(--warn); }
+.ok > .row-line .lamp { background: var(--signal); }
+.behind > .row-line .lamp, .stale > .row-line .lamp { background: var(--amber); }
+.online .state-word { color: var(--text); }
+.offline .state-word { color: var(--warn); }
+.degraded .state-word { color: var(--amber); }
+.unknown .state-word { color: var(--muted); }
+
+/* The signal line: a pulse along a fine line. Speed follows health; it stops when telemetry is stale. */
+.signal { display: block; width: 100%; height: 48px; margin: 14px 0 6px; overflow: visible; }
+.signal path { fill: none; stroke-linecap: round; }
+.signal .base { stroke: var(--slate); stroke-opacity: 0.45; stroke-width: 1; }
+.signal .pulse { stroke: var(--signal); stroke-width: 1.6; stroke-dasharray: 70 530; stroke-dashoffset: 600; opacity: 0; }
+.signal .end { fill: var(--slate); }
+.signal.online .pulse { opacity: 1; animation: farline-flow 3.2s linear infinite; animation-delay: var(--phase, 0s); }
+.signal.online .end { fill: var(--signal); animation: farline-breathe 3.2s ease-in-out infinite; animation-delay: var(--phase, 0s); }
+.signal.degraded .pulse { opacity: 0.8; stroke: var(--amber); animation: farline-flow 9s linear infinite; animation-delay: var(--phase, 0s); }
+.signal.degraded .end { fill: var(--amber); }
+.signal.offline .base { stroke: var(--warn); stroke-opacity: 0.5; }
+.signal.offline .end { fill: var(--warn); }
+.signal.unknown .base { stroke-dasharray: 2 6; }
+@keyframes farline-flow { from { stroke-dashoffset: 600; } to { stroke-dashoffset: -70; } }
+@keyframes farline-breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .signal .pulse, .signal .end { animation: none !important; }
+  .signal.online .pulse, .signal.degraded .pulse { stroke-dasharray: none; stroke-dashoffset: 0; opacity: 0.85; }
+}
+
+.indexer { padding: 12px 16px; border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 8px; }
+.indexer p { margin: 0; }
+.indexer .fine { margin-top: 4px; }
+.row-line { font-size: 14px; }
+.fresh { font-size: 12px; color: var(--slate); margin: 6px 2px 0; }
+.fresh.lost { color: var(--amber); }
+
+.events { list-style: none; margin: 0; padding: 0; }
+.ev { display: grid; grid-template-columns: 9.5em 1fr auto; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; align-items: baseline; }
+.ev time { color: var(--slate); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.ev span { overflow-wrap: anywhere; }
+.ev .tx { color: var(--slate); font-size: 12px; text-decoration: none; }
+.ev.node.online span, .ev.node.recovered span, .ev.node.synced span { color: var(--signal); }
+.ev.node.offline span { color: var(--warn); }
+.ev.node.degraded span { color: var(--amber); }
+.more-ev { margin-top: 12px; }
+.treasury { padding: 2px 0; }
+.facts.money { margin-top: 0; }
+.facts.totals { padding-top: 14px; border-top: 1px solid var(--line); }
+.stable { margin-top: 8px; }
+.technical { margin-top: 36px; }
+.node-apps { padding-left: 18px; }
+
+/* The main page's strip: every node this server watches. */
+.strip { display: grid; gap: 8px; margin: 4px 0 22px; }
+.strip-node { display: grid; grid-template-columns: 1fr; text-decoration: none; padding: 12px 16px 4px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.strip-node:hover { border-color: var(--slate); }
+.strip-main { font-size: 15px; }
+.strip-sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.strip .signal { height: 26px; margin: 4px 0 0; }
+
+@media (max-width: 520px) {
+  .state-word { font-size: 34px; }
+  .coin-name { font-size: 28px; }
+  .node-status { padding: 18px 16px 16px; }
+  .ev { grid-template-columns: 1fr auto; gap: 2px 10px; }
+  .ev time { grid-column: 1 / -1; }
+}
