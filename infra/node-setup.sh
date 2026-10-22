@@ -4,7 +4,10 @@
 #
 #   INFINICASTER_BLOCKS=1day     keep this much block history (Snapchain pruning.block_retention); "all" keeps everything
 #   INFINICASTER_SNAPSHOT=stream    stream the starting snapshot straight to disk (needs ~1 copy of space, ~600 GB)
-#                        replicate copy only the current state from other nodes, no old blocks (smallest; experimental)
+#                        replicate copy only the current state from other nodes, no old blocks (experimental; does NOT
+#                                  finish on mainnet today: Snapchain's replication refuses KeyAdd/KeyRemove messages,
+#                                  so the copy fails at the first account that has one. Tested 2026-10-22. A full
+#                                  replica would also be ~300-400 GB and take ~11-15 h from a synced source.)
 #                        snapchain use Snapchain's own download (keeps ~3 copies at its peak)
 #   INFINICASTER_REPLICATION_PEERS=http://IP:3383[,http://IP2:3383]
 #                        with replicate: which nodes to copy state from. Snapchain's default is rho.farcaster.xyz,
@@ -74,11 +77,21 @@ else
   grep -q '^SKIP_CRONTAB=' .env || echo 'SKIP_CRONTAB=true' >> .env
 fi
 
+# A replicated copy that didn't finish can't be resumed: Snapchain keeps it in .rocks/.snapshot, and it only
+# copies when .rocks is empty. Started again, it would skip the copy and run on the partial data. So start over.
+if [ "$SNAPSHOT" = replicate ] && [ ! -f .replicate-done ] && [ -n "$(ls -A .rocks 2>/dev/null)" ]; then
+  say "An earlier copy didn't finish; deleting it and starting the copy over"
+  docker compose stop snapchain >/dev/null 2>&1 || true
+  rm -rf .rocks && mkdir -p .rocks
+fi
+
 # 5. Our settings live in an override file that Snapchain's upgrades never touch.
 {
   echo "# Written by Infinicaster (infra/node-setup.sh)."
   echo "services:"
   echo "  snapchain:"
+  # While copying, a failed copy must stop the node: restarted, Snapchain would run on the partial data.
+  if [ "$SNAPSHOT" = replicate ] && [ ! -f .replicate-done ]; then echo '    restart: "no"'; fi
   echo "    environment:"
   if [ "$BLOCKS" != all ]; then echo "      SNAPCHAIN_PRUNING__BLOCK_RETENTION: \"$BLOCKS\""; fi
   echo "      SNAPCHAIN_SNAPSHOT__LOAD_DB_FROM_SNAPSHOT: \"$([ "$SNAPSHOT" = snapchain ] && echo true || echo false)\""
@@ -187,6 +200,29 @@ fi
 # 7. Start it. Snapchain's script installs the compose file, Grafana and its weekly auto-upgrade.
 say "Starting Snapchain"
 setsid nohup ./snapchain.sh upgrade < /dev/null > upgrade.log 2>&1 &
+if [ "$SNAPSHOT" = replicate ] && [ ! -f .replicate-done ]; then
+  # The copy takes hours (we measured ~17k messages/s on 4 cores, ~15 h for mainnet). Follow Snapchain's log.
+  # Its source node must keep its copy point for that long: points older than 24 h are dropped mid-copy.
+  say "Copying the current state from ${INFINICASTER_REPLICATION_PEERS:-the default peers}"
+  sleep 60
+  while true; do
+    logs=$(docker compose logs --no-color --since 70s snapchain 2>&1 | sed 's/\x1b\[[0-9;]*m//g')
+    if grep -q "Bootstrap using replication was successful" <<<"$logs"; then
+      touch .replicate-done
+      sed -i '/restart: "no"/d' docker-compose.override.yml
+      docker update --restart unless-stopped "$(docker compose ps -q snapchain)" >/dev/null
+      say "Copy finished"; break
+    fi
+    if grep -qE "Replication bootstrap failed|Replication bootstrap stopped" <<<"$logs" \
+       || [ -z "$(docker compose ps -q --status running snapchain)" ]; then
+      grep -A3 -E "ERROR" <<<"$logs" | tail -8
+      echo "The copy failed. Snapchain was stopped so it doesn't run on partial data. Re-run this script to start the copy over."
+      exit 1
+    fi
+    grep "merged" <<<"$logs" | tail -2 | sed 's/.*service: /  /'
+    sleep 60
+  done
+fi
 for _ in $(seq 1 60); do
   curl -fsS http://127.0.0.1:3381/v1/info >/dev/null 2>&1 && break
   sleep 10
