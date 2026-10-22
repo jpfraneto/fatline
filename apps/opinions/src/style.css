@@ -54,6 +54,7 @@ button, input, textarea { font: inherit; color: inherit; }
 .source, .life { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
 .source::before { content: "●"; margin-right: 6px; color: var(--muted); }
 .source.own::before { color: var(--ok); }
+.source.behind::before { color: var(--amber); }
 .life { margin-top: 4px; }
 .life.dead { color: var(--warn); }
 

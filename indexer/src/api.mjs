@@ -183,6 +183,8 @@ export class Api {
 
     const results = await Promise.allSettled(fids.map((fid) => this.casts(network, { fid, before, limit, replies })));
     const errors = results.filter((r) => r.status === 'rejected').map((r) => r.reason.message);
+    // With no FIDs nothing was read from the node, so check it now: the source line must carry real sync state.
+    if (!fids.length && network.pinnedTo) await network.node().catch(() => {});
     const source = results.find((r) => r.status === 'fulfilled')?.value.source
       ?? (fids.length ? null : network.current && network.source(network.current));
     // A chosen node that fails is an error, not a quiet empty feed.

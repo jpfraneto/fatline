@@ -2,6 +2,7 @@
 //   node test/layout.mjs <base url> [path ...]     e.g. node test/layout.mjs http://localhost:8787 "#/" "#/coin/8453/0x…"
 // For each width (phone, tablet, desktop) it loads the page with device emulation, waits for data,
 // fails if anything scrolls sideways, and saves a full-page screenshot next to this file's output dir.
+// LAYOUT_STORAGE='{"network":"hypersnap"}' presets the page's localStorage (values are JSON-encoded like lib.js store).
 import { spawn } from 'node:child_process';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -11,6 +12,7 @@ const CHROME = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/M
 const WIDTHS = [[360, 'phone-small'], [390, 'phone'], [768, 'tablet'], [1280, 'desktop']];
 const [base, ...paths] = process.argv.slice(2);
 if (!base) { console.error('usage: node test/layout.mjs <base url> [hash path ...]'); process.exit(1); }
+const preset = JSON.parse(process.env.LAYOUT_STORAGE ?? '{}');
 const out = process.env.LAYOUT_OUT ?? mkdtempSync(join(tmpdir(), 'farline-layout-'));
 
 const chrome = spawn(CHROME, ['--headless=new', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${mkdtempSync(join(tmpdir(), 'chrome-'))}`, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
@@ -39,6 +41,7 @@ for (const path of paths.length ? paths : ['#/']) {
     const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
     await send('Emulation.setDeviceMetricsOverride', { width, height: 900, deviceScaleFactor: 2, mobile: width < 600 }, sessionId);
     await send('Page.enable', {}, sessionId);
+    if (Object.keys(preset).length) await send('Page.addScriptToEvaluateOnNewDocument', { source: `for (const [k, v] of Object.entries(${JSON.stringify(preset)})) localStorage.setItem(k, JSON.stringify(v));` }, sessionId);
     await send('Page.navigate', { url: base + path }, sessionId);
     await sleep(4000); // first data from the API
     const { result } = await send('Runtime.evaluate', {

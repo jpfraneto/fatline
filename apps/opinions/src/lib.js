@@ -60,7 +60,8 @@ export function showSource(source) {
   if (!source.chosen && before && before !== name) text += ` ${t('switched', before)}`;
   if (!source.chosen) lastAuto[source.network] = name;
   node.textContent = text;
-  node.classList.toggle('own', Boolean(source.own));
+  node.classList.toggle('own', Boolean(source.own) && source.blockDelay != null); // green only once sync is known
+  node.classList.toggle('behind', source.blockDelay > 200); // amber even on your own node: behind is not healthy
   node.classList.toggle('switched', Boolean(!source.chosen && before && before !== name));
   node.hidden = false;
 }
