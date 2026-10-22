@@ -257,4 +257,18 @@ Anvil's well-known test keys have EIP-7702 code on Base mainnet, so USDC rejects
 
 ## License
 
-MIT for the original code in this repository (see [LICENSE](LICENSE)). Clanker, Uniswap, the node software and other dependencies keep their own licenses.
+MIT for the original code in this repository (see [LICENSE](LICENSE)). Every Solidity file says so in its SPDX header.
+
+Dependencies keep their own licenses (checked 2026-10-22):
+
+| Dependency | Used by | License |
+| --- | --- | --- |
+| [viem](https://github.com/wevm/viem) 2.57.7 | indexer, app, infra | MIT |
+| [@farcaster/core](https://github.com/farcasterxyz/hub-monorepo) 0.20 | indexer (signing messages) | MIT |
+| [clanker-sdk](https://www.npmjs.com/package/clanker-sdk) 4.2.19 | indexer (building launches) | MIT |
+| [vite](https://github.com/vitejs/vite) 8.0.13 | app build (dev only) | MIT |
+| [forge-std](https://github.com/foundry-rs/forge-std) | contract tests | MIT or Apache-2.0 |
+| [Snapchain](https://github.com/farcasterxyz/snapchain) | the Farcaster node | GPL-3.0 |
+| [Hypersnap](https://github.com/farcasterorg/hypersnap) | the Hypersnap node | GPL-3.0 |
+
+The node software is not part of this repository. `./infinicaster node` downloads each project's own published scripts and Docker images when you install, so their GPL-3.0 code runs under its own license. Clanker and Uniswap contracts are called onchain, not copied.
