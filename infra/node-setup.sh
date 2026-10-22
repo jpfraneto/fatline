@@ -95,17 +95,18 @@ fi
 #    The three shards stream at the same time (each is its own .tar.gz), which is ~2-3x faster.
 #    Each ~70 MB piece is downloaded whole to a temporary file first, then fed to the unpacker in order.
 #    (Piping curl straight in breaks the stream when a download is cut and retried: that corrupted the
-#    gzip data on our first real run.) A few pieces download ahead, so at most ~0.5 GB sits in .parts/.
+#    gzip data on our first real run.) Pieces download ahead, so at most ~1.7 GB per shard sits in .parts/.
 fetch_piece() {
-  local url=$1 out=$2
-  # R2 sometimes leaves a connection open with no data: abort below 1 MB/s for 30 s, then retry.
-  local try
-  for try in 1 2 3 4 5 6; do
-    if curl -fsS --connect-timeout 20 --speed-limit 1000000 --speed-time 30 --max-time 900 \
-         --retry 5 --retry-delay 5 --retry-all-errors -o "$out.tmp" "$url"; then
-      mv "$out.tmp" "$out"; return 0
+  local url=$1 out=$2 try
+  # Pieces Cloudflare hasn't cached come slowly (we measured 0.1-4 MB/s per connection), so:
+  # resume a cut download instead of starting over (-C -), give up on a connection only below 100 KB/s
+  # for 60 s, and keep trying. Many pieces download at once, so a slow one doesn't slow the whole shard.
+  for try in $(seq 1 30); do
+    if curl -fsS -C - --connect-timeout 20 --speed-limit 100000 --speed-time 60 --max-time 1800 \
+         -o "$out.tmp" "$url" 2>>"$out.log"; then
+      mv "$out.tmp" "$out"; rm -f "$out.log"; return 0
     fi
-    sleep $((try * 5))
+    sleep $(( try < 6 ? try * 5 : 30 ))
   done
   touch "$out.failed"
 }
@@ -118,10 +119,10 @@ stream_shard() {
   echo "shard $shard: streaming $total pieces of ~70 MB from $key"
   rm -rf ".rocks/shard-$shard" "$parts"; mkdir -p "$parts"
   mapfile -t chunks < <(echo "$meta" | jq -r '.chunks[]')
-  # Downloader: up to 4 pieces at once, never more than 8 waiting on disk.
+  # Downloader: up to 12 pieces at once, never more than 24 waiting on disk (~1.7 GB per shard).
   (
     for chunk in "${chunks[@]}"; do
-      while [ "$(ls "$parts" | wc -l)" -ge 8 ] || [ "$(jobs -rp | wc -l)" -ge 4 ]; do sleep 0.5; done
+      while [ "$(ls "$parts" | grep -vc '\.log$')" -ge 24 ] || [ "$(jobs -rp | wc -l)" -ge 12 ]; do sleep 0.5; done
       fetch_piece "$SNAPSHOT_BUCKET/$key/$chunk" "$parts/$chunk" &
     done
     wait

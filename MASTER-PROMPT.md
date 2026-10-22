@@ -39,16 +39,32 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 
 ### The master node (created 2026-10-22 01:48 UTC, stays up)
 - **Hetzner `cax31` (ARM, 8 CPU, 16 GB RAM) + 700 GB volume in nbg1, ~$2.75/day.** Server 171726570 at **46.225.208.199**. Record in `.infinicaster/hetzner.json`.
-- The owner's decision: **it stays up.** It is the master node of Infinicaster, and will be tied to $INFINICASTER (each node can be tied to an app running from it). Budget: $15 loaded ≈ 5 days.
-- Why cax31 and not cx43: cx43 was sold out in every location (`error during placement`). Snapchain and statsd both publish arm64 images. `hetzner.mjs` now checks stock before creating anything and resumes a half-finished run.
-- Bug fixed before it cost anything: the snapshot chunk URLs repeated `FARCASTER_NETWORK_MAINNET/` and would all have been 404. The three shards now stream in parallel (~95 MB/s measured).
+- The owner's decision: **it stays up.** It is the master node of Infinicaster and will be tied to $INFINICASTER (each node can be tied to an app running from it).
+- Why cax31 and not cx43: cx43 was sold out in every location (`error during placement`). Snapchain and statsd both publish arm64 images. `hetzner.mjs` checks stock before creating anything and resumes a half-finished run.
 - SSH: `ssh -i .infinicaster/ssh_ed25519 root@46.225.208.199`. Status: `./infinicaster compute hetzner status`.
 
-### Next, in order
-1. Snapshot finishes → Snapchain starts → catch up → `blockDelay` small on every shard. Measure real disk use.
-2. Check it serves `ReplicationService` on :3383. Snapchain takes a replication snapshot on its first block if it has none (`replicator.rs`), so no 8-hour wait is expected.
-3. Minimal node on the AgentMetal server: `INFINICASTER_SNAPSHOT=replicate INFINICASTER_REPLICATION_PEERS=http://46.225.208.199:3383`. Measure its disk and time.
-4. Point the client at both nodes; update README, STORY, this file.
+### The Hypersnap node (created 2026-10-22 03:57 UTC by session infinicaster-ea)
+- **Hetzner `cax21` (ARM, 4 CPU, 8 GB RAM + 16 GB swap) + 685 GB volume in nbg1**, server 171737914 at **2.31.51.183**. Record in `.infinicaster/hetzner-hypersnap.json`; `compute hetzner status/down` include it (servers are deleted before volumes).
+- It streams the same 2026-10-21 snapshot with `infra/hypersnap-setup.sh`. It is **below Hypersnap's stated 1.5 TB / 16 GB**; watch its disk.
+- **Account limits (Hetzner):** 1,385 GB of volumes in total, 14 shared vCPU, and the account is "too new" to raise them. So no 1 TB volume and no cax41.
+- **Money:** both nodes ~$4.96/day against ~$14.6 left (2026-10-22 ~04:00 UTC), enough to ~2026-10-25 01:00 UTC. Card auto-reload is off. `infra/budget-alert.mjs` posts a low-balance warning to Telegram.
+
+### What the snapshot taught us (four bugs on the real run, all fixed in `infra/node-setup.sh`)
+1. Chunk URLs repeated `FARCASTER_NETWORK_MAINNET/` → every download 404. Caught before paying.
+2. Piping curl straight into gunzip: a cut download was retried, but its partial bytes were already in the stream → corrupted gzip, all shards dead after ~1 h. Now each piece goes to a temporary file first.
+3. Downloads hung on dead connections with no timeout. Then, after ~180 GB at full speed, uncached pieces came at 0.1–4 MB/s per connection, so a "1 MB/s or restart" rule could never finish them. Now: resume (`-C -`), give up only below 100 KB/s for 60 s, 12 downloads at once per shard. Measured 133 MB/s after the change.
+4. The unpack loop ended with `[ … ] && echo`. With `pipefail`, every fully unpacked shard was reported as failed (piece counts aren't multiples of 100).
+- Fourth run started 04:10 UTC with shard 0 kept (372 pieces, 37 GB unpacked).
+
+### Overnight orders (from infinicaster-ea, the owner's coordinator)
+1. Master Snapchain synced (`blockDelay` small), real disk and RAM measured.
+2. `ReplicationService` answers on 46.225.208.199:3383. crackle:3383 and haatz:3383 time out from outside, so ours would be the only public replication source.
+3. J3: reboot the master once synced; it must come back on its own.
+4. Lite node on AgentMetal (5.161.202.175, paid until 23:09 UTC): `INFINICASTER_SNAPSHOT=replicate INFINICASTER_REPLICATION_PEERS=http://46.225.208.199:3383`. Measure disk and time.
+5. Farline adapter pointed at the master: `node --experimental-sqlite indexer/src/adapters/run.mjs --network farcaster --node http://46.225.208.199:3381 --label "Farcaster master node"`.
+
+### Farline archive (built 2026-10-22, three sessions)
+- Schema: `research/FARLINE-ARCHIVE.md` (approved, SQLite now). Archive module, API and page: session infinicaster-28. Network adapter `indexer/src/adapters/snapchain.mjs`: session infinicaster-c1. Tested on real crackle events and a live run (FID 18350: 4,824 messages in 8 s).
 
 ### Money and rented things right now
 - **AgentMetal server `srv_ty63heep40jd` (5.161.202.175)** is paid until 2026-10-22 23:09 UTC (4.20 USDC, no refunds). It's idle.
