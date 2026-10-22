@@ -114,8 +114,8 @@
 <p>它在第 0 步的机器上安装该网络的节点，并跟踪初始快照的传输（约 400 GB，大约 1 到 3 小时）。节点在 <code>/v1/info</code> 上应答后，就会成为 <code>fatline.config.json</code> 里你自己的节点，第 2 步就从它读取。一台服务器只放一个网络。</p>
 <div class="concept"><strong>读取节点和验证者。</strong>Snapchain 是 Farcaster 的网络软件，有一小组验证者对消息的顺序（区块）达成一致。你的节点是读取节点：跟随这些区块，保存每条消息的副本。你发帖时，节点检查消息并转发给验证者。读取从不需要验证者的许可。</div>
 <div class="concept"><strong>Farcaster 或 Hypersnap。</strong>Hypersnap 是 Snapchain 的社区分支。两者使用相同的 API，接受相同的签名消息。Hypersnap 保留完整历史；Farcaster 按每个账户的存储上限删除旧消息。默认没有偏向哪一个：由你选择。</div>
-<p><strong>初始快照：</strong>新节点从网络快照开始，而不是重放多年的区块。在租来的服务器上，快照被<strong>流式</strong>写入磁盘，三个分片同时进行：压缩后约 400 GB，共 5,695 块，解压后约 600 GB。磁盘上只保留一份。节点默认只保留一天的区块。</p>
-<p>我们的两个节点（2026-10-22 测量）：快照完成后，节点在仍落后 7 万到 10 万个区块时就开始应答，追赶速度约每分钟 270 个区块。完全同步所需的总时间：<span class="tag no">尚未测量</span>，节点同步后会写在这里。</p>
+<p><strong>初始快照：</strong>新节点从网络快照开始，而不是重放多年的区块。在租来的服务器上，快照被<strong>流式</strong>写入磁盘，三个分片同时进行：压缩后约 400 GB，分成 5,695 段下载，解压后约 600 GB。磁盘上只保留一份。节点默认只保留一天的区块。</p>
+<p>我们的两个节点（2026-10-22 测量）：快照完成后，节点在仍落后 7 万到 10 万个区块时就开始应答，追赶速度约每分钟 270 个区块。<strong>Farcaster：</strong>06:42 UTC 开始应答，12:25 UTC 完全同步，用时 <span class="tag ok">5 小时 43 分</span>。之后重启服务器：47 秒后重新应答，62 秒后恢复同步。<strong>Hypersnap：</strong>10:21 UTC 开始应答，随后停滞了五个半小时：Hypersnap 仓库中的验证者列表缺少 Farcaster 于 2026-10-22 生效的验证者变更（<a href="https://github.com/farcasterorg/hypersnap/issues/41">issue #41</a>）。我们的安装脚本现在改用 Snapchain 的列表，节点已恢复追赶。完全同步所需时间：<span class="tag no">尚未测量</span>。</p>
 <p><strong>为什么没有轻节点。</strong>轻节点会从另一个节点复制当前状态，而不是从快照开始。目前 Snapchain 和 Hypersnap 的复制器都拒绝添加和移除应用密钥的消息，所以副本无法跟踪哪些密钥属于哪个账户。而且完整副本仍有约 300–400 GB。如果太大，请看<a href="#follow">只复制你关注的账户</a>。</p>
 <p><strong>健康意味着同步，而不只是"在运行"。</strong>节点健康的标准是 <code>/v1/info</code> 显示每个分片的 <code>blockDelay</code> 都很小。端口开着不算。</p>
 
@@ -168,7 +168,7 @@
   <tr><td>按应用显示或隐藏 cast</td><td><span class="tag ok">可用</span>（真实数据：20 条中 20 条识别出应用）</td></tr>
   <tr><td>三条命令从零开始完整跑通</td><td><span class="tag no">未测试</span></td></tr>
   <tr><td>我们自己的节点应答，同步前标为"落后"</td><td><span class="tag ok">可用</span>，两个网络，2026-10-22</td></tr>
-  <tr><td>读取节点完全同步</td><td><span class="tag no">进行中</span>，正在追赶</td></tr>
+  <tr><td>读取节点完全同步</td><td><span class="tag ok">可用</span>，Farcaster：应答后 5 小时 43 分完成同步，重启后 62 秒恢复同步。Hypersnap：仍在追赶</td></tr>
   <tr><td>只复制选定账户（<code>follow</code>，不是节点）</td><td><span class="tag ok">可用</span>，真实节点，两个网络</td></tr>
   <tr><td>复制型（轻）节点</td><td><span class="tag no">目前不可行</span>：两个网络的复制器都拒绝密钥消息</td></tr>
   <tr><td>用真实账户注册密钥并发帖</td><td><span class="tag no">未测试</span></td></tr>

@@ -201,7 +201,7 @@
   <div class="concept"><strong>Farcaster or Hypersnap.</strong> Hypersnap is a community fork of Snapchain. Both speak the same API and accept the same signed messages. Hypersnap keeps the full history; Farcaster prunes old messages to each account's storage limit. Neither is the default here because it is better: you choose.</div>
   <h3>The starting snapshot</h3>
   <p>A new node starts from a snapshot of the network instead of replaying years of blocks. On a rented server, this setup <strong>streams</strong> it straight to disk, three shards at once: about 400 GB compressed, in 5,695 pieces, about 600 GB unpacked. Snapchain's own loader keeps up to three copies on disk at its peak; streaming keeps one. The node keeps one day of blocks by default (<code>pruning.block_retention</code>), not the whole history.</p>
-  <p>Our two nodes, measured on 2026-10-22: after the snapshot, each one answered while still 70,000 to 100,000 blocks behind, and caught up at about 270 blocks a minute. Total time to full sync: <span class="tag no">not measured yet</span>. We will put it here when our nodes get there.</p>
+  <p>Our two nodes, measured on 2026-10-22: after the snapshot, each one answered while still 70,000 to 100,000 blocks behind, and caught up at about 270 blocks a minute. <strong>Farcaster:</strong> answered at 06:42 UTC, fully in sync at 12:25 UTC: <span class="tag ok">5 h 43 min</span>. A reboot then took 47 s to answer and 62 s to be back in sync. <strong>Hypersnap:</strong> answered at 10:21 UTC, then stood still for five and a half hours: the validator list in Hypersnap's repository is missing Farcaster's validator change of 2026-10-22 (<a href="https://github.com/farcasterorg/hypersnap/issues/41">issue #41</a>). Our setup now takes the list from Snapchain, and the node moves again. Its time to full sync: <span class="tag no">not measured yet</span>.</p>
   <h3>Healthy means in sync, not just "running"</h3>
   <p>A node is healthy when <code>/v1/info</code> shows a small <code>blockDelay</code> on every shard. An open port is not enough. The client and its status page both use this rule.</p>
   <h3>Why there is no lite node</h3>
@@ -216,7 +216,7 @@
   <div class="concept"><strong>Farcaster o Hypersnap.</strong> Hypersnap es un fork comunitario de Snapchain. Las dos hablan la misma API y aceptan los mismos mensajes firmados. Hypersnap guarda toda la historia; Farcaster borra mensajes viejos según el límite de almacenamiento de cada cuenta. Ninguna es la opción por defecto por ser mejor: tú eliges.</div>
   <h3>El snapshot de partida</h3>
   <p>Un nodo nuevo parte de un snapshot de la red en vez de repetir años de bloques. En un servidor arrendado, esta instalación lo <strong>transmite</strong> directo al disco, tres shards a la vez: unos 400 GB comprimidos, en 5.695 piezas, unos 600 GB descomprimidos. El cargador de Snapchain guarda hasta tres copias en su peor momento; transmitiendo queda una. El nodo guarda un día de bloques por defecto (<code>pruning.block_retention</code>), no toda la historia.</p>
-  <p>Nuestros dos nodos, medidos el 2026-10-22: después del snapshot, cada uno respondió estando aún 70.000 a 100.000 bloques atrás, y se fue poniendo al día a unos 270 bloques por minuto. Tiempo total hasta sincronizar: <span class="tag no">aún sin medir</span>. Lo pondremos aquí cuando nuestros nodos lleguen.</p>
+  <p>Nuestros dos nodos, medidos el 2026-10-22: después del snapshot, cada uno respondió estando aún 70.000 a 100.000 bloques atrás, y se fue poniendo al día a unos 270 bloques por minuto. <strong>Farcaster:</strong> respondió a las 06:42 UTC y quedó sincronizado a las 12:25 UTC: <span class="tag ok">5 h 43 min</span>. Después, un reinicio tardó 47 s en responder y 62 s en volver a estar sincronizado. <strong>Hypersnap:</strong> respondió a las 10:21 UTC y luego se quedó quieto cinco horas y media: a la lista de validadores del repositorio de Hypersnap le falta el cambio de validadores de Farcaster del 2026-10-22 (<a href="https://github.com/farcasterorg/hypersnap/issues/41">issue #41</a>). Nuestra instalación ahora toma la lista de Snapchain, y el nodo avanza de nuevo. Su tiempo hasta sincronizar: <span class="tag no">aún sin medir</span>.</p>
   <h3>Sano significa sincronizado, no solo "corriendo"</h3>
   <p>Un nodo está sano cuando <code>/v1/info</code> muestra un <code>blockDelay</code> pequeño en cada shard. Un puerto abierto no basta. El cliente y su página de estado usan esta regla.</p>
   <h3>Por qué no hay un nodo liviano</h3>
@@ -392,7 +392,7 @@
     <tr><td>Renting the node's server on Hetzner</td><td><span class="tag ok">done once</span>, our own node, 2026-10-22</td></tr>
     <tr><td>All three commands, fresh, start to finish</td><td><span class="tag no">untested</span></td></tr>
     <tr><td>Our own nodes answering, shown as "behind" until in sync</td><td><span class="tag ok">works</span>, both networks, 2026-10-22</td></tr>
-    <tr><td>A read node fully in sync</td><td><span class="tag no">in progress</span>, catching up</td></tr>
+    <tr><td>A read node fully in sync</td><td><span class="tag ok">works</span> Farcaster: 5 h 43 min after it answered, back in sync 62 s after a reboot. Hypersnap: catching up</td></tr>
     <tr><td>Copying only chosen accounts (<code>follow</code>, not a node)</td><td><span class="tag ok">works</span> on real nodes, both networks</td></tr>
     <tr><td>Registering an app key and posting with a real account</td><td><span class="tag no">untested</span></td></tr>
     <tr><td>A replicating (lighter) node</td><td><span class="tag no">not possible today</span>: both networks' replicators refuse key messages</td></tr>
@@ -409,7 +409,7 @@
     <tr><td>Arrendar el servidor del nodo en Hetzner</td><td><span class="tag ok">hecho una vez</span>, nuestro nodo, 2026-10-22</td></tr>
     <tr><td>Los tres comandos, desde cero, de principio a fin</td><td><span class="tag no">sin probar</span></td></tr>
     <tr><td>Nuestros nodos respondiendo, marcados "atrasado" hasta sincronizar</td><td><span class="tag ok">funciona</span>, ambas redes, 2026-10-22</td></tr>
-    <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag no">en curso</span>, poniéndose al día</td></tr>
+    <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag ok">funciona</span> Farcaster: 5 h 43 min después de responder, sincronizado de nuevo 62 s después de un reinicio. Hypersnap: poniéndose al día</td></tr>
     <tr><td>Copiar solo algunas cuentas (<code>follow</code>, no es un nodo)</td><td><span class="tag ok">funciona</span> con nodos reales, ambas redes</td></tr>
     <tr><td>Registrar una llave y publicar con una cuenta real</td><td><span class="tag no">sin probar</span></td></tr>
     <tr><td>Un nodo replicador (más liviano)</td><td><span class="tag no">no es posible hoy</span>: los replicadores de ambas redes rechazan los mensajes de llaves</td></tr>
