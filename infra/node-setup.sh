@@ -87,18 +87,40 @@ fi
 # 6. The starting snapshot, streamed: download -> unzip -> unpack, one copy on disk.
 #    Snapchain's own loader keeps every compressed piece, then a full tar, then the database.
 #    The three shards stream at the same time (each is its own .tar.gz), which is ~2-3x faster.
+#    Each ~70 MB piece is downloaded whole to a temporary file first, then fed to the unpacker in order.
+#    (Piping curl straight in breaks the stream when a download is cut and retried: that corrupted the
+#    gzip data on our first real run.) A few pieces download ahead, so at most ~0.5 GB sits in .parts/.
+fetch_piece() {
+  local url=$1 out=$2
+  if curl -fsS --retry 10 --retry-delay 5 --retry-all-errors -o "$out.tmp" "$url"; then mv "$out.tmp" "$out"; else touch "$out.failed"; fi
+}
 stream_shard() {
-  local shard=$1 meta key total n=0
+  local shard=$1 meta key total n=0 parts=".parts/shard-$shard"
   [ -f ".snapshot-shard-$shard.done" ] && return 0
   meta=$(curl -fsS --retry 10 --retry-all-errors "$SNAPSHOT_URL/$shard/latest.json")
   key=$(echo "$meta" | jq -r .key_base)
   total=$(echo "$meta" | jq '.chunks | length')
   echo "shard $shard: streaming $total pieces of ~70 MB from $key"
-  rm -rf ".rocks/shard-$shard"
-  echo "$meta" | jq -r '.chunks[]' | while read -r chunk; do
+  rm -rf ".rocks/shard-$shard" "$parts"; mkdir -p "$parts"
+  mapfile -t chunks < <(echo "$meta" | jq -r '.chunks[]')
+  # Downloader: up to 4 pieces at once, never more than 8 waiting on disk.
+  (
+    for chunk in "${chunks[@]}"; do
+      while [ "$(ls "$parts" | wc -l)" -ge 8 ] || [ "$(jobs -rp | wc -l)" -ge 4 ]; do sleep 0.5; done
+      fetch_piece "$SNAPSHOT_BUCKET/$key/$chunk" "$parts/$chunk" &
+    done
+    wait
+  ) &
+  # Reader: hands each finished piece to gunzip | tar, in order, then deletes it.
+  for chunk in "${chunks[@]}"; do
+    until [ -f "$parts/$chunk" ]; do
+      [ -f "$parts/$chunk.failed" ] && { echo "shard $shard: piece $chunk failed after retries" >&2; exit 1; }
+      sleep 0.2
+    done
+    cat "$parts/$chunk"; rm -f "$parts/$chunk"
     n=$((n + 1)); [ $((n % 100)) -eq 0 ] && echo "  shard $shard: $n/$total" >&2
-    curl -fsS --retry 10 --retry-delay 10 --retry-all-errors "$SNAPSHOT_BUCKET/$key/$chunk"
   done | gunzip | tar -x -C .rocks
+  rm -rf "$parts"
   touch ".snapshot-shard-$shard.done"
   echo "shard $shard: done"
 }
