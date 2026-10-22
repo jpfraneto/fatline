@@ -92,38 +92,32 @@
   <section lang="en">
     <p class="eyebrow">Before you start</p>
     <ul>
-      <li><strong>git</strong> and <strong>Node.js 22.12 or newer</strong> on your computer.</li>
-      <li>To rent the node's server: a <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> account with a card, and an API token saved in <code>~/.hetzner-token</code> (<code>chmod 600</code>). Or a machine of your own with Docker, 16 GB of RAM and about 700 GB of free disk.</li>
+      <li><strong>git</strong>, <strong>Node.js 22.12 or newer</strong> and <strong>ssh</strong> on your computer.</li>
+      <li>A <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> account with a card, and an API token saved in <code>~/.hetzner-token</code> (<code>chmod 600</code>).</li>
+      <li>New Hetzner accounts have limits (ours: 1,385 GB of volumes and 14 vCPUs in total). One node needs a 700 GB volume, so one new account fits <strong>one</strong> full node. A Farcaster node and a Hypersnap node side by side need two servers and two volumes.</li>
       <li>To post: your Farcaster account's seed phrase, typed only into your own terminal.</li>
     </ul>
     <pre><code>git clone https://github.com/jpfraneto/infinicaster && cd infinicaster
 
-./infinicaster compute            <span class="c"># (0) rent a server that can hold a node (price first, then you say yes)</span>
+./infinicaster compute            <span class="c"># (0) rent a machine that can hold a node: price first, then you type "create"</span>
 ./infinicaster node farcaster     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
 ./infinicaster client             <span class="c"># (2) your client, reading from your node, on http://localhost:8787</span></code></pre>
-    <p class="note"><span class="tag no">status: being wired up</span> These three commands are being joined so each one hands off to the next. Until this label is gone, the path that works today is:</p>
-    <pre><code>./infinicaster compute hetzner                     <span class="c"># rents the server and starts a Farcaster node on it</span>
-./infinicaster init --node http://&lt;its IP&gt;:3381    <span class="c"># points your client at it</span>
-./infinicaster client</code></pre>
-    <p class="muted">On a machine of your own with Docker, <code>./infinicaster node farcaster</code> (or <code>node hypersnap</code>) installs the node right there.</p>
+    <p class="note"><span class="tag no">untested end to end</span> Each step has been run on its own. A complete fresh run of all three, start to finish, has not been done yet. Our own node was built with an earlier one-step version of steps 0 and 1.</p>
   </section>
   <section lang="es">
     <p class="eyebrow">Antes de empezar</p>
     <ul>
-      <li><strong>git</strong> y <strong>Node.js 22.12 o más nuevo</strong> en tu computador.</li>
-      <li>Para arrendar el servidor del nodo: una cuenta de <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> con tarjeta, y un token de API guardado en <code>~/.hetzner-token</code> (<code>chmod 600</code>). O una máquina tuya con Docker, 16 GB de RAM y unos 700 GB de disco libre.</li>
+      <li><strong>git</strong>, <strong>Node.js 22.12 o más nuevo</strong> y <strong>ssh</strong> en tu computador.</li>
+      <li>Una cuenta de <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> con tarjeta, y un token de API guardado en <code>~/.hetzner-token</code> (<code>chmod 600</code>).</li>
+      <li>Las cuentas nuevas de Hetzner tienen límites (la nuestra: 1.385 GB de volúmenes y 14 vCPU en total). Un nodo necesita un volumen de 700 GB, así que una cuenta nueva alcanza para <strong>un</strong> nodo completo. Un nodo de Farcaster y uno de Hypersnap lado a lado necesitan dos servidores y dos volúmenes.</li>
       <li>Para publicar: la frase semilla de tu cuenta de Farcaster, escrita solo en tu propia terminal.</li>
     </ul>
     <pre><code>git clone https://github.com/jpfraneto/infinicaster && cd infinicaster
 
-./infinicaster compute            <span class="c"># (0) arrienda un servidor capaz de tener un nodo (primero el precio, luego dices sí)</span>
+./infinicaster compute            <span class="c"># (0) arrienda una máquina capaz de tener un nodo: primero el precio, luego escribes "create"</span>
 ./infinicaster node farcaster     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
 ./infinicaster client             <span class="c"># (2) tu cliente, leyendo de tu nodo, en http://localhost:8787</span></code></pre>
-    <p class="note"><span class="tag no">estado: en conexión</span> Estamos uniendo estos tres comandos para que cada uno le pase el relevo al siguiente. Mientras esta etiqueta siga aquí, el camino que funciona hoy es:</p>
-    <pre><code>./infinicaster compute hetzner                     <span class="c"># arrienda el servidor y parte un nodo de Farcaster</span>
-./infinicaster init --node http://&lt;su IP&gt;:3381     <span class="c"># apunta tu cliente a él</span>
-./infinicaster client</code></pre>
-    <p class="muted">En una máquina tuya con Docker, <code>./infinicaster node farcaster</code> (o <code>node hypersnap</code>) instala el nodo ahí mismo.</p>
+    <p class="note"><span class="tag no">sin probar de punta a punta</span> Cada paso se ha corrido por separado. Una corrida nueva y completa de los tres, de principio a fin, todavía no se ha hecho. Nuestro propio nodo se armó con una versión anterior que juntaba los pasos 0 y 1.</p>
   </section>
 </div>
 
@@ -173,31 +167,29 @@
 <!-- ============================================================ STEP 0 -->
 <section id="machine" lang="en">
   <h2>Step 0: a machine for the node</h2>
-  <pre><code>./infinicaster compute hetzner --quote   <span class="c"># price only, nothing is created</span>
-./infinicaster compute hetzner           <span class="c"># asks you to type "create"</span></code></pre>
-  <p>It prints the price first and asks before creating anything. Then it creates an ARM server (8 CPUs, 16 GB of RAM) with an attached disk, copies <code>infra/node-setup.sh</code> to it, and starts that setup. Everything it creates is written to <code>.infinicaster/hetzner.json</code>, so it can be deleted exactly.</p>
-  <p>Hetzner sometimes runs out of a server type. The script checks stock before it creates anything, and tells you what is available.</p>
+  <pre><code>./infinicaster compute --quote   <span class="c"># price only, nothing is created</span>
+./infinicaster compute           <span class="c"># asks you to type "create"</span></code></pre>
+  <p>It picks the cheapest server type in stock with at least 16 GB of RAM (on 2026-10-22: <code>cax31</code>, 8 ARM CPUs), adds a 700 GB volume, prints the price and asks before creating anything. It rents the machine only; step 1 puts the node on it. Everything it creates is written to <code>.infinicaster/hetzner.json</code>, so it can be deleted exactly.</p>
   <div class="concept"><strong>Why rent at all?</strong> A Farcaster node holds every account's current messages: about 600 GB today. Most laptops don't have that much free disk.</div>
-  <p>Already have a machine with Docker, 16 GB of RAM and enough disk? Skip this step and run step 1 there. <code>./infinicaster doctor</code> measures your machine and tells you which path fits.</p>
+  <p>Already have a machine with Docker, 16 GB of RAM and about 700 GB free? Skip this step and use <code>./infinicaster node farcaster --local</code> there. <code>./infinicaster doctor</code> measures your machine and tells you which path fits.</p>
+  <p class="muted">Prefer paying in USDC? <code>./infinicaster compute --provider agentmetal</code> rents by the day over x402. <span class="tag no">untested</span> with real money.</p>
 </section>
 <section id="machine" lang="es">
   <h2>Paso 0: una máquina para el nodo</h2>
-  <pre><code>./infinicaster compute hetzner --quote   <span class="c"># solo el precio, no crea nada</span>
-./infinicaster compute hetzner           <span class="c"># te pide escribir "create"</span></code></pre>
-  <p>Primero muestra el precio y pregunta antes de crear algo. Luego crea un servidor ARM (8 CPU, 16 GB de RAM) con un disco adjunto, le copia <code>infra/node-setup.sh</code> y parte esa instalación. Todo lo que crea queda anotado en <code>.infinicaster/hetzner.json</code>, para poder borrarlo exacto.</p>
-  <p>A veces Hetzner se queda sin un tipo de servidor. El script revisa el stock antes de crear nada y te dice qué hay.</p>
+  <pre><code>./infinicaster compute --quote   <span class="c"># solo el precio, no crea nada</span>
+./infinicaster compute           <span class="c"># te pide escribir "create"</span></code></pre>
+  <p>Elige el tipo de servidor más barato con stock y al menos 16 GB de RAM (el 2026-10-22: <code>cax31</code>, 8 CPU ARM), le agrega un volumen de 700 GB, muestra el precio y pregunta antes de crear algo. Solo arrienda la máquina; el paso 1 le pone el nodo. Todo lo que crea queda anotado en <code>.infinicaster/hetzner.json</code>, para poder borrarlo exacto.</p>
   <div class="concept"><strong>¿Por qué arrendar?</strong> Un nodo de Farcaster guarda los mensajes vigentes de todas las cuentas: unos 600 GB hoy. A la mayoría de los computadores no le sobra tanto disco.</div>
-  <p>¿Ya tienes una máquina con Docker, 16 GB de RAM y disco suficiente? Sáltate este paso y corre el paso 1 ahí. <code>./infinicaster doctor</code> mide tu máquina y te dice qué camino te sirve.</p>
+  <p>¿Ya tienes una máquina con Docker, 16 GB de RAM y unos 700 GB libres? Sáltate este paso y usa <code>./infinicaster node farcaster --local</code> ahí. <code>./infinicaster doctor</code> mide tu máquina y te dice qué camino te sirve.</p>
+  <p class="muted">¿Prefieres pagar en USDC? <code>./infinicaster compute --provider agentmetal</code> arrienda por día vía x402. <span class="tag no">sin probar</span> con dinero real.</p>
 </section>
 
 <!-- ============================================================ STEP 1 -->
 <section id="node" lang="en">
   <h2>Step 1: your read node</h2>
-  <p>On a rented Hetzner server, step 0 already started the node. Follow it with:</p>
-  <pre><code>./infinicaster compute hetzner status</code></pre>
-  <p>On your own machine:</p>
   <pre><code>./infinicaster node farcaster    <span class="c"># or: ./infinicaster node hypersnap</span></code></pre>
-  <p>It downloads the official bootstrap script of that network, shows you its address and checksum, and asks before running it.</p>
+  <p>It installs that network's node on the machine from step 0 and follows the starting snapshot as it streams in (about 400 GB, roughly 1 to 3 hours). When the node answers on <code>/v1/info</code>, it becomes your own node in <code>infinicaster.config.json</code>, so step 2 reads from it. A server holds one network; it refuses to put the second one next to the first.</p>
+  <p>With <code>--local</code>, it installs on the machine you are on instead: it downloads that network's official bootstrap script, shows you its address and checksum, and asks before running it.</p>
   <div class="concept"><strong>Read nodes and validators.</strong> Snapchain, Farcaster's network software, has a small set of validators that agree on the order of messages, in blocks. Your node is a read node: it follows those blocks and keeps its own copy of every message. When you post, your node checks the message and relays it to the validators. You never need a validator's permission to read.</div>
   <div class="concept"><strong>Farcaster or Hypersnap.</strong> Hypersnap is a community fork of Snapchain. Both speak the same API and accept the same signed messages. Hypersnap keeps the full history; Farcaster prunes old messages to each account's storage limit. Neither is the default here because it is better: you choose.</div>
   <h3>The starting snapshot</h3>
@@ -205,16 +197,14 @@
   <p>How long the download and catch-up take: <span class="tag no">not measured yet</span>. We will put the real numbers from our own node here.</p>
   <h3>Healthy means in sync, not just "running"</h3>
   <p>A node is healthy when <code>/v1/info</code> shows a small <code>blockDelay</code> on every shard. An open port is not enough. The client and its status page both use this rule.</p>
-  <h3>A lighter node <span class="tag no">untested</span></h3>
-  <p>A replicating node copies only the current state from another node, without old blocks, so it needs less disk and time. It needs a node that serves replication (port 3383). We are testing this against our own node now.</p>
+  <h3>A lighter node <span class="tag no">coming</span></h3>
+  <p>A replicating node copies only the current state from another node, without old blocks, so it needs less disk and time. It needs a node that serves replication (port 3383). <code>node &lt;network&gt; --lite</code> is reserved for it; we are testing it against our own node first.</p>
 </section>
 <section id="node" lang="es">
   <h2>Paso 1: tu nodo de lectura</h2>
-  <p>En un servidor arrendado en Hetzner, el paso 0 ya partió el nodo. Síguelo con:</p>
-  <pre><code>./infinicaster compute hetzner status</code></pre>
-  <p>En tu propia máquina:</p>
   <pre><code>./infinicaster node farcaster    <span class="c"># o: ./infinicaster node hypersnap</span></code></pre>
-  <p>Descarga el script oficial de instalación de esa red, te muestra su dirección y su checksum, y pregunta antes de correrlo.</p>
+  <p>Instala el nodo de esa red en la máquina del paso 0 y sigue el snapshot de partida mientras llega (unos 400 GB, más o menos 1 a 3 horas). Cuando el nodo responde en <code>/v1/info</code>, queda como tu propio nodo en <code>infinicaster.config.json</code>, y el paso 2 lee de él. Un servidor tiene una sola red; no pone la segunda al lado de la primera.</p>
+  <p>Con <code>--local</code>, lo instala en la máquina donde estás: descarga el script oficial de esa red, te muestra su dirección y su checksum, y pregunta antes de correrlo.</p>
   <div class="concept"><strong>Nodos de lectura y validadores.</strong> Snapchain, el software de la red de Farcaster, tiene un grupo pequeño de validadores que acuerdan el orden de los mensajes, en bloques. Tu nodo es de lectura: sigue esos bloques y guarda su propia copia de cada mensaje. Cuando publicas, tu nodo revisa el mensaje y se lo pasa a los validadores. Nunca necesitas permiso de un validador para leer.</div>
   <div class="concept"><strong>Farcaster o Hypersnap.</strong> Hypersnap es un fork comunitario de Snapchain. Las dos hablan la misma API y aceptan los mismos mensajes firmados. Hypersnap guarda toda la historia; Farcaster borra mensajes viejos según el límite de almacenamiento de cada cuenta. Ninguna es la opción por defecto por ser mejor: tú eliges.</div>
   <h3>El snapshot de partida</h3>
@@ -222,16 +212,15 @@
   <p>Cuánto demoran la descarga y la puesta al día: <span class="tag no">aún sin medir</span>. Aquí pondremos los números reales de nuestro propio nodo.</p>
   <h3>Sano significa sincronizado, no solo "corriendo"</h3>
   <p>Un nodo está sano cuando <code>/v1/info</code> muestra un <code>blockDelay</code> pequeño en cada shard. Un puerto abierto no basta. El cliente y su página de estado usan esta regla.</p>
-  <h3>Un nodo más liviano <span class="tag no">sin probar</span></h3>
-  <p>Un nodo replicador copia solo el estado actual desde otro nodo, sin bloques viejos, así que necesita menos disco y tiempo. Necesita un nodo que sirva replicación (puerto 3383). Lo estamos probando contra nuestro propio nodo.</p>
+  <h3>Un nodo más liviano <span class="tag no">pronto</span></h3>
+  <p>Un nodo replicador copia solo el estado actual desde otro nodo, sin bloques viejos, así que necesita menos disco y tiempo. Necesita un nodo que sirva replicación (puerto 3383). <code>node &lt;red&gt; --lite</code> está reservado para eso; primero lo probamos contra nuestro propio nodo.</p>
 </section>
 
 <!-- ============================================================ STEP 2 -->
 <section id="client" lang="en">
   <h2>Step 2: your client</h2>
-  <pre><code>./infinicaster init --node http://&lt;your node's IP&gt;:3381
-./infinicaster client</code></pre>
-  <p>It installs, builds and starts the client on <a href="http://localhost:8787">http://localhost:8787</a>. Your phone can open it too, if it can reach your computer.</p>
+  <pre><code>./infinicaster client</code></pre>
+  <p>Step 1 already told it where your node is. (A node somewhere else? <code>./infinicaster init --node http://&lt;IP&gt;:3381</code>.) It installs, builds and starts the client on <a href="http://localhost:8787">http://localhost:8787</a>. Your phone can open it too, if it can reach your computer.</p>
   <p>The client always says which node it is reading from, at the top of the page. In <strong>Settings</strong> you choose the network (Farcaster or Hypersnap) and the node:</p>
   <ul>
     <li><strong>One node:</strong> every read and every post goes only through that node. If it goes down, you see an error naming it. The client never switches behind your back.</li>
@@ -241,9 +230,8 @@
 </section>
 <section id="client" lang="es">
   <h2>Paso 2: tu cliente</h2>
-  <pre><code>./infinicaster init --node http://&lt;IP de tu nodo&gt;:3381
-./infinicaster client</code></pre>
-  <p>Instala, compila y parte el cliente en <a href="http://localhost:8787">http://localhost:8787</a>. Tu teléfono también puede abrirlo si alcanza a tu computador.</p>
+  <pre><code>./infinicaster client</code></pre>
+  <p>El paso 1 ya le dijo dónde está tu nodo. (¿Un nodo en otra parte? <code>./infinicaster init --node http://&lt;IP&gt;:3381</code>.) Instala, compila y parte el cliente en <a href="http://localhost:8787">http://localhost:8787</a>. Tu teléfono también puede abrirlo si alcanza a tu computador.</p>
   <p>El cliente siempre dice desde qué nodo está leyendo, arriba de la página. En <strong>Ajustes</strong> eliges la red (Farcaster o Hypersnap) y el nodo:</p>
   <ul>
     <li><strong>Un nodo:</strong> toda lectura y toda publicación pasan solo por ese nodo. Si se cae, ves un error que lo nombra. El cliente nunca cambia a tus espaldas.</li>
@@ -293,8 +281,8 @@
   <h2>What it costs, and how to stop paying</h2>
   <div class="scroll"><table>
     <tr><th>Item</th><th>Price (Hetzner, checked 2026-10-22)</th></tr>
-    <tr><td>Server <code>cax31</code>: 8 ARM CPUs, 16 GB RAM</td><td>about $0.96 per day</td></tr>
-    <tr><td>Volume for the node's data (685 GB)</td><td>about $1.73 per day</td></tr>
+    <tr><td>Server <code>cax31</code> (8 ARM CPUs, 16 GB RAM) with a 700 GB volume</td><td>about $2.75 per day</td></tr>
+    <tr><td>A second node (the other network), on its own server and volume</td><td>about the same again</td></tr>
     <tr><td>Your client</td><td>free on your own computer</td></tr>
   </table></div>
   <p>Billed by the hour. <code>--quote</code> shows the exact price before anything is created.</p>
@@ -305,8 +293,8 @@
   <h2>Cuánto cuesta, y cómo dejar de pagar</h2>
   <div class="scroll"><table>
     <tr><th>Qué</th><th>Precio (Hetzner, revisado 2026-10-22)</th></tr>
-    <tr><td>Servidor <code>cax31</code>: 8 CPU ARM, 16 GB de RAM</td><td>unos USD 0,96 al día</td></tr>
-    <tr><td>Volumen para los datos del nodo (685 GB)</td><td>unos USD 1,73 al día</td></tr>
+    <tr><td>Servidor <code>cax31</code> (8 CPU ARM, 16 GB de RAM) con un volumen de 700 GB</td><td>unos USD 2,75 al día</td></tr>
+    <tr><td>Un segundo nodo (la otra red), en su propio servidor y volumen</td><td>más o menos lo mismo otra vez</td></tr>
     <tr><td>Tu cliente</td><td>gratis en tu propio computador</td></tr>
   </table></div>
   <p>Se cobra por hora. <code>--quote</code> muestra el precio exacto antes de crear algo.</p>
@@ -320,7 +308,7 @@
   <h3>"Sold out" when renting</h3>
   <p>The message lists the server types in stock in that location. Pick one with <code>--type</code>, or another location with <code>--location</code>.</p>
   <h3>The snapshot stopped</h3>
-  <p>Run step 0 or <code>infra/node-setup.sh</code> again. Finished shards are kept, and slow pieces are retried.</p>
+  <p>Run step 1 again. Finished shards are kept, and slow pieces are retried.</p>
   <h3>The client says the node you chose is not answering</h3>
   <p>That is on purpose: it never switches nodes without telling you. Check the node with <code>./infinicaster status</code> or <code>compute hetzner status</code>, or choose another node in Settings.</p>
   <h3>Everything else</h3>
@@ -331,7 +319,7 @@
   <h3>"Sold out" al arrendar</h3>
   <p>El mensaje lista los tipos de servidor con stock en esa ubicación. Elige uno con <code>--type</code>, u otra ubicación con <code>--location</code>.</p>
   <h3>El snapshot se detuvo</h3>
-  <p>Corre de nuevo el paso 0 o <code>infra/node-setup.sh</code>. Los shards terminados se conservan y las piezas lentas se reintentan.</p>
+  <p>Corre de nuevo el paso 1. Los shards terminados se conservan y las piezas lentas se reintentan.</p>
   <h3>El cliente dice que el nodo que elegiste no responde</h3>
   <p>Es a propósito: nunca cambia de nodo sin avisarte. Revisa el nodo con <code>./infinicaster status</code> o <code>compute hetzner status</code>, o elige otro en Ajustes.</p>
   <h3>Todo lo demás</h3>
@@ -359,6 +347,7 @@
     <tr><td>Choosing a node; a clear error when it is down</td><td><span class="tag ok">works</span> against real nodes</td></tr>
     <tr><td>Showing or hiding casts by app</td><td><span class="tag ok">works</span> on real data</td></tr>
     <tr><td>Renting the node's server on Hetzner</td><td><span class="tag ok">done once</span>, our own node, 2026-10-22</td></tr>
+    <tr><td>All three commands, fresh, start to finish</td><td><span class="tag no">untested</span></td></tr>
     <tr><td>A read node fully in sync</td><td><span class="tag no">in progress</span>, numbers coming</td></tr>
     <tr><td>Registering an app key and posting with a real account</td><td><span class="tag no">untested</span></td></tr>
     <tr><td>A replicating (lighter) node</td><td><span class="tag no">untested</span></td></tr>
@@ -373,6 +362,7 @@
     <tr><td>Elegir un nodo; un error claro si se cae</td><td><span class="tag ok">funciona</span> contra nodos reales</td></tr>
     <tr><td>Mostrar u ocultar casts según la app</td><td><span class="tag ok">funciona</span> con datos reales</td></tr>
     <tr><td>Arrendar el servidor del nodo en Hetzner</td><td><span class="tag ok">hecho una vez</span>, nuestro nodo, 2026-10-22</td></tr>
+    <tr><td>Los tres comandos, desde cero, de principio a fin</td><td><span class="tag no">sin probar</span></td></tr>
     <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag no">en curso</span>, vienen los números</td></tr>
     <tr><td>Registrar una llave y publicar con una cuenta real</td><td><span class="tag no">sin probar</span></td></tr>
     <tr><td>Un nodo replicador (más liviano)</td><td><span class="tag no">sin probar</span></td></tr>

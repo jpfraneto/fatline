@@ -8,15 +8,9 @@
 ./infinicaster client           # (2) your client, reading from your node; its vault comes from "Launch an app" in it
 ```
 
-**Status: being wired up.** These three commands are being joined so each one hands off to the next. Today, plain `compute` rents a small USDC server that can't hold a node, and nothing passes the node's address to the client. The path that works today:
+**Status:** each command has been run on its own; a fresh run of all three, start to finish, is untested. `compute` rents a node-capable Hetzner machine (price first, then you type "create"). `node <network>` installs that node there, follows the snapshot, and makes it your own node once it answers (`--local` installs on your own machine instead). `client` reads from it.
 
-```sh
-./infinicaster compute hetzner                    # rents a node-capable server and starts a Farcaster node on it
-./infinicaster init --node http://<its IP>:3381   # points your client at that node
-./infinicaster client
-```
-
-Before them: `git clone https://github.com/jpfraneto/infinicaster && cd infinicaster`. You need git and Node.js 22.12+, plus a Hetzner Cloud account and API token (`~/.hetzner-token`) to rent, or Docker on a machine of your own (`./infinicaster node farcaster` installs there). The vault step is proven on a local fork of Base only: `AppFactory` is not deployed on Base mainnet yet (see "Status" below). The tutorial is in [`apps/site/index.html`](apps/site/index.html), in English and Spanish.
+Before them: `git clone https://github.com/jpfraneto/infinicaster && cd infinicaster`. You need git, ssh and Node.js 22.12+, plus a Hetzner Cloud account with a card and an API token in `~/.hetzner-token`. New Hetzner accounts have limits (ours: 1,385 GB of volumes, 14 vCPUs), so one account fits one full node; Farcaster and Hypersnap side by side need two servers. Or use Docker on a machine of your own: `./infinicaster node farcaster --local`. The vault step is proven on a local fork of Base only: `AppFactory` is not deployed on Base mainnet yet (see "Status" below). The tutorial is in [`apps/site/index.html`](apps/site/index.html), in English and Spanish.
 
 Farline is where Infinicaster is going: infrastructure for autonomous apps, built on Farcaster identity, onchain money and software that keeps running on its own. The repository, the CLI (`./infinicaster`) and the contracts keep the Infinicaster name for now.
 
