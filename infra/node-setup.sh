@@ -92,7 +92,16 @@ fi
 #    gzip data on our first real run.) A few pieces download ahead, so at most ~0.5 GB sits in .parts/.
 fetch_piece() {
   local url=$1 out=$2
-  if curl -fsS --retry 10 --retry-delay 5 --retry-all-errors -o "$out.tmp" "$url"; then mv "$out.tmp" "$out"; else touch "$out.failed"; fi
+  # R2 sometimes leaves a connection open with no data: abort below 1 MB/s for 30 s, then retry.
+  local try
+  for try in 1 2 3 4 5 6; do
+    if curl -fsS --connect-timeout 20 --speed-limit 1000000 --speed-time 30 --max-time 900 \
+         --retry 5 --retry-delay 5 --retry-all-errors -o "$out.tmp" "$url"; then
+      mv "$out.tmp" "$out"; return 0
+    fi
+    sleep $((try * 5))
+  done
+  touch "$out.failed"
 }
 stream_shard() {
   local shard=$1 meta key total n=0 parts=".parts/shard-$shard"
