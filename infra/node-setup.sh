@@ -24,7 +24,13 @@ SHARDS="0 1 2"
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 
 # 1. Put the node's data on the biggest disk: an attached volume if there is one.
-VOLUME=$(ls -d /mnt/HC_Volume_* 2>/dev/null | head -1 || true)
+# With several volumes (e.g. a Hypersnap one on the same server): INFINICASTER_VOLUME wins, then the
+# volume that already holds a snapchain folder, then the first one.
+VOLUME="${INFINICASTER_VOLUME:-}"
+if [ -z "$VOLUME" ]; then
+  VOLUME=$(ls -d /mnt/HC_Volume_*/snapchain 2>/dev/null | head -1 | xargs -r dirname || true)
+  [ -n "$VOLUME" ] || VOLUME=$(ls -d /mnt/HC_Volume_* 2>/dev/null | head -1 || true)
+fi
 DATA="${VOLUME:-/root}/snapchain"
 mkdir -p "$DATA"
 # A volume added after an earlier run: move that run's (small) folder onto the volume.
