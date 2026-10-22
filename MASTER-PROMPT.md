@@ -33,7 +33,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 | J11 | At least one other human goes through it and vouches publicly on Farcaster | A real URL to their own post. **We never write it, post it, or invent it.** |
 | J12 | Extra mile (optional) | Spanish tutorial (required by us anyway), Chinese, a 59-second vertical video, more vouchers. |
 
-## Where we are (2026-10-22, ~02:00 UTC, overnight run)
+## Where we are (2026-10-22, ~07:15 UTC, overnight run)
 
 **Resume here.** The owner approved the master node and went to sleep. The agent runs the full pipeline overnight and posts each shipped update to the Infinicaster Telegram group (bot token in `~/.infinicaster-telegram-token`, chat id in `~/.infinicaster-telegram-chat`, both mode 600, never in the repo).
 
@@ -42,6 +42,12 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - The owner's decision: **it stays up.** It is the master node of Infinicaster and will be tied to $INFINICASTER (each node can be tied to an app running from it).
 - Why cax31 and not cx43: cx43 was sold out in every location (`error during placement`). Snapchain and statsd both publish arm64 images. `hetzner.mjs` checks stock before creating anything and resumes a half-finished run.
 - SSH: `ssh -i .infinicaster/ssh_ed25519 root@46.225.208.199`. Status: `./infinicaster compute hetzner status`.
+- **Snapchain runs on it since 2026-10-22 06:42 UTC**, started from the streamed snapshot (no second download).
+  - Disk: 557 GB (global 4 MB, shard-0 37 GB, shard-1 262 GB, shard-2 259 GB); 97 GB free on the 688 GB volume.
+  - RAM: the Snapchain container uses ~0.4–0.8 GB; CPU 17–77%.
+  - Catch-up: about a day behind at start, shrinking ~220 blocks/min, so expected in sync ~14:00 UTC.
+- **Replication works from it** (`ReplicationService` on :3383, tested from outside). A copy point is a block snapshot the replicator keeps for others to copy. Shard 1's point: height 49,240,122 (458.6M messages); shard 2's: 49,060,194 (455.7M). `GetShardTransactions` returns pages of 1,000.
+- **The Farline adapter reads it:** FID 18350 backfilled with 4,824 messages in 18 s, the same count crackle gave.
 
 ### The Hypersnap node (created 2026-10-22 03:57 UTC by session infinicaster-ea)
 - **Hetzner `cax21` (ARM, 4 CPU, 8 GB RAM + 16 GB swap) + 685 GB volume in nbg1**, server 171737914 at **2.31.51.183**. Record in `.infinicaster/hetzner-hypersnap.json`; `compute hetzner status/down` include it (servers are deleted before volumes).
@@ -55,8 +61,9 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 3. Downloads hung on dead connections with no timeout. Then, after ~180 GB at full speed, uncached pieces came at 0.1–4 MB/s per connection, so a "1 MB/s or restart" rule could never finish them. Now: resume (`-C -`), give up only below 100 KB/s for 60 s, 12 downloads at once per shard. Measured 133 MB/s after the change.
 4. The unpack loop ended with `[ … ] && echo`. With `pipefail`, every fully unpacked shard was reported as failed (piece counts aren't multiples of 100).
 - Fourth run started 04:10 UTC with shard 0 kept (372 pieces, 37 GB unpacked).
+5. One piece of shard 2 got 17 of 89 MB in 44 min on one connection. Slow byte regions in R2 stay slow on any single connection, and 30 tries would have failed the shard. Now, after 3 slow tries, the rest is fetched in 8 byte ranges, then joined and checked against R2's ETag, which is the piece's MD5 (1dae4f1). Rescued by hand on the run; `/root/guard.sh` on the master did the same for the rest of the run.
 
-### Overnight orders (from infinicaster-ea, the owner's coordinator)
+### Overnight orders (from infinicaster-ea, the owner's coordinator). Status as of 07:15 UTC: 1 catching up, 2 done, 3 waiting for sync, 4 limits found (below), 5 done.
 1. Master Snapchain synced (`blockDelay` small), real disk and RAM measured.
 2. `ReplicationService` answers on 46.225.208.199:3383. crackle:3383 and haatz:3383 time out from outside, so ours would be the only public replication source.
 3. J3: reboot the master once synced; it must come back on its own.
@@ -89,7 +96,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - Tests: 33 Foundry, 17 indexer, 4 infra, all passing as of this handoff.
 
 ### Not done, in bounty order
-- **J3:** no node synced by us yet. That's the next step above.
+- **J3:** the master runs and catches up (in sync ~14:00 UTC expected). Then reboot it once and watch it come back.
 - **J5–J7 real run:** the owner runs `./infinicaster identity --fid 18350 --dry-run`, then without `--dry-run`, **in their own terminal** (never paste the seed phrase into an agent chat). Then `./infinicaster up` and cast from My people. Test account: @anky, FID 18350, custody `0x3ae5…6b60`.
 - **J8:** the client filter (show or hide posts by the app that made them). Not built.
 - **J9:** the tutorial site (English and Spanish). Not started.
@@ -98,7 +105,12 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 
 ### Findings worth keeping
 - No x402 seller sells a server big enough for a node with its built-in disk: VpsAgent goes up to 300 GB, VPSWolf to 800 GB (both monthly). AgentMetal sells disk, but its disk endpoint is broken (see above).
-- Replication bootstrap (`Replicate`) fails today: every public Farcaster node answers *Unimplemented*. So the plan is our own full node, which then serves replication to cheap small nodes. This is unproven until tested.
+- **Replication bootstrap (`Replicate`), tested 2026-10-22 from the master to AgentMetal (4 CPU, 7 GB):**
+  - It works over the internet, using our master as the only peer: ~17–23k messages/s, an ETA of 11–15 h for ~914M messages.
+  - **Not small:** measured 330–430 bytes per message early on, so a full replica is ~300–400 GB (the snapshot's data shards are ~520 GB, because they include block history). It doesn't fit on AgentMetal (124 GB free). The run there is a measurement, with `/root/diskguard.sh` stopping it at 15 GB free.
+  - **The source must keep its copy point for the whole copy.** Copy points are dropped once their block is 24 h old (`max_age`). A source still catching up only has 18–24 h old points, so the first try died at 2.2M messages ("Store not found for shard 2 and height …"). A synced source takes a point every 28,800 blocks (~8 h), so the newest is ≤8 h old and lives 16+ h: just enough for a ~15 h copy.
+  - **Snapchain bug:** a failed copy says "restart to resume", but copying only runs when `.rocks` is empty, and the partial copy sits in `.rocks/.snapshot`. Docker's restart then ran it as a normal node on 0.5% of the data. Our script now sets `restart: "no"` until the copy succeeds, follows the log, and starts an unfinished copy over.
+  - Peer discovery found other public :3383 servers (e.g. 95.217.197.252, 51.79.77.116), without a matching copy point. Earlier, rho answered *Unimplemented* (behind a proxy).
 - The snapshot on R2 is ~5,700 pieces of ~70 MB: ~400 GB compressed, ~600 GB unpacked (measured ratio ~1.5×). It includes all block history.
 - Rejected ideas and why: forking Snapchain (weeks of Rust, judges want Snapchain); a debit card funded by a vault (identity checks, custodial); the owner's Mac (13 GB free).
 
