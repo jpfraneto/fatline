@@ -3,12 +3,20 @@
 **Your own Farcaster client that pays for its own life.** It reads from your own node, posts with its own app key, and lives on a USDC vault on Base: its server pays itself from that vault.
 
 ```sh
-./infinicaster compute          # (0) a machine that can hold a node
-./infinicaster node farcaster   # (1) your own read node, no API keys (or: node hypersnap)
-./infinicaster client           # (2) your client on that node; its vault comes from "Launch an app" in it
+./infinicaster compute          # (0) rent a server that can hold a node
+./infinicaster node farcaster   # (1) your own read node on it, no API keys (or: node hypersnap)
+./infinicaster client           # (2) your client, reading from your node; its vault comes from "Launch an app" in it
 ```
 
-Before them: `git clone https://github.com/jpfraneto/infinicaster && cd infinicaster`. You need git, Node.js 22.12+, and Docker on the machine that runs the node. The vault step is proven on a local fork of Base only: `AppFactory` is not deployed on Base mainnet yet (see "Status" below).
+**Status: being wired up.** These three commands are being joined so each one hands off to the next. Today, plain `compute` rents a small USDC server that can't hold a node, and nothing passes the node's address to the client. The path that works today:
+
+```sh
+./infinicaster compute hetzner                    # rents a node-capable server and starts a Farcaster node on it
+./infinicaster init --node http://<its IP>:3381   # points your client at that node
+./infinicaster client
+```
+
+Before them: `git clone https://github.com/jpfraneto/infinicaster && cd infinicaster`. You need git and Node.js 22.12+, plus a Hetzner Cloud account and API token (`~/.hetzner-token`) to rent, or Docker on a machine of your own (`./infinicaster node farcaster` installs there). The vault step is proven on a local fork of Base only: `AppFactory` is not deployed on Base mainnet yet (see "Status" below). The tutorial is in [`apps/site/index.html`](apps/site/index.html), in English and Spanish.
 
 Farline is where Infinicaster is going: infrastructure for autonomous apps, built on Farcaster identity, onchain money and software that keeps running on its own. The repository, the CLI (`./infinicaster`) and the contracts keep the Infinicaster name for now.
 
