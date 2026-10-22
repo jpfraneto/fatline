@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-Hans">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Farline：你自己的 Farcaster 节点和客户端</title>
+<meta name="description" content="几条命令，拥有你自己的 Farcaster 或 Hypersnap 读取节点和客户端。边做边讲解协议。">
+<meta name="theme-color" content="#111820">
+<style>
+  :root {
+    --bg: #111820; --surface: #151e27; --text: #F3F0E8; --muted: #9aabb4; --slate: #667D89;
+    --line: rgba(102,125,137,.3); --signal: #A6D8C2; --amber: #d9c38c; --warn: #e59a88;
+    --serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    --sans: ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono: ui-monospace,SFMono-Regular,Menlo,monospace;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg: #F3F0E8; --surface: #fbf9f4; --text: #111820; --muted: #4d5f69; --slate: #667D89;
+      --line: rgba(17,24,32,.14); --signal: #2f7a5c; --amber: #8a6a12; --warn: #a3412c; color-scheme: light;
+    }
+  }
+  * { box-sizing: border-box; }
+  html[data-lang="en"] [lang="es"], html[data-lang="es"] [lang="en"] { display: none !important; }
+  body { margin: 0 auto; max-width: 760px; padding: 20px 16px 96px; background: var(--bg); color: var(--text); font: 17px/1.6 var(--sans); -webkit-text-size-adjust: 100%; }
+  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--slate); }
+  header.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .brand { font: 600 22px var(--serif); text-decoration: none; }
+  .langs { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+  .langs button { border: 0; background: none; color: var(--muted); padding: 5px 12px; border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer; }
+  .langs button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
+  h1 { font: 500 clamp(30px, 7vw, 46px)/1.1 var(--serif); letter-spacing: -.015em; margin: 36px 0 12px; }
+  h2 { font: 500 26px/1.2 var(--serif); margin: 56px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); }
+  h3 { font: 600 17px var(--sans); margin: 28px 0 6px; }
+  p, li { color: var(--text); }
+  .lede { color: var(--muted); font-size: 19px; margin: 0 0 22px; }
+  .muted { color: var(--muted); }
+  .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--slate); margin: 0; }
+  pre { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; overflow-x: auto; font: 14px/1.6 var(--mono); margin: 12px 0; }
+  code { font-family: var(--mono); font-size: .9em; overflow-wrap: anywhere; }
+  pre code { overflow-wrap: normal; }
+  .c { color: var(--slate); }
+  .quick { border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 8px; background: var(--surface); }
+  .quick pre { background: var(--bg); }
+  .tag { display: inline-block; font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin-left: 6px; vertical-align: 2px; color: var(--muted); }
+  .tag.ok { color: var(--signal); border-color: currentColor; }
+  .tag.no { color: var(--amber); border-color: currentColor; }
+  .note { border-left: 2px solid var(--amber); padding: 2px 0 2px 14px; color: var(--muted); }
+  .concept { border-left: 2px solid var(--signal); padding: 4px 0 4px 14px; margin: 16px 0; }
+  .concept strong:first-child { color: var(--signal); font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; margin: 12px 0; }
+  th, td { text-align: left; padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--slate); font-weight: 500; font-size: 13px; }
+  .scroll { overflow-x: auto; }
+  nav.toc ol { padding-left: 20px; margin: 8px 0; }
+  nav.toc a { text-decoration: none; }
+  .line { display: block; width: 100%; height: 40px; margin: 8px 0 0; }
+  .line path { fill: none; stroke: var(--slate); stroke-opacity: .5; stroke-width: 1; }
+  .line .pulse { stroke: var(--signal); stroke-opacity: 1; stroke-width: 1.6; stroke-dasharray: 70 530; animation: flow 3.2s linear infinite; }
+  @keyframes flow { from { stroke-dashoffset: 600; } to { stroke-dashoffset: -70; } }
+  @media (prefers-reduced-motion: reduce) { .line .pulse { animation: none; stroke-dasharray: none; } }
+  footer { margin-top: 64px; font-size: 14px; color: var(--muted); }
+</style>
+<style>body { font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; }</style>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="./">Farline</a>
+  <div class="langs" role="group" aria-label="语言">
+    <a href="./?lang=en"><button type="button" aria-pressed="false">English</button></a>
+    <a href="./?lang=es"><button type="button" aria-pressed="false">Español</button></a>
+    <button type="button" aria-pressed="true">中文</button>
+  </div>
+</header>
+<p class="muted">本页是英文版教程的简明中文版，内容与英文版一致（2026-10-22）。完整内容见 <a href="./?lang=en">English</a>。</p>
+
+<h1>你自己的 Farcaster 节点，你自己的客户端。</h1>
+<p class="lede">不需要任何人的 API 密钥。Farcaster 或 Hypersnap，由你选择，两者平等。</p>
+
+<div class="quick">
+  <p class="eyebrow">开始之前</p>
+  <ul>
+    <li>电脑上需要 <strong>git</strong>、<strong>Node.js 22.12 或更新版本</strong>和 <strong>ssh</strong>。</li>
+    <li>一个绑定银行卡的 <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> 账户，并把 API 令牌保存在 <code>~/.hetzner-token</code>（<code>chmod 600</code>）。</li>
+    <li>新的 Hetzner 账户有额度限制（我们的是：卷总共 1,385 GB，14 个 vCPU）。一个节点需要 700 GB 的卷，所以一个新账户只够<strong>一个</strong>完整节点。Farcaster 和 Hypersnap 两个节点并排运行，需要两台服务器和两个卷。</li>
+    <li>发帖需要你 Farcaster 账户的助记词，只在你自己的终端里输入。</li>
+  </ul>
+  <pre><code>git clone https://github.com/jpfraneto/infinicaster && cd infinicaster
+
+./infinicaster compute            <span class="c"># (0) 租一台能装下节点的机器：先报价，你输入 "create" 才会创建</span>
+./infinicaster node farcaster     <span class="c"># (1) 在上面装你的读取节点，不需要 API 密钥（或：node hypersnap）</span>
+./infinicaster client             <span class="c"># (2) 你的客户端，从你的节点读取，在 http://localhost:8787</span></code></pre>
+  <p class="note"><span class="tag no">尚未完整测试</span> 每一步都单独运行过。从零开始、一口气跑完三条命令的完整流程还没有做过。我们自己的节点是用更早的一步式版本搭建的。</p>
+</div>
+
+<h2>你在 Farcaster 上是谁</h2>
+<div class="concept"><strong>FID。</strong>你的 Farcaster ID 是一个数字，例如 18350，登记在 Optimism 上的一个合约（ID 注册表）里。用户名、帖子和关注关系都挂在这个数字上。</div>
+<div class="concept"><strong>托管地址。</strong>拥有你 FID 的以太坊地址。它的助记词是账户的主钥匙：可以添加和移除密钥、转移 FID。它从不签日常的帖子。</div>
+<div class="concept"><strong>应用密钥。</strong>日常的帖子由应用密钥（Ed25519 密钥，也叫 signer）签名。你用的每个应用（例如 Warpcast 或 Firefly）都有自己的密钥，由你的托管地址授权。授权记录里写着这个应用自己的 FID，所以本客户端能告诉你每条帖子是哪个应用发的。</div>
+<div class="concept"><strong>消息。</strong>一条 cast、一个赞、一次关注、一次资料修改，都是一条签名消息：数据、它的哈希、签名，以及签名用的密钥。任何节点都可以自行验证，不需要问任何人。</div>
+
+<h2>第 0 步：给节点一台机器</h2>
+<pre><code>./infinicaster compute --quote   <span class="c"># 只看价格，不创建任何东西</span>
+./infinicaster compute           <span class="c"># 要求你输入 "create"</span></code></pre>
+<p>它会选有货的、内存至少 16 GB 的最便宜机型（2026-10-22 是 <code>cax31</code>，8 个 ARM CPU），加一个 700 GB 的卷，先显示价格再询问。它只负责租机器，第 1 步再装节点。创建的一切都记录在 <code>.infinicaster/hetzner.json</code>，可以精确删除。</p>
+<div class="concept"><strong>为什么要租？</strong>一个 Farcaster 节点保存所有账户当前的消息，今天大约 600 GB。大多数笔记本没有这么多空闲磁盘。</div>
+<p>已经有一台装了 Docker、16 GB 内存、约 700 GB 空闲磁盘的机器？跳过这一步，在那台机器上用 <code>./infinicaster node farcaster --local</code>。</p>
+
+<h2>第 1 步：你的读取节点</h2>
+<pre><code>./infinicaster node farcaster    <span class="c"># 或：./infinicaster node hypersnap</span></code></pre>
+<p>它在第 0 步的机器上安装该网络的节点，并跟踪初始快照的传输（约 400 GB，大约 1 到 3 小时）。节点在 <code>/v1/info</code> 上应答后，就会成为 <code>infinicaster.config.json</code> 里你自己的节点，第 2 步就从它读取。一台服务器只放一个网络。</p>
+<div class="concept"><strong>读取节点和验证者。</strong>Snapchain 是 Farcaster 的网络软件，有一小组验证者对消息的顺序（区块）达成一致。你的节点是读取节点：跟随这些区块，保存每条消息的副本。你发帖时，节点检查消息并转发给验证者。读取从不需要验证者的许可。</div>
+<div class="concept"><strong>Farcaster 或 Hypersnap。</strong>Hypersnap 是 Snapchain 的社区分支。两者使用相同的 API，接受相同的签名消息。Hypersnap 保留完整历史；Farcaster 按每个账户的存储上限删除旧消息。默认没有偏向哪一个：由你选择。</div>
+<p><strong>初始快照：</strong>新节点从网络快照开始，而不是重放多年的区块。在租来的服务器上，快照被<strong>流式</strong>写入磁盘，三个分片同时进行：压缩后约 400 GB，共 5,695 块，解压后约 600 GB。磁盘上只保留一份。节点默认只保留一天的区块。</p>
+<p>下载和追上网络需要多久：<span class="tag no">尚未测量</span>。</p>
+<p><strong>健康意味着同步，而不只是"在运行"。</strong>节点健康的标准是 <code>/v1/info</code> 显示每个分片的 <code>blockDelay</code> 都很小。端口开着不算。</p>
+
+<h2>第 2 步：你的客户端</h2>
+<pre><code>./infinicaster client</code></pre>
+<p>它会安装、构建并在 <a href="http://localhost:8787">http://localhost:8787</a> 启动客户端。页面顶部总会写明正在从哪个节点读取。在<strong>设置</strong>里选择网络和节点：</p>
+<ul>
+  <li><strong>指定一个节点：</strong>所有读取和发帖只经过这个节点。它宕机时，你会看到写明节点名的错误。客户端绝不会背着你切换。</li>
+  <li><strong>自动：</strong>按列表顺序使用第一个应答的节点，并说明正在用哪一个；如果换了，会告诉你。</li>
+</ul>
+
+<h2>发帖：客户端自己的应用密钥</h2>
+<pre><code>./infinicaster identity --fid &lt;你的 FID&gt; --dry-run   <span class="c"># 检查一切，不注册</span>
+./infinicaster identity --fid &lt;你的 FID&gt;             <span class="c"># 注册本客户端的密钥</span></code></pre>
+<p>在你自己的终端运行。助记词在隐藏输入框中输入，密钥注册后立即遗忘，从不保存。不需要交易，不需要 gas。这个密钥只能发帖、互动、关注和修改资料。</p>
+<div class="concept"><strong>存储租金和服务器账单是两回事。</strong>存储租金在链上按账户支付，决定网络为你保留多少消息，不支付任何服务器。节点服务器是另一笔账单，付给托管它的人。</div>
+<p class="note">状态：已在模拟节点上测试，crackle 接受了消息格式。<span class="tag no">尚未用真实账户测试</span></p>
+
+<h2>费用，以及如何停止付费</h2>
+<div class="scroll"><table>
+  <tr><th>项目</th><th>价格（Hetzner，2026-10-22 查询）</th></tr>
+  <tr><td>服务器 <code>cax31</code>（8 个 ARM CPU，16 GB 内存）加 700 GB 卷</td><td>每天约 2.75 美元</td></tr>
+  <tr><td>第二个节点（另一个网络），独立服务器和卷</td><td>大约同样多</td></tr>
+</table></div>
+<pre><code>./infinicaster compute hetzner down   <span class="c"># 删除服务器和卷，停止计费</span></code></pre>
+
+<h2>我们测试了什么，没测试什么</h2>
+<div class="scroll"><table>
+  <tr><th>部分</th><th>状态</th></tr>
+  <tr><td>通过公共节点读取 Farcaster 和 Hypersnap</td><td><span class="tag ok">可用</span></td></tr>
+  <tr><td>选择节点；节点宕机时给出明确错误</td><td><span class="tag ok">可用</span></td></tr>
+  <tr><td>按应用显示或隐藏 cast</td><td><span class="tag ok">可用</span>（真实数据：20 条中 20 条识别出应用）</td></tr>
+  <tr><td>三条命令从零开始完整跑通</td><td><span class="tag no">未测试</span></td></tr>
+  <tr><td>读取节点完全同步</td><td><span class="tag no">进行中</span></td></tr>
+  <tr><td>用真实账户注册密钥并发帖</td><td><span class="tag no">未测试</span></td></tr>
+  <tr><td>一位新用户从零照着本页完成</td><td><span class="tag no">还没有</span>；会是你吗？</td></tr>
+</table></div>
+
+<footer><p>开源，MIT 许可：<a href="https://github.com/jpfraneto/infinicaster">github.com/jpfraneto/infinicaster</a>。Snapchain 和 Hypersnap 采用 GPL-3.0，在安装时下载，不包含在本仓库中。</p></footer>
+</body>
+</html>

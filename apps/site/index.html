@@ -70,6 +70,7 @@
   <div class="langs" role="group" aria-label="Language">
     <button type="button" data-set="en" aria-pressed="true">English</button>
     <button type="button" data-set="es" aria-pressed="false">Español</button>
+    <a href="zh.html"><button type="button" aria-pressed="false" tabindex="-1">中文</button></a>
   </div>
 </header>
 
@@ -380,14 +381,16 @@
   (function () {
     var saved = null;
     try { saved = localStorage.getItem('lang'); } catch (e) {}
+    var asked = (location.search.match(/[?&]lang=(en|es)\b/) || [])[1];
+    if (asked) saved = asked;
     var lang = saved === 'en' || saved === 'es' ? saved : (navigator.language || '').toLowerCase().indexOf('es') === 0 ? 'es' : 'en';
     function set(l) {
       document.documentElement.setAttribute('data-lang', l);
       document.documentElement.lang = l;
-      document.querySelectorAll('.langs button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.set === l)); });
+      document.querySelectorAll('.langs button[data-set]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.set === l)); });
       try { localStorage.setItem('lang', l); } catch (e) {}
     }
-    document.querySelectorAll('.langs button').forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.set); }); });
+    document.querySelectorAll('.langs button[data-set]').forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.set); }); });
     set(lang);
   })();
 </script>
