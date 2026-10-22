@@ -71,6 +71,16 @@ Source: **FIP "Proof of Work Tokenization", Section 10** (github.com/orgs/farcas
 
 **So the 777:** the top 777 FIDs by retro allocation. Two ways to get them: read the published allocations (the contract or the final list; fastest, if we find it), or recompute them on our own node with the FIP's rules (fully ours and checkable, but a big job: EigenTrust over the whole follow graph). Best: take the published list first, recompute later to check it.
 
+## Where the $SNAP numbers live (checked 2026-10-22)
+
+- **The $SNAP token on Ethereum** is `0x49B5a631F54927c0007232844f06FE18cbf69786` (a proxy; implementation `HypersnapBridge`, 6 decimals). Found from the owner's wallet `0xF2FE…35A8`, which called `claim` on it on 2026-06-05 and 2026-08-18. A claim is a bridge claim: a Merkle proof against a root signed by the bridge owner. Its `Claimed` events show only recipient wallets and amounts, not FIDs, and most allocations were never claimed, so the full list can't be rebuilt from Ethereum.
+- **hypria.app** (the claim app) looks up an allocation by FID after the person connects a linked wallet and signs. Its public `https://api.hypria.app/api/rankings` returns only the **top 100** by "points" (#1 horsefacts, #2 clanker, #3 ted, #7 cassie). The points may be Hypersnap's soulbound governance score rather than the retro allocation itself: clanker (an app account) is #2, and the retro's app filter would have removed it.
+- **So:** the full ranking isn't public. Either we recompute it on our own node with the FIP's rules (deterministic, ours, checkable by anyone), or we ask the Hypersnap team for the published final list.
+
+## Tiers (owner, 2026-10-22)
+
+Minting opens in waves by rank: day 1 only the top 777, then, if any are left, the next tier the day after, and so on until all are minted. The owner's first sketch: tier 2 = the next 777 × 777 (603,729 accounts). That is likely more than every account with a score, so tier 2 would effectively be everyone eligible. A gentler curve could be 777 → 7,777 → 77,777 → everyone.
+
 ## Open questions
 
 1. **Proving FID ownership on Base:** proposed above (Merkle root of custody + verified addresses at a fixed block). To confirm.
