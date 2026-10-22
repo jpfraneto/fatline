@@ -12,8 +12,9 @@
 #                                   2e8733d) refuses KeyAdd/KeyRemove messages, so every copy dies at the first
 #                                   account that has one. Set FATLINE_FORCE=1 to try anyway.
 #   FATLINE_REPLICATION_PEERS=http://IP:3383[,...]   with replicate: which nodes to copy from
-#   FATLINE_BLOCKS=all          block history to keep. Hypersnap exists to keep everything, so "all"
-#                        is the default; "1day" etc. sets pruning.block_retention.
+#   FATLINE_BLOCKS=1day         raw block history to keep (pruning.block_retention), same as Snapchain.
+#                        Messages are kept either way; "all" keeps every block since genesis, which needs
+#                        far more than one 685 GB volume (it filled ours while catching up, 2026-10-22).
 #   FATLINE_HYPER_APIS=off      Hypersnap's extra APIs (social graph, channels, metrics, search, feeds,
 #                        conversations) build their own indexes and use more RAM and disk. "on" enables them.
 #                        Default: off when Snapchain runs on the same server, on otherwise.
@@ -30,6 +31,7 @@ set -euo pipefail
 
 IMAGE="farcasterorg/hypersnap:0.13.5"   # = "latest" on 2026-10-22 (sha256:6b5e3a23...)
 UPSTREAM_COMMIT="2e8733d044141ad3ba0e0592a4d5873c1dc6ce9c"   # farcasterorg/hypersnap main, 2026-10-17
+VALIDATORS_COMMIT="21b4a8b209ccd93e9d7ecf2d3ce8910b9a1cf46e" # farcasterxyz/snapchain, 2026-10-15: registry v18 validator sets
 SNAPSHOT="${FATLINE_SNAPSHOT:-stream}"
 if [ "$SNAPSHOT" = replicate ] && [ "${FATLINE_FORCE:-}" != 1 ]; then
   echo "Replicate can't finish on mainnet today: Hypersnap's replicator refuses KeyAdd/KeyRemove messages"
@@ -37,7 +39,7 @@ if [ "$SNAPSHOT" = replicate ] && [ "${FATLINE_FORCE:-}" != 1 ]; then
   echo "Use the default (stream), or set FATLINE_FORCE=1 to try anyway."
   exit 1
 fi
-BLOCKS="${FATLINE_BLOCKS:-all}"
+BLOCKS="${FATLINE_BLOCKS:-1day}"
 SNAPSHOT_BUCKET="https://pub-d352dd8819104a778e20d08888c5a661.r2.dev"
 SNAPSHOT_URL="$SNAPSHOT_BUCKET/FARCASTER_NETWORK_MAINNET"
 SHARDS="0 1 2"
@@ -115,8 +117,11 @@ if ! command -v docker >/dev/null; then
 fi
 
 # 4. Config: upstream's mainnet settings (docker-compose.mainnet.yml at $UPSTREAM_COMMIT), our ports,
-#    plus the validator list from the same commit.
-curl -fsSL "https://raw.githubusercontent.com/farcasterorg/hypersnap/$UPSTREAM_COMMIT/validators.toml" -o validators.toml
+#    plus the validator list from Snapchain itself: Hypersnap follows the same chain, and its own copy of the
+#    list stopped in July. Without the "registry v18" swap (moria and isengard replace Uno and Degen at
+#    48,632,000 / 49,147,000 / 49,311,000) the node rejects every block from there on: "signatures from
+#    unexpected signers" (seen 2026-10-22). Snapchain's file is Hypersnap's plus those entries.
+curl -fsSL "https://raw.githubusercontent.com/farcasterxyz/snapchain/$VALIDATORS_COMMIT/validators.toml" -o validators.toml
 api() { echo "[api.$1]"; echo "enabled = $([ "$APIS" = on ] && echo true || echo false)"; [ -n "${2:-}" ] && [ "$APIS" = on ] && echo "backfill_on_startup = true"; echo; }
 {
   echo "# Written by Fatline (infra/hypersnap-setup.sh). Re-running the script rewrites it."
