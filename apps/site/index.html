@@ -313,7 +313,7 @@ function draw() {
          <div class="muted">running ${since(new Date(c.age).toISOString())}</div>
          <div class="nets">${nets}</div>
          <div class="who">${who(c.f.owner)}</div>
-         <a class="open" href="docs/">Open ↗</a>`
+         <a class="open" href="${c.f.coin?.address ? `/base/${esc(c.f.coin.address)}` : 'docs/'}">Open ↗</a>`
       : `<div class="ticker">$${esc(c.ticker)} <span class="tag ex">Example</span></div>
          <div>${c.cap} cap</div><div class="muted">${c.left} left</div>
          <div class="nets">${nets}</div>

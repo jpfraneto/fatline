@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fatline</title>
+<meta name="description" content="A Fatline coin on Base and the nodes it keeps alive.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0a1f'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%23a46bff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='13' fill='none' stroke='%2341e2e8' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #07061a; --panel: rgba(28, 20, 66, .55); --line: rgba(164, 107, 255, .28); --text: #f1eeff; --muted: #a49fc4;
+    --violet: #a46bff; --cyan: #41e2e8; --amber: #ffb547; }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); }
+  body { margin: 0; color: var(--text); font: 16px/1.5 Inter, system-ui, sans-serif; min-height: 100vh;
+    background: radial-gradient(1000px 500px at 70% -10%, rgba(123, 61, 255, .22), transparent 60%), var(--bg); }
+  a { color: inherit; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 16px; }
+  header { display: flex; align-items: center; gap: 28px; padding: 18px 0; }
+  .brand { font: 700 26px/1 Cinzel, serif; letter-spacing: .14em; text-decoration: none; }
+  nav { display: flex; gap: 22px; font-size: 15px; color: var(--muted); }
+  nav a { text-decoration: none; }
+  .panel { margin: 28px 0; padding: 24px; border: 1px solid rgba(164, 107, 255, .5); border-radius: 22px;
+    background: linear-gradient(120deg, rgba(60, 30, 140, .45), rgba(20, 14, 52, .6)); }
+  .kicker { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: clamp(28px, 6vw, 44px); margin: 4px 0 8px; font-weight: 800; }
+  code { font: 14px ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; color: #e7e1ff; }
+  .muted { color: var(--muted); }
+  .row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .dot.snapchain { background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+  .dot.hypersnap { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .dot.off { background: #666; }
+  .who img { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; }
+  .btn { display: inline-flex; padding: 11px 18px; border-radius: 12px; font-weight: 600; text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, .28); margin: 14px 10px 0 0; }
+  .btn.primary { background: linear-gradient(180deg, #8c4dff, #6a2cf0); border-color: #b28aff; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="brand" href="/">FATLINE</a>
+    <nav><a href="/">Explore</a><a href="/#about">About</a><a href="/docs/">Docs</a></nav>
+  </header>
+  <main id="main"><p class="muted">Loading…</p></main>
+</div>
+<script>
+// GitHub Pages serves this page for every path it has no file for. /base/0x<address> is a coin's page;
+// anything else is a plain "not found".
+const NAME = { snapchain: 'Snapchain', hypersnap: 'Hypersnap' };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const main = document.getElementById('main');
+const m = location.pathname.match(/^\/base\/(0x[0-9a-fA-F]{40})\/?$/);
+
+function since(iso) {
+  const h = Math.floor((Date.now() - Date.parse(iso)) / 3600e3);
+  return h >= 24 ? `${Math.floor(h / 24)} d ${h % 24} h` : `${h} h`;
+}
+
+if (!m) {
+  document.title = 'Not found · Fatline';
+  main.innerHTML = `<div class="panel"><div class="kicker">404</div><h1>Nothing here</h1>
+    <p class="muted">No page at <code>${esc(location.pathname)}</code>. A coin's page is <code>/base/0x…</code>, its contract address on Base.</p>
+    <a class="btn primary" href="/">Back to the board</a></div>`;
+} else {
+  const address = m[1];
+  fetch('/status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null).then((s) => {
+    const f = (s?.fatlines ?? []).find((x) => x.coin?.address?.toLowerCase() === address.toLowerCase());
+    const scan = `https://basescan.org/token/${address}`;
+    if (!f) {
+      document.title = `${address.slice(0, 10)}… · Fatline`;
+      main.innerHTML = `<div class="panel"><div class="kicker">Base · coin</div><h1>Not a known Fatline</h1>
+        <p><code>${esc(address)}</code></p>
+        <p class="muted">No Fatline on this board has this address. It may be any other token on Base, or a Fatline that isn't listed yet.</p>
+        <a class="btn" href="${scan}">See it on Basescan ↗</a><a class="btn primary" href="/">Back to the board</a></div>`;
+      return;
+    }
+    document.title = `$${f.ticker} · Fatline`;
+    const o = f.owner ?? {};
+    const nodes = f.nodes.map((n) => `<div class="row"><span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span><b>${NAME[n.network]}</b>
+      <span class="muted">${n.state === 'alive' ? `alive · running ${since(n.since)}` : n.state === 'catching-up' ? `catching up · ${Number(n.blocksBehind).toLocaleString('en')} blocks behind` : 'offline at the last check'} · ${esc(n.label)}</span></div>`).join('');
+    main.innerHTML = `<div class="panel"><div class="kicker">Base · Fatline coin</div><h1>$${esc(f.ticker)}</h1>
+      <p><code>${esc(address)}</code></p>
+      <div class="row who">${o.pfp ? `<img src="${esc(o.pfp)}" alt="" referrerpolicy="no-referrer">` : ''}<span>@${esc(o.username)} · FID ${esc(o.fid)}</span></div>
+      <h3>Nodes it keeps alive</h3>${nodes}
+      <a class="btn" href="${scan}">Basescan ↗</a><a class="btn primary" href="/">Back to the board</a></div>`;
+  });
+}
+</script>
+</body>
+</html>
