@@ -45,7 +45,9 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - **Snapchain runs on it since 2026-10-22 06:42 UTC**, started from the streamed snapshot (no second download).
   - Disk: 557 GB (global 4 MB, shard-0 37 GB, shard-1 262 GB, shard-2 259 GB); 97 GB free on the 688 GB volume.
   - RAM: the Snapchain container uses ~0.4–0.8 GB; CPU 17–77%.
-  - Catch-up: about a day behind at start, shrinking ~220 blocks/min, so expected in sync ~14:00 UTC.
+  - Catch-up: about a day behind at start; **in sync at 12:25 UTC** (blockDelay 0 on every shard), ~5h45m after start.
+  - Synced numbers: 914,298,245 messages, 558 GB (dbStats), Snapchain 0.14.3. The container uses 1.8 GB RAM at 2.5% CPU.
+  - **J3 passed (2026-10-22):** rebooted at 12:26:07 UTC. The API answered 47 s later with all 914.3M messages (data on the volume, mounted at boot). It was 30 blocks behind, and in sync again 62 s after the reboot. Snapchain's container has restart=always and Docker starts at boot. Copy points live in memory, so a reboot drops them and the node makes a new one at its first block. A copy in progress from it would fail.
 - **Replication works from it** (`ReplicationService` on :3383, tested from outside). A copy point is a block snapshot the replicator keeps for others to copy. Shard 1's point: height 49,240,122 (458.6M messages); shard 2's: 49,060,194 (455.7M). `GetShardTransactions` returns pages of 1,000.
 - **The Fatline adapter reads it:** FID 18350 backfilled with 4,824 messages in 18 s, the same count crackle gave.
 
@@ -63,7 +65,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - Fourth run started 04:10 UTC with shard 0 kept (372 pieces, 37 GB unpacked).
 5. One piece of shard 2 got 17 of 89 MB in 44 min on one connection. Slow byte regions in R2 stay slow on any single connection, and 30 tries would have failed the shard. Now, after 3 slow tries, the rest is fetched in 8 byte ranges, then joined and checked against R2's ETag, which is the piece's MD5 (1dae4f1). Rescued by hand on the run; `/root/guard.sh` on the master did the same for the rest of the run.
 
-### Overnight orders (from fatline-ea, the owner's coordinator). Status as of 07:30 UTC: 1 catching up, 2 done, 3 waiting for sync, 4 blocked upstream (KeyAdd, below), 5 done.
+### Overnight orders (from fatline-ea, the owner's coordinator). Status as of 12:30 UTC: 1 done (in sync 12:25), 2 done, 3 done (reboot passed), 4 blocked upstream (KeyAdd, below), 5 done.
 1. Master Snapchain synced (`blockDelay` small), real disk and RAM measured.
 2. `ReplicationService` answers on 46.225.208.199:3383. crackle:3383 and haatz:3383 time out from outside, so ours would be the only public replication source.
 3. J3: reboot the master once synced; it must come back on its own.
@@ -96,7 +98,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - Tests: 33 Foundry, 17 indexer, 4 infra, all passing as of this handoff.
 
 ### Not done, in bounty order
-- **J3:** the master runs and catches up (in sync ~14:00 UTC expected). Then reboot it once and watch it come back.
+- **J3: done.** The master synced every shard (12:25 UTC) and survived a reboot (in sync again 62 s after it). See "The master node" above.
 - **J5–J7 real run:** the owner runs `./fatline identity --fid 18350 --dry-run`, then without `--dry-run`, **in their own terminal** (never paste the seed phrase into an agent chat). Then `./fatline up` and cast from My people. Test account: @anky, FID 18350, custody `0x3ae5…6b60`.
 - **J8:** the client filter (show or hide posts by the app that made them). Not built.
 - **J9:** the tutorial site (English and Spanish). Not started.
