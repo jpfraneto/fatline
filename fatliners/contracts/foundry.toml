@@ -1,0 +1,12 @@
+# Fatliners contract: NOT deployed. Its own Foundry project; borrows forge-std from ../../smart-contracts/lib.
+[profile.default]
+src = "src"
+test = "test"
+out = "out"
+cache_path = "cache"
+libs = ["../../smart-contracts/lib"]
+remappings = ["forge-std/=../../smart-contracts/lib/forge-std/src/"]
+solc = "0.8.28"
+optimizer = true
+optimizer_runs = 10_000
+evm_version = "cancun"

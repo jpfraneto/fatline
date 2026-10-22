@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><defs><radialGradient id="g" cx=".4" cy=".3" r=".9"><stop offset="0" stop-color="#fff6d8"/><stop offset="1" stop-color="#e9c98a"/></radialGradient><filter id="b" filterUnits="userSpaceOnUse" x="0" y="0" width="256" height="256"><feGaussianBlur stdDeviation="4"/></filter></defs>
+<rect width="256" height="256" fill="#1b1830"/>
+<ellipse cx="128" cy="236" rx="40" ry="6" fill="#000" opacity=".35"/>
+<path d="M78 70Q78 28 128 28Q178 28 178 70V170Q178 212 128 212Q78 212 78 170Z" fill="url(#g)" stroke="#14111f" stroke-width="4"/>
+<rect x="108" y="16" width="40" height="14" rx="4" fill="#3a3550" stroke="#14111f" stroke-width="4"/>
+<path d="M80 92H96L104 78L114 104L122 86L132 96L142 72L152 98L160 92H176" fill="none" stroke="#14111f" stroke-width="8" stroke-linejoin="round"/>
+<path d="M80 92H96L104 78L114 104L122 86L132 96L142 72L152 98L160 92H176" fill="none" stroke="#ff9e5e" stroke-width="4" stroke-linejoin="round"/>
+<path d="M80 92H96L104 78L114 104L122 86L132 96L142 72L152 98L160 92H176" fill="none" stroke="#ff9e5e" stroke-width="12" opacity=".4" filter="url(#b)"/>
+<ellipse cx="108" cy="140" rx="12" ry="16" fill="#1a1426"/><ellipse cx="148" cy="140" rx="12" ry="16" fill="#1a1426"/>
+<circle cx="112" cy="134" r="4.5" fill="#fff"/><circle cx="152" cy="134" r="4.5" fill="#fff"/>
+<path d="M120 172Q128 178 136 172" fill="none" stroke="#14111f" stroke-width="3" stroke-linecap="round"/>
+<path d="M128 212V232" stroke="#14111f" stroke-width="4"/>
+</svg>

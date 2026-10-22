@@ -1,0 +1,15 @@
+{
+  "name": "@fatline/fatliners",
+  "version": "0.1.0",
+  "description": "Fatliners: 777 beings drawn from Farcaster histories. Deterministic SVG renderer, history DNA, Memory Atlas.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "test": "node --experimental-sqlite --no-warnings=ExperimentalWarning --test test/*.test.mjs",
+    "sheet": "node bin/sheet.mjs",
+    "preview": "node --experimental-sqlite --no-warnings=ExperimentalWarning bin/preview.mjs",
+    "atlas": "node --experimental-sqlite --no-warnings=ExperimentalWarning bin/atlas.mjs"
+  }
+}
