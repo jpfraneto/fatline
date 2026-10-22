@@ -48,10 +48,33 @@ A Fatline is a link (ours: fatline.ink). Behind the link there is a node, and th
 - One node per Fatliner: the Fatliner is the node.
 - Gas and servers are paid by the Fatliner's vault.
 
+## Which wallets belong to an FID (checked on our own node, 2026-10-22)
+
+Farcaster links wallets to an FID in two official ways. Our node serves both:
+
+- **Custody address:** the wallet that owns the FID, recorded on Optimism by the IdRegistry contract. Our node keeps these onchain events: `/v1/onChainEventsByFid?fid=…&event_type=EVENT_TYPE_ID_REGISTER` (register and transfer events; the latest one is the current owner). For @anky (FID 18350): `0x3ae5…6b60`, registered at Optimism block 111,894,699.
+- **Verified addresses:** `VERIFICATION_ADD_ETH_ADDRESS` messages (`/v1/verificationsByFid`). Each one carries a signature by the wallet itself saying "I belong to this FID", so both sides agreed. @anky has two Ethereum and one Solana address.
+
+**For the claim on Base:** our nodes compute the 777 FIDs and, for each, its custody address and verified Ethereum addresses at one fixed block. The Merkle root of those (FID, address) pairs goes into the Fatliners contract. The person connects any of those wallets and signs the claim on Base; the contract checks the Merkle proof. Anyone with a node can recompute the root, so nobody has to trust us. A wallet linked after the snapshot needs a root update.
+
+## The $SNAP score (found 2026-10-22)
+
+Source: **FIP "Proof of Work Tokenization", Section 10** (github.com/orgs/farcasterorg/discussions/19, by @cassie, created 2026-03-24, edited 2026-10-12). Her casts point there whenever someone asks how the retro was calculated (2026-04-15 to 04-18), and on 2026-04-27 she said the finalized calculation was being published.
+
+- The retroactive distribution rewarded **growth only**, using the same score as Hypersnap's forward "Growth" work market (Section 6), run once over all history before the fork. 200M of the 2B $SNAP went to it (her casts, 2026-04-15 and 04-16).
+- `allocation(fid) = composite(fid) / Σ composite · RETROACTIVE_POOL`, with `composite = credibility × growth_score`, for eligible FIDs only.
+- `growth_score(f) = Σ over credible counterparties u with reciprocal engagement: ln(1 + mutuality) · credibility(u)`. Replies, mentions, reactions and follows count, only after the last custody transfer of both FIDs.
+- `credibility = 0.25 · age_factor + 0.35 · trust_score + 0.20 · interaction_entropy + 0.10 · stake (0 for the retro) + 0.10 · client_diversity`.
+- `trust_score` = EigenTrust over the follow graph, seeded by FIDs ≤ 50,000, damping 0.85, normalized by the average of the top 100, times age_factor (full at 180 days since the last custody change).
+- Eligibility filters F0–F6: not an app (fewer than 100 signers requested), casts > 0, engaged by ≥ 3 others, plus data-derived diversity thresholds.
+- It is deterministic: one fixed snapshot, integer arithmetic, FID order, no outside data. The FIP names a reference implementation, `src/bin/retro_rewards_finalize.rs`, but **it is not in farcasterorg/hypersnap's main branch** (checked 2026-10-22). The allocations were paid by an Ethereum contract whose address we haven't found yet.
+
+**So the 777:** the top 777 FIDs by retro allocation. Two ways to get them: read the published allocations (the contract or the final list; fastest, if we find it), or recompute them on our own node with the FIP's rules (fully ours and checkable, but a big job: EigenTrust over the whole follow graph). Best: take the published list first, recompute later to check it.
+
 ## Open questions
 
-1. **Proving FID ownership on Base.** FIDs live on Optimism (IdRegistry); the Fatliner lives on Base. A contract on Base can't read Optimism directly, so something has to carry the proof: a signed attestation (someone to trust), a storage proof (trustless, more work), or the FID's custody key signing a message the Base contract checks against a published list of the 777 custody addresses (simple, but custody can change after the list is made).
-2. **The $SNAP score.** Write down the exact rule and where the data comes from, so anyone can recompute the 777 and their rarity.
+1. **Proving FID ownership on Base:** proposed above (Merkle root of custody + verified addresses at a fixed block). To confirm.
+2. **The $SNAP list:** find the retro distribution contract or the published final list (hypria.app), or recompute.
 3. **Who pays the first claims,** before any vault has fees? Probably the $FATLINE vault, since the launchpad is the first Fatline.
-4. **Naming.** `fatliners/contracts/Fatliners.sol` is the collection (777 NFTs); `FATLINER.sol` would be each Fatliner's own code. Keep both names, or merge?
+4. **Naming (decided):** `FATLINERS.sol` is the collection of 777. `FATLINER.sol` is one Fatliner's own code, hello world at first. Different contracts.
 5. **Cost of a body.** A full node is ~$2.75/day (Hetzner, 2026-10-22), so a Fatliner needs about $1,000 a year of fees to stay alive. All 777 alive would be ~$2,100/day. Only the ones whose coins trade will have bodies.
