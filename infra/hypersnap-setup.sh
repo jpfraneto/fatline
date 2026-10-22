@@ -7,7 +7,10 @@
 #                        volume with the most free space that is not already holding Snapchain.
 #   INFINICASTER_SNAPSHOT=stream     stream the starting snapshot straight to disk, one copy (~600 GB). Default.
 #                        hypersnap  use Hypersnap's own download (keeps ~3 copies at its peak)
-#                        replicate  copy only the current state from other nodes (experimental)
+#                        replicate  copy only the current state from other nodes. Refused for now: it cannot
+#                                   finish on mainnet. Hypersnap's replicator (same code as Snapchain's, checked at
+#                                   2e8733d) refuses KeyAdd/KeyRemove messages, so every copy dies at the first
+#                                   account that has one. Set INFINICASTER_FORCE=1 to try anyway.
 #   INFINICASTER_REPLICATION_PEERS=http://IP:3383[,...]   with replicate: which nodes to copy from
 #   INFINICASTER_BLOCKS=all          block history to keep. Hypersnap exists to keep everything, so "all"
 #                        is the default; "1day" etc. sets pruning.block_retention.
@@ -28,6 +31,12 @@ set -euo pipefail
 IMAGE="farcasterorg/hypersnap:0.13.5"   # = "latest" on 2026-10-22 (sha256:6b5e3a23...)
 UPSTREAM_COMMIT="2e8733d044141ad3ba0e0592a4d5873c1dc6ce9c"   # farcasterorg/hypersnap main, 2026-10-17
 SNAPSHOT="${INFINICASTER_SNAPSHOT:-stream}"
+if [ "$SNAPSHOT" = replicate ] && [ "${INFINICASTER_FORCE:-}" != 1 ]; then
+  echo "Replicate can't finish on mainnet today: Hypersnap's replicator refuses KeyAdd/KeyRemove messages"
+  echo "(src/network/replication/replicator.rs), so the copy dies at the first account that has one."
+  echo "Use the default (stream), or set INFINICASTER_FORCE=1 to try anyway."
+  exit 1
+fi
 BLOCKS="${INFINICASTER_BLOCKS:-all}"
 SNAPSHOT_BUCKET="https://pub-d352dd8819104a778e20d08888c5a661.r2.dev"
 SNAPSHOT_URL="$SNAPSHOT_BUCKET/FARCASTER_NETWORK_MAINNET"
