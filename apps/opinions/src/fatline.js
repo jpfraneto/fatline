@@ -1,4 +1,4 @@
-// Farline: a quiet window onto autonomous software. Is this thing alive, and what is it doing?
+// Fatline: a quiet window onto autonomous software. Is this thing alive, and what is it doing?
 //
 // Every number here comes from this server's API, which watches the node and the chain itself.
 // The browser never talks to the node. If the data is old or the server can't be reached, the page
@@ -316,7 +316,7 @@ const linkOr = (text, href) => (href ? el('a', { href, target: '_blank', rel: 'n
 export async function coinPage(chainId, address) {
   const main = $('#main');
   main.replaceChildren(el('p', { class: 'fine' }, '…'));
-  main.classList.add('farline-page');
+  main.classList.add('fatline-page');
   let older = [];
   let moreCursor = null;
   let stable = null; // the parts people type into or watch: rendered once, never replaced by a refresh
@@ -400,7 +400,7 @@ export async function coinPage(chainId, address) {
 
 export async function nodePage(id) {
   const main = $('#main');
-  main.classList.add('farline-page');
+  main.classList.add('fatline-page');
   main.replaceChildren(el('p', { class: 'fine' }, '…'));
   const render = (snap) => {
     const n = snap.data;
@@ -482,7 +482,7 @@ function archiveText(item) {
  */
 export async function archivePage(fid) {
   const main = $('#main');
-  main.classList.add('farline-page');
+  main.classList.add('fatline-page');
   main.replaceChildren(el('p', { class: 'fine' }, '…'));
   const networks = state.config.networks.map((n) => n.name);
   let publishTo = networks.includes(store.get('publishTo', null)) ? store.get('publishTo', null) : state.network;

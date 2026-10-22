@@ -17,7 +17,7 @@ const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 /** A chain that answers the reads a coin page makes. `fail` makes vault reads throw (RPC down). */
 function fakeClient({ fail = false } = {}) {
   const values = {
-    name: 'Farline', symbol: 'FARLINE', decimals: 18,
+    name: 'Fatline', symbol: 'FATLINE', decimals: 18,
     balance: 12_340_000n, pendingFees: 500_000n, aliveUntil: 2_000_000_000n, paidThrough: 1_900_000_000n, tier: 0,
     tiers: [{ ratePerSecond: 6n, minDau: 0 }], ratePerSecond: 6n, today: 20_000n, owner: CREATOR, keeper: CREATOR,
     billingPeriod: 2_592_000n, minCoinToCount: 0n, dauOf: 0,
@@ -47,7 +47,7 @@ function setup({ fail = false, nodeApps = [VAULT], meta = {}, rpc = 'https://mai
   const client = fakeClient({ fail });
   const launchpad = new Launchpad(db, { chainId: 8453, factory: FACTORY, fromBlock: 100, usdc: USDC }, { client });
   const ins = db.prepare('INSERT INTO apps (chain_id, vault, creator, owner, uri, coin, block_number, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-  ins.run(8453, VAULT, CREATOR, CREATOR, appUri({ name: 'Farline', ...meta }), COIN, 100, 1_700_000_100_000);
+  ins.run(8453, VAULT, CREATOR, CREATOR, appUri({ name: 'Fatline', ...meta }), COIN, 100, 1_700_000_100_000);
   ins.run(8453, BARE, CREATOR, CREATOR, appUri({ name: 'Bare' }), null, 100, 1_700_000_100_000);
   let clock = Date.now();
   const nodes = new NodeMonitor(db, [{ id: 'master', url: 'http://10.0.0.9:3381', publicUrl: 'http://46.225.208.199:3381', apps: nodeApps }], {
@@ -74,7 +74,7 @@ test('coin resolves to its app, vault and operator-listed node; wrong chain is 4
   const { coins } = setup();
   const c = await coins.get(8453, COIN);
   assert.equal(c.isCoin, true);
-  assert.equal(c.coin.symbol, 'FARLINE');
+  assert.equal(c.coin.symbol, 'FATLINE');
   assert.equal(c.app.vault, VAULT);
   assert.equal(c.coin.link, `https://basescan.org/token/${COIN}`);
   assert.equal(c.nodes.length, 1);

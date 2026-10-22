@@ -1,4 +1,4 @@
-# Farline archive: shared interface proposal (draft, not approved)
+# Fatline archive: shared interface proposal (draft, not approved)
 
 Status: **approved by the owner on 2026-10-22: SQLite now (option A), archive only this client's own FID at first.**
 Owner of this file: session 28 (schema, db module, API, frontend).
@@ -142,7 +142,7 @@ Rules:
 { "items": [
   { "key": "0x…", "fid": 18350, "type": "MESSAGE_TYPE_CAST_ADD", "at": 1792600000000, "body": { "text": "…" },
     "networks": { "farcaster": "merged", "hypersnap": null } } ],
-  "sources": [ { "network": "farcaster", "label": "Farline master node", "cursorAt": 1792600000000 } ],
+  "sources": [ { "network": "farcaster", "label": "Fatline master node", "cursorAt": 1792600000000 } ],
   "more": 1792590000000 }
 ```
 
@@ -163,4 +163,4 @@ Why A: it is the smallest version that works, it uses the existing infrastructur
 ## Decided (owner, 2026-10-22)
 
 1. **Option A:** SQLite, in the indexer's existing file, behind `indexer/src/archive.mjs`. The tables above are created with SQLite types; switching to MySQL later only changes that module.
-2. **FIDs:** only this client's own FID (the one registered with `./infinicaster identity`). `fl_fids` starts with that one row.
+2. **FIDs:** only this client's own FID (the one registered with `./fatline identity`). `fl_fids` starts with that one row.

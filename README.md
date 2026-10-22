@@ -1,18 +1,18 @@
-# Farline
+# Fatline
 
 **Your own Farcaster client that pays for its own life.** It reads from your own node, posts with its own app key, and lives on a USDC vault on Base: its server pays itself from that vault.
 
 ```sh
-./infinicaster compute          # (0) rent a server that can hold a node
-./infinicaster node farcaster   # (1) your own read node on it, no API keys (or: node hypersnap)
-./infinicaster client           # (2) your client, reading from your node; its vault comes from "Launch an app" in it
+./fatline compute          # (0) rent a server that can hold a node
+./fatline node farcaster   # (1) your own read node on it, no API keys (or: node hypersnap)
+./fatline client           # (2) your client, reading from your node; its vault comes from "Launch an app" in it
 ```
 
 **Status:** each command has been run on its own; a fresh run of all three, start to finish, is untested. `compute` rents a node-capable Hetzner machine (price first, then you type "create"). `node <network>` installs that node there, follows the snapshot, and makes it your own node once it answers (`--local` installs on your own machine instead). `client` reads from it.
 
-Before them: `git clone https://github.com/jpfraneto/infinicaster && cd infinicaster`. You need git, ssh and Node.js 22.12+, plus a Hetzner Cloud account with a card and an API token in `~/.hetzner-token`. New Hetzner accounts have limits (ours: 1,385 GB of volumes, 14 vCPUs), so one account fits one full node; Farcaster and Hypersnap side by side need two servers. Or use Docker on a machine of your own: `./infinicaster node farcaster --local`. The vault step is proven on a local fork of Base only: `AppFactory` is not deployed on Base mainnet yet (see "Status" below). The tutorial is in [`apps/site/index.html`](apps/site/index.html), in English and Spanish.
+Before them: `git clone https://github.com/jpfraneto/fatline && cd fatline`. You need git, ssh and Node.js 22.12+, plus a Hetzner Cloud account with a card and an API token in `~/.hetzner-token`. New Hetzner accounts have limits (ours: 1,385 GB of volumes, 14 vCPUs), so one account fits one full node; Farcaster and Hypersnap side by side need two servers. Or use Docker on a machine of your own: `./fatline node farcaster --local`. The vault step is proven on a local fork of Base only: `AppFactory` is not deployed on Base mainnet yet (see "Status" below). The tutorial is in [`apps/site/index.html`](apps/site/index.html), in English and Spanish.
 
-Farline is where Infinicaster is going: infrastructure for autonomous apps, built on Farcaster identity, onchain money and software that keeps running on its own. The repository, the CLI (`./infinicaster`) and the contracts keep the Infinicaster name for now.
+Fatline is where Fatline is going: infrastructure for autonomous apps, built on Farcaster identity, onchain money and software that keeps running on its own. The repository, the CLI (`./fatline`) and the contracts keep the Fatline name for now.
 
 ## How it works
 
@@ -36,9 +36,9 @@ Status, honestly:
 | | Status |
 | --- | --- |
 | Machine check, and renting a server for USDC (x402) | Works with mock sellers. New: rent **by the day** from AgentMetal (USDC, x402), add up to 1 TB of disk, and set up a read node unattended (`compute --provider agentmetal --days 1 --disk 700 --node`, ~11 USDC). The keeper then renews one day at a time. Not yet run with real money. |
-| Read node (also on Hetzner, hourly by card: `./infinicaster compute hetzner`, ~$2.50/day) | Keeps 1 day of blocks by default (Snapchain's own `pruning.block_retention`). On a rented server the starting snapshot (~400 GB compressed, ~600 GB unpacked) is **streamed** straight to disk, so it needs one copy of space instead of Snapchain's ~3. Next: sync one for real and measure. |
+| Read node (also on Hetzner, hourly by card: `./fatline compute hetzner`, ~$2.50/day) | Keeps 1 day of blocks by default (Snapchain's own `pruning.block_retention`). On a rented server the starting snapshot (~400 GB compressed, ~600 GB unpacked) is **streamed** straight to disk, so it needs one copy of space instead of Snapchain's ~3. Next: sync one for real and measure. |
 | Client: reading, both networks | Works. |
-| Client: seed phrase → app key | Built: `./infinicaster identity` registers a **gasless** app key (no transaction, no ETH), scoped to casts, reactions, follows and profile only. The seed phrase goes into a hidden prompt and is never saved. Format checked against a real node; not yet run with a real account. |
+| Client: seed phrase → app key | Built: `./fatline identity` registers a **gasless** app key (no transaction, no ETH), scoped to casts, reactions, follows and profile only. The seed phrase goes into a hidden prompt and is never saved. Format checked against a real node; not yet run with a real account. |
 | Client: post, reply, like, recast, follow, delete | Built and tested in a real browser against a fake node: each action is signed, sent to your node, and shown as *Confirmed* only once the node returns it. Only this machine (or a write token) can post. Not yet run on the real network. |
 | Client: show or hide posts by the app that made them | Works on real data: each cast's signing key is traced to the app FID that asked for it (read from the key's own onchain record), shown as "via @app". In My people, tap an app to hide it, or show only that app; casts from unknown apps follow a visible checkbox. Checked through crackle with @dwr, @v and @vitalik: 20 of 20 casts traced (@warpcast 12, @fireflyapp 8), hiding @warpcast left the 8 Firefly casts. Gasless keys (like the one `identity` makes) are traced only if the node's record names the app. |
 | Tutorial site (English + Spanish) | Not started. |
@@ -69,16 +69,16 @@ The main page shows a strip with every node this server watches. Each one links 
 - *Unknown:* not checked yet, a short silence, or data older than 45 s. If the browser can't reach the server for 45 s, it shows Unknown too.
 
 **How a coin is tied to a node.** Never guessed. There are two ways, and the page says which one applies:
-1. The operator of the server lists the app's vault or coin under `masterNodes[].apps` in `infinicaster.config.json`.
+1. The operator of the server lists the app's vault or coin under `masterNodes[].apps` in `fatline.config.json`.
 2. The app names its node's public URL when it is born ("Launch an app" → Advanced). That URL is stored onchain. The server only checks URLs that are in its own config; it never fetches a URL that comes from the chain.
 
-`masterNodes` in [`infinicaster.config.example.json`](infinicaster.config.example.json) lists the Farline master node. Nothing is tied to it yet: `$INFINICASTER` has not been launched. Set `"public": false` on a node to keep its URL off the page.
+`masterNodes` in [`fatline.config.example.json`](fatline.config.example.json) lists the Fatline master node. Nothing is tied to it yet: `$FATLINE` has not been launched. Set `"public": false` on a node to keep its URL off the page.
 
 ## Your archive, from both networks
 
 `#/archive` shows this client's own FID as one archive, read from two independent network adapters: one tails a Farcaster node, one a Hypersnap node. Each item says what each network holds: *held*, *pruned*, *revoked*, *replaced or removed*, *failed*, or *not seen*. "Not seen" can mean it existed before this server started watching. The *Publish to* selector only chooses where your next post goes.
 
-- Storage: SQLite tables in the indexer's database (`fl_events` is the log, `fl_messages` the state per network), behind [`indexer/src/archive.mjs`](indexer/src/archive.mjs). The adapters write only through that module. Design and reasons: [research/FARLINE-ARCHIVE.md](research/FARLINE-ARCHIVE.md).
+- Storage: SQLite tables in the indexer's database (`fl_events` is the log, `fl_messages` the state per network), behind [`indexer/src/archive.mjs`](indexer/src/archive.mjs). The adapters write only through that module. Design and reasons: [research/FATLINE-ARCHIVE.md](research/FATLINE-ARCHIVE.md).
 - The adapters (`indexer/src/adapters/`) are being built in parallel by other sessions. Until one runs, the archive is empty.
 
 ## How the money flows
@@ -119,8 +119,8 @@ See [`test/fork/LaunchOnBase.t.sol`](smart-contracts/test/fork/LaunchOnBase.t.so
 ## What is in this repository
 
 ```
-infinicaster                 one command for everything (./infinicaster help)
-infinicaster.config.example.json   networks, nodes, contract addresses
+fatline                 one command for everything (./fatline help)
+fatline.config.example.json   networks, nodes, contract addresses
 smart-contracts/             Foundry: AppFactory, AppVault, Voices, PrizeSplit
 indexer/                     the backend: apps + vaults, Farcaster/Hypersnap reads, launch builder, keeper
 apps/opinions/               the web app: launchpad, app pages, voices, people, settings (ES/EN, phone-ready)
@@ -138,21 +138,21 @@ AGENTS.md                    start here: for any agent or person continuing the 
 A local fork of Base runs the real Clanker, Uniswap and USDC contracts with fake money. You need Node.js 22.12+ and [Foundry](https://getfoundry.sh).
 
 ```sh
-./infinicaster contracts fork          # fork Base, deploy AppFactory + Voices, fund a dev wallet with 10,000 USDC
-./infinicaster up                      # in another terminal: indexer + app on http://localhost:8787
+./fatline contracts fork          # fork Base, deploy AppFactory + Voices, fund a dev wallet with 10,000 USDC
+./fatline up                      # in another terminal: indexer + app on http://localhost:8787
 node infra/fork-demo.mjs               # launch an app like the browser does, then trade its coin
 node infra/fork-crowd.mjs <vault> 25   # 25 people check in for free; the keeper posts them onchain
 ```
 
-To launch from the browser, import the dev key from `.infinicaster/dev.key` into a browser wallet and add the network `http://127.0.0.1:8545` (chain 8453). Then open **Launch an app**. Public RPCs are slow for forks; set `BASE_RPC_URL` to your own Base RPC if it times out.
+To launch from the browser, import the dev key from `.fatline/dev.key` into a browser wallet and add the network `http://127.0.0.1:8545` (chain 8453). Then open **Launch an app**. Public RPCs are slow for forks; set `BASE_RPC_URL` to your own Base RPC if it times out.
 
 ## Run it on a brand-new machine
 
 You need **git** and **Node.js 22.12 or newer**. A full node also needs Docker.
 
 ```sh
-git clone <this repository> infinicaster && cd infinicaster
-./infinicaster doctor
+git clone <this repository> fatline && cd fatline
+./fatline doctor
 ```
 
 `doctor` measures CPUs, memory, free disk, Docker and Node.js, and checks every configured node of both networks. It recommends one of three paths:
@@ -164,11 +164,11 @@ git clone <this repository> infinicaster && cd infinicaster
 | **Rent** | Neither of the above | One x402 USDC payment rents a server and sets the light system up on it |
 
 ```sh
-./infinicaster init                    # choose the default network (readers can switch in Settings)
-./infinicaster node farcaster          # full path only: run your own node (or: node hypersnap)
-./infinicaster compute --quote         # rent path: price only, nothing is signed
-./infinicaster compute --vault 0x…     # rent path: pay with one signature, set the server up
-./infinicaster up                      # install, build, start on :8787
+./fatline init                    # choose the default network (readers can switch in Settings)
+./fatline node farcaster          # full path only: run your own node (or: node hypersnap)
+./fatline compute --quote         # rent path: price only, nothing is signed
+./fatline compute --vault 0x…     # rent path: pay with one signature, set the server up
+./fatline up                      # install, build, start on :8787
 ```
 
 **Renting.** `compute` asks the seller for a price (HTTP 402). You sign **one** USDC authorization ([x402](https://github.com/coinbase/x402), EIP-3009), and the seller settles it as one USDC transfer on Base. The script copies this repository to the server and runs [`infra/server-setup.sh`](infra/server-setup.sh). Setup installs Node.js (checksum verified), builds everything, creates **the server's own keeper wallet**, and serves HTTPS at `https://<ip>.sslip.io`.
@@ -178,8 +178,8 @@ Once the vault owner runs `setKeeper(<that address>)`, the server pays itself fr
 ## Launch for real, on Base
 
 ```sh
-BASE_RPC_URL=https://mainnet.base.org ./infinicaster contracts deploy   # AppFactory + Voices; asks for the key
-./infinicaster up                                                     # then: Launch an app
+BASE_RPC_URL=https://mainnet.base.org ./fatline contracts deploy   # AppFactory + Voices; asks for the key
+./fatline up                                                     # then: Launch an app
 ```
 
 The factory is wired to Clanker's Base contracts, as used by `clanker-sdk@4.2.19`:
@@ -199,7 +199,7 @@ Opinions longer than a cast (up to 16 KiB), stored onchain on Base, independent 
 [`PrizeSplit`](smart-contracts/src/PrizeSplit.sol) is a payout address owned 50/50 by two people. It has no owner and no way to change the split.
 
 ```sh
-BASE_RPC_URL=https://mainnet.base.org ./infinicaster contracts split 0xPersonA 0xPersonB
+BASE_RPC_URL=https://mainnet.base.org ./fatline contracts split 0xPersonA 0xPersonB
 ```
 
 ## The two networks (checked 2026-10-21)
@@ -230,7 +230,7 @@ Tested:
   - the keeper paid itself 15.55 USDC, and the app page showed "Alive for 270 days more";
   - 25 people signed free check-ins through the API and the server refused a forged one. The keeper posted them in two batches (~35,000 gas per person), and the contract's `dauOf(today)` read 25.
 - **The coin and node pages:** 23 tests cover address and checksum checks, coin-to-node resolution, the four states, stale heartbeats, catching up and stalls, missing treasury data, API failures, starting deposits counted once, and that the probe URL never reaches the browser. On the Base fork, the vault's indexed history matched its live balance to the cent: 100 deposited + 40.05 fees − 15.55 compute = 124.50 USDC. Against the real master node, the page showed *Offline: the machine answered, but no node is listening*, which was true while its snapshot downloaded. `node apps/opinions/test/layout.mjs <url> "#/" "#/coin/…"` checks 360, 390, 768 and 1280 px in Chrome for sideways scrolling; all passed.
-- **Choosing a node:** Settings lists every node of each network (your own, the two Infinicaster nodes, crackle, haatz) with its health. Choose one and every read and post goes only through it; if it is down, you get an error naming it, never a quiet switch. *Automatic* takes the first that answers, says which one, and says so when it changes. Checked against the real nodes: crackle served the feed, and the master node (not serving yet) gave a clear error.
+- **Choosing a node:** Settings lists every node of each network (your own, the two Fatline nodes, crackle, haatz) with its health. Choose one and every read and post goes only through it; if it is down, you get an error naming it, never a quiet switch. *Automatic* takes the first that answers, says which one, and says so when it changes. Checked against the real nodes: crackle served the feed, and the master node (not serving yet) gave a clear error.
 - **The archive module:** 12 tests: a message on both networks becomes one item with two statuses; replayed events change nothing; a bad batch writes nothing, cursor included; prunes and removals keep the content; a 5,000-message revoke burst in one transaction; node URLs never reach the browser. The page was checked at 360–1280 px with sample events in a scratch database. It has not run with real adapters yet.
 - **Indexer and x402:** 8 indexer tests, and x402 v1 and v2 payments against mock sellers. The doctor and the UI were checked at desktop and phone widths.
 
@@ -271,4 +271,4 @@ Dependencies keep their own licenses (checked 2026-10-22):
 | [Snapchain](https://github.com/farcasterxyz/snapchain) | the Farcaster node | GPL-3.0 |
 | [Hypersnap](https://github.com/farcasterorg/hypersnap) | the Hypersnap node | GPL-3.0 |
 
-The node software is not part of this repository. `./infinicaster node` downloads each project's own published scripts and Docker images when you install, so their GPL-3.0 code runs under its own license. Clanker and Uniswap contracts are called onchain, not copied.
+The node software is not part of this repository. `./fatline node` downloads each project's own published scripts and Docker images when you install, so their GPL-3.0 code runs under its own license. Clanker and Uniswap contracts are called onchain, not copied.

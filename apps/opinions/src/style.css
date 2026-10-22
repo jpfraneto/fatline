@@ -1,5 +1,5 @@
 :root {
-  /* Farline: a quiet observation window. One palette, deep midnight. */
+  /* Fatline: a quiet observation window. One palette, deep midnight. */
   --bg: #111820;
   --surface: #151e27;
   --raise: #1a2530;
@@ -193,8 +193,8 @@ button.link:disabled { opacity: .5; cursor: default; }
 .as { font-size: 13px; margin: 0 0 6px; }
 .status.inline:empty { display: none; }
 
-/* ---------- Farline: coin and node pages ---------- */
-.farline-page { letter-spacing: 0.005em; }
+/* ---------- Fatline: coin and node pages ---------- */
+.fatline-page { letter-spacing: 0.005em; }
 .eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--slate); }
 .coin-head { margin: 8px 0 8px; }
 .coin-name { font: 500 34px/1.1 var(--serif); margin: 0 0 8px; letter-spacing: -0.01em; overflow-wrap: anywhere; }
@@ -240,15 +240,15 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
 .signal .base { stroke: var(--slate); stroke-opacity: 0.45; stroke-width: 1; }
 .signal .pulse { stroke: var(--signal); stroke-width: 1.6; stroke-dasharray: 70 530; stroke-dashoffset: 600; opacity: 0; }
 .signal .end { fill: var(--slate); }
-.signal.online .pulse { opacity: 1; animation: farline-flow 3.2s linear infinite; animation-delay: var(--phase, 0s); }
-.signal.online .end { fill: var(--signal); animation: farline-breathe 3.2s ease-in-out infinite; animation-delay: var(--phase, 0s); }
-.signal.degraded .pulse { opacity: 0.8; stroke: var(--amber); animation: farline-flow 9s linear infinite; animation-delay: var(--phase, 0s); }
+.signal.online .pulse { opacity: 1; animation: fatline-flow 3.2s linear infinite; animation-delay: var(--phase, 0s); }
+.signal.online .end { fill: var(--signal); animation: fatline-breathe 3.2s ease-in-out infinite; animation-delay: var(--phase, 0s); }
+.signal.degraded .pulse { opacity: 0.8; stroke: var(--amber); animation: fatline-flow 9s linear infinite; animation-delay: var(--phase, 0s); }
 .signal.degraded .end { fill: var(--amber); }
 .signal.offline .base { stroke: var(--warn); stroke-opacity: 0.5; }
 .signal.offline .end { fill: var(--warn); }
 .signal.unknown .base { stroke-dasharray: 2 6; }
-@keyframes farline-flow { from { stroke-dashoffset: 600; } to { stroke-dashoffset: -70; } }
-@keyframes farline-breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@keyframes fatline-flow { from { stroke-dashoffset: 600; } to { stroke-dashoffset: -70; } }
+@keyframes fatline-breathe { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .signal .pulse, .signal .end { animation: none !important; }
   .signal.online .pulse, .signal.degraded .pulse { stroke-dasharray: none; stroke-dashoffset: 0; opacity: 0.85; }
@@ -293,7 +293,7 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
   .ev time { grid-column: 1 / -1; }
 }
 
-/* ---------- Farline archive ---------- */
+/* ---------- Fatline archive ---------- */
 .publish { margin: 6px 0 4px; display: grid; gap: 6px; justify-items: start; }
 .switch.kinds { margin: 18px 0 6px; flex-wrap: wrap; border-radius: 14px; }
 .sources { margin: 4px 0 0; padding-left: 18px; }

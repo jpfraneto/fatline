@@ -1,4 +1,4 @@
-# Infinicaster contracts
+# Fatline contracts
 
 Foundry project. No upgradability, no protocol owner, no protocol fee.
 
@@ -12,7 +12,7 @@ Foundry project. No upgradability, no protocol owner, no protocol fee.
 ```sh
 forge test                                                            # unit + fuzz tests (the fork test skips)
 BASE_RPC_URL=https://mainnet.base.org forge test --match-path "test/fork/*" --ffi -vv   # real Clanker on a Base fork
-../infinicaster contracts fork | local | deploy | split
+../fatline contracts fork | local | deploy | split
 ```
 
 Default tiers ([`script/Deploy.s.sol`](script/Deploy.s.sol)) are in USDC units per second, where 1 unit/s = 2.592 USDC per 30 days:

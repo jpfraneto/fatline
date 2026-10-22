@@ -1,5 +1,5 @@
 {
-  "name": "@infinicaster/opinions",
+  "name": "@fatline/opinions",
   "version": "0.1.0",
   "description": "A quiet feed of long-form opinions, readable from Farcaster or Hypersnap.",
   "license": "MIT",

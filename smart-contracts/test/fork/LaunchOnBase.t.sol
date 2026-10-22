@@ -85,7 +85,7 @@ contract LaunchOnBaseTest is Test {
     function test_LaunchTradeAndLive() public {
         if (noFork) return console.log("skipped: set BASE_RPC_URL to run against a Base fork");
 
-        // 1. Build the Clanker launch with the official SDK, exactly like ./infinicaster launch.
+        // 1. Build the Clanker launch with the official SDK, exactly like ./fatline launch.
         address vaultAddr = factory.predictVault(creator, "opinions");
         string[] memory cmd = new string[](9);
         (cmd[0], cmd[1], cmd[2], cmd[3]) = ("node", "../indexer/src/launch.mjs", vm.toString(vaultAddr), vm.toString(creator));

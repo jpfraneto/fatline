@@ -10,7 +10,7 @@ let queued = 0;
 for (let i = 0; i < Number(n); i++) {
   const person = privateKeyToAccount(generatePrivateKey());
   const signature = await person.signTypedData({
-    domain: { name: 'Infinicaster App', version: '1', chainId: 8453, verifyingContract: app.vault },
+    domain: { name: 'Fatline App', version: '1', chainId: 8453, verifyingContract: app.vault },
     types: { CheckIn: [{ name: 'day', type: 'uint256' }] }, primaryType: 'CheckIn', message: { day: BigInt(day) },
   });
   const res = await fetch(`${API}/api/apps/${app.vault}/checkin`, { method: 'POST', body: JSON.stringify({ person: person.address, day, signature }) });
@@ -20,6 +20,6 @@ for (let i = 0; i < Number(n); i++) {
 // A forged one: signed by someone else. The server must refuse it.
 const liar = privateKeyToAccount(generatePrivateKey());
 const victim = privateKeyToAccount(generatePrivateKey()).address;
-const forged = await liar.signTypedData({ domain: { name: 'Infinicaster App', version: '1', chainId: 8453, verifyingContract: app.vault }, types: { CheckIn: [{ name: 'day', type: 'uint256' }] }, primaryType: 'CheckIn', message: { day: BigInt(day) } });
+const forged = await liar.signTypedData({ domain: { name: 'Fatline App', version: '1', chainId: 8453, verifyingContract: app.vault }, types: { CheckIn: [{ name: 'day', type: 'uint256' }] }, primaryType: 'CheckIn', message: { day: BigInt(day) } });
 const bad = await fetch(`${API}/api/apps/${app.vault}/checkin`, { method: 'POST', body: JSON.stringify({ person: victim, day, signature: forged }) });
 console.log(`${queued} people checked in (free signatures). Forged check-in: HTTP ${bad.status} ${(await bad.json()).error ?? ''}`);

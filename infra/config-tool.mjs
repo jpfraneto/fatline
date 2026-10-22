@@ -1,4 +1,4 @@
-// Small edits to infinicaster.config.json, used by ./infinicaster.
+// Small edits to fatline.config.json, used by ./fatline.
 //   init [--network farcaster|hypersnap] [--node URL]   choose a network (asks when not given)
 //   own-node <network> <url>                             mark a node as yours, first in line
 //   contracts <chainId> <rpc>                            read the latest forge deployment (Voices, AppFactory) into the config
@@ -8,9 +8,9 @@ import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const FILE = join(ROOT, 'infinicaster.config.json');
+const FILE = join(ROOT, 'fatline.config.json');
 const load = () => {
-  if (!existsSync(FILE)) copyFileSync(join(ROOT, 'infinicaster.config.example.json'), FILE);
+  if (!existsSync(FILE)) copyFileSync(join(ROOT, 'fatline.config.example.json'), FILE);
   return JSON.parse(readFileSync(FILE, 'utf8'));
 };
 const save = (c) => writeFileSync(FILE, JSON.stringify(c, null, 2) + '\n');
@@ -35,7 +35,7 @@ if (cmd === 'init') {
   const names = Object.keys(c.networks);
   let network = flag('network');
   if (!network) {
-    console.log('\nWhich network should Infinicaster read by default? Readers can still switch in the app.\n');
+    console.log('\nWhich network should Fatline read by default? Readers can still switch in the app.\n');
     names.forEach((n, i) => console.log(`  ${i + 1}. ${c.networks[n].label} — ${c.networks[n].about}`));
     const pick = await ask(`\nChoose 1-${names.length} [${names.indexOf(c.defaultNetwork) + 1}]: `);
     network = names[Number(pick) - 1] ?? c.defaultNetwork;
@@ -45,7 +45,7 @@ if (cmd === 'init') {
   const node = flag('node') ?? (flag('network') ? '' : await ask(`URL of a ${c.networks[network].label} node you run elsewhere (Enter to skip): `));
   if (node) setOwnNode(c, network, node);
   save(c);
-  console.log(`\nSaved infinicaster.config.json: default network ${c.networks[network].label}.`);
+  console.log(`\nSaved fatline.config.json: default network ${c.networks[network].label}.`);
 } else if (cmd === 'own-node') {
   const [network, url] = rest;
   if (!c.networks[network]) throw new Error(`Unknown network ${network}`);
@@ -64,7 +64,7 @@ if (cmd === 'init') {
   }
   save(c);
   for (const [name, address] of Object.entries(created)) console.log(`  ${name.padEnd(10)} ${address}`);
-  console.log(`Saved to infinicaster.config.json (indexing from block ${firstBlock}).`);
+  console.log(`Saved to fatline.config.json (indexing from block ${firstBlock}).`);
 } else {
   console.log('usage: config-tool.mjs init | own-node <network> <url> | contracts <chainId> <rpc>');
   process.exit(1);

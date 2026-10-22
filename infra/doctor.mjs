@@ -1,5 +1,5 @@
-// ./infinicaster doctor
-// Looks at this machine and at the networks, then says which way of running Infinicaster fits:
+// ./fatline doctor
+// Looks at this machine and at the networks, then says which way of running Fatline fits:
 //   1. full  — run your own Farcaster or Hypersnap node here, plus the indexer and apps
 //   2. light — run the indexer and apps here, reading from a node that already exists
 //   3. rent  — this machine can't do either: rent a server with one x402 payment
@@ -81,14 +81,14 @@ async function probe(url) {
 }
 
 function loadConfig() {
-  const own = join(ROOT, 'infinicaster.config.json');
-  return JSON.parse(readFileSync(existsSync(own) ? own : join(ROOT, 'infinicaster.config.example.json'), 'utf8'));
+  const own = join(ROOT, 'fatline.config.json');
+  return JSON.parse(readFileSync(existsSync(own) ? own : join(ROOT, 'fatline.config.example.json'), 'utf8'));
 }
 
 export async function main() {
   const config = loadConfig();
   const chosen = process.argv[2] && config.networks[process.argv[2]] ? process.argv[2] : config.defaultNetwork;
-  const m = inspectMachine(join(ROOT, '.infinicaster'));
+  const m = inspectMachine(join(ROOT, '.fatline'));
 
   console.log(bold('\nThis machine'));
   console.log(`  ${m.os} · ${m.arch} · ${m.cpus} CPUs · ${m.ramGb} GB RAM · ${m.freeDiskGb} GB free disk`);
@@ -130,31 +130,31 @@ export async function main() {
   console.log(bold(`\nRecommendation for ${label}`));
   if (plan === 'full') {
     console.log(`  Run your own ${label} node here, then the indexer and apps:`);
-    console.log(`    ./infinicaster node ${chosen}`);
-    console.log('    ./infinicaster up');
+    console.log(`    ./fatline node ${chosen}`);
+    console.log('    ./fatline up');
     console.log(dim('  The node downloads a snapshot (hundreds of GB) and can take hours to catch up.'));
     console.log(dim('  It also needs ports 3381-3383 (TCP and UDP) reachable from the internet.'));
   } else if (plan === 'light') {
     const r = reachable[chosen];
     console.log(`  This machine can't hold a full node, but it can run the indexer and apps,`);
     console.log(`  reading ${label} from ${r.url} (${r.own ? 'your node' : yellow('a public node you do not control')}).`);
-    console.log('    ./infinicaster up');
+    console.log('    ./fatline up');
     if (!r.own) {
       console.log(dim('  The app always shows which node it reads from. To be fully independent later,'));
-      console.log(dim('  run a node on a bigger machine and put its URL first in infinicaster.config.json.'));
+      console.log(dim('  run a node on a bigger machine and put its URL first in fatline.config.json.'));
     }
   } else {
-    console.log(`  Nothing here can run Infinicaster for ${label} right now.`);
+    console.log(`  Nothing here can run Fatline for ${label} right now.`);
     if (!m.nodeOk) console.log(`  ${red('•')} Install Node.js 22.12+ (https://nodejs.org) and run doctor again; or`);
     console.log(`  ${yellow('•')} rent a server with one x402 payment (USDC on Base). It runs the indexer and`);
     console.log('    apps and reads from a public node. You pay once; that payment is how long it lives:');
-    console.log('      ./infinicaster compute            # shows the price, asks before paying');
+    console.log('      ./fatline compute            # shows the price, asks before paying');
   }
 
   const report = { checkedAt: new Date().toISOString(), network: chosen, machine: m, full, light, reachable, plan };
-  mkdirSync(join(ROOT, '.infinicaster'), { recursive: true });
-  writeFileSync(join(ROOT, '.infinicaster/doctor.json'), JSON.stringify(report, null, 2));
-  console.log(dim(`\n  Saved to .infinicaster/doctor.json\n`));
+  mkdirSync(join(ROOT, '.fatline'), { recursive: true });
+  writeFileSync(join(ROOT, '.fatline/doctor.json'), JSON.stringify(report, null, 2));
+  console.log(dim(`\n  Saved to .fatline/doctor.json\n`));
   return report;
 }
 

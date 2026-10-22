@@ -1,4 +1,4 @@
-# Infinicaster: instructions for any agent (or person) working here
+# Fatline: instructions for any agent (or person) working here
 
 Start here, whatever tool you use:
 
@@ -10,11 +10,11 @@ Start here, whatever tool you use:
 
 ## Commands
 
-- `./infinicaster help` lists everything.
-- `./infinicaster test` runs every test: Foundry contracts, indexer, infra. Run it before saying something works.
-- Launchpad on a fork with fake money: `./infinicaster contracts fork`, then `./infinicaster up`. See the README.
-- Posting: `./infinicaster identity`, then `./infinicaster up`.
-- Full node on Hetzner (hourly, card): `./infinicaster compute hetzner --quote`, then `./infinicaster compute hetzner`, `… status`, `… down`. On AgentMetal (daily, USDC): `./infinicaster compute --provider agentmetal --days 1 --disk 700 --node`.
+- `./fatline help` lists everything.
+- `./fatline test` runs every test: Foundry contracts, indexer, infra. Run it before saying something works.
+- Launchpad on a fork with fake money: `./fatline contracts fork`, then `./fatline up`. See the README.
+- Posting: `./fatline identity`, then `./fatline up`.
+- Full node on Hetzner (hourly, card): `./fatline compute hetzner --quote`, then `./fatline compute hetzner`, `… status`, `… down`. On AgentMetal (daily, USDC): `./fatline compute --provider agentmetal --days 1 --disk 700 --node`.
 
 ## Rules
 

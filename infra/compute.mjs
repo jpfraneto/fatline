@@ -1,11 +1,11 @@
-// ./infinicaster compute [--quote] [--sku server_small_1mo] [--region EU] [--network farcaster] [--max-usdc 20] [--vault 0x…]
-// ./infinicaster compute --provider agentmetal --plan medium --days 3 --disk 1000 --node [--quote]
-// ./infinicaster compute wallet        (create or show this machine's paying wallet; fund it with USDC on Base)
-// ./infinicaster compute disk --disk 700 (buy or retry the extra disk, then set up)
-// ./infinicaster compute status        (how the rented server and its node are doing)
-// ./infinicaster compute deploy        (re-run only the setup step on the rented server)
+// ./fatline compute [--quote] [--sku server_small_1mo] [--region EU] [--network farcaster] [--max-usdc 20] [--vault 0x…]
+// ./fatline compute --provider agentmetal --plan medium --days 3 --disk 1000 --node [--quote]
+// ./fatline compute wallet        (create or show this machine's paying wallet; fund it with USDC on Base)
+// ./fatline compute disk --disk 700 (buy or retry the extra disk, then set up)
+// ./fatline compute status        (how the rented server and its node are doing)
+// ./fatline compute deploy        (re-run only the setup step on the rented server)
 //
-// Rents a server with ONE x402 payment and sets Infinicaster up on it.
+// Rents a server with ONE x402 payment and sets Fatline up on it.
 // The payment is a single signed USDC authorization on Base. It buys a fixed amount of time;
 // that time is the system's life. Renew it (or feed the Life contract) to keep it alive.
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -21,7 +21,7 @@ import { base, baseSepolia } from 'viem/chains';
 import { chooseOption, formatUsdc, readQuote, readReceipt, signPayment } from '../indexer/src/x402.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const STATE = join(ROOT, '.infinicaster');
+const STATE = join(ROOT, '.fatline');
 const PUBLIC_FILE = join(STATE, 'compute.json');
 const SECRET_FILE = join(STATE, 'compute.secret.json');
 const WALLET_FILE = join(STATE, 'compute-wallet.key');
@@ -30,7 +30,7 @@ const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const CHAINS = { 8453: base, 84532: baseSepolia };
 
 function defaultNetwork() {
-  const file = [join(ROOT, 'infinicaster.config.json'), join(ROOT, 'infinicaster.config.example.json')].find(existsSync);
+  const file = [join(ROOT, 'fatline.config.json'), join(ROOT, 'fatline.config.example.json')].find(existsSync);
   return JSON.parse(readFileSync(file, 'utf8')).defaultNetwork;
 }
 
@@ -83,7 +83,7 @@ async function wallet() {
   mkdirSync(STATE, { recursive: true });
   if (!existsSync(WALLET_FILE)) {
     writeFileSync(WALLET_FILE, generatePrivateKey() + '\n', { mode: 0o600 });
-    console.log('Created a new compute wallet. Its key is in .infinicaster/compute-wallet.key (mode 600, never committed).');
+    console.log('Created a new compute wallet. Its key is in .fatline/compute-wallet.key (mode 600, never committed).');
   }
   chmodSync(WALLET_FILE, 0o600);
   const account = privateKeyToAccount(readFileSync(WALLET_FILE, 'utf8').trim());
@@ -112,7 +112,7 @@ async function buy({ url, body, account, provider, label }) {
 function sshKey() {
   if (!existsSync(SSH_KEY)) {
     mkdirSync(STATE, { recursive: true });
-    execFileSync('ssh-keygen', ['-q', '-t', 'ed25519', '-N', '', '-C', 'infinicaster', '-f', SSH_KEY]);
+    execFileSync('ssh-keygen', ['-q', '-t', 'ed25519', '-N', '', '-C', 'fatline', '-f', SSH_KEY]);
   }
   return readFileSync(`${SSH_KEY}.pub`, 'utf8').trim();
 }
@@ -183,7 +183,7 @@ async function deployDaily(opts, p) {
     ip = (await (await fetch(`${p.api}/v1/servers/${secret.rental_id}`)).json().catch(() => ({}))).ipv4;
     if (!ip) await sleep(15_000);
   }
-  if (!ip) throw new Error('The server has no IP yet. Try again later: ./infinicaster compute deploy');
+  if (!ip) throw new Error('The server has no IP yet. Try again later: ./fatline compute deploy');
   record.ipv4 = ip;
   writeFileSync(PUBLIC_FILE, JSON.stringify(record, null, 2));
   const target = `root@${ip}`;
@@ -200,7 +200,7 @@ async function deployDaily(opts, p) {
     // The snapshot takes hours, so the setup runs on the server by itself; this machine can disconnect.
     spawnSync('ssh', [...sshArgs(), target, 'setsid nohup /root/node-setup.sh > /root/node-setup.log 2>&1 < /dev/null &'], { stdio: 'inherit' });
     console.log(`The node is being set up on ${ip}. It streams a ~400 GB snapshot first (hours).`);
-    console.log('Follow it with: ./infinicaster compute status');
+    console.log('Follow it with: ./fatline compute status');
     return;
   }
   await deploy(opts);
@@ -218,7 +218,7 @@ async function addDisk(opts) {
 }
 
 async function status() {
-  if (!existsSync(PUBLIC_FILE)) throw new Error('No rented server. Run ./infinicaster compute first.');
+  if (!existsSync(PUBLIC_FILE)) throw new Error('No rented server. Run ./fatline compute first.');
   const record = JSON.parse(readFileSync(PUBLIC_FILE, 'utf8'));
   console.log(`Server ${record.rentalId} at ${record.ipv4} (${record.provider}), paid until ${record.paidUntil}`);
   const remote = `tail -n 4 /root/node-setup.log 2>/dev/null; echo; df -h /mnt/HC_Volume_* / 2>/dev/null | sed 1d | awk '{print "disk " $6 ": " $3 " used, " $4 " free"}'; free -g | awk '/Mem|Swap/ {print $1 " " $3 "/" $2 " GB"}'; curl -s -m 5 localhost:3381/v1/info | jq -c '.shardInfos[]? | {shard: .shardId, height: .maxHeight, blockDelay}' 2>/dev/null`;
@@ -285,7 +285,7 @@ async function rent(opts) {
     network: opts.network ?? null,
   };
   writeFileSync(PUBLIC_FILE, JSON.stringify(record, null, 2));
-  console.log(`Rented. Rental ${rental.rental_id}, alive until ${record.paidUntil}. Credentials saved to .infinicaster/compute.secret.json (mode 600).`);
+  console.log(`Rented. Rental ${rental.rental_id}, alive until ${record.paidUntil}. Credentials saved to .fatline/compute.secret.json (mode 600).`);
   await deploy(opts);
 }
 
@@ -301,12 +301,12 @@ async function waitForServer(secret, provider) {
     process.stdout.write('.');
     await sleep(15_000);
   }
-  throw new Error('The server did not become ready in 20 minutes. Check later with: ./infinicaster compute deploy');
+  throw new Error('The server did not become ready in 20 minutes. Check later with: ./fatline compute deploy');
 }
 
 /** Copies this repository to the server and runs infra/server-setup.sh there. */
 async function deploy(opts) {
-  if (!existsSync(SECRET_FILE)) throw new Error('No rental found. Run ./infinicaster compute first.');
+  if (!existsSync(SECRET_FILE)) throw new Error('No rental found. Run ./fatline compute first.');
   const secret = JSON.parse(readFileSync(SECRET_FILE, 'utf8'));
   const record = JSON.parse(readFileSync(PUBLIC_FILE, 'utf8'));
   const provider = JSON.parse(readFileSync(join(ROOT, 'infra/providers.json'), 'utf8')).providers[secret.provider];
@@ -318,23 +318,23 @@ async function deploy(opts) {
 
   // ssh reads the password from a tiny helper instead of a prompt or a command-line argument.
   const askpass = join(STATE, 'askpass.sh');
-  writeFileSync(askpass, '#!/bin/sh\nprintf "%s\\n" "$INFINICASTER_SSH_PASSWORD"\n');
+  writeFileSync(askpass, '#!/bin/sh\nprintf "%s\\n" "$FATLINE_SSH_PASSWORD"\n');
   chmodSync(askpass, 0o700);
-  const env = { ...process.env, SSH_ASKPASS: askpass, SSH_ASKPASS_REQUIRE: 'force', DISPLAY: process.env.DISPLAY ?? ':0', INFINICASTER_SSH_PASSWORD: password };
+  const env = { ...process.env, SSH_ASKPASS: askpass, SSH_ASKPASS_REQUIRE: 'force', DISPLAY: process.env.DISPLAY ?? ':0', FATLINE_SSH_PASSWORD: password };
   const sshOpts = ['-o', 'StrictHostKeyChecking=accept-new', '-o', `UserKnownHostsFile=${join(STATE, 'known_hosts')}`, '-o', 'ConnectTimeout=20'];
   const target = `root@${ip}`;
 
-  console.log(`Copying Infinicaster to ${ip}…`);
+  console.log(`Copying Fatline to ${ip}…`);
   const tar = execFileSync('tar', [
     '-czf', '-', '--exclude=node_modules', '--exclude=.git', '--exclude=dist', '--exclude=out', '--exclude=cache',
-    '--exclude=.infinicaster', '--exclude=research/sources', '--exclude=apps/voice', '--exclude=apps/checklist',
+    '--exclude=.fatline', '--exclude=research/sources', '--exclude=apps/voice', '--exclude=apps/checklist',
     '--exclude=broadcast', '-C', ROOT, '.',
   ], { maxBuffer: 512 * 1024 * 1024 });
-  const copy = spawnSync('ssh', [...sshOpts, target, 'mkdir -p /opt/infinicaster/.infinicaster && tar -xzf - -C /opt/infinicaster'], { input: tar, env, stdio: ['pipe', 'inherit', 'inherit'] });
+  const copy = spawnSync('ssh', [...sshOpts, target, 'mkdir -p /opt/fatline/.fatline && tar -xzf - -C /opt/fatline'], { input: tar, env, stdio: ['pipe', 'inherit', 'inherit'] });
   if (copy.status !== 0) throw new Error('Copying to the server failed.');
-  spawnSync('ssh', [...sshOpts, target, 'cat > /opt/infinicaster/.infinicaster/compute.json'], { input: JSON.stringify(record), env });
+  spawnSync('ssh', [...sshOpts, target, 'cat > /opt/fatline/.fatline/compute.json'], { input: JSON.stringify(record), env });
   // The server renews its own rental, so it keeps the rental token (not the paying key, which never leaves this machine).
-  spawnSync('ssh', [...sshOpts, target, 'umask 077 && cat > /opt/infinicaster/.infinicaster/compute.secret.json'], { input: readFileSync(SECRET_FILE), env });
+  spawnSync('ssh', [...sshOpts, target, 'umask 077 && cat > /opt/fatline/.fatline/compute.secret.json'], { input: readFileSync(SECRET_FILE), env });
 
   // Prefer key login from now on, if this machine has a public key.
   const pub = ['id_ed25519.pub', 'id_rsa.pub'].map((f) => join(homedir(), '.ssh', f)).find(existsSync);
@@ -342,11 +342,11 @@ async function deploy(opts) {
 
   const network = opts.network ?? record.network ?? '';
   console.log('Running the setup on the server (Node.js, build, services, HTTPS)…');
-  const setup = spawnSync('ssh', [...sshOpts, target, `INFINICASTER_IP=${ip} INFINICASTER_NETWORK=${network} INFINICASTER_VAULT=${opts.vault} bash /opt/infinicaster/infra/server-setup.sh`], { env, stdio: 'inherit' });
-  if (setup.status !== 0) throw new Error('Setup on the server failed. Fix it and re-run: ./infinicaster compute deploy');
+  const setup = spawnSync('ssh', [...sshOpts, target, `FATLINE_IP=${ip} FATLINE_NETWORK=${network} FATLINE_VAULT=${opts.vault} bash /opt/fatline/infra/server-setup.sh`], { env, stdio: 'inherit' });
+  if (setup.status !== 0) throw new Error('Setup on the server failed. Fix it and re-run: ./fatline compute deploy');
 
-  console.log(`\nInfinicaster is alive at https://${ip.replaceAll('.', '-')}.sslip.io until ${record.paidUntil}.`);
-  console.log(`SSH: ssh root@${ip}${pub ? '' : ' (password in .infinicaster/compute.secret.json)'}`);
+  console.log(`\nFatline is alive at https://${ip.replaceAll('.', '-')}.sslip.io until ${record.paidUntil}.`);
+  console.log(`SSH: ssh root@${ip}${pub ? '' : ' (password in .fatline/compute.secret.json)'}`);
 }
 
 const opts = args();

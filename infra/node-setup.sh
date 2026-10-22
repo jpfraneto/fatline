@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
 # Turns a fresh Linux server into a Farcaster read node (Snapchain), unattended.
-# Run as root on the server. ./infinicaster compute --node does this for you.
+# Run as root on the server. ./fatline compute --node does this for you.
 #
-#   INFINICASTER_BLOCKS=1day     keep this much block history (Snapchain pruning.block_retention); "all" keeps everything
-#   INFINICASTER_SNAPSHOT=stream    stream the starting snapshot straight to disk (needs ~1 copy of space, ~600 GB)
+#   FATLINE_BLOCKS=1day     keep this much block history (Snapchain pruning.block_retention); "all" keeps everything
+#   FATLINE_SNAPSHOT=stream    stream the starting snapshot straight to disk (needs ~1 copy of space, ~600 GB)
 #                        replicate copy only the current state from other nodes, no old blocks (experimental; does NOT
 #                                  finish on mainnet today: Snapchain's replication refuses KeyAdd/KeyRemove messages,
 #                                  so the copy fails at the first account that has one. Tested 2026-10-22. A full
 #                                  replica would also be ~300-400 GB and take ~11-15 h from a synced source.
-#                                  Refused unless INFINICASTER_FORCE=1.)
+#                                  Refused unless FATLINE_FORCE=1.)
 #                        snapchain use Snapchain's own download (keeps ~3 copies at its peak)
-#   INFINICASTER_REPLICATION_PEERS=http://IP:3383[,http://IP2:3383]
+#   FATLINE_REPLICATION_PEERS=http://IP:3383[,http://IP2:3383]
 #                        with replicate: which nodes to copy state from. Snapchain's default is rho.farcaster.xyz,
 #                        which answers "Unimplemented" (it sits behind a proxy), so point it at a node that serves it.
 #
 # Safe to re-run: finished steps are skipped, and an interrupted snapshot shard starts over.
 set -euo pipefail
 
-BLOCKS="${INFINICASTER_BLOCKS:-1day}"
-SNAPSHOT="${INFINICASTER_SNAPSHOT:-stream}"
-if [ "$SNAPSHOT" = replicate ] && [ "${INFINICASTER_FORCE:-}" != 1 ]; then
+BLOCKS="${FATLINE_BLOCKS:-1day}"
+SNAPSHOT="${FATLINE_SNAPSHOT:-stream}"
+if [ "$SNAPSHOT" = replicate ] && [ "${FATLINE_FORCE:-}" != 1 ]; then
   echo "Replicate can't finish on mainnet today: Snapchain's replicator refuses KeyAdd/KeyRemove messages"
   echo "(src/network/replication/replicator.rs), so the copy dies at the first account that has one (tested 2026-10-22)."
-  echo "Use the default (stream), or set INFINICASTER_FORCE=1 to try anyway."
+  echo "Use the default (stream), or set FATLINE_FORCE=1 to try anyway."
   exit 1
 fi
 # The bucket root. latest.json lives under FARCASTER_NETWORK_MAINNET/<shard>/, and its key_base already
@@ -34,9 +34,9 @@ SHARDS="0 1 2"
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 
 # 1. Put the node's data on the biggest disk: an attached volume if there is one.
-# With several volumes (e.g. a Hypersnap one on the same server): INFINICASTER_VOLUME wins, then the
+# With several volumes (e.g. a Hypersnap one on the same server): FATLINE_VOLUME wins, then the
 # volume that already holds a snapchain folder, then the first one.
-VOLUME="${INFINICASTER_VOLUME:-}"
+VOLUME="${FATLINE_VOLUME:-}"
 if [ -z "$VOLUME" ]; then
   VOLUME=$(ls -d /mnt/HC_Volume_*/snapchain 2>/dev/null | head -1 | xargs -r dirname || true)
   [ -n "$VOLUME" ] || VOLUME=$(ls -d /mnt/HC_Volume_* 2>/dev/null | head -1 || true)
@@ -76,9 +76,9 @@ chmod +x snapchain.sh
 touch .env
 grep -q '^AGREE_NO_REWARDS_FOR_ME=' .env || echo 'AGREE_NO_REWARDS_FOR_ME=true' >> .env
 # Snapchain's weekly auto-upgrade picks its day from the operator's FID. Without one it stops, so skip it
-# (re-run ./snapchain.sh upgrade by hand) unless INFINICASTER_OPERATOR_FID is given.
-if [ -n "${INFINICASTER_OPERATOR_FID:-}" ]; then
-  grep -q '^HUB_OPERATOR_FID=' .env || echo "HUB_OPERATOR_FID=$INFINICASTER_OPERATOR_FID" >> .env
+# (re-run ./snapchain.sh upgrade by hand) unless FATLINE_OPERATOR_FID is given.
+if [ -n "${FATLINE_OPERATOR_FID:-}" ]; then
+  grep -q '^HUB_OPERATOR_FID=' .env || echo "HUB_OPERATOR_FID=$FATLINE_OPERATOR_FID" >> .env
 else
   grep -q '^HUB_OPERATOR_FID=' .env || echo 'HUB_OPERATOR_FID=0' >> .env
   grep -q '^SKIP_CRONTAB=' .env || echo 'SKIP_CRONTAB=true' >> .env
@@ -94,7 +94,7 @@ fi
 
 # 5. Our settings live in an override file that Snapchain's upgrades never touch.
 {
-  echo "# Written by Infinicaster (infra/node-setup.sh)."
+  echo "# Written by Fatline (infra/node-setup.sh)."
   echo "services:"
   echo "  snapchain:"
   # While copying, a failed copy must stop the node: restarted, Snapchain would run on the partial data.
@@ -103,9 +103,9 @@ fi
   if [ "$BLOCKS" != all ]; then echo "      SNAPCHAIN_PRUNING__BLOCK_RETENTION: \"$BLOCKS\""; fi
   echo "      SNAPCHAIN_SNAPSHOT__LOAD_DB_FROM_SNAPSHOT: \"$([ "$SNAPSHOT" = snapchain ] && echo true || echo false)\""
   if [ "$SNAPSHOT" = replicate ]; then echo "      SNAPCHAIN_SNAPSHOT__BOOTSTRAP_METHOD: \"Replicate\""; fi
-  if [ "$SNAPSHOT" = replicate ] && [ -n "${INFINICASTER_REPLICATION_PEERS:-}" ]; then
+  if [ "$SNAPSHOT" = replicate ] && [ -n "${FATLINE_REPLICATION_PEERS:-}" ]; then
     # A list for Snapchain's config: ["http://a:3383","http://b:3383"]
-    peers=$(echo "$INFINICASTER_REPLICATION_PEERS" | jq -Rc 'split(",") | map(select(length > 0))')
+    peers=$(echo "$FATLINE_REPLICATION_PEERS" | jq -Rc 'split(",") | map(select(length > 0))')
     echo "      SNAPCHAIN_SNAPSHOT__REPLICATION_PEERS: '$peers'"
   fi
 } > docker-compose.override.yml
@@ -210,7 +210,7 @@ setsid nohup ./snapchain.sh upgrade < /dev/null > upgrade.log 2>&1 &
 if [ "$SNAPSHOT" = replicate ] && [ ! -f .replicate-done ]; then
   # The copy takes hours (we measured ~17k messages/s on 4 cores, ~15 h for mainnet). Follow Snapchain's log.
   # Its source node must keep its copy point for that long: points older than 24 h are dropped mid-copy.
-  say "Copying the current state from ${INFINICASTER_REPLICATION_PEERS:-the default peers}"
+  say "Copying the current state from ${FATLINE_REPLICATION_PEERS:-the default peers}"
   sleep 60
   while true; do
     logs=$(docker compose logs --no-color --since 70s snapchain 2>&1 | sed 's/\x1b\[[0-9;]*m//g')

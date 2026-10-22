@@ -7,15 +7,15 @@
 // Hetzner's API has no balance endpoint, so this is an estimate: the last balance you set, minus every
 // resource in the project (servers, volumes, IPs) at its hourly price since then. Resources deleted since
 // the last --set-balance are missed, so set the balance again after deleting things.
-// Secrets: ~/.hetzner-token, ~/.infinicaster-telegram-token, ~/.infinicaster-telegram-chat (never printed).
+// Secrets: ~/.hetzner-token, ~/.fatline-telegram-token, ~/.fatline-telegram-chat (never printed).
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const BUDGET = join(ROOT, '.infinicaster/budget.json');
-const STATE = join(ROOT, '.infinicaster/budget-alert-state.json');
+const BUDGET = join(ROOT, '.fatline/budget.json');
+const STATE = join(ROOT, '.fatline/budget-alert-state.json');
 const HOUR = 3600_000;
 
 // Hours of runway at which to alert. Below the last one it repeats every REPEAT_HOURS.
@@ -85,22 +85,22 @@ export function alertText(e, list) {
 // No topic saved yet: take the newest forum topic the bot has seen a message in, and save it for next time
 // (other agents read the same file).
 async function findThread() {
-  const file = join(homedir(), '.infinicaster-telegram-thread');
+  const file = join(homedir(), '.fatline-telegram-thread');
   if (existsSync(file)) return;
-  const res = await fetch(`https://api.telegram.org/bot${secret('.infinicaster-telegram-token')}/getUpdates?limit=100`);
-  const chat = secret('.infinicaster-telegram-chat');
+  const res = await fetch(`https://api.telegram.org/bot${secret('.fatline-telegram-token')}/getUpdates?limit=100`);
+  const chat = secret('.fatline-telegram-chat');
   const msgs = ((await res.json()).result ?? []).map((u) => u.message).filter((m) => m && String(m.chat.id) === chat && m.is_topic_message && m.message_thread_id);
   if (msgs.length) writeFileSync(file, `${msgs.at(-1).message_thread_id}\n`, { mode: 0o600 });
 }
 
 async function telegram(text) {
   await findThread().catch(() => {});
-  const res = await fetch(`https://api.telegram.org/bot${secret('.infinicaster-telegram-token')}/sendMessage`, {
+  const res = await fetch(`https://api.telegram.org/bot${secret('.fatline-telegram-token')}/sendMessage`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      chat_id: secret('.infinicaster-telegram-chat'), text,
-      // A forum group with General closed needs a topic: put its id in ~/.infinicaster-telegram-thread.
-      ...(existsSync(join(homedir(), '.infinicaster-telegram-thread')) ? { message_thread_id: Number(secret('.infinicaster-telegram-thread')) } : {}),
+      chat_id: secret('.fatline-telegram-chat'), text,
+      // A forum group with General closed needs a topic: put its id in ~/.fatline-telegram-thread.
+      ...(existsSync(join(homedir(), '.fatline-telegram-thread')) ? { message_thread_id: Number(secret('.fatline-telegram-thread')) } : {}),
     }),
   });
   if (!res.ok) throw new Error(`Telegram: HTTP ${res.status} ${(await res.json().catch(() => ({}))).description ?? ''}`.trim());

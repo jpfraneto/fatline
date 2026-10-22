@@ -1,4 +1,4 @@
-// The Farline network adapter: reads one node and hands normalized events to the archive.
+// The Fatline network adapter: reads one node and hands normalized events to the archive.
 //
 // One adapter = one network + one node. It never falls back to another node: if its node is down,
 // it says so and waits. Farcaster (Snapchain) and Hypersnap speak the same /v1 HTTP API, so the same
@@ -11,7 +11,7 @@
 //      If the node no longer has the events after our cursor (it keeps ~3 days), that is a gap:
 //      every FID is backfilled again.
 //
-// The archive interface (indexer/src/archive.mjs, see research/FARLINE-ARCHIVE.md):
+// The archive interface (indexer/src/archive.mjs, see research/FATLINE-ARCHIVE.md):
 //   source({network, nodeUrl, label}) -> sourceId
 //   cursor(sourceId, shard) -> eventId | null
 //   ingest(sourceId, events, {shard, cursor})

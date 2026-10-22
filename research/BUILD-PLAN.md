@@ -3,9 +3,9 @@
 The first release should let a person operate a node, understand the client, and change one meaningful behavior. The first product is now **My Wall**: the owner's casts and the conversations growing around them, with a reply inbox. Build the reusable setup and this configurable template together, then use that exact setup to create the builder's personal instance. See [the My Wall design](MY-WALL-SYSTEM-DESIGN.md) for the hardware split, thread indexing, and phone experience. The commands below are a proposed interface, **not implemented commands**. Repository checkout and prerequisites must be visible above them; do not hide extra mandatory work in a “three commands” claim.
 
 ```sh
-./infinicaster compute
-./infinicaster node
-./infinicaster client
+./fatline compute
+./fatline node
+./fatline client
 ```
 
 `compute` would check the selected provider account or existing machine, show the actual resource plan and expected bill, and provision compute/storage/networking with a persisted resource inventory. Cloud account credentials are distinct from Farcaster data API keys. Existing-machine mode is useful, but the bounty also requires scripted provisioning. Provider selection remains open; no paid resources have been created.

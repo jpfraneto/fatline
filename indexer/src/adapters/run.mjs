@@ -1,8 +1,8 @@
-// Runs one Farline network adapter: one network, one node, its own cursor.
+// Runs one Fatline network adapter: one network, one node, its own cursor.
 //
 //   node src/adapters/run.mjs --network farcaster [--node URL] [--fid 18350] [--once]
 //
-// --node     the node to read. Default: the first node listed for that network in infinicaster.config.json.
+// --node     the node to read. Default: the first node listed for that network in fatline.config.json.
 //            The adapter reads only this node. It never switches to another one.
 // --label    the name shown on the archive page. Default: "<Network> (own node)", or the host for a public node.
 // --fid      also archive this FID (it is remembered). The client's own FID is added by the server.
@@ -35,7 +35,7 @@ const adapter = new SnapchainAdapter({
   archive, network, nodeUrl, label,
   log: (m) => console.log(new Date().toISOString(), m),
 });
-console.log(`Farline adapter: network=${network}, label "${label}", reading only ${nodeUrl}, FIDs ${JSON.stringify(archive.fids())}, archive ${config.dataDir}`);
+console.log(`Fatline adapter: network=${network}, label "${label}", reading only ${nodeUrl}, FIDs ${JSON.stringify(archive.fids())}, archive ${config.dataDir}`);
 
 if (argv.includes('--once')) {
   try {

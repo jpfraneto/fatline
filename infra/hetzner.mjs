@@ -1,15 +1,15 @@
-// ./infinicaster compute hetzner [--type <name>] [--location nbg1] [--disk 700] [--quote] [--no-node]
+// ./fatline compute hetzner [--type <name>] [--location nbg1] [--disk 700] [--quote] [--no-node]
 //   --type: default is the cheapest type in stock there with 16 GB+ RAM (cx43 and others sell out).
-//   --no-node: rent the machine only; install a node on it with ./infinicaster node farcaster|hypersnap.
-// ./infinicaster compute hetzner status
-// ./infinicaster compute hetzner down        (deletes everything this created; billing stops)
+//   --no-node: rent the machine only; install a node on it with ./fatline node farcaster|hypersnap.
+// ./fatline compute hetzner status
+// ./fatline compute hetzner down        (deletes everything this created; billing stops)
 //
 // A read node on Hetzner Cloud, billed by the hour, paid by card on your own Hetzner account.
 // Cheaper than the USDC sellers today (about $2.50/day with 16 GB RAM and 700 GB of disk), but it
-// needs an account and a card. The USDC path (./infinicaster compute --provider agentmetal) stays.
+// needs an account and a card. The USDC path (./fatline compute --provider agentmetal) stays.
 //
 // The API token is read from ~/.hetzner-token (mode 600) or HETZNER_TOKEN. It is never printed.
-// Every resource created is written to .infinicaster/hetzner.json, so `down` can remove exactly those.
+// Every resource created is written to .fatline/hetzner.json, so `down` can remove exactly those.
 import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -18,7 +18,7 @@ import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const STATE = join(ROOT, '.infinicaster');
+const STATE = join(ROOT, '.fatline');
 const RECORD = join(STATE, 'hetzner.json');
 // Other resources on the same account that `down` must also remove (e.g. the Hypersnap node):
 // { "serverId": n?, "ipv4": "…"?, "volumeIds": [..] } or { "volumeId": n }.
@@ -90,7 +90,7 @@ async function cheapestInStock(location) {
 async function up(opts) {
   // A run that stopped halfway (for example Hetzner had no room) is resumed: its volume and key are reused.
   const old = existsSync(RECORD) ? JSON.parse(readFileSync(RECORD, 'utf8')) : null;
-  if (old?.serverId && !opts.quote) throw new Error('A Hetzner node already exists (see .infinicaster/hetzner.json). Use `status` or `down`.');
+  if (old?.serverId && !opts.quote) throw new Error('A Hetzner node already exists (see .fatline/hetzner.json). Use `status` or `down`.');
   if (old && old.location !== opts.location) throw new Error(`An unfinished run left a volume in ${old.location}. Use --location ${old.location}, or \`down\` first.`);
   if (!opts.type) opts.type = await cheapestInStock(opts.location);
   const spec = (await hz('GET', `/server_types?name=${opts.type}`)).server_types[0];
@@ -107,17 +107,17 @@ async function up(opts) {
   Server type    ${opts.type}${spec.architecture === 'arm' ? ' (ARM)' : ''}
   What you get   ${spec.cores} CPU · ${spec.memory} GB RAM · ${spec.disk} GB disk + ${opts.disk} GB volume, ${opts.location}
   Price          ~${p.perHour.toFixed(4)} ${p.currency}/hour = ~${p.perDay.toFixed(2)} ${p.currency}/day, billed by the hour on your Hetzner account
-  Stop paying    ./infinicaster compute hetzner down   (deletes the server and the volume)
-  ${opts.noNode ? 'Next           ./infinicaster node farcaster   (or: node hypersnap) installs a read node on it' : 'It will run    a Farcaster read node: streamed snapshot (~600 GB), 1 day of blocks'}
+  Stop paying    ./fatline compute hetzner down   (deletes the server and the volume)
+  ${opts.noNode ? 'Next           ./fatline node farcaster   (or: node hypersnap) installs a read node on it' : 'It will run    a Farcaster read node: streamed snapshot (~600 GB), 1 day of blocks'}
 `);
   if (opts.quote) return console.log('Quote only. Nothing was created.');
   if (!opts.yes && (await ask('Type "create" to create it: ')) !== 'create') return console.log('Stopped. Nothing was created.');
 
   mkdirSync(STATE, { recursive: true });
-  if (!existsSync(SSH_KEY)) execFileSync('ssh-keygen', ['-q', '-t', 'ed25519', '-N', '', '-C', 'infinicaster', '-f', SSH_KEY]);
+  if (!existsSync(SSH_KEY)) execFileSync('ssh-keygen', ['-q', '-t', 'ed25519', '-N', '', '-C', 'fatline', '-f', SSH_KEY]);
   const record = old ?? { location: opts.location, createdAt: new Date().toISOString() };
   record.type = opts.type;
-  record.name ??= `infinicaster-node-${Date.now().toString(36)}`;
+  record.name ??= `fatline-node-${Date.now().toString(36)}`;
   save(record);
   const name = record.name;
 
@@ -134,7 +134,7 @@ async function up(opts) {
   const server = await hz('POST', '/servers', {
     name, server_type: opts.type, location: opts.location, image: 'ubuntu-24.04',
     ssh_keys: [record.sshKeyId], volumes: [record.volumeId], automount: true,
-    labels: { app: 'infinicaster' },
+    labels: { app: 'fatline' },
   });
   record.serverId = server.server.id;
   record.ipv4 = server.server.public_net.ipv4?.ip;
@@ -148,12 +148,12 @@ async function up(opts) {
   if (opts.noNode) {
     // Docker now, so `node <network>` only has to fetch its image.
     spawnSync('ssh', [...sshArgs(), `root@${record.ipv4}`, 'command -v docker >/dev/null || (curl -fsSL https://get.docker.com | sh >/dev/null 2>&1)'], { stdio: 'inherit' });
-    return console.log(`The machine is ready at ${record.ipv4}. Next: ./infinicaster node farcaster   (or: node hypersnap)`);
+    return console.log(`The machine is ready at ${record.ipv4}. Next: ./fatline node farcaster   (or: node hypersnap)`);
   }
   const put = spawnSync('ssh', [...sshArgs(), `root@${record.ipv4}`, 'cat > /root/node-setup.sh && chmod +x /root/node-setup.sh'], { input: readFileSync(join(ROOT, 'infra/node-setup.sh')) });
-  if (put.status !== 0) throw new Error('Could not copy the node setup. Retry: ./infinicaster compute hetzner status');
+  if (put.status !== 0) throw new Error('Could not copy the node setup. Retry: ./fatline compute hetzner status');
   spawnSync('ssh', [...sshArgs(), `root@${record.ipv4}`, 'setsid nohup /root/node-setup.sh > /root/node-setup.log 2>&1 < /dev/null &']);
-  console.log('The node setup is running on the server (the snapshot takes a few hours). Follow it: ./infinicaster compute hetzner status');
+  console.log('The node setup is running on the server (the snapshot takes a few hours). Follow it: ./fatline compute hetzner status');
 }
 
 async function status() {

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Runs on a fresh Debian/Ubuntu server as root, from /opt/infinicaster.
+# Runs on a fresh Debian/Ubuntu server as root, from /opt/fatline.
 # Installs Node.js, builds the indexer and apps, and starts them as services behind HTTPS.
-#   INFINICASTER_IP       public IPv4, used for an automatic HTTPS name (<ip>.sslip.io)
-#   INFINICASTER_NETWORK  farcaster | hypersnap (default network for readers)
+#   FATLINE_IP       public IPv4, used for an automatic HTTPS name (<ip>.sslip.io)
+#   FATLINE_NETWORK  farcaster | hypersnap (default network for readers)
 set -euo pipefail
 cd "$(dirname "$0")/.."
 APP_DIR="$(pwd)"
@@ -32,14 +32,14 @@ fi
 node --version
 
 say "Config"
-if [ ! -f infinicaster.config.json ]; then
-  cp infinicaster.config.example.json infinicaster.config.json
+if [ ! -f fatline.config.json ]; then
+  cp fatline.config.example.json fatline.config.json
 fi
-if [ -n "${INFINICASTER_NETWORK:-}" ]; then
+if [ -n "${FATLINE_NETWORK:-}" ]; then
   node -e '
-    const fs = require("fs"); const p = "infinicaster.config.json"; const c = JSON.parse(fs.readFileSync(p));
+    const fs = require("fs"); const p = "fatline.config.json"; const c = JSON.parse(fs.readFileSync(p));
     if (!c.networks[process.argv[1]]) { console.error("unknown network " + process.argv[1]); process.exit(1); }
-    c.defaultNetwork = process.argv[1]; fs.writeFileSync(p, JSON.stringify(c, null, 2));' "$INFINICASTER_NETWORK"
+    c.defaultNetwork = process.argv[1]; fs.writeFileSync(p, JSON.stringify(c, null, 2));' "$FATLINE_NETWORK"
 fi
 
 say "Indexer and app"
@@ -47,19 +47,19 @@ say "Indexer and app"
 (cd apps/opinions && npm ci --no-audit --no-fund && npm run build)
 
 say "The server's own wallet (keeper)"
-mkdir -p .infinicaster
-if [ ! -f .infinicaster/keeper.env ]; then
-  (cd indexer && node -e 'import("viem/accounts").then(({ generatePrivateKey }) => console.log("KEEPER_PRIVATE_KEY=" + generatePrivateKey()))') > .infinicaster/keeper.env
-  chmod 600 .infinicaster/keeper.env
+mkdir -p .fatline
+if [ ! -f .fatline/keeper.env ]; then
+  (cd indexer && node -e 'import("viem/accounts").then(({ generatePrivateKey }) => console.log("KEEPER_PRIVATE_KEY=" + generatePrivateKey()))') > .fatline/keeper.env
+  chmod 600 .fatline/keeper.env
 fi
-if [ -n "${INFINICASTER_VAULT:-}" ]; then echo "KEEPER_VAULT=$INFINICASTER_VAULT" >> .infinicaster/keeper.env; fi
-KEEPER_ADDRESS=$(cd indexer && set -a && . ../.infinicaster/keeper.env && node -e 'import("viem/accounts").then(({ privateKeyToAccount }) => console.log(privateKeyToAccount(process.env.KEEPER_PRIVATE_KEY).address))')
+if [ -n "${FATLINE_VAULT:-}" ]; then echo "KEEPER_VAULT=$FATLINE_VAULT" >> .fatline/keeper.env; fi
+KEEPER_ADDRESS=$(cd indexer && set -a && . ../.fatline/keeper.env && node -e 'import("viem/accounts").then(({ privateKeyToAccount }) => console.log(privateKeyToAccount(process.env.KEEPER_PRIVATE_KEY).address))')
 echo "Keeper address: $KEEPER_ADDRESS"
 
 say "Services"
-cat > /etc/systemd/system/infinicaster.service <<EOF
+cat > /etc/systemd/system/fatline.service <<EOF
 [Unit]
-Description=Infinicaster indexer and apps
+Description=Fatline indexer and apps
 After=network-online.target
 Wants=network-online.target
 
@@ -67,7 +67,7 @@ Wants=network-online.target
 WorkingDirectory=$APP_DIR/indexer
 ExecStart=$(command -v node) --experimental-sqlite --no-warnings=ExperimentalWarning src/server.mjs
 Environment=PORT=8787
-EnvironmentFile=-$APP_DIR/.infinicaster/keeper.env
+EnvironmentFile=-$APP_DIR/.fatline/keeper.env
 Restart=always
 RestartSec=3
 
@@ -75,16 +75,16 @@ RestartSec=3
 WantedBy=multi-user.target
 EOF
 
-if [ -n "${INFINICASTER_IP:-}" ]; then
-  HOST="${INFINICASTER_IP//./-}.sslip.io"
+if [ -n "${FATLINE_IP:-}" ]; then
+  HOST="${FATLINE_IP//./-}.sslip.io"
   if [ ! -x /usr/local/bin/caddy ]; then
     curl -fsSL "https://caddyserver.com/api/download?os=linux&arch=$GOARCH" -o /usr/local/bin/caddy
     chmod +x /usr/local/bin/caddy
   fi
-  cat > /etc/systemd/system/infinicaster-https.service <<EOF
+  cat > /etc/systemd/system/fatline-https.service <<EOF
 [Unit]
-Description=HTTPS for Infinicaster ($HOST)
-After=network-online.target infinicaster.service
+Description=HTTPS for Fatline ($HOST)
+After=network-online.target fatline.service
 
 [Service]
 ExecStart=/usr/local/bin/caddy reverse-proxy --from $HOST --to localhost:8787
@@ -97,8 +97,8 @@ EOF
 fi
 
 systemctl daemon-reload
-systemctl enable --now infinicaster.service
-[ -n "${INFINICASTER_IP:-}" ] && systemctl enable --now infinicaster-https.service
+systemctl enable --now fatline.service
+[ -n "${FATLINE_IP:-}" ] && systemctl enable --now fatline-https.service
 
 say "Health"
 for _ in $(seq 1 20); do

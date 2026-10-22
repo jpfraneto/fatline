@@ -1,4 +1,4 @@
-# Infinicaster: My Wall as the first implementation
+# Fatline: My Wall as the first implementation
 
 Direction from the October 18, 2026 conversation. This updates the earlier generic following-feed proposal. This document describes a proposed system; the Farcaster client and node installer are not implemented yet.
 

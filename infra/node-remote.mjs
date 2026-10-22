@@ -1,4 +1,4 @@
-// ./infinicaster node <farcaster|hypersnap>, when ./infinicaster compute rented a server:
+// ./fatline node <farcaster|hypersnap>, when ./fatline compute rented a server:
 // installs that network's read node on the rented server, follows the setup until the node answers,
 // then makes it this client's own node for that network.
 //
@@ -13,7 +13,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const STATE = join(ROOT, '.infinicaster');
+const STATE = join(ROOT, '.fatline');
 export const NETWORKS = {
   farcaster: { script: 'node-setup.sh', port: 3381, label: 'Snapchain', dir: '/root/snapchain' },
   hypersnap: { script: 'hypersnap-setup.sh', port: 4381, label: 'Hypersnap', dir: '/root/hypersnap' },
@@ -44,11 +44,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function main() {
   const [network, ...flags] = process.argv.slice(2);
   const net = NETWORKS[network];
-  if (!net) throw new Error('Usage: ./infinicaster node farcaster|hypersnap [--force]');
+  if (!net) throw new Error('Usage: ./fatline node farcaster|hypersnap [--force]');
   if (flags.includes('--lite')) throw new Error('--lite (copy only the current state from our full node, no snapshot) is not tested yet. Coming soon.');
   const force = flags.includes('--force');
   const ip = pickServer(network);
-  if (!ip) throw new Error('No rented server. Run ./infinicaster compute first, or ./infinicaster node <network> --local.');
+  if (!ip) throw new Error('No rented server. Run ./fatline compute first, or ./fatline node <network> --local.');
   const url = `http://${ip}:${net.port}`;
   const log = `/root/${network}-setup.log`;
 
@@ -79,7 +79,7 @@ async function main() {
       const stopped = lines.includes('__stopped__');
       const line = lines.filter((l) => l !== '__stopped__').pop() ?? '';
       if (line && line !== last) { console.log(`  ${line.replace(/\x1b\[[0-9;]*m/g, '')}`); last = line; }
-      if (stopped && !(await info(url))) throw new Error(`The setup stopped before the node answered. See: ssh -i .infinicaster/ssh_ed25519 root@${ip} tail -50 ${log}`);
+      if (stopped && !(await info(url))) throw new Error(`The setup stopped before the node answered. See: ssh -i .fatline/ssh_ed25519 root@${ip} tail -50 ${log}`);
       await sleep(30_000);
     }
   }
@@ -88,7 +88,7 @@ async function main() {
   spawnSync('node', [join(ROOT, 'infra/config-tool.mjs'), 'own-node', network, url], { stdio: 'inherit' });
   console.log(`\n${net.label} ${i.version} answers at ${url}.`);
   for (const s of i.shardInfos ?? []) console.log(`  shard ${s.shardId}: height ${s.maxHeight}, ${s.blockDelay} blocks behind`);
-  console.log('It is healthy when every shard is only a few blocks behind. Check again with: ./infinicaster status');
+  console.log('It is healthy when every shard is only a few blocks behind. Check again with: ./fatline status');
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

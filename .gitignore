@@ -5,9 +5,12 @@ node_modules/
 dist/
 .DS_Store
 
-# Your own settings and runtime state (rental credentials live in .infinicaster/compute.secret.json).
+# Your own settings and runtime state (rental credentials live in .fatline/compute.secret.json).
+fatline.config.json
+.fatline/
+# Links left by the rename from Infinicaster (old paths keep working on this machine).
+.infinicaster
 infinicaster.config.json
-.infinicaster/
 
 # Foundry build output and local deployments
 smart-contracts/out/

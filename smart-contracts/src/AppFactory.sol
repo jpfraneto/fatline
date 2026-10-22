@@ -6,7 +6,7 @@ import {SafeToken} from "./SafeToken.sol";
 import {IClanker, IClankerFeeLocker, IClankerLpLocker, TokenRewardInfo} from "./interfaces/IClanker.sol";
 
 /// @title AppFactory
-/// @notice Gives birth to Infinicaster apps. One transaction creates the app's USDC vault and,
+/// @notice Gives birth to Fatline apps. One transaction creates the app's USDC vault and,
 /// if the creator wants one, launches the app's coin on Clanker paired with USDC.
 ///
 /// The factory checks the launched coin onchain and reverts unless 100% of its trading fees go to

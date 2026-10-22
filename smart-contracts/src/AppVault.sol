@@ -5,7 +5,7 @@ import {SafeToken} from "./SafeToken.sol";
 import {IClankerFeeLocker, IClankerLpLocker} from "./interfaces/IClanker.sol";
 
 /// @title AppVault
-/// @notice The USDC pile that keeps one Infinicaster app alive.
+/// @notice The USDC pile that keeps one Fatline app alive.
 ///
 /// Money comes in from three places: the trading fees of the app's coin (already converted to
 /// USDC by Clanker), anyone who deposits, and the owner. Money goes out in two ways: the app's
@@ -221,7 +221,7 @@ contract AppVault {
         return keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256("Infinicaster App"),
+                keccak256("Fatline App"),
                 keccak256("1"),
                 block.chainid,
                 address(this)

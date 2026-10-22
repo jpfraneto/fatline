@@ -107,7 +107,7 @@ Snapchain itself is GPL-3.0. Our original client, scripts, and tutorial can be M
 
 ## The product direction
 
-I would describe Infinicaster as **a workshop for building your own Farcaster client**. Its first reference client should have a following feed, a composer, replies, follow/unfollow, like/unlike, visible app attribution, include/exclude filters, and a small connection-status panel. The panel should reveal the node endpoint, synchronization state, and the confirmation state of a submitted message. These are both useful features and teaching instruments.
+I would describe Fatline as **a workshop for building your own Farcaster client**. Its first reference client should have a following feed, a composer, replies, follow/unfollow, like/unlike, visible app attribution, include/exclude filters, and a small connection-status panel. The panel should reveal the node endpoint, synchronization state, and the confirmation state of a submitted message. These are both useful features and teaching instruments.
 
 Offer two learning paths over the same code:
 

@@ -1,4 +1,4 @@
-// Responsive check for the Farline pages, in a real Chrome.
+// Responsive check for the Fatline pages, in a real Chrome.
 //   node test/layout.mjs <base url> [path ...]     e.g. node test/layout.mjs http://localhost:8787 "#/" "#/coin/8453/0x…"
 // For each width (phone, tablet, desktop) it loads the page with device emulation, waits for data,
 // fails if anything scrolls sideways, and saves a full-page screenshot next to this file's output dir.
@@ -13,7 +13,7 @@ const WIDTHS = [[360, 'phone-small'], [390, 'phone'], [768, 'tablet'], [1280, 'd
 const [base, ...paths] = process.argv.slice(2);
 if (!base) { console.error('usage: node test/layout.mjs <base url> [hash path ...]'); process.exit(1); }
 const preset = JSON.parse(process.env.LAYOUT_STORAGE ?? '{}');
-const out = process.env.LAYOUT_OUT ?? mkdtempSync(join(tmpdir(), 'farline-layout-'));
+const out = process.env.LAYOUT_OUT ?? mkdtempSync(join(tmpdir(), 'fatline-layout-'));
 
 const chrome = spawn(CHROME, ['--headless=new', '--disable-gpu', '--remote-debugging-port=0', `--user-data-dir=${mkdtempSync(join(tmpdir(), 'chrome-'))}`, 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] });
 const wsUrl = await new Promise((done, fail) => {

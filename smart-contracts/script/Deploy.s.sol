@@ -8,7 +8,7 @@ import {AppVault} from "../src/AppVault.sol";
 import {PrizeSplit} from "../src/PrizeSplit.sol";
 import {MockUSDC} from "../test/mocks/MockUSDC.sol";
 
-/// Deploys the Infinicaster contracts.
+/// Deploys the Fatline contracts.
 ///
 ///   VOICES=true                  deploy Voices (default true)
 ///   FACTORY=true                 deploy AppFactory (default true)

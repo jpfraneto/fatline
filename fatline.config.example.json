@@ -13,7 +13,7 @@
         {
           "url": "http://46.225.208.199:3381",
           "own": false,
-          "label": "Infinicaster master node"
+          "label": "Fatline master node"
         },
         {
           "url": "https://crackle.farcaster.xyz:3381",
@@ -34,7 +34,7 @@
         {
           "url": "http://2.31.51.183:4381",
           "own": false,
-          "label": "Infinicaster Hypersnap node"
+          "label": "Fatline Hypersnap node"
         },
         {
           "url": "https://haatz.quilibrium.com",
@@ -63,19 +63,19 @@
   "masterNodes": [
     {
       "id": "master",
-      "label": "Farline master node",
+      "label": "Fatline master node",
       "network": "farcaster",
       "url": "http://46.225.208.199:3381",
-      "operator": "Infinicaster",
+      "operator": "Fatline",
       "host": "Hetzner cax31, Nuremberg",
       "apps": []
     },
     {
       "id": "hypersnap",
-      "label": "Infinicaster Hypersnap node",
+      "label": "Fatline Hypersnap node",
       "network": "hypersnap",
       "url": "http://2.31.51.183:4381",
-      "operator": "Infinicaster",
+      "operator": "Fatline",
       "apps": []
     }
   ],

@@ -1,7 +1,7 @@
 {
-  "name": "@infinicaster/indexer",
+  "name": "@fatline/indexer",
   "version": "0.1.0",
-  "description": "Reads Farcaster or Hypersnap and the Voices contract, and feeds the Infinicaster apps.",
+  "description": "Reads Farcaster or Hypersnap and the Voices contract, and feeds the Fatline apps.",
   "license": "MIT",
   "private": true,
   "type": "module",

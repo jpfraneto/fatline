@@ -1,6 +1,6 @@
-// ./infinicaster identity [--fid 18350] [--network farcaster] [--dry-run]
-// ./infinicaster identity show
-// ./infinicaster identity revoke
+// ./fatline identity [--fid 18350] [--network farcaster] [--dry-run]
+// ./fatline identity show
+// ./fatline identity revoke
 //
 // Gives this client its own app key for your Farcaster account, with no transaction and no gas:
 //   1. You type your seed phrase into a hidden prompt. It is used once, here, and never saved or logged.
@@ -83,7 +83,7 @@ async function add(opts, config) {
   const existing = loadAppKey(config.dataDir);
   if (existing && !opts.dryRun) {
     console.log(`This client already has an app key for FID ${existing.fid} (${existing.publicKey.slice(0, 10)}…).`);
-    console.log('To replace it, run ./infinicaster identity revoke first.');
+    console.log('To replace it, run ./fatline identity revoke first.');
     return;
   }
 
@@ -138,15 +138,15 @@ async function add(opts, config) {
   if (await waitForKey(node, fid, record.publicKey)) {
     saveAppKey(config.dataDir, { ...record, state: 'active', confirmedAt: new Date().toISOString() });
     console.log(`\nDone. This client can now post as FID ${fid}. The app key is in ${appKeyPath(config.dataDir)} (mode 600).`);
-    console.log('It expires after 90 days without use. To remove it: ./infinicaster identity revoke');
+    console.log('It expires after 90 days without use. To remove it: ./fatline identity revoke');
   } else {
-    console.log('\nThe node accepted it but does not show it yet. Check again with: ./infinicaster identity show');
+    console.log('\nThe node accepted it but does not show it yet. Check again with: ./fatline identity show');
   }
 }
 
 async function show(opts, config) {
   const key = loadAppKey(config.dataDir);
-  if (!key) return console.log('This client has no app key yet. Run: ./infinicaster identity');
+  if (!key) return console.log('This client has no app key yet. Run: ./fatline identity');
   const network = new Network(key.network, config.networks[key.network]);
   const node = await network.node();
   const res = await get(node, '/v1/signersByFid', { fid: key.fid });
@@ -183,7 +183,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const config = loadConfig();
   const commands = { add, show, revoke };
   if (!commands[opts.command]) {
-    console.error('Usage: ./infinicaster identity [--fid N] [--dry-run] | identity show | identity revoke');
+    console.error('Usage: ./fatline identity [--fid N] [--dry-run] | identity show | identity revoke');
     process.exit(1);
   }
   commands[opts.command](opts, config).catch((err) => { console.error(`\n${err.message}`); process.exit(1); });

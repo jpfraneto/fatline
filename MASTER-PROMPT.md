@@ -12,7 +12,7 @@ Balaji's bounty ([the post](https://farcaster.xyz/balajis.eth/0x50184b62), $2,04
 1. Set up a Snapchain read node. It must run with no API keys from anyone.
 2. Create a client that reads from that node.
 
-Infinicaster answers that, then goes one step further: **the client you just created can pay for its own life.** It gets a USDC vault that is fed by deposits or by its own coin's trading fees, launched on Clanker. That is the launchpad, and it is the last chapter of the tutorial, not a replacement for the first three.
+Fatline answers that, then goes one step further: **the client you just created can pay for its own life.** It gets a USDC vault that is fed by deposits or by its own coin's trading fees, launched on Clanker. That is the launchpad, and it is the last chapter of the tutorial, not a replacement for the first three.
 
 Order of priority, always: **the bounty path works for a stranger > the tutorial teaches > the launchpad impresses.** A great launchpad on a broken client loses. The judges reject "AI slop" at their sole discretion, and the strongest signal is other humans vouching.
 
@@ -35,22 +35,22 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 
 ## Where we are (2026-10-22, ~07:15 UTC, overnight run)
 
-**Resume here.** The owner approved the master node and went to sleep. The agent runs the full pipeline overnight and posts each shipped update to the Infinicaster Telegram group (bot token in `~/.infinicaster-telegram-token`, chat id in `~/.infinicaster-telegram-chat`, both mode 600, never in the repo).
+**Resume here.** The owner approved the master node and went to sleep. The agent runs the full pipeline overnight and posts each shipped update to the Fatline Telegram group (bot token in `~/.fatline-telegram-token`, chat id in `~/.fatline-telegram-chat`, both mode 600, never in the repo).
 
 ### The master node (created 2026-10-22 01:48 UTC, stays up)
-- **Hetzner `cax31` (ARM, 8 CPU, 16 GB RAM) + 700 GB volume in nbg1, ~$2.75/day.** Server 171726570 at **46.225.208.199**. Record in `.infinicaster/hetzner.json`.
-- The owner's decision: **it stays up.** It is the master node of Infinicaster and will be tied to $INFINICASTER (each node can be tied to an app running from it).
+- **Hetzner `cax31` (ARM, 8 CPU, 16 GB RAM) + 700 GB volume in nbg1, ~$2.75/day.** Server 171726570 at **46.225.208.199**. Record in `.fatline/hetzner.json`.
+- The owner's decision: **it stays up.** It is the master node of Fatline and will be tied to $FATLINE (each node can be tied to an app running from it).
 - Why cax31 and not cx43: cx43 was sold out in every location (`error during placement`). Snapchain and statsd both publish arm64 images. `hetzner.mjs` checks stock before creating anything and resumes a half-finished run.
-- SSH: `ssh -i .infinicaster/ssh_ed25519 root@46.225.208.199`. Status: `./infinicaster compute hetzner status`.
+- SSH: `ssh -i .fatline/ssh_ed25519 root@46.225.208.199`. Status: `./fatline compute hetzner status`.
 - **Snapchain runs on it since 2026-10-22 06:42 UTC**, started from the streamed snapshot (no second download).
   - Disk: 557 GB (global 4 MB, shard-0 37 GB, shard-1 262 GB, shard-2 259 GB); 97 GB free on the 688 GB volume.
   - RAM: the Snapchain container uses ~0.4–0.8 GB; CPU 17–77%.
   - Catch-up: about a day behind at start, shrinking ~220 blocks/min, so expected in sync ~14:00 UTC.
 - **Replication works from it** (`ReplicationService` on :3383, tested from outside). A copy point is a block snapshot the replicator keeps for others to copy. Shard 1's point: height 49,240,122 (458.6M messages); shard 2's: 49,060,194 (455.7M). `GetShardTransactions` returns pages of 1,000.
-- **The Farline adapter reads it:** FID 18350 backfilled with 4,824 messages in 18 s, the same count crackle gave.
+- **The Fatline adapter reads it:** FID 18350 backfilled with 4,824 messages in 18 s, the same count crackle gave.
 
-### The Hypersnap node (created 2026-10-22 03:57 UTC by session infinicaster-ea)
-- **Hetzner `cax21` (ARM, 4 CPU, 8 GB RAM + 16 GB swap) + 685 GB volume in nbg1**, server 171737914 at **2.31.51.183**. Record in `.infinicaster/hetzner-hypersnap.json`; `compute hetzner status/down` include it (servers are deleted before volumes).
+### The Hypersnap node (created 2026-10-22 03:57 UTC by session fatline-ea)
+- **Hetzner `cax21` (ARM, 4 CPU, 8 GB RAM + 16 GB swap) + 685 GB volume in nbg1**, server 171737914 at **2.31.51.183**. Record in `.fatline/hetzner-hypersnap.json`; `compute hetzner status/down` include it (servers are deleted before volumes).
 - It streams the same 2026-10-21 snapshot with `infra/hypersnap-setup.sh`. It is **below Hypersnap's stated 1.5 TB / 16 GB**; watch its disk.
 - **Account limits (Hetzner):** 1,385 GB of volumes in total, 14 shared vCPU, and the account is "too new" to raise them. So no 1 TB volume and no cax41.
 - **Money:** both nodes ~$4.96/day against ~$14.6 left (2026-10-22 ~04:00 UTC), enough to ~2026-10-25 01:00 UTC. Card auto-reload is off. `infra/budget-alert.mjs` posts a low-balance warning to Telegram.
@@ -63,23 +63,23 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - Fourth run started 04:10 UTC with shard 0 kept (372 pieces, 37 GB unpacked).
 5. One piece of shard 2 got 17 of 89 MB in 44 min on one connection. Slow byte regions in R2 stay slow on any single connection, and 30 tries would have failed the shard. Now, after 3 slow tries, the rest is fetched in 8 byte ranges, then joined and checked against R2's ETag, which is the piece's MD5 (1dae4f1). Rescued by hand on the run; `/root/guard.sh` on the master did the same for the rest of the run.
 
-### Overnight orders (from infinicaster-ea, the owner's coordinator). Status as of 07:30 UTC: 1 catching up, 2 done, 3 waiting for sync, 4 blocked upstream (KeyAdd, below), 5 done.
+### Overnight orders (from fatline-ea, the owner's coordinator). Status as of 07:30 UTC: 1 catching up, 2 done, 3 waiting for sync, 4 blocked upstream (KeyAdd, below), 5 done.
 1. Master Snapchain synced (`blockDelay` small), real disk and RAM measured.
 2. `ReplicationService` answers on 46.225.208.199:3383. crackle:3383 and haatz:3383 time out from outside, so ours would be the only public replication source.
 3. J3: reboot the master once synced; it must come back on its own.
-4. Lite node on AgentMetal (5.161.202.175, paid until 23:09 UTC): `INFINICASTER_SNAPSHOT=replicate INFINICASTER_REPLICATION_PEERS=http://46.225.208.199:3383`. Measure disk and time.
-5. Farline adapter pointed at the master: `node --experimental-sqlite indexer/src/adapters/run.mjs --network farcaster --node http://46.225.208.199:3381 --label "Farcaster master node"`.
+4. Lite node on AgentMetal (5.161.202.175, paid until 23:09 UTC): `FATLINE_SNAPSHOT=replicate FATLINE_REPLICATION_PEERS=http://46.225.208.199:3383`. Measure disk and time.
+5. Fatline adapter pointed at the master: `node --experimental-sqlite indexer/src/adapters/run.mjs --network farcaster --node http://46.225.208.199:3381 --label "Farcaster master node"`.
 
-### Farline archive (built 2026-10-22, three sessions)
-- Schema: `research/FARLINE-ARCHIVE.md` (approved, SQLite now). Archive module, API and page: session infinicaster-28. Network adapter `indexer/src/adapters/snapchain.mjs`: session infinicaster-c1. Tested on real crackle events and a live run (FID 18350: 4,824 messages in 8 s).
+### Fatline archive (built 2026-10-22, three sessions)
+- Schema: `research/FATLINE-ARCHIVE.md` (approved, SQLite now). Archive module, API and page: session fatline-28. Network adapter `indexer/src/adapters/snapchain.mjs`: session fatline-c1. Tested on real crackle events and a live run (FID 18350: 4,824 messages in 8 s).
 
 ### Money and rented things right now
 - **AgentMetal server `srv_ty63heep40jd` (5.161.202.175)** is paid until 2026-10-22 23:09 UTC (4.20 USDC, no refunds). It's idle.
   - Its disk endpoint fails: the paid `POST /v1/servers/{id}/storage` returns HTTP 502 within 2 s and nothing is charged.
   - The background retries were stopped.
   - Optional free use before it expires: test `infra/server-setup.sh` (the light client with HTTPS) on it, which has never run on a real server.
-  - SSH: `ssh -i .infinicaster/ssh_ed25519 root@5.161.202.175`.
-- **Compute wallet** `0x754ab772Ee4E608A8c3E758AA6E91B6a82727F4E` holds 7.80 USDC on Base. Its key is in `.infinicaster/compute-wallet.key`. The money can go back to the owner, but sending it needs a few cents of ETH for gas.
+  - SSH: `ssh -i .fatline/ssh_ed25519 root@5.161.202.175`.
+- **Compute wallet** `0x754ab772Ee4E608A8c3E758AA6E91B6a82727F4E` holds 7.80 USDC on Base. Its key is in `.fatline/compute-wallet.key`. The money can go back to the owner, but sending it needs a few cents of ETH for gas.
 - **Reporting the AgentMetal bug:** AgentMetal is run by inbest.cloud (Mexico): `hola@inbest.cloud`, X @inbestcloud, GitHub issues at agentmetal/mcp. A Spanish email draft was given to the owner; they had not sent it yet, as far as we know. Don't post publicly without their yes.
 - **Local processes from earlier demos** may still run on the owner's Mac: an anvil Base fork on :8545 and the indexer on :8787. Both are harmless; stop them if they get in the way.
 
@@ -87,7 +87,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - Machine check, read client (Farcaster and Hypersnap), x402 rental (VpsAgent monthly, AgentMetal daily).
 - Launchpad contracts, indexer and UI, and onchain daily users. Proven on a Base fork.
 - **Posting (J5–J7):**
-  - `./infinicaster identity` (gasless `KEY_ADD`, scoped, hidden seed prompt, self-revoke) in `indexer/src/identity.mjs`.
+  - `./fatline identity` (gasless `KEY_ADD`, scoped, hidden seed prompt, self-revoke) in `indexer/src/identity.mjs`.
   - `indexer/src/writer.mjs`: cast, reply, like, recast, follow, delete; each is confirmed by reading it back.
   - The UI is in `apps/opinions/src/post.js`.
   - Posting is owner-only: from the same machine, or with a write token behind a proxy. Other websites are blocked.
@@ -97,7 +97,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 
 ### Not done, in bounty order
 - **J3:** the master runs and catches up (in sync ~14:00 UTC expected). Then reboot it once and watch it come back.
-- **J5–J7 real run:** the owner runs `./infinicaster identity --fid 18350 --dry-run`, then without `--dry-run`, **in their own terminal** (never paste the seed phrase into an agent chat). Then `./infinicaster up` and cast from My people. Test account: @anky, FID 18350, custody `0x3ae5…6b60`.
+- **J5–J7 real run:** the owner runs `./fatline identity --fid 18350 --dry-run`, then without `--dry-run`, **in their own terminal** (never paste the seed phrase into an agent chat). Then `./fatline up` and cast from My people. Test account: @anky, FID 18350, custody `0x3ae5…6b60`.
 - **J8:** the client filter (show or hide posts by the app that made them). Not built.
 - **J9:** the tutorial site (English and Spanish). Not started.
 - **J11:** testers. The owner's friend (who sent the snapshot analysis) is a candidate. None confirmed yet.
@@ -110,7 +110,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
   - **Not small:** measured 330–430 bytes per message early on, so a full replica is ~300–400 GB (the snapshot's data shards are ~520 GB, because they include block history). It doesn't fit on AgentMetal (124 GB free). The run there is a measurement, with `/root/diskguard.sh` stopping it at 15 GB free.
   - **The source must keep its copy point for the whole copy.** Copy points are dropped once their block is 24 h old (`max_age`). A source still catching up only has 18–24 h old points, so the first try died at 2.2M messages ("Store not found for shard 2 and height …"). A synced source takes a point every 28,800 blocks (~8 h), so the newest is ≤8 h old and lives 16+ h: just enough for a ~15 h copy.
   - **Snapchain bug:** a failed copy says "restart to resume", but copying only runs when `.rocks` is empty, and the partial copy sits in `.rocks/.snapshot`. Docker's restart then ran it as a normal node on 0.5% of the data. Our script now sets `restart: "no"` until the copy succeeds, follows the log, and starts an unfinished copy over.
-  - **Blocker, upstream:** the second copy died on the source's side after 8.9M messages: "Invalid message type for FID 310953: KeyAdd". Snapchain's `replicator.rs` (upstream main 816cb18) refuses KeyAdd/KeyRemove on purpose, "until shard-0 routing and the signer store are both part of the replicated per-fid state". Mainnet already has KeyAdd messages, so **Replicate cannot finish on mainnet today, from any source.** Working around it means patching Snapchain. What works now: our full master, plus the Farline adapter reading it over HTTP. An upstream issue is a public post, so it needs the owner's yes. Fix in 2df1e48: the failure path was seen working (node stopped, clear message).
+  - **Blocker, upstream:** the second copy died on the source's side after 8.9M messages: "Invalid message type for FID 310953: KeyAdd". Snapchain's `replicator.rs` (upstream main 816cb18) refuses KeyAdd/KeyRemove on purpose, "until shard-0 routing and the signer store are both part of the replicated per-fid state". Mainnet already has KeyAdd messages, so **Replicate cannot finish on mainnet today, from any source.** Working around it means patching Snapchain. What works now: our full master, plus the Fatline adapter reading it over HTTP. An upstream issue is a public post, so it needs the owner's yes. Fix in 2df1e48: the failure path was seen working (node stopped, clear message).
   - Peer discovery found other public :3383 servers (e.g. 95.217.197.252, 51.79.77.116), without a matching copy point. Earlier, rho answered *Unimplemented* (behind a proxy).
 - The snapshot on R2 is ~5,700 pieces of ~70 MB: ~400 GB compressed, ~600 GB unpacked (measured ratio ~1.5×). It includes all block history.
 - Rejected ideas and why: forking Snapchain (weeks of Rust, judges want Snapchain); a debit card funded by a vault (identity checks, custodial); the owner's Mac (13 GB free).
@@ -118,7 +118,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 ## Workstreams, in order
 
 ### W1. Write path (J5–J7). Start now.
-- **Identity tool:** a separate local command (`./infinicaster identity`), never the web page or the agent chat.
+- **Identity tool:** a separate local command (`./fatline identity`), never the web page or the agent chat.
   - Read the seed phrase from a hidden prompt.
   - Derive the custody address on the standard path only and look up its FID on the node.
   - Fail clearly if they don't match.
@@ -126,7 +126,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
   - Also explain, and support if cheap, the onchain KeyGateway path (the "one small Optimism transaction" Balaji mentions). Say in the tutorial which one we use and why.
   - Wait until `/v1/onChainSignersByFid` (or the gasless signer endpoint) shows the key.
   - Forget the phrase as soon as the key is registered.
-- **Key storage:** save the app key to `.infinicaster/` with mode 600, gitignored. Show how to revoke it.
+- **Key storage:** save the app key to `.fatline/` with mode 600, gitignored. Show how to revoke it.
 - **Messages:** cast, reply, follow and unfollow, like and unlike. Build each with `@farcaster/core`, submit it to the selected network's own node (`/v1/submitMessage`), then poll until it can be read back. Show the states pending → confirmed → failed (with the reason). Retry with the same signed message, never by signing again.
 - **Both networks:** Farcaster and Hypersnap share the same `/v1` API. Test writes on both, or say clearly which one is unproven.
 - **Tests:** message construction, scopes, retry with the same payload, confirmation timeout. Finally, a real cast from a disposable account with storage, confirmed by hash. This needs the owner's account and consent.
@@ -137,7 +137,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - Measure how many casts get attributed and print the number. Don't promise 100%.
 
 ### W3. The three commands (J1–J4)
-- The quickstart is exactly `./infinicaster compute`, `./infinicaster node <farcaster|hypersnap>`, `./infinicaster client`. `client` is `up` plus the first-run guide to `identity`.
+- The quickstart is exactly `./fatline compute`, `./fatline node <farcaster|hypersnap>`, `./fatline client`. `client` is `up` plus the first-run guide to `identity`.
 - **Compute:**
   - Keep `doctor`, which uses this machine if it's big enough.
   - Add one path that really provisions ≥2 TB: a cloud provider API scripted end to end, or an x402 seller with enough disk if one exists.
@@ -192,7 +192,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - **Never invent:** no fake testers, quotes, vouches, numbers or screenshots. If something is untested, say "untested".
 - **Open and user's choice:** Farcaster and Hypersnap are equals. Node choice lives in Settings and is always labeled. No hidden fallback to a hosted API.
 - **No slop:** plain, short sentences. Each feature works or is labeled as not working. Delete instead of padding. One clear way to do each thing.
-- **Keep the README's "tested / not tested" section true after every change.** Run `./infinicaster test` before claiming anything works.
+- **Keep the README's "tested / not tested" section true after every change.** Run `./fatline test` before claiming anything works.
 - **Order:** finish the earliest unfinished workstream before polishing a later one, unless the owner says otherwise.
 
 ## Working loop for any agent session

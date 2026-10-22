@@ -65,9 +65,9 @@ test('a chosen node is the only node used: down means a clear error, never a fal
     if (String(url).startsWith('http://master')) throw new Error('connection refused');
     return new Response(JSON.stringify(String(url).includes('/v1/info') ? info : { messages: [] }));
   };
-  const n = new Network('farcaster', { label: 'Farcaster', nodes: [{ url: 'http://master', label: 'Infinicaster master' }, { url: 'https://public' }] }, { fetchImpl });
+  const n = new Network('farcaster', { label: 'Farcaster', nodes: [{ url: 'http://master', label: 'Fatline master' }, { url: 'https://public' }] }, { fetchImpl });
   const chosen = n.pinned('http://master');
-  await assert.rejects(chosen.get('/v1/castsByFid', { fid: 1 }), (e) => e.status === 503 && /Infinicaster master/.test(e.message) && /does not switch/.test(e.message));
+  await assert.rejects(chosen.get('/v1/castsByFid', { fid: 1 }), (e) => e.status === 503 && /Fatline master/.test(e.message) && /does not switch/.test(e.message));
   assert.ok(!asked.includes('public'), 'the other node was never asked');
   const ok = n.pinned('https://public/');
   const { node } = await ok.get('/v1/castsByFid', { fid: 1 });

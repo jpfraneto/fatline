@@ -1,10 +1,10 @@
-// ./infinicaster follow: keep a local archive of only the accounts you choose, read from one node.
+// ./fatline follow: keep a local archive of only the accounts you choose, read from one node.
 //
-//   ./infinicaster follow <fid|@name>... [--network farcaster|hypersnap] [--node URL|name] [--following] [--once]
-//   ./infinicaster follow list
+//   ./fatline follow <fid|@name>... [--network farcaster|hypersnap] [--node URL|name] [--following] [--once]
+//   ./fatline follow list
 //
-// --network    which network to read (default: the one chosen with ./infinicaster init)
-// --node       which of that network's nodes in infinicaster.config.json to read, by URL or by a word of its
+// --network    which network to read (default: the one chosen with ./fatline init)
+// --node       which of that network's nodes in fatline.config.json to read, by URL or by a word of its
 //              name or host (e.g. crackle, haatz, master). Default: the first one listed. Only that node is read.
 // --following  also add every account the named accounts follow (as that node knows it)
 // --once       copy what the node has now, catch up with its new events, then exit. Without it, it keeps following.
@@ -33,7 +33,7 @@ for (let i = 0; i < argv.length; i++) {
   const a = argv[i];
   if (flags.has(a)) opt[a.slice(2)] = true;
   else if (valueFlags.has(a)) opt[a.slice(2)] = argv[++i];
-  else if (a.startsWith('--')) die(`Unknown option ${a}. See: ./infinicaster follow --help`);
+  else if (a.startsWith('--')) die(`Unknown option ${a}. See: ./fatline follow --help`);
   else names.push(a);
 }
 
@@ -48,8 +48,8 @@ if (names[0] === 'list') {
   process.exit(0);
 }
 if (!names.length || opt.help || names[0] === 'help') {
-  console.log(`Usage: ./infinicaster follow <fid|@name>... [--network farcaster|hypersnap] [--node URL|name] [--following] [--once]
-       ./infinicaster follow list
+  console.log(`Usage: ./fatline follow <fid|@name>... [--network farcaster|hypersnap] [--node URL|name] [--following] [--once]
+       ./fatline follow list
 
 ${NOT_A_NODE.join('\n')}`);
   process.exit(opt.help || names.length ? 0 : 1);
@@ -131,7 +131,7 @@ if (opt.once) {
 
 function pickNode(net, want) {
   const nodes = net.nodes.map((n) => ({ ...n, url: n.url.replace(/\/$/, '') }));
-  if (!want) return nodes[0] ?? die(`No ${net.label} node in infinicaster.config.json. Add one, or run ./infinicaster node.`);
+  if (!want) return nodes[0] ?? die(`No ${net.label} node in fatline.config.json. Add one, or run ./fatline node.`);
   const w = want.replace(/\/$/, '').toLowerCase();
   const exact = nodes.find((n) => n.url.toLowerCase() === w);
   if (exact) return exact;

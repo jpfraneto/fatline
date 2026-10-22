@@ -1,4 +1,4 @@
-// Dev only, on a local fork of Base (./infinicaster contracts fork): launches a demo app through the
+// Dev only, on a local fork of Base (./fatline contracts fork): launches a demo app through the
 // running indexer exactly like the browser does (prepare → USDC permit → one transaction), then
 // trades its coin on Uniswap v4 so the vault has real trading fees to harvest.
 //
@@ -17,8 +17,8 @@ const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const LOCKER = '0xffA37784D619F228D8B379d287a4D7282e500762';
 const [name = 'Opinions', symbol = 'OPINE'] = process.argv.slice(2);
 
-const keyFile = join(ROOT, '.infinicaster/dev.key');
-if (!existsSync(keyFile)) throw new Error('Run ./infinicaster contracts fork first (it creates and funds the dev wallet).');
+const keyFile = join(ROOT, '.fatline/dev.key');
+if (!existsSync(keyFile)) throw new Error('Run ./fatline contracts fork first (it creates and funds the dev wallet).');
 const me = privateKeyToAccount(readFileSync(keyFile, 'utf8').trim());
 const pub = createPublicClient({ chain: base, transport: http(RPC, { timeout: 180_000 }) });
 if ((await pub.getChainId()) !== 8453 || !(await pub.request({ method: 'anvil_nodeInfo' }).catch(() => null))) {

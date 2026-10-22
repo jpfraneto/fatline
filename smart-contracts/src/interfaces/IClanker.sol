@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-// Minimal interfaces for Clanker v4 (github.com/clanker-devco/v4-contracts), only what Infinicaster uses.
+// Minimal interfaces for Clanker v4 (github.com/clanker-devco/v4-contracts), only what Fatline uses.
 // Base mainnet: Clanker 0xE85A59c628F7d27878ACeB4bf3b35733630083a9,
 // LP locker (v1.1, from clanker-sdk 4.2.19) 0xffA37784D619F228D8B379d287a4D7282e500762,
 // ClankerFeeLocker 0xF3622742b1E446D92e45E22923Ef11C2fcD55D68.

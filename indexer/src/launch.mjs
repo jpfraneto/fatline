@@ -1,9 +1,9 @@
-// Builds the Clanker v4 `deployToken` call for an Infinicaster app coin, using the official SDK.
+// Builds the Clanker v4 `deployToken` call for a Fatline app coin, using the official SDK.
 // The coin is paired with USDC and 100% of its trading fees go to the app's vault, in USDC,
 // with the vault as the only fee admin. AppFactory checks all of this onchain and reverts otherwise.
 //
 //   node indexer/src/launch.mjs <vault> <tokenAdmin> <name> <symbol> [image] [chainId] [startMarketCapUsd]
-// prints the calldata hex (used by the fork test and by ./infinicaster launch).
+// prints the calldata hex (used by the fork test and by ./fatline launch).
 import { Clanker } from 'clanker-sdk/v4';
 import { keccak256, toHex } from 'viem';
 
@@ -33,7 +33,7 @@ export async function buildLaunch({ vault, tokenAdmin, name, symbol, image = '',
     tokenAdmin,
     salt: salt ?? keccak256(toHex(`${vault}:${symbol}:${Date.now()}`)),
     metadata: { description },
-    context: { interface: 'Infinicaster' },
+    context: { interface: 'Fatline' },
     pool: {
       pairedToken: USDC[chainId],
       tickIfToken0IsClanker: start,

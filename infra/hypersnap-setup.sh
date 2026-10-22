@@ -3,21 +3,21 @@
 # Snapchain node (infra/node-setup.sh): it uses its own folder, its own disk and ports 4381-4383.
 # Run as root on the server.
 #
-#   INFINICASTER_HYPERSNAP_DATA=/mnt/HC_Volume_123   where the node's data goes. Default: the attached
+#   FATLINE_HYPERSNAP_DATA=/mnt/HC_Volume_123   where the node's data goes. Default: the attached
 #                        volume with the most free space that is not already holding Snapchain.
-#   INFINICASTER_SNAPSHOT=stream     stream the starting snapshot straight to disk, one copy (~600 GB). Default.
+#   FATLINE_SNAPSHOT=stream     stream the starting snapshot straight to disk, one copy (~600 GB). Default.
 #                        hypersnap  use Hypersnap's own download (keeps ~3 copies at its peak)
 #                        replicate  copy only the current state from other nodes. Refused for now: it cannot
 #                                   finish on mainnet. Hypersnap's replicator (same code as Snapchain's, checked at
 #                                   2e8733d) refuses KeyAdd/KeyRemove messages, so every copy dies at the first
-#                                   account that has one. Set INFINICASTER_FORCE=1 to try anyway.
-#   INFINICASTER_REPLICATION_PEERS=http://IP:3383[,...]   with replicate: which nodes to copy from
-#   INFINICASTER_BLOCKS=all          block history to keep. Hypersnap exists to keep everything, so "all"
+#                                   account that has one. Set FATLINE_FORCE=1 to try anyway.
+#   FATLINE_REPLICATION_PEERS=http://IP:3383[,...]   with replicate: which nodes to copy from
+#   FATLINE_BLOCKS=all          block history to keep. Hypersnap exists to keep everything, so "all"
 #                        is the default; "1day" etc. sets pruning.block_retention.
-#   INFINICASTER_HYPER_APIS=off      Hypersnap's extra APIs (social graph, channels, metrics, search, feeds,
+#   FATLINE_HYPER_APIS=off      Hypersnap's extra APIs (social graph, channels, metrics, search, feeds,
 #                        conversations) build their own indexes and use more RAM and disk. "on" enables them.
 #                        Default: off when Snapchain runs on the same server, on otherwise.
-#   INFINICASTER_HYPERSNAP_MEM=7g    memory cap for the container, so Hypersnap can never starve Snapchain.
+#   FATLINE_HYPERSNAP_MEM=7g    memory cap for the container, so Hypersnap can never starve Snapchain.
 #                        Default: 45% of RAM when Snapchain runs here, no cap otherwise.
 #
 # Safe to re-run: finished steps are skipped, and an interrupted snapshot shard starts over.
@@ -30,14 +30,14 @@ set -euo pipefail
 
 IMAGE="farcasterorg/hypersnap:0.13.5"   # = "latest" on 2026-10-22 (sha256:6b5e3a23...)
 UPSTREAM_COMMIT="2e8733d044141ad3ba0e0592a4d5873c1dc6ce9c"   # farcasterorg/hypersnap main, 2026-10-17
-SNAPSHOT="${INFINICASTER_SNAPSHOT:-stream}"
-if [ "$SNAPSHOT" = replicate ] && [ "${INFINICASTER_FORCE:-}" != 1 ]; then
+SNAPSHOT="${FATLINE_SNAPSHOT:-stream}"
+if [ "$SNAPSHOT" = replicate ] && [ "${FATLINE_FORCE:-}" != 1 ]; then
   echo "Replicate can't finish on mainnet today: Hypersnap's replicator refuses KeyAdd/KeyRemove messages"
   echo "(src/network/replication/replicator.rs), so the copy dies at the first account that has one."
-  echo "Use the default (stream), or set INFINICASTER_FORCE=1 to try anyway."
+  echo "Use the default (stream), or set FATLINE_FORCE=1 to try anyway."
   exit 1
 fi
-BLOCKS="${INFINICASTER_BLOCKS:-all}"
+BLOCKS="${FATLINE_BLOCKS:-all}"
 SNAPSHOT_BUCKET="https://pub-d352dd8819104a778e20d08888c5a661.r2.dev"
 SNAPSHOT_URL="$SNAPSHOT_BUCKET/FARCASTER_NETWORK_MAINNET"
 SHARDS="0 1 2"
@@ -55,8 +55,8 @@ fi
 # 1. Pick the disk. Never the one Snapchain is on: two growing databases on one volume end badly.
 SNAPCHAIN_DISK=""
 [ -e /root/snapchain ] && SNAPCHAIN_DISK=$(df --output=target "$(readlink -f /root/snapchain)" | tail -1)
-if [ -n "${INFINICASTER_HYPERSNAP_DATA:-}" ]; then
-  BASE="$INFINICASTER_HYPERSNAP_DATA"
+if [ -n "${FATLINE_HYPERSNAP_DATA:-}" ]; then
+  BASE="$FATLINE_HYPERSNAP_DATA"
 else
   BASE=""; best=0
   for v in /mnt/HC_Volume_* /mnt/*; do
@@ -88,18 +88,18 @@ FREE_GB=$(df -BG --output=avail "$DATA" | tail -1 | tr -dc 0-9)
 for d in .rocks/shard-*; do
   if [ -d "$d" ]; then FREE_GB=$((FREE_GB + $(du -s -BG "$d" | cut -f1 | tr -dc 0-9))); fi
 done
-if [ ! -f .snapshot-done ] && [ "$FREE_GB" -lt "$MIN_FREE_GB" ] && [ "${INFINICASTER_FORCE:-}" != 1 ]; then
+if [ ! -f .snapshot-done ] && [ "$FREE_GB" -lt "$MIN_FREE_GB" ] && [ "${FATLINE_FORCE:-}" != 1 ]; then
   echo "Only ${FREE_GB} GB free in $DATA. A full Hypersnap node needs ${MIN_FREE_GB} GB+ to start and keeps growing."
-  echo "Attach a bigger volume, or set INFINICASTER_FORCE=1 to try anyway."
+  echo "Attach a bigger volume, or set FATLINE_FORCE=1 to try anyway."
   exit 1
 fi
 say "Hypersnap data lives in $DATA (${FREE_GB} GB free). Sharing the server with Snapchain: $SHARED"
 
 # 2. Memory. Snapchain asks for 16 GB by itself, so cap Hypersnap when they share.
 RAM_GB=$(awk '/MemTotal/ {print int($2/1024/1024)}' /proc/meminfo)
-MEM="${INFINICASTER_HYPERSNAP_MEM:-}"
+MEM="${FATLINE_HYPERSNAP_MEM:-}"
 [ -z "$MEM" ] && [ "$SHARED" = yes ] && MEM="$((RAM_GB * 45 / 100))g"
-APIS="${INFINICASTER_HYPER_APIS:-$([ "$SHARED" = yes ] && echo off || echo on)}"
+APIS="${FATLINE_HYPER_APIS:-$([ "$SHARED" = yes ] && echo off || echo on)}"
 if [ "$RAM_GB" -lt 15 ] && [ "$SHARED" = no ] && ! swapon --show | grep -q .; then
   say "This machine has ${RAM_GB} GB of RAM; adding 16 GB of swap"
   fallocate -l 16G /swapfile && chmod 600 /swapfile
@@ -119,7 +119,7 @@ fi
 curl -fsSL "https://raw.githubusercontent.com/farcasterorg/hypersnap/$UPSTREAM_COMMIT/validators.toml" -o validators.toml
 api() { echo "[api.$1]"; echo "enabled = $([ "$APIS" = on ] && echo true || echo false)"; [ -n "${2:-}" ] && [ "$APIS" = on ] && echo "backfill_on_startup = true"; echo; }
 {
-  echo "# Written by Infinicaster (infra/hypersnap-setup.sh). Re-running the script rewrites it."
+  echo "# Written by Fatline (infra/hypersnap-setup.sh). Re-running the script rewrites it."
   echo "rpc_address=\"0.0.0.0:$RPC_PORT\""
   echo "http_address=\"0.0.0.0:$HTTP_PORT\""
   echo 'rocksdb_dir=".rocks"'
@@ -141,8 +141,8 @@ api() { echo "[api.$1]"; echo "enabled = $([ "$APIS" = on ] && echo true || echo
   echo "load_db_from_snapshot = $([ "$SNAPSHOT" = hypersnap ] && echo true || echo false)"
   if [ "$SNAPSHOT" = replicate ]; then
     echo 'bootstrap_method = "Replicate"'
-    if [ -n "${INFINICASTER_REPLICATION_PEERS:-}" ]; then
-      echo "replication_peers = $(echo "$INFINICASTER_REPLICATION_PEERS" | jq -Rc 'split(",") | map(select(length > 0))')"
+    if [ -n "${FATLINE_REPLICATION_PEERS:-}" ]; then
+      echo "replication_peers = $(echo "$FATLINE_REPLICATION_PEERS" | jq -Rc 'split(",") | map(select(length > 0))')"
     fi
   fi
   echo
@@ -151,7 +151,7 @@ api() { echo "[api.$1]"; echo "enabled = $([ "$APIS" = on ] && echo true || echo
 
 # 5. Compose: Hypersnap plus its own statsd, which publishes no host ports (Snapchain's statsd owns 8125/8126).
 {
-  echo "# Written by Infinicaster (infra/hypersnap-setup.sh). Re-running the script rewrites it."
+  echo "# Written by Fatline (infra/hypersnap-setup.sh). Re-running the script rewrites it."
   echo "name: hypersnap"
   echo "services:"
   echo "  hypersnap:"

@@ -1,7 +1,7 @@
 // The launchpad: apps that pay for their own life.
 import { encodeFunctionData, parseAbi, parseSignature, parseUnits } from 'viem';
 import { $, api, date, duration, el, short, state, t, usdc, wallet } from './lib.js';
-import { nodeStrip } from './farline.js';
+import { nodeStrip } from './fatline.js';
 
 const erc20 = parseAbi([
   'function approve(address spender, uint256 amount) returns (bool)',
@@ -169,7 +169,7 @@ export function presence(app, onDone) {
         const day = s.today.day;
         const signature = await w.client.signTypedData({
           account: w.account,
-          domain: { name: 'Infinicaster App', version: '1', chainId: w.chain.id, verifyingContract: app.vault },
+          domain: { name: 'Fatline App', version: '1', chainId: w.chain.id, verifyingContract: app.vault },
           types: { CheckIn: [{ name: 'day', type: 'uint256' }] },
           primaryType: 'CheckIn', message: { day: BigInt(day) },
         });

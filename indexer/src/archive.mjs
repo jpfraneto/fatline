@@ -1,4 +1,4 @@
-// The Farline archive: one personal archive per FID, fed by independent network adapters.
+// The Fatline archive: one personal archive per FID, fed by independent network adapters.
 //
 // Each adapter (one per network node) calls ingest() with normalized events. This module is the only
 // code that writes these tables. Two tables matter:
@@ -10,7 +10,7 @@
 // Content is never deleted: a pruned, revoked or displaced message keeps its body.
 // Hashes are lowercase hex, 0x + 40 characters. The adapter normalizes (the HTTP API mixes hex and base64).
 //
-// The interface and the reasons are in research/FARLINE-ARCHIVE.md. Engine: SQLite (node:sqlite) for now.
+// The interface and the reasons are in research/FATLINE-ARCHIVE.md. Engine: SQLite (node:sqlite) for now.
 
 export const NETWORKS = ['farcaster', 'hypersnap'];
 export const EVENT_TYPES = ['MERGE_MESSAGE', 'PRUNE_MESSAGE', 'REVOKE_MESSAGE', 'MERGE_FAILURE', 'MERGE_ON_CHAIN_EVENT', 'MERGE_USERNAME_PROOF', 'BACKFILL'];

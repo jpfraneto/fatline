@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Farline: your own Farcaster node and client</title>
+<title>Fatline: your own Farcaster node and client</title>
 <meta name="description" content="Your own Farcaster or Hypersnap read node and your own client, in a few commands. A tutorial that explains the protocol as you go.">
 <meta name="theme-color" content="#111820">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111820'/%3E%3Cpath d='M8 34 H24 C28 34 29 24 32 24 C35 24 36 40 40 40 C43 40 44 34 47 34 H56' fill='none' stroke='%23A6D8C2' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
@@ -66,7 +66,7 @@
 </head>
 <body>
 <header class="top">
-  <a class="brand" href="#">Farline</a>
+  <a class="brand" href="#">Fatline</a>
   <div class="langs" role="group" aria-label="Language">
     <button type="button" data-set="en" aria-pressed="true">English</button>
     <button type="button" data-set="es" aria-pressed="false">Español</button>
@@ -98,11 +98,11 @@
       <li>New Hetzner accounts have limits (ours: 1,385 GB of volumes and 14 vCPUs in total). One node needs a 700 GB volume, so one new account fits <strong>one</strong> full node. A Farcaster node and a Hypersnap node side by side need two servers and two volumes.</li>
       <li>To post: your Farcaster account's seed phrase, typed only into your own terminal.</li>
     </ul>
-    <pre><code>git clone https://github.com/jpfraneto/infinicaster && cd infinicaster
+    <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 
-./infinicaster compute            <span class="c"># (0) rent a machine that can hold a node: price first, then you type "create"</span>
-./infinicaster node farcaster     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
-./infinicaster client             <span class="c"># (2) your client, reading from your node, on http://localhost:8787</span></code></pre>
+./fatline compute            <span class="c"># (0) rent a machine that can hold a node: price first, then you type "create"</span>
+./fatline node farcaster     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
+./fatline client             <span class="c"># (2) your client, reading from your node, on http://localhost:8787</span></code></pre>
     <p class="note"><span class="tag no">untested end to end</span> Each step has been run on its own. A complete fresh run of all three, start to finish, has not been done yet. Our own node was built with an earlier one-step version of steps 0 and 1.</p>
   </section>
   <section lang="es">
@@ -113,11 +113,11 @@
       <li>Las cuentas nuevas de Hetzner tienen límites (la nuestra: 1.385 GB de volúmenes y 14 vCPU en total). Un nodo necesita un volumen de 700 GB, así que una cuenta nueva alcanza para <strong>un</strong> nodo completo. Un nodo de Farcaster y uno de Hypersnap lado a lado necesitan dos servidores y dos volúmenes.</li>
       <li>Para publicar: la frase semilla de tu cuenta de Farcaster, escrita solo en tu propia terminal.</li>
     </ul>
-    <pre><code>git clone https://github.com/jpfraneto/infinicaster && cd infinicaster
+    <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 
-./infinicaster compute            <span class="c"># (0) arrienda una máquina capaz de tener un nodo: primero el precio, luego escribes "create"</span>
-./infinicaster node farcaster     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
-./infinicaster client             <span class="c"># (2) tu cliente, leyendo de tu nodo, en http://localhost:8787</span></code></pre>
+./fatline compute            <span class="c"># (0) arrienda una máquina capaz de tener un nodo: primero el precio, luego escribes "create"</span>
+./fatline node farcaster     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
+./fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo, en http://localhost:8787</span></code></pre>
     <p class="note"><span class="tag no">sin probar de punta a punta</span> Cada paso se ha corrido por separado. Una corrida nueva y completa de los tres, de principio a fin, todavía no se ha hecho. Nuestro propio nodo se armó con una versión anterior que juntaba los pasos 0 y 1.</p>
   </section>
 </div>
@@ -168,28 +168,28 @@
 <!-- ============================================================ STEP 0 -->
 <section id="machine" lang="en">
   <h2>Step 0: a machine for the node</h2>
-  <pre><code>./infinicaster compute --quote   <span class="c"># price only, nothing is created</span>
-./infinicaster compute           <span class="c"># asks you to type "create"</span></code></pre>
-  <p>It picks the cheapest server type in stock with at least 16 GB of RAM (on 2026-10-22: <code>cax31</code>, 8 ARM CPUs), adds a 700 GB volume, prints the price and asks before creating anything. It rents the machine only; step 1 puts the node on it. Everything it creates is written to <code>.infinicaster/hetzner.json</code>, so it can be deleted exactly.</p>
+  <pre><code>./fatline compute --quote   <span class="c"># price only, nothing is created</span>
+./fatline compute           <span class="c"># asks you to type "create"</span></code></pre>
+  <p>It picks the cheapest server type in stock with at least 16 GB of RAM (on 2026-10-22: <code>cax31</code>, 8 ARM CPUs), adds a 700 GB volume, prints the price and asks before creating anything. It rents the machine only; step 1 puts the node on it. Everything it creates is written to <code>.fatline/hetzner.json</code>, so it can be deleted exactly.</p>
   <div class="concept"><strong>Why rent at all?</strong> A Farcaster node holds every account's current messages: about 600 GB today. Most laptops don't have that much free disk.</div>
-  <p>Already have a machine with Docker, 16 GB of RAM and about 700 GB free? Skip this step and use <code>./infinicaster node farcaster --local</code> there. <code>./infinicaster doctor</code> measures your machine and tells you which path fits.</p>
-  <p class="muted">Prefer paying in USDC? <code>./infinicaster compute --provider agentmetal</code> rents by the day over x402. <span class="tag no">untested</span> with real money.</p>
+  <p>Already have a machine with Docker, 16 GB of RAM and about 700 GB free? Skip this step and use <code>./fatline node farcaster --local</code> there. <code>./fatline doctor</code> measures your machine and tells you which path fits.</p>
+  <p class="muted">Prefer paying in USDC? <code>./fatline compute --provider agentmetal</code> rents by the day over x402. <span class="tag no">untested</span> with real money.</p>
 </section>
 <section id="machine" lang="es">
   <h2>Paso 0: una máquina para el nodo</h2>
-  <pre><code>./infinicaster compute --quote   <span class="c"># solo el precio, no crea nada</span>
-./infinicaster compute           <span class="c"># te pide escribir "create"</span></code></pre>
-  <p>Elige el tipo de servidor más barato con stock y al menos 16 GB de RAM (el 2026-10-22: <code>cax31</code>, 8 CPU ARM), le agrega un volumen de 700 GB, muestra el precio y pregunta antes de crear algo. Solo arrienda la máquina; el paso 1 le pone el nodo. Todo lo que crea queda anotado en <code>.infinicaster/hetzner.json</code>, para poder borrarlo exacto.</p>
+  <pre><code>./fatline compute --quote   <span class="c"># solo el precio, no crea nada</span>
+./fatline compute           <span class="c"># te pide escribir "create"</span></code></pre>
+  <p>Elige el tipo de servidor más barato con stock y al menos 16 GB de RAM (el 2026-10-22: <code>cax31</code>, 8 CPU ARM), le agrega un volumen de 700 GB, muestra el precio y pregunta antes de crear algo. Solo arrienda la máquina; el paso 1 le pone el nodo. Todo lo que crea queda anotado en <code>.fatline/hetzner.json</code>, para poder borrarlo exacto.</p>
   <div class="concept"><strong>¿Por qué arrendar?</strong> Un nodo de Farcaster guarda los mensajes vigentes de todas las cuentas: unos 600 GB hoy. A la mayoría de los computadores no le sobra tanto disco.</div>
-  <p>¿Ya tienes una máquina con Docker, 16 GB de RAM y unos 700 GB libres? Sáltate este paso y usa <code>./infinicaster node farcaster --local</code> ahí. <code>./infinicaster doctor</code> mide tu máquina y te dice qué camino te sirve.</p>
-  <p class="muted">¿Prefieres pagar en USDC? <code>./infinicaster compute --provider agentmetal</code> arrienda por día vía x402. <span class="tag no">sin probar</span> con dinero real.</p>
+  <p>¿Ya tienes una máquina con Docker, 16 GB de RAM y unos 700 GB libres? Sáltate este paso y usa <code>./fatline node farcaster --local</code> ahí. <code>./fatline doctor</code> mide tu máquina y te dice qué camino te sirve.</p>
+  <p class="muted">¿Prefieres pagar en USDC? <code>./fatline compute --provider agentmetal</code> arrienda por día vía x402. <span class="tag no">sin probar</span> con dinero real.</p>
 </section>
 
 <!-- ============================================================ STEP 1 -->
 <section id="node" lang="en">
   <h2>Step 1: your read node</h2>
-  <pre><code>./infinicaster node farcaster    <span class="c"># or: ./infinicaster node hypersnap</span></code></pre>
-  <p>It installs that network's node on the machine from step 0 and follows the starting snapshot as it streams in (about 400 GB, roughly 1 to 3 hours). When the node answers on <code>/v1/info</code>, it becomes your own node in <code>infinicaster.config.json</code>, so step 2 reads from it. A server holds one network; it refuses to put the second one next to the first.</p>
+  <pre><code>./fatline node farcaster    <span class="c"># or: ./fatline node hypersnap</span></code></pre>
+  <p>It installs that network's node on the machine from step 0 and follows the starting snapshot as it streams in (about 400 GB, roughly 1 to 3 hours). When the node answers on <code>/v1/info</code>, it becomes your own node in <code>fatline.config.json</code>, so step 2 reads from it. A server holds one network; it refuses to put the second one next to the first.</p>
   <p>With <code>--local</code>, it installs on the machine you are on instead: it downloads that network's official bootstrap script, shows you its address and checksum, and asks before running it.</p>
   <div class="concept"><strong>Read nodes and validators.</strong> Snapchain, Farcaster's network software, has a small set of validators that agree on the order of messages, in blocks. Your node is a read node: it follows those blocks and keeps its own copy of every message. When you post, your node checks the message and relays it to the validators. You never need a validator's permission to read.</div>
   <div class="concept"><strong>Farcaster or Hypersnap.</strong> Hypersnap is a community fork of Snapchain. Both speak the same API and accept the same signed messages. Hypersnap keeps the full history; Farcaster prunes old messages to each account's storage limit. Neither is the default here because it is better: you choose.</div>
@@ -203,8 +203,8 @@
 </section>
 <section id="node" lang="es">
   <h2>Paso 1: tu nodo de lectura</h2>
-  <pre><code>./infinicaster node farcaster    <span class="c"># o: ./infinicaster node hypersnap</span></code></pre>
-  <p>Instala el nodo de esa red en la máquina del paso 0 y sigue el snapshot de partida mientras llega (unos 400 GB, más o menos 1 a 3 horas). Cuando el nodo responde en <code>/v1/info</code>, queda como tu propio nodo en <code>infinicaster.config.json</code>, y el paso 2 lee de él. Un servidor tiene una sola red; no pone la segunda al lado de la primera.</p>
+  <pre><code>./fatline node farcaster    <span class="c"># o: ./fatline node hypersnap</span></code></pre>
+  <p>Instala el nodo de esa red en la máquina del paso 0 y sigue el snapshot de partida mientras llega (unos 400 GB, más o menos 1 a 3 horas). Cuando el nodo responde en <code>/v1/info</code>, queda como tu propio nodo en <code>fatline.config.json</code>, y el paso 2 lee de él. Un servidor tiene una sola red; no pone la segunda al lado de la primera.</p>
   <p>Con <code>--local</code>, lo instala en la máquina donde estás: descarga el script oficial de esa red, te muestra su dirección y su checksum, y pregunta antes de correrlo.</p>
   <div class="concept"><strong>Nodos de lectura y validadores.</strong> Snapchain, el software de la red de Farcaster, tiene un grupo pequeño de validadores que acuerdan el orden de los mensajes, en bloques. Tu nodo es de lectura: sigue esos bloques y guarda su propia copia de cada mensaje. Cuando publicas, tu nodo revisa el mensaje y se lo pasa a los validadores. Nunca necesitas permiso de un validador para leer.</div>
   <div class="concept"><strong>Farcaster o Hypersnap.</strong> Hypersnap es un fork comunitario de Snapchain. Las dos hablan la misma API y aceptan los mismos mensajes firmados. Hypersnap guarda toda la historia; Farcaster borra mensajes viejos según el límite de almacenamiento de cada cuenta. Ninguna es la opción por defecto por ser mejor: tú eliges.</div>
@@ -220,8 +220,8 @@
 <!-- ============================================================ STEP 2 -->
 <section id="client" lang="en">
   <h2>Step 2: your client</h2>
-  <pre><code>./infinicaster client</code></pre>
-  <p>Step 1 already told it where your node is. (A node somewhere else? <code>./infinicaster init --node http://&lt;IP&gt;:3381</code>.) It installs, builds and starts the client on <a href="http://localhost:8787">http://localhost:8787</a>. Your phone can open it too, if it can reach your computer.</p>
+  <pre><code>./fatline client</code></pre>
+  <p>Step 1 already told it where your node is. (A node somewhere else? <code>./fatline init --node http://&lt;IP&gt;:3381</code>.) It installs, builds and starts the client on <a href="http://localhost:8787">http://localhost:8787</a>. Your phone can open it too, if it can reach your computer.</p>
   <p>The client always says which node it is reading from, at the top of the page. In <strong>Settings</strong> you choose the network (Farcaster or Hypersnap) and the node:</p>
   <ul>
     <li><strong>One node:</strong> every read and every post goes only through that node. If it goes down, you see an error naming it. The client never switches behind your back.</li>
@@ -231,8 +231,8 @@
 </section>
 <section id="client" lang="es">
   <h2>Paso 2: tu cliente</h2>
-  <pre><code>./infinicaster client</code></pre>
-  <p>El paso 1 ya le dijo dónde está tu nodo. (¿Un nodo en otra parte? <code>./infinicaster init --node http://&lt;IP&gt;:3381</code>.) Instala, compila y parte el cliente en <a href="http://localhost:8787">http://localhost:8787</a>. Tu teléfono también puede abrirlo si alcanza a tu computador.</p>
+  <pre><code>./fatline client</code></pre>
+  <p>El paso 1 ya le dijo dónde está tu nodo. (¿Un nodo en otra parte? <code>./fatline init --node http://&lt;IP&gt;:3381</code>.) Instala, compila y parte el cliente en <a href="http://localhost:8787">http://localhost:8787</a>. Tu teléfono también puede abrirlo si alcanza a tu computador.</p>
   <p>El cliente siempre dice desde qué nodo está leyendo, arriba de la página. En <strong>Ajustes</strong> eliges la red (Farcaster o Hypersnap) y el nodo:</p>
   <ul>
     <li><strong>Un nodo:</strong> toda lectura y toda publicación pasan solo por ese nodo. Si se cae, ves un error que lo nombra. El cliente nunca cambia a tus espaldas.</li>
@@ -244,23 +244,23 @@
 <!-- ============================================================ POSTING -->
 <section id="post" lang="en">
   <h2>Posting: your client's own app key</h2>
-  <pre><code>./infinicaster identity --fid &lt;your FID&gt; --dry-run   <span class="c"># checks everything, registers nothing</span>
-./infinicaster identity --fid &lt;your FID&gt;             <span class="c"># registers this client's key</span></code></pre>
+  <pre><code>./fatline identity --fid &lt;your FID&gt; --dry-run   <span class="c"># checks everything, registers nothing</span>
+./fatline identity --fid &lt;your FID&gt;             <span class="c"># registers this client's key</span></code></pre>
   <p>Run it in your own terminal. It asks for your seed phrase in a hidden prompt, derives your custody address the standard way, and stops if that address does not own the FID you gave. It creates a new app key for this client and registers it with a message your custody address signs. No transaction, no gas. The key can post, react, follow and edit your profile, nothing else. The seed phrase is forgotten as soon as the key is registered, and never saved.</p>
   <p>Then you can cast, reply, like, recast, follow and delete. Each action shows <em>sending</em>, then <em>confirmed</em> only once your node returns it when asked.</p>
-  <pre><code>./infinicaster identity show     <span class="c"># is the key active?</span>
-./infinicaster identity revoke   <span class="c"># remove it from the network and from this machine</span></code></pre>
+  <pre><code>./fatline identity show     <span class="c"># is the key active?</span>
+./fatline identity revoke   <span class="c"># remove it from the network and from this machine</span></code></pre>
   <div class="concept"><strong>Storage rent and server bills are different things.</strong> Storage rent is paid onchain, per account, and sets how many messages the network keeps for you. It does not pay for any server. Your node's server is a separate bill, paid to whoever hosts it.</div>
   <p class="note">Status: the key registration and every action were tested against a fake node, and crackle accepted the message formats. <span class="tag no">untested</span> with a real account.</p>
 </section>
 <section id="post" lang="es">
   <h2>Publicar: la llave propia de tu cliente</h2>
-  <pre><code>./infinicaster identity --fid &lt;tu FID&gt; --dry-run   <span class="c"># revisa todo, no registra nada</span>
-./infinicaster identity --fid &lt;tu FID&gt;             <span class="c"># registra la llave de este cliente</span></code></pre>
+  <pre><code>./fatline identity --fid &lt;tu FID&gt; --dry-run   <span class="c"># revisa todo, no registra nada</span>
+./fatline identity --fid &lt;tu FID&gt;             <span class="c"># registra la llave de este cliente</span></code></pre>
   <p>Córrelo en tu propia terminal. Te pide tu frase semilla en un campo oculto, deriva tu dirección custodia de la forma estándar, y se detiene si esa dirección no es dueña del FID que diste. Crea una llave nueva para este cliente y la registra con un mensaje que firma tu dirección custodia. Sin transacción, sin gas. La llave puede publicar, reaccionar, seguir y editar tu perfil, nada más. La frase semilla se olvida apenas se registra la llave, y nunca se guarda.</p>
   <p>Después puedes hacer casts, responder, dar like, recastear, seguir y borrar. Cada acción muestra <em>enviando</em>, y <em>confirmado</em> solo cuando tu nodo la devuelve al preguntarle.</p>
-  <pre><code>./infinicaster identity show     <span class="c"># ¿está activa la llave?</span>
-./infinicaster identity revoke   <span class="c"># la quita de la red y de esta máquina</span></code></pre>
+  <pre><code>./fatline identity show     <span class="c"># ¿está activa la llave?</span>
+./fatline identity revoke   <span class="c"># la quita de la red y de esta máquina</span></code></pre>
   <div class="concept"><strong>El arriendo de almacenamiento y la cuenta del servidor son cosas distintas.</strong> El arriendo de almacenamiento se paga onchain, por cuenta, y define cuántos mensajes guarda la red para ti. No paga ningún servidor. El servidor de tu nodo es otra cuenta, que se le paga a quien lo hospeda.</div>
   <p class="note">Estado: el registro de la llave y cada acción se probaron contra un nodo falso, y crackle aceptó el formato de los mensajes. <span class="tag no">sin probar</span> con una cuenta real.</p>
 </section>
@@ -287,8 +287,8 @@
     <tr><td>Your client</td><td>free on your own computer</td></tr>
   </table></div>
   <p>Billed by the hour. <code>--quote</code> shows the exact price before anything is created.</p>
-  <pre><code>./infinicaster compute hetzner down   <span class="c"># deletes the server and its volume; billing stops</span></code></pre>
-  <p>It deletes only what step 0 created, using the record in <code>.infinicaster/hetzner.json</code>.</p>
+  <pre><code>./fatline compute hetzner down   <span class="c"># deletes the server and its volume; billing stops</span></code></pre>
+  <p>It deletes only what step 0 created, using the record in <code>.fatline/hetzner.json</code>.</p>
 </section>
 <section id="cost" lang="es">
   <h2>Cuánto cuesta, y cómo dejar de pagar</h2>
@@ -299,8 +299,8 @@
     <tr><td>Tu cliente</td><td>gratis en tu propio computador</td></tr>
   </table></div>
   <p>Se cobra por hora. <code>--quote</code> muestra el precio exacto antes de crear algo.</p>
-  <pre><code>./infinicaster compute hetzner down   <span class="c"># borra el servidor y su volumen; se deja de cobrar</span></code></pre>
-  <p>Borra solo lo que creó el paso 0, usando el registro en <code>.infinicaster/hetzner.json</code>.</p>
+  <pre><code>./fatline compute hetzner down   <span class="c"># borra el servidor y su volumen; se deja de cobrar</span></code></pre>
+  <p>Borra solo lo que creó el paso 0, usando el registro en <code>.fatline/hetzner.json</code>.</p>
 </section>
 
 <!-- ============================================================ TROUBLE -->
@@ -311,9 +311,9 @@
   <h3>The snapshot stopped</h3>
   <p>Run step 1 again. Finished shards are kept, and slow pieces are retried.</p>
   <h3>The client says the node you chose is not answering</h3>
-  <p>That is on purpose: it never switches nodes without telling you. Check the node with <code>./infinicaster status</code> or <code>compute hetzner status</code>, or choose another node in Settings.</p>
+  <p>That is on purpose: it never switches nodes without telling you. Check the node with <code>./fatline status</code> or <code>compute hetzner status</code>, or choose another node in Settings.</p>
   <h3>Everything else</h3>
-  <p><code>./infinicaster doctor</code> checks your machine and every configured node. Problems and questions: <a href="https://github.com/jpfraneto/infinicaster/issues">GitHub issues</a>.</p>
+  <p><code>./fatline doctor</code> checks your machine and every configured node. Problems and questions: <a href="https://github.com/jpfraneto/fatline/issues">GitHub issues</a>.</p>
 </section>
 <section id="trouble" lang="es">
   <h2>Cuando algo falla</h2>
@@ -322,20 +322,20 @@
   <h3>El snapshot se detuvo</h3>
   <p>Corre de nuevo el paso 1. Los shards terminados se conservan y las piezas lentas se reintentan.</p>
   <h3>El cliente dice que el nodo que elegiste no responde</h3>
-  <p>Es a propósito: nunca cambia de nodo sin avisarte. Revisa el nodo con <code>./infinicaster status</code> o <code>compute hetzner status</code>, o elige otro en Ajustes.</p>
+  <p>Es a propósito: nunca cambia de nodo sin avisarte. Revisa el nodo con <code>./fatline status</code> o <code>compute hetzner status</code>, o elige otro en Ajustes.</p>
   <h3>Todo lo demás</h3>
-  <p><code>./infinicaster doctor</code> revisa tu máquina y cada nodo configurado. Problemas y preguntas: <a href="https://github.com/jpfraneto/infinicaster/issues">issues en GitHub</a>.</p>
+  <p><code>./fatline doctor</code> revisa tu máquina y cada nodo configurado. Problemas y preguntas: <a href="https://github.com/jpfraneto/fatline/issues">issues en GitHub</a>.</p>
 </section>
 
 <!-- ============================================================ LIFE -->
 <section id="life" lang="en">
   <h2>Give your client a life</h2>
-  <p>The last chapter, and the reason this project is called Farline: a client can pay for its own server. In the client, <strong>Launch an app</strong> creates a USDC vault on Base, and optionally a coin on Clanker whose trading fees go to that vault, in USDC. The server pays itself from the vault. If the vault runs dry, the server stops being paid and the app dies. Anyone can feed it.</p>
+  <p>The last chapter, and the reason this project is called Fatline: a client can pay for its own server. In the client, <strong>Launch an app</strong> creates a USDC vault on Base, and optionally a coin on Clanker whose trading fees go to that vault, in USDC. The server pays itself from the vault. If the vault runs dry, the server stops being paid and the app dies. Anyone can feed it.</p>
   <p class="note">Status: proven on a local copy of Base with fake money, against the real Clanker and Uniswap contracts. <span class="tag no">untested</span> with real money; the contracts are not deployed on Base yet, and have had no external audit.</p>
 </section>
 <section id="life" lang="es">
   <h2>Dale vida a tu cliente</h2>
-  <p>El último capítulo, y la razón de que este proyecto se llame Farline: un cliente puede pagar su propio servidor. En el cliente, <strong>Lanzar una app</strong> crea una bóveda de USDC en Base y, si quieres, una moneda en Clanker cuyas comisiones van a esa bóveda, en USDC. El servidor se paga desde la bóveda. Si la bóveda se vacía, el servidor deja de pagarse y la app muere. Cualquiera puede alimentarla.</p>
+  <p>El último capítulo, y la razón de que este proyecto se llame Fatline: un cliente puede pagar su propio servidor. En el cliente, <strong>Lanzar una app</strong> crea una bóveda de USDC en Base y, si quieres, una moneda en Clanker cuyas comisiones van a esa bóveda, en USDC. El servidor se paga desde la bóveda. Si la bóveda se vacía, el servidor deja de pagarse y la app muere. Cualquiera puede alimentarla.</p>
   <p class="note">Estado: probado en una copia local de Base con dinero falso, contra los contratos reales de Clanker y Uniswap. <span class="tag no">sin probar</span> con dinero real; los contratos aún no están desplegados en Base y no han tenido auditoría externa.</p>
 </section>
 
@@ -372,8 +372,8 @@
 </section>
 
 <footer>
-  <p lang="en">Open source, MIT: <a href="https://github.com/jpfraneto/infinicaster">github.com/jpfraneto/infinicaster</a>. Snapchain, Hypersnap, Clanker and other dependencies keep their own licenses.</p>
-  <p lang="es">Código abierto, MIT: <a href="https://github.com/jpfraneto/infinicaster">github.com/jpfraneto/infinicaster</a>. Snapchain, Hypersnap, Clanker y las demás dependencias mantienen sus propias licencias.</p>
+  <p lang="en">Open source, MIT: <a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a>. Snapchain, Hypersnap, Clanker and other dependencies keep their own licenses.</p>
+  <p lang="es">Código abierto, MIT: <a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a>. Snapchain, Hypersnap, Clanker y las demás dependencias mantienen sus propias licencias.</p>
 </footer>
 
 <script>

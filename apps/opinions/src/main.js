@@ -2,7 +2,7 @@ import { appsPage, launchPage } from './apps.js';
 import { feedPage, peoplePage, voicePage } from './feed.js';
 import { $, api, el, showSource, state, store, t } from './lib.js';
 import { settingsPage } from './settings.js';
-import { archivePage, coinPage, leaveLive, nodePage } from './farline.js';
+import { archivePage, coinPage, leaveLive, nodePage } from './fatline.js';
 import { loadMe } from './post.js';
 
 function renderChrome() {
@@ -20,7 +20,7 @@ function route() {
   if (tab !== 'voices' && tab !== 'people') showSource(null);
   window.scrollTo(0, 0);
   leaveLive();
-  $('#main').classList.remove('farline-page');
+  $('#main').classList.remove('fatline-page');
 
   // The canonical page of a coin (or of a coinless app's vault): #/coin/<chainId>/<address>.
   const coin = hash.match(/^\/coin\/([^/]+)\/([^/?#]+)/);

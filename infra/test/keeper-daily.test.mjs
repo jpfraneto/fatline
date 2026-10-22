@@ -31,7 +31,7 @@ function dailySeller(log) {
 
 function setup(port, hoursLeft) {
   const root = mkdtempSync(join(tmpdir(), 'keeper-'));
-  const dataDir = join(root, '.infinicaster');
+  const dataDir = join(root, '.fatline');
   mkdirSync(join(root, 'infra'), { recursive: true });
   mkdirSync(dataDir);
   writeFileSync(join(root, 'infra/providers.json'), JSON.stringify({ providers: { daily: {

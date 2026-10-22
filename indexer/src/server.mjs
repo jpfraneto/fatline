@@ -29,7 +29,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
 
   // Posting signs with this client's app key, so only its owner may ask for it:
   // requests made on this machine directly, or (behind a proxy, on a server) with the write token.
-  const writeToken = process.env.INFINICASTER_WRITE_TOKEN
+  const writeToken = process.env.FATLINE_WRITE_TOKEN
     ?? (existsSync(join(config.dataDir, 'write.token')) ? readFileSync(join(config.dataDir, 'write.token'), 'utf8').trim() : null);
   const mayWrite = (req) => {
     // Other websites open in the same browser must not be able to post through this client.
@@ -46,7 +46,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
   };
   const writer = (network, node) => {
     const key = loadAppKey(config.dataDir);
-    if (!key) throw Object.assign(new Error('This client has no app key yet. Run ./infinicaster identity on the machine that runs it.'), { status: 409 });
+    if (!key) throw Object.assign(new Error('This client has no app key yet. Run ./fatline identity on the machine that runs it.'), { status: 409 });
     const name = network && networks[network] ? network : key.network;
     // Posts go to the network the person chose, through the node they chose (no fallback), or the automatic one.
     return new Writer({ network: node ? networks[name].pinned(node) : networks[name], key });
@@ -65,16 +65,16 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
       if (!app) throw Object.assign(new Error('No app with that vault or coin'), { status: 404 });
       return app;
     }],
-    // Farline: a coin, its node and its money. Public and read-only; no wallet needed.
+    // Fatline: a coin, its node and its money. Public and read-only; no wallet needed.
     ['GET', /^\/api\/coin\/([^/]+)\/([^/]+)$/, (q, [, chainId, address]) => needCoins().get(chainId, address)],
     ['GET', /^\/api\/coin\/([^/]+)\/([^/]+)\/activity$/, (q, [, chainId, address]) => needCoins().activity(chainId, address, { before: q.get('before'), limit: q.get('limit') })],
     ['GET', /^\/api\/nodes$/, () => needCoins().overview()],
-    // Farline archive: one FID's messages from every network adapter, each with its own status per network.
+    // Fatline archive: one FID's messages from every network adapter, each with its own status per network.
     ['GET', /^\/api\/archive(?:\/(\d{1,12}))?$/, (q, [, fid]) => {
       if (!archive) throw Object.assign(new Error('The archive is not set up on this server.'), { status: 503 });
       const own = loadAppKey(config.dataDir)?.fid ?? null;
       const who = fid ? Number(fid) : own;
-      if (!who) throw Object.assign(new Error('This client has no FID yet. Run ./infinicaster identity.'), { status: 404 });
+      if (!who) throw Object.assign(new Error('This client has no FID yet. Run ./fatline identity.'), { status: 404 });
       const types = (q.get('types') ?? 'cast').split(',').filter((x) => ARCHIVE_TYPES[x]);
       return { ...archive.read(who, { before: q.get('before'), types: types.length ? types : ['cast'], limit: q.get('limit') }), tracked: archive.fids().includes(who), own: who === own, at: Date.now() };
     }],
@@ -146,7 +146,7 @@ function json(res, status, body) {
 function serveApp(dir, pathname, res) {
   if (!existsSync(dir)) {
     res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
-    return res.end('The indexer is running. The app is not built yet: run ./infinicaster up\nAPI: /api/networks, /api/feed\n');
+    return res.end('The indexer is running. The app is not built yet: run ./fatline up\nAPI: /api/networks, /api/feed\n');
   }
   let file = normalize(join(dir, decodeURIComponent(pathname)));
   if (!file.startsWith(dir)) return res.writeHead(403).end();
@@ -178,7 +178,7 @@ export function start(config = loadConfig()) {
   if (ownKey?.fid) archive.track(ownKey.fid); // the owner decided: only this client's own FID, for now
   const server = buildServer({ config, networks, voices, launchpad, keeper, nodes, archive });
   server.listen(config.port, () => {
-    console.log(`Infinicaster indexer on http://localhost:${config.port}`);
+    console.log(`Fatline indexer on http://localhost:${config.port}`);
     console.log(`  config:   ${config.path}`);
     console.log(`  networks: ${Object.keys(networks).join(', ')} (default: ${config.defaultNetwork})`);
     console.log(`  apps:     ${launchpad.enabled ? `factory ${launchpad.factory} on chain ${launchpad.chainId}` : 'off (no factory address in config)'}`);

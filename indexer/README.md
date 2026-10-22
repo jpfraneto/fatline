@@ -1,9 +1,9 @@
-# Infinicaster indexer
+# Fatline indexer
 
-The backend that feeds the apps. It reads the network the reader chose (Farcaster or Hypersnap) from the first healthy node in the config, preferring your own. It also rebuilds the Voices feed from contract logs into SQLite. Deleting `.infinicaster/indexer.sqlite` and restarting gives the same feed.
+The backend that feeds the apps. It reads the network the reader chose (Farcaster or Hypersnap) from the first healthy node in the config, preferring your own. It also rebuilds the Voices feed from contract logs into SQLite. Deleting `.fatline/indexer.sqlite` and restarting gives the same feed.
 
 ```sh
-npm ci && npm start        # or from the root: ./infinicaster up
+npm ci && npm start        # or from the root: ./fatline up
 npm test
 ```
 
@@ -24,4 +24,4 @@ Every network answer includes `source: { network, node, own }`.
 
 **Keeper.** With `KEEPER_PRIVATE_KEY` and `KEEPER_VAULT` set, the server pays itself from its app's vault, once a day's worth is due (the vault harvests trading fees first). When its rented server is within 3 days of expiring, it renews the rental over x402 with that USDC. See `src/keeper.mjs`.
 
-Overrides: `PORT`, `INFINICASTER_CONFIG`, `INFINICASTER_DATA`, `VOICES_RPC`, `VOICES_ADDRESS`, `LAUNCHPAD_RPC`, `LAUNCHPAD_FACTORY`, `KEEPER_PRIVATE_KEY`, `KEEPER_VAULT`, `KEEPER_INTERVAL_MS`. It uses Node's built-in SQLite (`--experimental-sqlite`, Node 22.12+). Dependencies: `viem` and `clanker-sdk` (pinned).
+Overrides: `PORT`, `FATLINE_CONFIG`, `FATLINE_DATA`, `VOICES_RPC`, `VOICES_ADDRESS`, `LAUNCHPAD_RPC`, `LAUNCHPAD_FACTORY`, `KEEPER_PRIVATE_KEY`, `KEEPER_VAULT`, `KEEPER_INTERVAL_MS`. It uses Node's built-in SQLite (`--experimental-sqlite`, Node 22.12+). Dependencies: `viem` and `clanker-sdk` (pinned).

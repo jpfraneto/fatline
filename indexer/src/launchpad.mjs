@@ -400,7 +400,7 @@ const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 /** What a person signs to say "I used this app on this day". Free, no gas. */
 export function checkInTypedData(chainId, vault, day) {
   return {
-    domain: { name: 'Infinicaster App', version: '1', chainId: Number(chainId), verifyingContract: getAddress(vault) },
+    domain: { name: 'Fatline App', version: '1', chainId: Number(chainId), verifyingContract: getAddress(vault) },
     types: { CheckIn: [{ name: 'day', type: 'uint256' }] },
     primaryType: 'CheckIn',
     message: { day: BigInt(day) },

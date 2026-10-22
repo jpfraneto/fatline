@@ -1,6 +1,6 @@
 # The story so far
 
-This file records how Infinicaster got here, what was decided and why. With it, someone (a person or an agent) can start from an empty folder and arrive at the same place. [MASTER-PROMPT.md](MASTER-PROMPT.md) is the plan going forward. This file is the memory behind it.
+This file records how Fatline got here, what was decided and why. With it, someone (a person or an agent) can start from an empty folder and arrive at the same place. [MASTER-PROMPT.md](MASTER-PROMPT.md) is the plan going forward. This file is the memory behind it.
 
 Dates are UTC. The project began on 2026-10-18.
 
@@ -70,7 +70,7 @@ More decisions that day:
 - **An app is a fixed artifact.** A client, mini app, frame, post or video, pinned by hash at birth. "A new version becomes a new app. Simplicity. Finality. Straightforwardness." Not built yet.
 - **Grants:** a public treasury that pays apps' vaults daily and pays for shared full nodes. Not built yet.
 - **A debit card funded from the vault** could pay the treasury's cloud bills. It doesn't work as automatic per-app infrastructure: card issuers do identity checks and hold the money in between.
-- The repository went **public**: [github.com/jpfraneto/infinicaster](https://github.com/jpfraneto/infinicaster). Shared with J Valeska, hackathon partner.
+- The repository went **public**: [github.com/jpfraneto/fatline](https://github.com/jpfraneto/fatline). Shared with J Valeska, hackathon partner.
 
 ## 4. The node: from "2 TB" to about 600 GB (Oct 21)
 
@@ -93,7 +93,7 @@ More decisions that day:
 
 ### The "5 USDC node" experiment (Oct 21, late)
 
-- **The owner's idea:** a minimal Snapchain, so anyone could run a node plus Infinicaster for ~5 USDC a day.
+- **The owner's idea:** a minimal Snapchain, so anyone could run a node plus Fatline for ~5 USDC a day.
 - **What we tried:** Snapchain's newer startup mode, `bootstrap_method = Replicate`, copies only the current state from other nodes, with no block history. We ran it on the server we had already paid for.
 - **Result:** it doesn't work today.
   - The mode asks a peer's `ReplicationService`.
@@ -101,7 +101,7 @@ More decisions that day:
   - We checked the call format against `HubService/GetInfo`, which answers.
   - So no public node serves replication right now.
 - **The way it can work:**
-  1. Once one Infinicaster node is fully synced, *it* serves replication. The Snapchain default is `replication.enable = true`.
+  1. Once one Fatline node is fully synced, *it* serves replication. The Snapchain default is `replication.enable = true`.
   2. Every new node points `replication_peers` at it and starts from the current state only.
   3. That one shared node is exactly what the grants treasury is for.
   4. A second option: publish a pruned snapshot of our node.
@@ -118,7 +118,7 @@ More decisions that day:
 ## 6. Posting (Oct 21, night)
 
 - **What was built:**
-  - `./infinicaster identity` registers a **gasless** app key, following Snapchain's current writing guide: an EIP-712 `KEY_ADD` signed by the custody address. It needs no ETH and confirms in seconds.
+  - `./fatline identity` registers a **gasless** app key, following Snapchain's current writing guide: an EIP-712 `KEY_ADD` signed by the custody address. It needs no ETH and confirms in seconds.
   - The key is scoped: it can't add or remove other keys.
   - The client signs casts, replies, likes, recasts, follows and deletes. Each one is read back from the same node before it's shown as confirmed.
 - **Findings from the real network:**
@@ -131,19 +131,19 @@ More decisions that day:
 - AgentMetal's disk failed again (HTTP 502 within 2 s, not charged). The owner asked for a cheaper provider "just to test things out".
 - **Hetzner directly**, billed by the hour on the owner's account (card, not USDC): a cx43 with 16 GB RAM plus a 700 GB volume costs **~$2.50/day**, about a fifth of AgentMetal's ~11.20 USDC/day.
 - The owner created an API token, stored only in `~/.hetzner-token` (mode 600).
-- `infra/hetzner.mjs` creates, checks and deletes the whole node (`./infinicaster compute hetzner …`).
+- `infra/hetzner.mjs` creates, checks and deletes the whole node (`./fatline compute hetzner …`).
 - Quoted, **not created**: the owner paused to start a fresh session with new ideas.
 - A friend independently explained the R2 snapshot, the same file we measured. The friend is a tester candidate.
 
 ## Start from scratch
 
 1. Read the bounty post, then [MASTER-PROMPT.md](MASTER-PROMPT.md), then this file.
-2. `git clone https://github.com/jpfraneto/infinicaster && cd infinicaster && ./infinicaster doctor`
-3. Try the launchpad with fake money: `./infinicaster contracts fork`, then `./infinicaster up` (see the README).
+2. `git clone https://github.com/jpfraneto/fatline && cd fatline && ./fatline doctor`
+3. Try the launchpad with fake money: `./fatline contracts fork`, then `./fatline up` (see the README).
 4. Node:
-   - `./infinicaster compute wallet` creates a wallet; fund it with USDC on Base.
-   - `./infinicaster compute --provider agentmetal --days 1 --disk 700 --node` rents the server and sets up the node.
-   - `./infinicaster compute status` shows progress.
+   - `./fatline compute wallet` creates a wallet; fund it with USDC on Base.
+   - `./fatline compute --provider agentmetal --days 1 --disk 700 --node` rents the server and sets up the node.
+   - `./fatline compute status` shows progress.
 5. Continue with the first unfinished workstream in the master prompt.
 
 ## Rules that never change

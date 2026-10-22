@@ -1,6 +1,6 @@
 {
-  "name": "Farline",
-  "short_name": "Farline",
+  "name": "Fatline",
+  "short_name": "Fatline",
   "description": "Farcaster clients that pay for their own life.",
   "start_url": "/",
   "display": "standalone",

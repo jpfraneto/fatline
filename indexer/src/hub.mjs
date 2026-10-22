@@ -62,7 +62,7 @@ export class Network {
   async node() {
     if (!this.current || Date.now() - this.checkedAt > HEALTH_TTL_MS) await this.refresh();
     if (!this.current) {
-      throw Object.assign(new Error(`No reachable ${this.label} node. Run ./infinicaster doctor.`), { status: 503 });
+      throw Object.assign(new Error(`No reachable ${this.label} node. Run ./fatline doctor.`), { status: 503 });
     }
     return this.current;
   }
