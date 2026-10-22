@@ -4,6 +4,7 @@
 //
 // --node     the node to read. Default: the first node listed for that network in infinicaster.config.json.
 //            The adapter reads only this node. It never switches to another one.
+// --label    the name shown on the archive page. Default: "<Network> (own node)", or the host for a public node.
 // --fid      also archive this FID (it is remembered). The client's own FID is added by the server.
 // --once     one round (backfill + catch up), then exit. Without it, it keeps tailing.
 import { Archive } from '../archive.mjs';
@@ -25,15 +26,25 @@ const archive = new Archive(openDb(config.dataDir));
 const fid = flag('fid');
 if (fid) archive.track(Number(fid));
 
+// The label is shown on the public archive page. An own node's address stays private (it is kept server-side
+// in fl_sources.node_url); a public node is named by its host so readers know whose node it is.
+const known = net.nodes.find((n) => n.url.replace(/\/$/, '') === nodeUrl.replace(/\/$/, ''));
+const label = flag('label') ?? (known?.own || !known ? `${net.label ?? network} (own node)` : `${net.label ?? network} · ${new URL(nodeUrl).hostname}`);
+
 const adapter = new SnapchainAdapter({
-  archive, network, nodeUrl, label: `${net.label ?? network} node ${nodeUrl}`,
+  archive, network, nodeUrl, label,
   log: (m) => console.log(new Date().toISOString(), m),
 });
-console.log(`Farline adapter: network=${network}, reading only ${nodeUrl}, FIDs ${JSON.stringify(archive.fids())}, archive ${config.dataDir}`);
+console.log(`Farline adapter: network=${network}, label "${label}", reading only ${nodeUrl}, FIDs ${JSON.stringify(archive.fids())}, archive ${config.dataDir}`);
 
 if (argv.includes('--once')) {
-  const r = await adapter.round();
-  console.log(`Done: ${r.backfilled} messages backfilled, ${r.ingested} new events, for ${r.fids} FID(s).`);
+  try {
+    const r = await adapter.round();
+    console.log(`Done: ${r.backfilled} messages backfilled, ${r.ingested} new events, for ${r.fids} FID(s).`);
+  } catch (err) {
+    console.error(err.message);
+    process.exit(1);
+  }
 } else {
   const stop = new AbortController();
   for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => stop.abort());
