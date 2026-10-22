@@ -33,20 +33,22 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 | J11 | At least one other human goes through it and vouches publicly on Farcaster | A real URL to their own post. **We never write it, post it, or invent it.** |
 | J12 | Extra mile (optional) | Spanish tutorial (required by us anyway), Chinese, a 59-second vertical video, more vouchers. |
 
-## Where we are (handoff: 2026-10-22, ~02:00 UTC)
+## Where we are (2026-10-22, ~02:00 UTC, overnight run)
 
-**Resume here.** The owner paused this session to start fresh with new ideas. Ask them for the ideas first, then continue from the next step below.
+**Resume here.** The owner approved the master node and went to sleep. The agent runs the full pipeline overnight and posts each shipped update to the Infinicaster Telegram group (bot token in `~/.infinicaster-telegram-token`, chat id in `~/.infinicaster-telegram-chat`, both mode 600, never in the repo).
 
-### The very next step: a full node on Hetzner (ready, not started)
-- `./infinicaster compute hetzner --quote` shows the price; `./infinicaster compute hetzner` creates everything (it asks you to type "create"). Script: `infra/hetzner.mjs`.
-- It would create a cx43 (8 CPU, 16 GB RAM, 160 GB disk) plus a 700 GB volume in nbg1, Ubuntu 24.04. The quote from the owner's account: **~$0.10/hour, ~$2.50/day**, billed hourly by card on their Hetzner account.
-- It runs `infra/node-setup.sh`: Docker, Snapchain with its questions pre-answered, 1 day of blocks, and the snapshot **streamed** onto the volume.
-- **It needs the owner's explicit "create" in the new session.** It was quoted, not approved.
-- The API token is in `~/.hetzner-token` (mode 600, outside the repository). It was checked (auth works, 0 servers). Never print it.
-- After the node syncs:
-  1. Measure the real disk use. That is the tutorial's number.
-  2. Test whether a second, small node can bootstrap with `Replicate` from ours (`snapshot.replication_peers` pointing at it).
-  3. Run `./infinicaster compute hetzner down` when done. Every hour costs money.
+### The master node (created 2026-10-22 01:48 UTC, stays up)
+- **Hetzner `cax31` (ARM, 8 CPU, 16 GB RAM) + 700 GB volume in nbg1, ~$2.75/day.** Server 171726570 at **46.225.208.199**. Record in `.infinicaster/hetzner.json`.
+- The owner's decision: **it stays up.** It is the master node of Infinicaster, and will be tied to $INFINICASTER (each node can be tied to an app running from it). Budget: $15 loaded ≈ 5 days.
+- Why cax31 and not cx43: cx43 was sold out in every location (`error during placement`). Snapchain and statsd both publish arm64 images. `hetzner.mjs` now checks stock before creating anything and resumes a half-finished run.
+- Bug fixed before it cost anything: the snapshot chunk URLs repeated `FARCASTER_NETWORK_MAINNET/` and would all have been 404. The three shards now stream in parallel (~95 MB/s measured).
+- SSH: `ssh -i .infinicaster/ssh_ed25519 root@46.225.208.199`. Status: `./infinicaster compute hetzner status`.
+
+### Next, in order
+1. Snapshot finishes → Snapchain starts → catch up → `blockDelay` small on every shard. Measure real disk use.
+2. Check it serves `ReplicationService` on :3383. Snapchain takes a replication snapshot on its first block if it has none (`replicator.rs`), so no 8-hour wait is expected.
+3. Minimal node on the AgentMetal server: `INFINICASTER_SNAPSHOT=replicate INFINICASTER_REPLICATION_PEERS=http://46.225.208.199:3383`. Measure its disk and time.
+4. Point the client at both nodes; update README, STORY, this file.
 
 ### Money and rented things right now
 - **AgentMetal server `srv_ty63heep40jd` (5.161.202.175)** is paid until 2026-10-22 23:09 UTC (4.20 USDC, no refunds). It's idle.

@@ -69,9 +69,19 @@ async function price(opts) {
 }
 
 async function up(opts) {
-  if (existsSync(RECORD)) throw new Error('A Hetzner node already exists (see .infinicaster/hetzner.json). Use `status` or `down`.');
-  const { serverTypes } = { serverTypes: (await hz('GET', `/server_types?name=${opts.type}`)).server_types };
-  const spec = serverTypes[0];
+  // A run that stopped halfway (for example Hetzner had no room) is resumed: its volume and key are reused.
+  const old = existsSync(RECORD) ? JSON.parse(readFileSync(RECORD, 'utf8')) : null;
+  if (old?.serverId) throw new Error('A Hetzner node already exists (see .infinicaster/hetzner.json). Use `status` or `down`.');
+  if (old && old.location !== opts.location) throw new Error(`An unfinished run left a volume in ${old.location}. Use --location ${old.location}, or \`down\` first.`);
+  const spec = (await hz('GET', `/server_types?name=${opts.type}`)).server_types[0];
+  if (!spec) throw new Error(`Unknown server type ${opts.type}.`);
+  // Hetzner sells out of some types. Check before creating anything, and say what is in stock instead.
+  if (!spec.locations?.find((l) => l.name === opts.location)?.available) {
+    const all = (await hz('GET', '/server_types?per_page=50')).server_types;
+    const inStock = all.filter((t) => t.memory >= 16 && !t.deprecation && t.locations?.find((l) => l.name === opts.location)?.available)
+      .map((t) => `${t.name} (${t.cores} CPU, ${t.memory} GB, ${t.architecture})`);
+    throw new Error(`${opts.type} is sold out in ${opts.location}. In stock there with 16 GB+: ${inStock.join(', ') || 'none'}. Use --type <name>.`);
+  }
   const p = await price(opts);
   console.log(`
   What you get   ${spec.cores} CPU · ${spec.memory} GB RAM · ${spec.disk} GB disk + ${opts.disk} GB volume, ${opts.location}
@@ -84,16 +94,21 @@ async function up(opts) {
 
   mkdirSync(STATE, { recursive: true });
   if (!existsSync(SSH_KEY)) execFileSync('ssh-keygen', ['-q', '-t', 'ed25519', '-N', '', '-C', 'infinicaster', '-f', SSH_KEY]);
-  const record = { location: opts.location, type: opts.type, createdAt: new Date().toISOString() };
+  const record = old ?? { location: opts.location, createdAt: new Date().toISOString() };
+  record.type = opts.type;
+  record.name ??= `infinicaster-node-${Date.now().toString(36)}`;
   save(record);
-  const name = `infinicaster-node-${Date.now().toString(36)}`;
+  const name = record.name;
 
-  const key = await hz('POST', '/ssh_keys', { name, public_key: readFileSync(`${SSH_KEY}.pub`, 'utf8').trim() });
-  record.sshKeyId = key.ssh_key.id; save(record);
-
-  const volume = await hz('POST', '/volumes', { name, size: opts.disk, location: opts.location, format: 'ext4', automount: false });
-  record.volumeId = volume.volume.id; save(record);
-  console.log(`Created a ${opts.disk} GB volume (${record.volumeId}).`);
+  if (!record.sshKeyId) {
+    const key = await hz('POST', '/ssh_keys', { name, public_key: readFileSync(`${SSH_KEY}.pub`, 'utf8').trim() });
+    record.sshKeyId = key.ssh_key.id; save(record);
+  }
+  if (!record.volumeId) {
+    const volume = await hz('POST', '/volumes', { name, size: opts.disk, location: opts.location, format: 'ext4', automount: false });
+    record.volumeId = volume.volume.id; save(record);
+    console.log(`Created a ${opts.disk} GB volume (${record.volumeId}).`);
+  } else console.log(`Reusing the ${opts.disk} GB volume from the unfinished run (${record.volumeId}).`);
 
   const server = await hz('POST', '/servers', {
     name, server_type: opts.type, location: opts.location, image: 'ubuntu-24.04',

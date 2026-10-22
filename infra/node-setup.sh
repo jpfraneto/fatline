@@ -6,13 +6,19 @@
 #   INFINICASTER_SNAPSHOT=stream    stream the starting snapshot straight to disk (needs ~1 copy of space, ~600 GB)
 #                        replicate copy only the current state from other nodes, no old blocks (smallest; experimental)
 #                        snapchain use Snapchain's own download (keeps ~3 copies at its peak)
+#   INFINICASTER_REPLICATION_PEERS=http://IP:3383[,http://IP2:3383]
+#                        with replicate: which nodes to copy state from. Snapchain's default is rho.farcaster.xyz,
+#                        which answers "Unimplemented" (it sits behind a proxy), so point it at a node that serves it.
 #
 # Safe to re-run: finished steps are skipped, and an interrupted snapshot shard starts over.
 set -euo pipefail
 
 BLOCKS="${INFINICASTER_BLOCKS:-1day}"
 SNAPSHOT="${INFINICASTER_SNAPSHOT:-stream}"
-SNAPSHOT_URL="https://pub-d352dd8819104a778e20d08888c5a661.r2.dev/FARCASTER_NETWORK_MAINNET"
+# The bucket root. latest.json lives under FARCASTER_NETWORK_MAINNET/<shard>/, and its key_base already
+# starts with FARCASTER_NETWORK_MAINNET/, so chunks are fetched from the root.
+SNAPSHOT_BUCKET="https://pub-d352dd8819104a778e20d08888c5a661.r2.dev"
+SNAPSHOT_URL="$SNAPSHOT_BUCKET/FARCASTER_NETWORK_MAINNET"
 SHARDS="0 1 2"
 
 say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
@@ -71,26 +77,39 @@ fi
   if [ "$BLOCKS" != all ]; then echo "      SNAPCHAIN_PRUNING__BLOCK_RETENTION: \"$BLOCKS\""; fi
   echo "      SNAPCHAIN_SNAPSHOT__LOAD_DB_FROM_SNAPSHOT: \"$([ "$SNAPSHOT" = snapchain ] && echo true || echo false)\""
   if [ "$SNAPSHOT" = replicate ]; then echo "      SNAPCHAIN_SNAPSHOT__BOOTSTRAP_METHOD: \"Replicate\""; fi
+  if [ "$SNAPSHOT" = replicate ] && [ -n "${INFINICASTER_REPLICATION_PEERS:-}" ]; then
+    # A list for Snapchain's config: ["http://a:3383","http://b:3383"]
+    peers=$(echo "$INFINICASTER_REPLICATION_PEERS" | jq -Rc 'split(",") | map(select(length > 0))')
+    echo "      SNAPCHAIN_SNAPSHOT__REPLICATION_PEERS: '$peers'"
+  fi
 } > docker-compose.override.yml
 
 # 6. The starting snapshot, streamed: download -> unzip -> unpack, one copy on disk.
 #    Snapchain's own loader keeps every compressed piece, then a full tar, then the database.
+#    The three shards stream at the same time (each is its own .tar.gz), which is ~2-3x faster.
+stream_shard() {
+  local shard=$1 meta key total n=0
+  [ -f ".snapshot-shard-$shard.done" ] && return 0
+  meta=$(curl -fsS --retry 10 --retry-all-errors "$SNAPSHOT_URL/$shard/latest.json")
+  key=$(echo "$meta" | jq -r .key_base)
+  total=$(echo "$meta" | jq '.chunks | length')
+  echo "shard $shard: streaming $total pieces of ~70 MB from $key"
+  rm -rf ".rocks/shard-$shard"
+  echo "$meta" | jq -r '.chunks[]' | while read -r chunk; do
+    n=$((n + 1)); [ $((n % 100)) -eq 0 ] && echo "  shard $shard: $n/$total" >&2
+    curl -fsS --retry 10 --retry-delay 10 --retry-all-errors "$SNAPSHOT_BUCKET/$key/$chunk"
+  done | gunzip | tar -x -C .rocks
+  touch ".snapshot-shard-$shard.done"
+  echo "shard $shard: done"
+}
 if [ "$SNAPSHOT" = stream ]; then
   mkdir -p .rocks
-  for shard in $SHARDS; do
-    [ -f ".snapshot-shard-$shard.done" ] && continue
-    meta=$(curl -fsS "$SNAPSHOT_URL/$shard/latest.json")
-    key=$(echo "$meta" | jq -r .key_base)
-    total=$(echo "$meta" | jq '.chunks | length')
-    say "Streaming snapshot shard $shard: $total pieces of ~70 MB"
-    rm -rf ".rocks/shard-$shard"
-    n=0
-    echo "$meta" | jq -r '.chunks[]' | while read -r chunk; do
-      n=$((n + 1)); [ $((n % 100)) -eq 0 ] && echo "  shard $shard: $n/$total ($(du -sh .rocks | cut -f1) on disk)" >&2
-      curl -fsS --retry 10 --retry-delay 10 --retry-all-errors "$SNAPSHOT_URL/$key/$chunk"
-    done | gunzip | tar -x -C .rocks
-    touch ".snapshot-shard-$shard.done"
-  done
+  say "Streaming the snapshot (all shards at once)"
+  pids=""
+  for shard in $SHARDS; do stream_shard "$shard" & pids="$pids $!"; done
+  failed=0
+  for pid in $pids; do wait "$pid" || failed=1; done
+  [ "$failed" = 0 ] || { echo "A snapshot shard failed. Re-run this script: finished shards are kept."; exit 1; }
   say "Snapshot unpacked: $(du -sh .rocks | cut -f1)"
 fi
 
