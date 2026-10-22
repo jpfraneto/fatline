@@ -291,3 +291,17 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
   .ev { grid-template-columns: 1fr auto; gap: 2px 10px; }
   .ev time { grid-column: 1 / -1; }
 }
+
+/* ---------- Farline archive ---------- */
+.publish { margin: 6px 0 4px; display: grid; gap: 6px; justify-items: start; }
+.switch.kinds { margin: 18px 0 6px; flex-wrap: wrap; border-radius: 14px; }
+.sources { margin: 4px 0 0; padding-left: 18px; }
+.archive { list-style: none; margin: 14px 0 0; padding: 0; }
+.arch-item { padding: 14px 0; border-bottom: 1px solid var(--line); }
+.arch-text { margin: 0 0 6px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.arch-meta { margin: 0; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12.5px; color: var(--slate); }
+.net-chip { border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; }
+.net-chip.merged { color: var(--signal); border-color: rgba(166, 216, 194, 0.4); }
+.net-chip.pruned, .net-chip.displaced { color: var(--muted); }
+.net-chip.revoked, .net-chip.failed { color: var(--warn); }
+.net-chip.unseen { border-style: dashed; }

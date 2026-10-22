@@ -72,6 +72,13 @@ The main page shows a strip with every node this server watches. Each one links 
 
 `masterNodes` in [`infinicaster.config.example.json`](infinicaster.config.example.json) lists the Farline master node. Nothing is tied to it yet: `$INFINICASTER` has not been launched. Set `"public": false` on a node to keep its URL off the page.
 
+## Your archive, from both networks
+
+`#/archive` shows this client's own FID as one archive, read from two independent network adapters: one tails a Farcaster node, one a Hypersnap node. Each item says what each network holds: *held*, *pruned*, *revoked*, *replaced or removed*, *failed*, or *not seen*. "Not seen" can mean it existed before this server started watching. The *Publish to* selector only chooses where your next post goes.
+
+- Storage: SQLite tables in the indexer's database (`fl_events` is the log, `fl_messages` the state per network), behind [`indexer/src/archive.mjs`](indexer/src/archive.mjs). The adapters write only through that module. Design and reasons: [research/FARLINE-ARCHIVE.md](research/FARLINE-ARCHIVE.md).
+- The adapters (`indexer/src/adapters/`) are being built in parallel by other sessions. Until one runs, the archive is empty.
+
 ## How the money flows
 
 ```
@@ -221,6 +228,7 @@ Tested:
   - the keeper paid itself 15.55 USDC, and the app page showed "Alive for 270 days more";
   - 25 people signed free check-ins through the API and the server refused a forged one. The keeper posted them in two batches (~35,000 gas per person), and the contract's `dauOf(today)` read 25.
 - **The coin and node pages:** 23 tests cover address and checksum checks, coin-to-node resolution, the four states, stale heartbeats, catching up and stalls, missing treasury data, API failures, starting deposits counted once, and that the probe URL never reaches the browser. On the Base fork, the vault's indexed history matched its live balance to the cent: 100 deposited + 40.05 fees − 15.55 compute = 124.50 USDC. Against the real master node, the page showed *Offline: the machine answered, but no node is listening*, which was true while its snapshot downloaded. `node apps/opinions/test/layout.mjs <url> "#/" "#/coin/…"` checks 360, 390, 768 and 1280 px in Chrome for sideways scrolling; all passed.
+- **The archive module:** 12 tests: a message on both networks becomes one item with two statuses; replayed events change nothing; a bad batch writes nothing, cursor included; prunes and removals keep the content; a 5,000-message revoke burst in one transaction; node URLs never reach the browser. The page was checked at 360–1280 px with sample events in a scratch database. It has not run with real adapters yet.
 - **Indexer and x402:** 8 indexer tests, and x402 v1 and v2 payments against mock sellers. The doctor and the UI were checked at desktop and phone widths.
 
 Not tested yet:

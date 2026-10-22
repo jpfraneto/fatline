@@ -11,6 +11,7 @@ import { Keeper } from './keeper.mjs';
 import { Writer, loadAppKey } from './writer.mjs';
 import { NodeMonitor } from './nodes.mjs';
 import { Coins } from './coin.mjs';
+import { Archive, TYPES as ARCHIVE_TYPES } from './archive.mjs';
 import { timingSafeEqual } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { ROOT } from './config.mjs';
@@ -21,7 +22,7 @@ const TYPES = {
   '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
 };
 
-export function buildServer({ config, networks, voices, launchpad, keeper = null, nodes = null, coins = null }) {
+export function buildServer({ config, networks, voices, launchpad, keeper = null, nodes = null, coins = null, archive = null }) {
   const api = new Api({ config, networks, voices, launchpad });
   coins ??= nodes ? new Coins({ launchpad, nodes, networks, config, keeper }) : null;
   const needCoins = () => { if (!coins) throw Object.assign(new Error('Node monitoring is not set up on this server.'), { status: 503 }); return coins; };
@@ -66,6 +67,15 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/coin\/([^/]+)\/([^/]+)$/, (q, [, chainId, address]) => needCoins().get(chainId, address)],
     ['GET', /^\/api\/coin\/([^/]+)\/([^/]+)\/activity$/, (q, [, chainId, address]) => needCoins().activity(chainId, address, { before: q.get('before'), limit: q.get('limit') })],
     ['GET', /^\/api\/nodes$/, () => needCoins().overview()],
+    // Farline archive: one FID's messages from every network adapter, each with its own status per network.
+    ['GET', /^\/api\/archive(?:\/(\d{1,12}))?$/, (q, [, fid]) => {
+      if (!archive) throw Object.assign(new Error('The archive is not set up on this server.'), { status: 503 });
+      const own = loadAppKey(config.dataDir)?.fid ?? null;
+      const who = fid ? Number(fid) : own;
+      if (!who) throw Object.assign(new Error('This client has no FID yet. Run ./infinicaster identity.'), { status: 404 });
+      const types = (q.get('types') ?? 'cast').split(',').filter((x) => ARCHIVE_TYPES[x]);
+      return { ...archive.read(who, { before: q.get('before'), types: types.length ? types : ['cast'], limit: q.get('limit') }), tracked: archive.fids().includes(who), own: who === own, at: Date.now() };
+    }],
     ['GET', /^\/api\/nodes\/([\w-]{1,64})$/, (q, [, id]) => needCoins().nodeDetail(id, { before: q.get('before') })],
     ['POST', /^\/api\/launch\/prepare$/, (q, m, body) => launchpad.prepare(body)],
     ['POST', /^\/api\/apps\/(0x[0-9a-fA-F]{40})\/checkin$/, (q, [, vault], body) => launchpad.queueCheckIn(vault, body)],
@@ -155,7 +165,11 @@ export function start(config = loadConfig()) {
   }
   const nodes = new NodeMonitor(db, config.masterNodes ?? [], { intervalMs: Number(process.env.NODE_POLL_MS ?? 15_000), log: console.log });
   nodes.start();
-  const server = buildServer({ config, networks, voices, launchpad, keeper, nodes });
+  // The archive's tables live in the same SQLite file; the network adapters write them from their own processes.
+  const archive = new Archive(db);
+  const ownKey = loadAppKey(config.dataDir);
+  if (ownKey?.fid) archive.track(ownKey.fid); // the owner decided: only this client's own FID, for now
+  const server = buildServer({ config, networks, voices, launchpad, keeper, nodes, archive });
   server.listen(config.port, () => {
     console.log(`Infinicaster indexer on http://localhost:${config.port}`);
     console.log(`  config:   ${config.path}`);
@@ -165,7 +179,7 @@ export function start(config = loadConfig()) {
     console.log(`  nodes:    ${nodes.nodes.length ? nodes.nodes.map((n) => n.id).join(', ') : 'none watched (add masterNodes to the config)'}`);
     console.log(`  voices:   ${voices.enabled ? `${voices.address} on chain ${voices.chainId}` : 'off (no contract address in config)'}`);
   });
-  return { server, voices, launchpad, keeper, db, nodes };
+  return { server, voices, launchpad, keeper, db, nodes, archive };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) start();

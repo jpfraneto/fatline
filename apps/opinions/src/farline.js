@@ -4,7 +4,8 @@
 // The browser never talks to the node. If the data is old or the server can't be reached, the page
 // says Unknown, never the last good state.
 import { experience, feedForm, presence } from './apps.js';
-import { $, api, el, short, state, usdc } from './lib.js';
+import { $, api, el, short, state, store, usdc } from './lib.js';
+import { castComposer } from './post.js';
 
 const POLL_MS = 15_000;
 const LOST_AFTER_MS = 45_000; // no fresh answer from this server for this long: everything is Unknown
@@ -38,6 +39,15 @@ const S = {
     notFound: 'Nothing here', trade: (s) => `Trade ${s}`, people: 'People here', experience: 'The app',
     nodeLink: 'Status', apps: (n) => (n ? `${n} app${n > 1 ? 's' : ''} on it` : 'No apps tied to it yet'), detail: 'Details',
     keeperHere: 'This server is the keeper of this app: it pays itself from the vault.',
+    archive: 'Archive', archiveOf: (fid) => `FID ${fid}`, publishTo: 'Publish to',
+    publishHelp: 'This only chooses where your next post goes. Your archive shows every network.',
+    notTracked: 'This server keeps an archive only for its own FID for now.',
+    emptyArchive: 'Nothing archived yet. The network adapters fill this as they read the nodes.',
+    adapters: 'Read from', adapterLine: (label, net, t) => `${label} (${net}) · last event ${t}`, noAdapters: 'No network adapter has written anything yet.',
+    status: { merged: 'held', pruned: 'pruned', revoked: 'revoked', displaced: 'replaced or removed', failed: 'failed', null: 'not seen' },
+    notSeenNote: '“Not seen” means this server has no record from that network. It may have existed before the server started watching.',
+    kinds: { cast: 'Casts', reaction: 'Reactions', link: 'Follows', profile: 'Profile', verification: 'Verifications' },
+    reactionTo: 'reaction', linkTo: 'follow', field: 'profile field', verified: 'verified address',
     ev: {
       AppCreated: () => 'App born: vault created by the factory',
       Deposited: (e) => `Funded: +${usdc(e.amount)} USDC from ${short(e.account)}${e.detail ? ` (“${e.detail}”)` : ''}`,
@@ -81,6 +91,15 @@ const S = {
     notFound: 'Aquí no hay nada', trade: (s) => `Comerciar ${s}`, people: 'Gente aquí', experience: 'La app',
     nodeLink: 'Estado', apps: (n) => (n ? `${n} app${n > 1 ? 's' : ''} en él` : 'Ninguna app vinculada todavía'), detail: 'Detalles',
     keeperHere: 'Este servidor es el keeper de esta app: se paga a sí mismo desde la bóveda.',
+    archive: 'Archivo', archiveOf: (fid) => `FID ${fid}`, publishTo: 'Publicar en',
+    publishHelp: 'Esto solo elige adónde va tu próxima publicación. Tu archivo muestra todas las redes.',
+    notTracked: 'Por ahora este servidor guarda archivo solo para su propio FID.',
+    emptyArchive: 'Nada archivado todavía. Los adaptadores de red lo llenan a medida que leen los nodos.',
+    adapters: 'Leído de', adapterLine: (label, net, t) => `${label} (${net}) · último evento ${t}`, noAdapters: 'Ningún adaptador de red ha escrito nada todavía.',
+    status: { merged: 'presente', pruned: 'podado', revoked: 'revocado', displaced: 'reemplazado o borrado', failed: 'falló', null: 'no visto' },
+    notSeenNote: '“No visto” significa que este servidor no tiene registro de esa red. Pudo existir antes de que empezara a mirar.',
+    kinds: { cast: 'Casts', reaction: 'Reacciones', link: 'Seguidos', profile: 'Perfil', verification: 'Verificaciones' },
+    reactionTo: 'reacción', linkTo: 'seguir', field: 'campo de perfil', verified: 'dirección verificada',
     ev: {
       AppCreated: () => 'Nació la app: la fábrica creó la bóveda',
       Deposited: (e) => `Financiada: +${usdc(e.amount)} USDC de ${short(e.account)}${e.detail ? ` (“${e.detail}”)` : ''}`,
@@ -441,4 +460,89 @@ export function nodeStrip() {
   const prev = stopCurrent;
   stopCurrent = () => { prev?.(); clearTimeout(timer); };
   return box;
+}
+
+// ------------------------------------------------------------------ the archive
+
+const NETWORK_LABEL = (name) => state.config.networks.find((n) => n.name === name)?.label ?? name;
+
+function archiveText(item) {
+  const b = item.body ?? {};
+  if (typeof b.text === 'string') return b.text;
+  if (item.type?.includes('REACTION')) return `${f('reactionTo')} ${b.type ?? ''} ${b.targetCastId ? `→ ${short(b.targetCastId.hash ?? '')}` : b.targetUrl ?? ''}`.trim();
+  if (item.type?.includes('LINK')) return `${f('linkTo')} → FID ${b.targetFid ?? '?'}`;
+  if (item.type?.includes('USER_DATA')) return `${f('field')}: ${b.value ?? ''}`;
+  if (item.type?.includes('VERIFICATION')) return `${f('verified')}: ${b.address ?? ''}`;
+  return item.type ?? '';
+}
+
+/**
+ * One personal archive: every network adapter's record for this FID, as one list.
+ * Each item says what each network holds. The selector above chooses where to publish; it never changes whose archive this is.
+ */
+export async function archivePage(fid) {
+  const main = $('#main');
+  main.classList.add('farline-page');
+  main.replaceChildren(el('p', { class: 'fine' }, '…'));
+  const networks = state.config.networks.map((n) => n.name);
+  let publishTo = networks.includes(store.get('publishTo', null)) ? store.get('publishTo', null) : state.network;
+  let kind = 'cast';
+  const region = el('div', { class: 'live-region' });
+  let stable = null;
+  const path = fid ? `/api/archive/${fid}` : '/api/archive';
+  const load = () => api(path, { types: kind });
+  const refresh = () => live(load, render);
+
+  const selector = () => el('div', { class: 'publish' },
+    el('span', { class: 'fine' }, f('publishTo')),
+    el('div', { class: 'switch', role: 'radiogroup', 'aria-label': f('publishTo') },
+      ...networks.map((n) => el('button', {
+        type: 'button', role: 'radio', 'aria-checked': String(n === publishTo),
+        onclick: (e) => {
+          publishTo = n; store.set('publishTo', n);
+          e.currentTarget.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-checked', String(b === e.currentTarget)));
+        },
+      }, NETWORK_LABEL(n)))),
+    el('p', { class: 'fine' }, f('publishHelp')));
+
+  const kinds = () => el('div', { class: 'switch kinds', role: 'radiogroup', 'aria-label': 'type' },
+    ...Object.entries(f('kinds')).map(([k, label]) => el('button', {
+      type: 'button', role: 'radio', 'aria-checked': String(k === kind),
+      onclick: (e) => {
+        kind = k;
+        e.currentTarget.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-checked', String(b === e.currentTarget)));
+        refresh();
+      },
+    }, label)));
+
+  const render = (snap) => {
+    const a = snap.data;
+    if (!stable) {
+      stable = el('div', { class: 'stable' },
+        el('p', { class: 'eyebrow' }, f('archive'), ' · ', f('archiveOf', a.fid)),
+        a.own ? selector() : null,
+        a.own ? castComposer({ network: () => publishTo, onDone: () => setTimeout(refresh, 2000) }) : null,
+        kinds());
+      main.replaceChildren(stable, region);
+    }
+    const sources = a.sources.length
+      ? el('ul', { class: 'sources' }, ...a.sources.map((src) => el('li', {}, f('adapterLine', src.label, NETWORK_LABEL(src.network), agoText(since(snap, src.lastEventAt))))))
+      : el('p', { class: 'fine' }, f('noAdapters'));
+    region.replaceChildren(...[
+      a.tracked ? null : el('p', { class: 'banner' }, f('notTracked')),
+      el('div', { class: 'fine' }, f('adapters'), sources),
+      freshness(snap),
+      a.items.length
+        ? el('ol', { class: 'archive' }, ...a.items.map((item) => el('li', { class: 'arch-item' },
+          el('p', { class: 'arch-text' }, archiveText(item)),
+          el('p', { class: 'arch-meta' },
+            el('time', { datetime: new Date(item.at).toISOString(), title: when(item.at), 'data-at': item.at }, agoText(since(snap, item.at))),
+            ...networks.map((n) => el('span', { class: `net-chip ${item.networks[n] ?? 'unseen'}` }, `${NETWORK_LABEL(n)}: ${f('status')[item.networks[n] ?? 'null']}`))))))
+        : el('p', { class: 'fine' }, f('emptyArchive')),
+      a.items.some((i) => networks.some((n) => !i.networks[n])) ? el('p', { class: 'fine' }, f('notSeenNote')) : null,
+    ].filter(Boolean));
+  };
+  try { await live(load, render); } catch (err) {
+    main.replaceChildren(el('section', { class: 'node-status none' }, el('p', { class: 'state-word dim' }, f('notFound')), el('p', { class: 'reason' }, err.message)));
+  }
 }

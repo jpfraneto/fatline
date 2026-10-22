@@ -2,7 +2,7 @@ import { appsPage, launchPage } from './apps.js';
 import { feedPage, peoplePage, voicePage } from './feed.js';
 import { $, api, el, showSource, state, store, t } from './lib.js';
 import { settingsPage } from './settings.js';
-import { coinPage, leaveLive, nodePage } from './farline.js';
+import { archivePage, coinPage, leaveLive, nodePage } from './farline.js';
 import { loadMe } from './post.js';
 
 function renderChrome() {
@@ -15,7 +15,7 @@ const fail = (err) => $('#main').replaceChildren(el('p', { class: 'warn' }, err.
 
 function route() {
   const hash = location.hash.slice(1) || '/';
-  const tab = hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'people' : hash.startsWith('/settings') ? 'settings' : 'apps';
+  const tab = hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'people' : hash.startsWith('/settings') ? 'settings' : 'apps';
   document.querySelectorAll('#tabs a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.tab === tab)));
   if (tab !== 'voices' && tab !== 'people') showSource(null);
   window.scrollTo(0, 0);
@@ -25,6 +25,8 @@ function route() {
   // The canonical page of a coin (or of a coinless app's vault): #/coin/<chainId>/<address>.
   const coin = hash.match(/^\/coin\/([^/]+)\/([^/?#]+)/);
   if (coin) return coinPage(coin[1], coin[2]);
+  const archive = hash.match(/^\/archive(?:\/(\d{1,12}))?/);
+  if (archive) return archivePage(archive[1]);
   const node = hash.match(/^\/node\/([\w-]{1,64})/);
   if (node) return nodePage(node[1]);
   // Older links: #/app/<address> now lives at the coin route.

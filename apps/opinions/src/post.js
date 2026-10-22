@@ -13,12 +13,12 @@ export async function loadMe() {
 const canPost = () => Boolean(state.me?.fid && state.me?.canWrite);
 
 /** POST with the write token when this client runs on a server (see Settings). */
-async function send(path, body) {
+async function send(path, body, network = state.network) {
   const token = store.get('writeToken', '');
   const res = await fetch(new URL(path, location.origin), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
-    body: JSON.stringify({ ...body, network: state.network }),
+    body: JSON.stringify({ ...body, network }),
   });
   const out = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(out.error ?? `HTTP ${res.status}`);
@@ -37,7 +37,8 @@ export function postHint() {
   return el('p', { class: 'muted hint' }, state.me?.fid ? t('needToken') : t('needKey'));
 }
 
-export function castComposer({ parent = null, onDone } = {}) {
+/** `network`: where the cast is published. A function, so a selector next to the composer can change it. */
+export function castComposer({ parent = null, onDone, network = () => state.network } = {}) {
   if (!canPost()) return postHint();
   const text = el('textarea', { rows: parent ? 2 : 3, maxlength: 1000, placeholder: t(parent ? 'replyPlaceholder' : 'castPlaceholder') });
   const count = el('span', { class: 'count' }, `0 / ${CAST_MAX_BYTES}`);
@@ -57,7 +58,7 @@ export function castComposer({ parent = null, onDone } = {}) {
       button.disabled = true;
       status.textContent = t('signing');
       try {
-        const result = await send('/api/cast', { text: text.value, parent });
+        const result = await send('/api/cast', { text: text.value, parent }, network());
         report(status, result);
         text.value = '';
         count.textContent = `0 / ${CAST_MAX_BYTES}`;
