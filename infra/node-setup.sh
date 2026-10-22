@@ -98,17 +98,48 @@ fi
 #    gzip data on our first real run.) Pieces download ahead, so at most ~1.7 GB per shard sits in .parts/.
 fetch_piece() {
   local url=$1 out=$2 try
-  # Pieces Cloudflare hasn't cached come slowly (we measured 0.1-4 MB/s per connection), so:
-  # resume a cut download instead of starting over (-C -), give up on a connection only below 100 KB/s
-  # for 60 s, and keep trying. Many pieces download at once, so a slow one doesn't slow the whole shard.
-  for try in $(seq 1 30); do
+  # Pieces Cloudflare hasn't cached come slowly (we measured 0.1-4 MB/s per connection), so first try a
+  # few times on one connection, resuming a cut download (-C -) and dropping it below 100 KB/s for 60 s.
+  for try in 1 2 3; do
     if curl -fsS -C - --connect-timeout 20 --speed-limit 100000 --speed-time 60 --max-time 1800 \
          -o "$out.tmp" "$url" 2>>"$out.log"; then
       mv "$out.tmp" "$out"; rm -f "$out.log"; return 0
     fi
-    sleep $(( try < 6 ? try * 5 : 30 ))
+    sleep $((try * 5))
   done
+  # Still slow: some byte regions of a piece are slow on any one connection (on 2026-10-22 one piece got
+  # 17 of 89 MB in 44 min). Fetch the rest in 8 byte ranges at once. Each range keeps resuming while it
+  # makes progress and gives up only after 20 tries in a row add no bytes.
+  fetch_ranges "$url" "$out" 8 && return 0
   touch "$out.failed"
+}
+fetch_ranges() {
+  local url=$1 out=$2 n=$3 size have step i
+  local head etag
+  head=$(curl -fsSI --connect-timeout 20 "$url" | tr -d '\r')
+  size=$(awk 'tolower($1)=="content-length:" {print $2}' <<<"$head")
+  # R2's ETag for these pieces is their MD5 (checked against pieces on disk), so the joined ranges can be checked.
+  etag=$(awk 'tolower($1)=="etag:" {gsub(/"/, "", $2); print $2}' <<<"$head")
+  [ -n "$size" ] || return 1
+  have=$(stat -c %s "$out.tmp" 2>/dev/null || echo 0)
+  step=$(( (size - have + n - 1) / n ))
+  for i in $(seq 0 $((n - 1))); do
+    ( local a=$((have + i * step)) b f=$out.r$i stuck=0 got before
+      b=$((a + step - 1)); [ "$b" -ge "$size" ] && b=$((size - 1))
+      : >"$f"; [ "$a" -gt "$b" ] && exit 0
+      while got=$(stat -c %s "$f"); [ "$got" -lt $((b - a + 1)) ]; do
+        [ "$stuck" -ge 20 ] && exit 1
+        before=$got
+        curl -fsS --connect-timeout 20 --speed-limit 20000 --speed-time 30 -r $((a + got))-$b "$url" >>"$f" 2>>"$out.log" || sleep 3
+        if [ "$(stat -c %s "$f")" -gt "$before" ]; then stuck=0; else stuck=$((stuck + 1)); fi
+      done ) &
+  done
+  wait  # bash's wait without ids returns 0; check each range's size below instead
+  for i in $(seq 0 $((n - 1))); do cat "$out.r$i" >>"$out.tmp"; done
+  rm -f "$out".r*
+  if [ "$(stat -c %s "$out.tmp")" -eq "$size" ] \
+     && { ! [[ $etag =~ ^[0-9a-f]{32}$ ]] || [ "$(md5sum <"$out.tmp" | cut -d' ' -f1)" = "$etag" ]; }; then mv "$out.tmp" "$out"; rm -f "$out.log"; return 0; fi
+  rm -f "$out.tmp"; return 1
 }
 stream_shard() {
   local shard=$1 meta key total n=0 parts=".parts/shard-$shard"
