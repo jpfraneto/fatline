@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fatline: your own Farcaster node and client</title>
-<meta name="description" content="Your own Farcaster or Hypersnap read node and your own client, in a few commands. A tutorial that explains the protocol as you go.">
+<meta name="description" content="Fatline: your own Farcaster or Hypersnap read node and your own client, in a few commands. A tutorial that explains the protocol as you go. Formerly Infinicaster.">
 <meta name="theme-color" content="#111820">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111820'/%3E%3Cpath d='M8 34 H24 C28 34 29 24 32 24 C35 24 36 40 40 40 C43 40 44 34 47 34 H56' fill='none' stroke='%23A6D8C2' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
 <style>
@@ -83,10 +83,12 @@
 <section lang="en">
   <h1>Your own Farcaster node and your own client.</h1>
   <p class="lede">No API keys from anyone. Farcaster or Hypersnap: your choice, as equals. This page explains each step as you go.</p>
+  <p><strong>Fatline</strong> is an open protocol for being on Farcaster on your own terms. You choose the network. You choose the node, and the client always says which one it reads from. And the client can pay for its own server from a USDC vault. This repository is its first implementation. <span class="muted">Formerly Infinicaster.</span></p>
 </section>
 <section lang="es">
   <h1>Tu propio nodo de Farcaster y tu propio cliente.</h1>
   <p class="lede">Sin llaves de API de nadie. Farcaster o Hypersnap: tú eliges, en igualdad. Esta página explica cada paso mientras avanzas.</p>
+  <p><strong>Fatline</strong> es un protocolo abierto para estar en Farcaster en tus propios términos. Tú eliges la red. Tú eliges el nodo, y el cliente siempre dice desde cuál lee. Y el cliente puede pagar su propio servidor desde una bóveda de USDC. Este repositorio es su primera implementación. <span class="muted">Antes se llamaba Infinicaster.</span></p>
 </section>
 
 <div class="quick">
@@ -104,6 +106,7 @@
 ./fatline node farcaster     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
 ./fatline client             <span class="c"># (2) your client, reading from your node, on http://localhost:8787</span></code></pre>
     <p class="note"><span class="tag no">untested end to end</span> Each step has been run on its own. A complete fresh run of all three, start to finish, has not been done yet. Our own node was built with an earlier one-step version of steps 0 and 1.</p>
+    <p class="muted">No room for a node? <code>./fatline follow</code> copies only the accounts you choose from one node you pick. It is <a href="#follow">not a node</a>.</p>
   </section>
   <section lang="es">
     <p class="eyebrow">Antes de empezar</p>
@@ -119,6 +122,7 @@
 ./fatline node farcaster     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
 ./fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo, en http://localhost:8787</span></code></pre>
     <p class="note"><span class="tag no">sin probar de punta a punta</span> Cada paso se ha corrido por separado. Una corrida nueva y completa de los tres, de principio a fin, todavía no se ha hecho. Nuestro propio nodo se armó con una versión anterior que juntaba los pasos 0 y 1.</p>
+    <p class="muted">¿No te cabe un nodo? <code>./fatline follow</code> copia solo las cuentas que elijas desde un nodo que tú eliges. <a href="#follow">No es un nodo</a>.</p>
   </section>
 </div>
 
@@ -128,6 +132,7 @@
     <li><a href="#machine">Step 0: a machine for the node</a></li>
     <li><a href="#node">Step 1: your read node</a></li>
     <li><a href="#client">Step 2: your client</a></li>
+    <li><a href="#follow">No room for a node: copy only the accounts you follow</a></li>
     <li><a href="#post">Posting: your client's own app key</a></li>
     <li><a href="#filter">Choosing which apps you read</a></li>
     <li><a href="#cost">What it costs, and how to stop paying</a></li>
@@ -140,6 +145,7 @@
     <li><a href="#machine">Paso 0: una máquina para el nodo</a></li>
     <li><a href="#node">Paso 1: tu nodo de lectura</a></li>
     <li><a href="#client">Paso 2: tu cliente</a></li>
+    <li><a href="#follow">Sin espacio para un nodo: copia solo las cuentas que sigues</a></li>
     <li><a href="#post">Publicar: la llave propia de tu cliente</a></li>
     <li><a href="#filter">Elegir qué apps lees</a></li>
     <li><a href="#cost">Cuánto cuesta, y cómo dejar de pagar</a></li>
@@ -195,11 +201,11 @@
   <div class="concept"><strong>Farcaster or Hypersnap.</strong> Hypersnap is a community fork of Snapchain. Both speak the same API and accept the same signed messages. Hypersnap keeps the full history; Farcaster prunes old messages to each account's storage limit. Neither is the default here because it is better: you choose.</div>
   <h3>The starting snapshot</h3>
   <p>A new node starts from a snapshot of the network instead of replaying years of blocks. On a rented server, this setup <strong>streams</strong> it straight to disk, three shards at once: about 400 GB compressed, in 5,695 pieces, about 600 GB unpacked. Snapchain's own loader keeps up to three copies on disk at its peak; streaming keeps one. The node keeps one day of blocks by default (<code>pruning.block_retention</code>), not the whole history.</p>
-  <p>How long the download and catch-up take: <span class="tag no">not measured yet</span>. We will put the real numbers from our own node here.</p>
+  <p>Our two nodes, measured on 2026-10-22: after the snapshot, each one answered while still 70,000 to 100,000 blocks behind, and caught up at about 270 blocks a minute. Total time to full sync: <span class="tag no">not measured yet</span>. We will put it here when our nodes get there.</p>
   <h3>Healthy means in sync, not just "running"</h3>
   <p>A node is healthy when <code>/v1/info</code> shows a small <code>blockDelay</code> on every shard. An open port is not enough. The client and its status page both use this rule.</p>
-  <h3>A lighter node <span class="tag no">coming</span></h3>
-  <p>A replicating node copies only the current state from another node, without old blocks, so it needs less disk and time. It needs a node that serves replication (port 3383). <code>node &lt;network&gt; --lite</code> is reserved for it; we are testing it against our own node first.</p>
+  <h3>Why there is no lite node</h3>
+  <p>A lighter node would copy the current state from another node instead of starting from a snapshot. Today the replicators of both Snapchain and Hypersnap refuse the messages that add and remove app keys, so a replica can't follow which keys belong to which account. A full replica would still be about 300–400 GB. If that is too much, see <a href="#follow">copying only the accounts you follow</a>.</p>
 </section>
 <section id="node" lang="es">
   <h2>Paso 1: tu nodo de lectura</h2>
@@ -210,11 +216,11 @@
   <div class="concept"><strong>Farcaster o Hypersnap.</strong> Hypersnap es un fork comunitario de Snapchain. Las dos hablan la misma API y aceptan los mismos mensajes firmados. Hypersnap guarda toda la historia; Farcaster borra mensajes viejos según el límite de almacenamiento de cada cuenta. Ninguna es la opción por defecto por ser mejor: tú eliges.</div>
   <h3>El snapshot de partida</h3>
   <p>Un nodo nuevo parte de un snapshot de la red en vez de repetir años de bloques. En un servidor arrendado, esta instalación lo <strong>transmite</strong> directo al disco, tres shards a la vez: unos 400 GB comprimidos, en 5.695 piezas, unos 600 GB descomprimidos. El cargador de Snapchain guarda hasta tres copias en su peor momento; transmitiendo queda una. El nodo guarda un día de bloques por defecto (<code>pruning.block_retention</code>), no toda la historia.</p>
-  <p>Cuánto demoran la descarga y la puesta al día: <span class="tag no">aún sin medir</span>. Aquí pondremos los números reales de nuestro propio nodo.</p>
+  <p>Nuestros dos nodos, medidos el 2026-10-22: después del snapshot, cada uno respondió estando aún 70.000 a 100.000 bloques atrás, y se fue poniendo al día a unos 270 bloques por minuto. Tiempo total hasta sincronizar: <span class="tag no">aún sin medir</span>. Lo pondremos aquí cuando nuestros nodos lleguen.</p>
   <h3>Sano significa sincronizado, no solo "corriendo"</h3>
   <p>Un nodo está sano cuando <code>/v1/info</code> muestra un <code>blockDelay</code> pequeño en cada shard. Un puerto abierto no basta. El cliente y su página de estado usan esta regla.</p>
-  <h3>Un nodo más liviano <span class="tag no">pronto</span></h3>
-  <p>Un nodo replicador copia solo el estado actual desde otro nodo, sin bloques viejos, así que necesita menos disco y tiempo. Necesita un nodo que sirva replicación (puerto 3383). <code>node &lt;red&gt; --lite</code> está reservado para eso; primero lo probamos contra nuestro propio nodo.</p>
+  <h3>Por qué no hay un nodo liviano</h3>
+  <p>Un nodo más liviano copiaría el estado actual desde otro nodo en vez de partir de un snapshot. Hoy los replicadores de Snapchain y de Hypersnap rechazan los mensajes que agregan y quitan llaves de app, así que una réplica no puede seguir qué llaves son de qué cuenta. Una réplica completa igual pesaría unos 300–400 GB. Si es demasiado, mira <a href="#follow">copiar solo las cuentas que sigues</a>.</p>
 </section>
 
 <!-- ============================================================ STEP 2 -->
@@ -239,6 +245,40 @@
     <li><strong>Automático:</strong> el primer nodo que responda, en el orden de la lista. Dice cuál está usando, y te avisa si cambia.</li>
   </ul>
   <p>Además del tuyo, la lista trae nodos públicos de otros, como <code>crackle.farcaster.xyz</code> (Farcaster) y <code>haatz.quilibrium.com</code> (Hypersnap), y los dos nodos que corremos para este proyecto. Siempre aparecen como "público".</p>
+</section>
+
+<!-- ============================================================ FOLLOW -->
+<section id="follow" lang="en">
+  <h2>No room for a node: copy only the accounts you follow</h2>
+  <pre><code>./fatline follow 18350 @dwr --network farcaster --node crackle --once
+./fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># keeps following; Ctrl+C stops it, a re-run continues</span>
+./fatline follow list</code></pre>
+  <p>It copies the accounts you name (with <code>--following</code>, also everyone they follow) from one node you pick, Farcaster or Hypersnap, your own or a public one, into the client's archive. Open <code>#/archive/&lt;fid&gt;</code> in the client to read one. <code>--node</code> takes a word of the node's name or host, or its URL; only that node is read, and it never switches.</p>
+  <div class="concept"><strong>This is not a node.</strong> Every run says so. It trusts that node: it does not check message signatures or signer keys itself. It does not join the network, and does not help it. It is only as complete and as recent as that node: if the node is behind, so is this.</div>
+  <p>If the node is down, you get a clear error and nothing changes. If it is behind, it is used, with a warning that says how far behind.</p>
+  <div class="scroll"><table>
+    <tr><th>Measured 2026-10-22, into an empty archive</th><th>Messages</th><th>Time</th></tr>
+    <tr><td>Farcaster, crackle: 18350 with <code>--following</code> (8 accounts in all)</td><td>127,333</td><td>125 s</td></tr>
+    <tr><td>Farcaster, our node (still catching up): 18350 and @dwr</td><td>4,824 + 104,545</td><td>293 s</td></tr>
+    <tr><td>Hypersnap, haatz: 18350 and @dwr</td><td>4,824 + 104,545</td><td>46 s</td></tr>
+    <tr><td>Hypersnap, our node (still catching up): 18350 and @dwr</td><td>4,824 + 104,545</td><td>163 s</td></tr>
+  </table></div>
+</section>
+<section id="follow" lang="es">
+  <h2>Sin espacio para un nodo: copia solo las cuentas que sigues</h2>
+  <pre><code>./fatline follow 18350 @dwr --network farcaster --node crackle --once
+./fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># sigue copiando; Ctrl+C lo detiene, y al correrlo de nuevo continúa</span>
+./fatline follow list</code></pre>
+  <p>Copia las cuentas que nombras (con <code>--following</code>, también a todos los que ellas siguen) desde un nodo que tú eliges, de Farcaster o de Hypersnap, tuyo o público, al archivo del cliente. Abre <code>#/archive/&lt;fid&gt;</code> en el cliente para leer una. <code>--node</code> acepta una palabra del nombre o del host del nodo, o su URL; se lee solo ese nodo, y nunca cambia a otro.</p>
+  <div class="concept"><strong>Esto no es un nodo.</strong> Cada corrida lo dice. Confía en ese nodo: no revisa por sí mismo las firmas de los mensajes ni las llaves. No se une a la red, y no la ayuda. Está tan completo y tan al día como ese nodo: si el nodo va atrasado, esto también.</div>
+  <p>Si el nodo está caído, ves un error claro y no cambia nada. Si va atrasado, se usa igual, con un aviso que dice cuánto.</p>
+  <div class="scroll"><table>
+    <tr><th>Medido el 2026-10-22, en un archivo vacío</th><th>Mensajes</th><th>Tiempo</th></tr>
+    <tr><td>Farcaster, crackle: 18350 con <code>--following</code> (8 cuentas en total)</td><td>127.333</td><td>125 s</td></tr>
+    <tr><td>Farcaster, nuestro nodo (aún poniéndose al día): 18350 y @dwr</td><td>4.824 + 104.545</td><td>293 s</td></tr>
+    <tr><td>Hypersnap, haatz: 18350 y @dwr</td><td>4.824 + 104.545</td><td>46 s</td></tr>
+    <tr><td>Hypersnap, nuestro nodo (aún poniéndose al día): 18350 y @dwr</td><td>4.824 + 104.545</td><td>163 s</td></tr>
+  </table></div>
 </section>
 
 <!-- ============================================================ POSTING -->
@@ -330,12 +370,14 @@
 <!-- ============================================================ LIFE -->
 <section id="life" lang="en">
   <h2>Give your client a life</h2>
-  <p>The last chapter, and the reason this project is called Fatline: a client can pay for its own server. In the client, <strong>Launch an app</strong> creates a USDC vault on Base, and optionally a coin on Clanker whose trading fees go to that vault, in USDC. The server pays itself from the vault. If the vault runs dry, the server stops being paid and the app dies. Anyone can feed it.</p>
+  <p class="muted">Why "Fatline": a fatline, as we use the word, is a line you hold at both ends. Your keys sign at one end, your own node listens at the other, and nobody in between rents you the line and can take it back. Keeping a line open costs something, so this one carries its own purse. The word comes from Dan Simmons' novel <em>Hyperion</em>; what it means here is ours.</p>
+  <p>The last chapter is that purse: a client can pay for its own server. In the client, <strong>Launch an app</strong> creates a USDC vault on Base, and optionally a coin on Clanker whose trading fees go to that vault, in USDC. The server pays itself from the vault. If the vault runs dry, the server stops being paid and the app dies. Anyone can feed it.</p>
   <p class="note">Status: proven on a local copy of Base with fake money, against the real Clanker and Uniswap contracts. <span class="tag no">untested</span> with real money; the contracts are not deployed on Base yet, and have had no external audit.</p>
 </section>
 <section id="life" lang="es">
   <h2>Dale vida a tu cliente</h2>
-  <p>El último capítulo, y la razón de que este proyecto se llame Fatline: un cliente puede pagar su propio servidor. En el cliente, <strong>Lanzar una app</strong> crea una bóveda de USDC en Base y, si quieres, una moneda en Clanker cuyas comisiones van a esa bóveda, en USDC. El servidor se paga desde la bóveda. Si la bóveda se vacía, el servidor deja de pagarse y la app muere. Cualquiera puede alimentarla.</p>
+  <p class="muted">Por qué "Fatline": una fatline, como usamos la palabra, es una línea que sostienes por ambos extremos. Tus llaves firman en un extremo, tu propio nodo escucha en el otro, y nadie en medio te arrienda la línea ni puede quitártela. Mantener una línea abierta cuesta algo, así que esta lleva su propia bolsa. La palabra viene de la novela <em>Hyperion</em>, de Dan Simmons; lo que significa aquí es nuestro.</p>
+  <p>El último capítulo es esa bolsa: un cliente puede pagar su propio servidor. En el cliente, <strong>Lanzar una app</strong> crea una bóveda de USDC en Base y, si quieres, una moneda en Clanker cuyas comisiones van a esa bóveda, en USDC. El servidor se paga desde la bóveda. Si la bóveda se vacía, el servidor deja de pagarse y la app muere. Cualquiera puede alimentarla.</p>
   <p class="note">Estado: probado en una copia local de Base con dinero falso, contra los contratos reales de Clanker y Uniswap. <span class="tag no">sin probar</span> con dinero real; los contratos aún no están desplegados en Base y no han tenido auditoría externa.</p>
 </section>
 
@@ -349,9 +391,11 @@
     <tr><td>Showing or hiding casts by app</td><td><span class="tag ok">works</span> on real data</td></tr>
     <tr><td>Renting the node's server on Hetzner</td><td><span class="tag ok">done once</span>, our own node, 2026-10-22</td></tr>
     <tr><td>All three commands, fresh, start to finish</td><td><span class="tag no">untested</span></td></tr>
-    <tr><td>A read node fully in sync</td><td><span class="tag no">in progress</span>, numbers coming</td></tr>
+    <tr><td>Our own nodes answering, shown as "behind" until in sync</td><td><span class="tag ok">works</span>, both networks, 2026-10-22</td></tr>
+    <tr><td>A read node fully in sync</td><td><span class="tag no">in progress</span>, catching up</td></tr>
+    <tr><td>Copying only chosen accounts (<code>follow</code>, not a node)</td><td><span class="tag ok">works</span> on real nodes, both networks</td></tr>
     <tr><td>Registering an app key and posting with a real account</td><td><span class="tag no">untested</span></td></tr>
-    <tr><td>A replicating (lighter) node</td><td><span class="tag no">untested</span></td></tr>
+    <tr><td>A replicating (lighter) node</td><td><span class="tag no">not possible today</span>: both networks' replicators refuse key messages</td></tr>
     <tr><td>A stranger following this page from scratch</td><td><span class="tag no">not yet</span>; could it be you?</td></tr>
   </table></div>
 </section>
@@ -364,16 +408,18 @@
     <tr><td>Mostrar u ocultar casts según la app</td><td><span class="tag ok">funciona</span> con datos reales</td></tr>
     <tr><td>Arrendar el servidor del nodo en Hetzner</td><td><span class="tag ok">hecho una vez</span>, nuestro nodo, 2026-10-22</td></tr>
     <tr><td>Los tres comandos, desde cero, de principio a fin</td><td><span class="tag no">sin probar</span></td></tr>
-    <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag no">en curso</span>, vienen los números</td></tr>
+    <tr><td>Nuestros nodos respondiendo, marcados "atrasado" hasta sincronizar</td><td><span class="tag ok">funciona</span>, ambas redes, 2026-10-22</td></tr>
+    <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag no">en curso</span>, poniéndose al día</td></tr>
+    <tr><td>Copiar solo algunas cuentas (<code>follow</code>, no es un nodo)</td><td><span class="tag ok">funciona</span> con nodos reales, ambas redes</td></tr>
     <tr><td>Registrar una llave y publicar con una cuenta real</td><td><span class="tag no">sin probar</span></td></tr>
-    <tr><td>Un nodo replicador (más liviano)</td><td><span class="tag no">sin probar</span></td></tr>
+    <tr><td>Un nodo replicador (más liviano)</td><td><span class="tag no">no es posible hoy</span>: los replicadores de ambas redes rechazan los mensajes de llaves</td></tr>
     <tr><td>Una persona nueva siguiendo esta página desde cero</td><td><span class="tag no">todavía no</span>; ¿podrías ser tú?</td></tr>
   </table></div>
 </section>
 
 <footer>
-  <p lang="en">Open source, MIT: <a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a>. Snapchain, Hypersnap, Clanker and other dependencies keep their own licenses.</p>
-  <p lang="es">Código abierto, MIT: <a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a>. Snapchain, Hypersnap, Clanker y las demás dependencias mantienen sus propias licencias.</p>
+  <p lang="en">Fatline · fatline.ink · formerly Infinicaster. Open source, MIT: <a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a>. Snapchain, Hypersnap, Clanker and other dependencies keep their own licenses.</p>
+  <p lang="es">Fatline · fatline.ink · antes Infinicaster. Código abierto, MIT: <a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a>. Snapchain, Hypersnap, Clanker y las demás dependencias mantienen sus propias licencias.</p>
 </footer>
 
 <script>
@@ -392,6 +438,15 @@
     }
     document.querySelectorAll('.langs button[data-set]').forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.set); }); });
     set(lang);
+    // Each section exists once per language with the same id; jump to the one that is showing.
+    function jump() {
+      var id = decodeURIComponent(location.hash.slice(1));
+      if (!id) return;
+      var shown = [].filter.call(document.querySelectorAll('[id]'), function (n) { return n.id === id && n.offsetParent !== null; })[0];
+      if (shown) shown.scrollIntoView();
+    }
+    window.addEventListener('hashchange', jump);
+    jump();
   })();
 </script>
 </body>

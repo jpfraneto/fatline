@@ -77,6 +77,7 @@
 
 <h1>你自己的 Farcaster 节点，你自己的客户端。</h1>
 <p class="lede">不需要任何人的 API 密钥。Farcaster 或 Hypersnap，由你选择，两者平等。</p>
+<p><strong>Fatline</strong> 是一个开放协议，让你按自己的方式使用 Farcaster：网络由你选，节点由你选，客户端总会写明它从哪个节点读取；客户端还可以用一个 USDC 金库支付自己的服务器。本仓库是它的第一个实现。<span class="muted">原名 Infinicaster。</span></p>
 
 <div class="quick">
   <p class="eyebrow">开始之前</p>
@@ -92,6 +93,7 @@
 ./fatline node farcaster     <span class="c"># (1) 在上面装你的读取节点，不需要 API 密钥（或：node hypersnap）</span>
 ./fatline client             <span class="c"># (2) 你的客户端，从你的节点读取，在 http://localhost:8787</span></code></pre>
   <p class="note"><span class="tag no">尚未完整测试</span> 每一步都单独运行过。从零开始、一口气跑完三条命令的完整流程还没有做过。我们自己的节点是用更早的一步式版本搭建的。</p>
+  <p class="muted">放不下一个节点？<code>./fatline follow</code> 只从你选的一个节点复制你选的账户。它<a href="#follow">不是节点</a>。</p>
 </div>
 
 <h2>你在 Farcaster 上是谁</h2>
@@ -113,7 +115,8 @@
 <div class="concept"><strong>读取节点和验证者。</strong>Snapchain 是 Farcaster 的网络软件，有一小组验证者对消息的顺序（区块）达成一致。你的节点是读取节点：跟随这些区块，保存每条消息的副本。你发帖时，节点检查消息并转发给验证者。读取从不需要验证者的许可。</div>
 <div class="concept"><strong>Farcaster 或 Hypersnap。</strong>Hypersnap 是 Snapchain 的社区分支。两者使用相同的 API，接受相同的签名消息。Hypersnap 保留完整历史；Farcaster 按每个账户的存储上限删除旧消息。默认没有偏向哪一个：由你选择。</div>
 <p><strong>初始快照：</strong>新节点从网络快照开始，而不是重放多年的区块。在租来的服务器上，快照被<strong>流式</strong>写入磁盘，三个分片同时进行：压缩后约 400 GB，共 5,695 块，解压后约 600 GB。磁盘上只保留一份。节点默认只保留一天的区块。</p>
-<p>下载和追上网络需要多久：<span class="tag no">尚未测量</span>。</p>
+<p>我们的两个节点（2026-10-22 测量）：快照完成后，节点在仍落后 7 万到 10 万个区块时就开始应答，追赶速度约每分钟 270 个区块。完全同步所需的总时间：<span class="tag no">尚未测量</span>，节点同步后会写在这里。</p>
+<p><strong>为什么没有轻节点。</strong>轻节点会从另一个节点复制当前状态，而不是从快照开始。目前 Snapchain 和 Hypersnap 的复制器都拒绝添加和移除应用密钥的消息，所以副本无法跟踪哪些密钥属于哪个账户。而且完整副本仍有约 300–400 GB。如果太大，请看<a href="#follow">只复制你关注的账户</a>。</p>
 <p><strong>健康意味着同步，而不只是"在运行"。</strong>节点健康的标准是 <code>/v1/info</code> 显示每个分片的 <code>blockDelay</code> 都很小。端口开着不算。</p>
 
 <h2>第 2 步：你的客户端</h2>
@@ -123,6 +126,20 @@
   <li><strong>指定一个节点：</strong>所有读取和发帖只经过这个节点。它宕机时，你会看到写明节点名的错误。客户端绝不会背着你切换。</li>
   <li><strong>自动：</strong>按列表顺序使用第一个应答的节点，并说明正在用哪一个；如果换了，会告诉你。</li>
 </ul>
+
+<h2 id="follow">放不下节点：只复制你关注的账户</h2>
+<pre><code>./fatline follow 18350 @dwr --network farcaster --node crackle --once
+./fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># 持续跟随；Ctrl+C 停止，再次运行会接着继续</span>
+./fatline follow list</code></pre>
+<p>它从你选的一个节点（Farcaster 或 Hypersnap，你自己的或公共的）复制你指定的账户（加 <code>--following</code> 时，还包括他们关注的所有人）到客户端的存档里。在客户端打开 <code>#/archive/&lt;fid&gt;</code> 即可阅读。只读取这一个节点，绝不切换。</p>
+<div class="concept"><strong>这不是节点。</strong>每次运行都会这样说明。它信任那个节点：自己不检查消息签名或密钥。它不加入网络，也不帮助网络。它的完整和及时程度取决于那个节点：节点落后，它也落后。</div>
+<div class="scroll"><table>
+  <tr><th>2026-10-22 测量，空存档</th><th>消息数</th><th>耗时</th></tr>
+  <tr><td>Farcaster，crackle：18350 加 <code>--following</code>（共 8 个账户）</td><td>127,333</td><td>125 秒</td></tr>
+  <tr><td>Farcaster，我们的节点（仍在追赶）：18350 和 @dwr</td><td>4,824 + 104,545</td><td>293 秒</td></tr>
+  <tr><td>Hypersnap，haatz：18350 和 @dwr</td><td>4,824 + 104,545</td><td>46 秒</td></tr>
+  <tr><td>Hypersnap，我们的节点（仍在追赶）：18350 和 @dwr</td><td>4,824 + 104,545</td><td>163 秒</td></tr>
+</table></div>
 
 <h2>发帖：客户端自己的应用密钥</h2>
 <pre><code>./fatline identity --fid &lt;你的 FID&gt; --dry-run   <span class="c"># 检查一切，不注册</span>
@@ -139,6 +156,10 @@
 </table></div>
 <pre><code>./fatline compute hetzner down   <span class="c"># 删除服务器和卷，停止计费</span></code></pre>
 
+<h2>为什么叫 Fatline</h2>
+<p>我们所说的 fatline，是一条两端都握在你手里的线：一端是你的密钥在签名，另一端是你自己的节点在倾听，中间没有人把这条线租给你、再把它收回。让一条线保持畅通需要花钱，所以这条线自带钱袋：客户端可以从 Base 上的 USDC 金库支付自己的服务器。这个词来自 Dan Simmons 的小说《海伯利安》（Hyperion），但它在这里的含义是我们自己的。</p>
+<p class="note">金库部分只在 Base 的本地副本上用假钱测试过。<span class="tag no">尚未用真钱测试</span>，合约尚未部署到 Base，也没有外部审计。</p>
+
 <h2>我们测试了什么，没测试什么</h2>
 <div class="scroll"><table>
   <tr><th>部分</th><th>状态</th></tr>
@@ -146,11 +167,14 @@
   <tr><td>选择节点；节点宕机时给出明确错误</td><td><span class="tag ok">可用</span></td></tr>
   <tr><td>按应用显示或隐藏 cast</td><td><span class="tag ok">可用</span>（真实数据：20 条中 20 条识别出应用）</td></tr>
   <tr><td>三条命令从零开始完整跑通</td><td><span class="tag no">未测试</span></td></tr>
-  <tr><td>读取节点完全同步</td><td><span class="tag no">进行中</span></td></tr>
+  <tr><td>我们自己的节点应答，同步前标为"落后"</td><td><span class="tag ok">可用</span>，两个网络，2026-10-22</td></tr>
+  <tr><td>读取节点完全同步</td><td><span class="tag no">进行中</span>，正在追赶</td></tr>
+  <tr><td>只复制选定账户（<code>follow</code>，不是节点）</td><td><span class="tag ok">可用</span>，真实节点，两个网络</td></tr>
+  <tr><td>复制型（轻）节点</td><td><span class="tag no">目前不可行</span>：两个网络的复制器都拒绝密钥消息</td></tr>
   <tr><td>用真实账户注册密钥并发帖</td><td><span class="tag no">未测试</span></td></tr>
   <tr><td>一位新用户从零照着本页完成</td><td><span class="tag no">还没有</span>；会是你吗？</td></tr>
 </table></div>
 
-<footer><p>开源，MIT 许可：<a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a>。Snapchain 和 Hypersnap 采用 GPL-3.0，在安装时下载，不包含在本仓库中。</p></footer>
+<footer><p>Fatline · fatline.ink · 原名 Infinicaster。开源，MIT 许可：<a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a>。Snapchain 和 Hypersnap 采用 GPL-3.0，在安装时下载，不包含在本仓库中。</p></footer>
 </body>
 </html>

@@ -10,9 +10,20 @@
 
 **Status:** each command has been run on its own; a fresh run of all three, start to finish, is untested. `compute` rents a node-capable Hetzner machine (price first, then you type "create"). `node <network>` installs that node there, follows the snapshot, and makes it your own node once it answers (`--local` installs on your own machine instead). `client` reads from it.
 
-Before them: `git clone https://github.com/jpfraneto/fatline && cd fatline`. You need git, ssh and Node.js 22.12+, plus a Hetzner Cloud account with a card and an API token in `~/.hetzner-token`. New Hetzner accounts have limits (ours: 1,385 GB of volumes, 14 vCPUs), so one account fits one full node; Farcaster and Hypersnap side by side need two servers. Or use Docker on a machine of your own: `./fatline node farcaster --local`. The vault step is proven on a local fork of Base only: `AppFactory` is not deployed on Base mainnet yet (see "Status" below). The tutorial is in [`apps/site/index.html`](apps/site/index.html), in English and Spanish.
+Before them: `git clone https://github.com/jpfraneto/fatline && cd fatline`. You need git, ssh and Node.js 22.12+, plus a Hetzner Cloud account with a card and an API token in `~/.hetzner-token`. New Hetzner accounts have limits (ours: 1,385 GB of volumes, 14 vCPUs), so one account fits one full node; Farcaster and Hypersnap side by side need two servers. Or use Docker on a machine of your own: `./fatline node farcaster --local`. The vault step is proven on a local fork of Base only: `AppFactory` is not deployed on Base mainnet yet (see "Status" below). The tutorial is in [`apps/site/`](apps/site/index.html), in English, Spanish and Chinese.
 
-Fatline is where Fatline is going: infrastructure for autonomous apps, built on Farcaster identity, onchain money and software that keeps running on its own. The repository, the CLI (`./fatline`) and the contracts keep the Fatline name for now.
+**No room for a node?** `./fatline follow 18350 --following --network hypersnap --node haatz` copies only the accounts you choose (here: one account and everyone it follows) from one node you pick into a local archive. It is **not a node**: it trusts that node and doesn't join the network. See [Copy only the accounts you follow](#copy-only-the-accounts-you-follow-not-a-node).
+
+## What Fatline is
+
+Fatline is an open protocol for being on Farcaster on your own terms:
+- **You choose the network:** Farcaster or Hypersnap, as equals.
+- **You choose the node:** your own, ours or a public one. The client always says which one it is reading from, and never switches without telling you.
+- **The client can pay for its own life:** a USDC vault on Base feeds its server. It stays up as long as people feed it.
+
+This repository is its first implementation. The site's domain is fatline.ink. *Formerly Infinicaster.*
+
+A fatline, as we use the word, is a line you hold at both ends. Your keys sign at one end. Your own node listens at the other. In between there is nobody who rents you the line and can take it back: not a platform, not an API key, not us. Keeping it open costs something, so the line carries its own purse. The word comes from Dan Simmons' novel *Hyperion*; what it means here is ours.
 
 ## How it works
 
@@ -36,12 +47,13 @@ Status, honestly:
 | | Status |
 | --- | --- |
 | Machine check, and renting a server for USDC (x402) | Works with mock sellers. New: rent **by the day** from AgentMetal (USDC, x402), add up to 1 TB of disk, and set up a read node unattended (`compute --provider agentmetal --days 1 --disk 700 --node`, ~11 USDC). The keeper then renews one day at a time. Not yet run with real money. |
-| Read node (also on Hetzner, hourly by card: `./fatline compute hetzner`, ~$2.50/day) | Keeps 1 day of blocks by default (Snapchain's own `pruning.block_retention`). On a rented server the starting snapshot (~400 GB compressed, ~600 GB unpacked) is **streamed** straight to disk, so it needs one copy of space instead of Snapchain's ~3. Next: sync one for real and measure. |
+| Read node (also on Hetzner, hourly by card: `./fatline compute hetzner`, ~$2.50/day) | Keeps 1 day of blocks by default (Snapchain's own `pruning.block_retention`). On a rented server the starting snapshot (~400 GB compressed, ~600 GB unpacked) is **streamed** straight to disk, so it needs one copy of space instead of Snapchain's ~3. Our two nodes answer since 2026-10-22 (Farcaster from 06:42 UTC, Hypersnap from 10:21 UTC) and were catching up at about 270 blocks a minute, 70,000–100,000 blocks behind. Time to full sync: not measured yet. |
 | Client: reading, both networks | Works. |
 | Client: seed phrase → app key | Built: `./fatline identity` registers a **gasless** app key (no transaction, no ETH), scoped to casts, reactions, follows and profile only. The seed phrase goes into a hidden prompt and is never saved. Format checked against a real node; not yet run with a real account. |
 | Client: post, reply, like, recast, follow, delete | Built and tested in a real browser against a fake node: each action is signed, sent to your node, and shown as *Confirmed* only once the node returns it. Only this machine (or a write token) can post. Not yet run on the real network. |
 | Client: show or hide posts by the app that made them | Works on real data: each cast's signing key is traced to the app FID that asked for it (read from the key's own onchain record), shown as "via @app". In My people, tap an app to hide it, or show only that app; casts from unknown apps follow a visible checkbox. Checked through crackle with @dwr, @v and @vitalik: 20 of 20 casts traced (@warpcast 12, @fireflyapp 8), hiding @warpcast left the 8 Firefly casts. Gasless keys (like the one `identity` makes) are traced only if the node's record names the app. |
-| Tutorial site (English + Spanish) | Not started. |
+| Copy only chosen accounts (`./fatline follow`, not a node) | Works on real nodes, both networks (numbers [below](#copy-only-the-accounts-you-follow-not-a-node)). |
+| Tutorial site | Written, in [`apps/site/`](apps/site/index.html): English, Spanish and Chinese. The Chinese page still needs a native speaker's read. |
 | Launchpad: vault, USDC coin on Clanker, server paying itself, onchain daily users | Works on a Base fork (see below). |
 
 Decided, not built yet:
@@ -79,7 +91,42 @@ The main page shows a strip with every node this server watches. Each one links 
 `#/archive` shows this client's own FID as one archive, read from two independent network adapters: one tails a Farcaster node, one a Hypersnap node. Each item says what each network holds: *held*, *pruned*, *revoked*, *replaced or removed*, *failed*, or *not seen*. "Not seen" can mean it existed before this server started watching. The *Publish to* selector only chooses where your next post goes.
 
 - Storage: SQLite tables in the indexer's database (`fl_events` is the log, `fl_messages` the state per network), behind [`indexer/src/archive.mjs`](indexer/src/archive.mjs). The adapters write only through that module. Design and reasons: [research/FATLINE-ARCHIVE.md](research/FATLINE-ARCHIVE.md).
-- The adapters (`indexer/src/adapters/`) are being built in parallel by other sessions. Until one runs, the archive is empty.
+- Who writes to it: one adapter per network ([`indexer/src/adapters/`](indexer/src/adapters/), each reading only the node it was given), and `./fatline follow` (below). Open `#/archive/<fid>` to read any account the archive holds.
+- Checked on 2026-10-22 for FID 18350: haatz and our own Hypersnap node each gave the same 4,824 messages (138 casts, 4,492 cast removals, 175 reactions, 7 follows, 9 profile fields, 3 verifications), with no message only on one side and no difference in status or content. crackle gave the same 4,824 on Farcaster. Whether Hypersnap keeps what Farcaster prunes is not shown by this: both only serve live messages when asked for one account's history.
+
+## Copy only the accounts you follow (not a node)
+
+The small option, for when a full node is too much:
+
+```sh
+./fatline follow 18350 @dwr --network farcaster --node crackle --once
+./fatline follow 18350 --following --network hypersnap --node haatz   # keeps following; Ctrl+C stops it, a re-run continues
+./fatline follow list
+```
+
+- `--network farcaster|hypersnap`: which network (default: your `./fatline init` choice).
+- `--node`: a word of the node's name or host, or its URL, from `fatline.config.json` (default: the first one listed). Only that node is read. It never switches to another.
+- `--following`: also add everyone the named accounts follow, as that node knows it.
+- `--once`: copy, catch up, then exit.
+
+**This is not a node.** Every run prints:
+
+> This is not a node. It copies the accounts you chose from one node, and: trusts that node: it does not check message signatures or signer keys itself; does not join the network, and does not help it; is only as complete and as recent as that node. If the node is behind, so is this.
+
+If the node is down: a clear error, exit code 1, nothing changed. If it is behind: it is used, with a warning that says how far behind. A page that times out is retried on the same node, up to 3 times, and the copy resumes where it stopped.
+
+Measured on 2026-10-22, `--once` into an empty archive:
+
+| Network, node | Accounts | Messages | Time |
+| --- | --- | --- | --- |
+| Farcaster, crackle | 18350 `--following` (8 accounts) | 127,333 | 125 s |
+| Farcaster, our master node (catching up) | 18350 + @dwr | 4,824 + 104,545 | 293 s, one timeout retried |
+| Hypersnap, haatz | 18350 + @dwr | 4,824 + 104,545 | 46 s |
+| Hypersnap, our node (catching up) | 18350 + @dwr | 4,824 + 104,545 | 163 s |
+
+While following, 5 new messages from a tracked account on crackle all arrived in one round.
+
+**Why not a lite node?** A lighter node would copy the current state from another node instead of starting from a snapshot. Today the replicators of both Snapchain and Hypersnap refuse KeyAdd and KeyRemove messages, so a replica can't follow which keys belong to which account. `./fatline node` refuses replication for that reason (`FATLINE_FORCE=1` to try anyway). And a full replica would still be about 300–400 GB.
 
 ## How the money flows
 
@@ -230,9 +277,9 @@ Tested:
   - the keeper paid itself 15.55 USDC, and the app page showed "Alive for 270 days more";
   - 25 people signed free check-ins through the API and the server refused a forged one. The keeper posted them in two batches (~35,000 gas per person), and the contract's `dauOf(today)` read 25.
 - **The coin and node pages:** 23 tests cover address and checksum checks, coin-to-node resolution, the four states, stale heartbeats, catching up and stalls, missing treasury data, API failures, starting deposits counted once, and that the probe URL never reaches the browser. On the Base fork, the vault's indexed history matched its live balance to the cent: 100 deposited + 40.05 fees − 15.55 compute = 124.50 USDC. Against the real master node, the page showed *Offline: the machine answered, but no node is listening*, which was true while its snapshot downloaded. `node apps/opinions/test/layout.mjs <url> "#/" "#/coin/…"` checks 360, 390, 768 and 1280 px in Chrome for sideways scrolling; all passed.
-- **Choosing a node:** Settings lists every node of each network (your own, the two Fatline nodes, crackle, haatz) with its health. Choose one and every read and post goes only through it; if it is down, you get an error naming it, never a quiet switch. *Automatic* takes the first that answers, says which one, and says so when it changes. Checked against the real nodes: crackle served the feed, and the master node (not serving yet) gave a clear error.
-- **The archive module:** 12 tests: a message on both networks becomes one item with two statuses; replayed events change nothing; a bad batch writes nothing, cursor included; prunes and removals keep the content; a 5,000-message revoke burst in one transaction; node URLs never reach the browser. The page was checked at 360–1280 px with sample events in a scratch database. It has not run with real adapters yet.
-- **Indexer and x402:** 8 indexer tests, and x402 v1 and v2 payments against mock sellers. The doctor and the UI were checked at desktop and phone widths.
+- **Choosing a node:** Settings lists every node of each network (your own, the two Fatline nodes, crackle, haatz) with its health. Choose one and every read and post goes only through it; if it is down, you get an error naming it, never a quiet switch. *Automatic* takes the first that answers, says which one, and says so when it changes. Checked against the real nodes on 2026-10-22: crackle and haatz served the feed; our two nodes, while still catching up, were shown as *behind* (amber, with the block count) and never as healthy, *Automatic* skipped them, and reading FID 18350 pinned to each gave the same casts as crackle and haatz.
+- **The archive module:** 14 tests: a message on both networks becomes one item with two statuses; replayed events change nothing; a bad batch writes nothing, cursor included; prunes and removals keep the content; a 5,000-message revoke burst in one transaction; node URLs never reach the browser. The page was checked at 360–1280 px. It has run with real adapters and `follow` on both networks (see "Your archive").
+- **Indexer and x402:** 66 indexer tests in all, and x402 v1 and v2 payments against mock sellers. The doctor and the UI were checked at desktop and phone widths.
 
 Not tested yet:
 
@@ -254,6 +301,7 @@ Anvil's well-known test keys have EIP-7702 code on Base mainnet, so USDC rejects
 - [Implementation and bounty acceptance plan](research/BUILD-PLAN.md)
 - [My Wall: first product and hardware requirements](research/MY-WALL-SYSTEM-DESIGN.md)
 - [Spanish long-form video outline](research/VIDEO-OUTLINE-ES.md)
+- [The archive's design](research/FATLINE-ARCHIVE.md)
 
 ## License
 
