@@ -1,6 +1,41 @@
 // The HTTP API the apps read from. Every answer says which network and which node it came from,
 // so a reader always knows whether they are on their own node or someone else's.
+import { decodeAbiParameters } from 'viem';
 import { ethAddresses, normalizeCast, normalizeUser, renderMentions, toFc } from './hub.mjs';
+
+const KEY_REQUEST = [{ type: 'tuple', components: [
+  { name: 'requestFid', type: 'uint256' }, { name: 'requestSigner', type: 'address' }, { name: 'signature', type: 'bytes' }, { name: 'deadline', type: 'uint256' }] }];
+
+/**
+ * The FID of the app that asked for this key, read from the record itself:
+ * onchain keys carry SignedKeyRequestMetadata (metadataType 1) with requestFid; gasless keys may carry requestFid directly.
+ * Returns null when the record does not say. Never guessed.
+ */
+export function appFidOf(signer) {
+  const direct = Number(signer?.requestFid ?? signer?.request_fid ?? 0);
+  if (direct > 0) return direct;
+  const body = signer?.onChainEvent?.signerEventBody;
+  if (body?.metadata && Number(body.metadataType) === 1) {
+    try {
+      const [m] = decodeAbiParameters(KEY_REQUEST, `0x${Buffer.from(body.metadata, 'base64').toString('hex')}`);
+      return Number(m.requestFid) || null;
+    } catch { return null; }
+  }
+  return null;
+}
+
+/** Which casts to keep, given the reader's choice: hide some apps, or show only some, and a rule for unknown apps. */
+export function appFilter({ hide = [], only = [], unknown = 'show' } = {}) {
+  const hidden = new Set(hide.map(Number));
+  const kept = new Set(only.map(Number));
+  return (cast) => {
+    if (cast.kind !== 'cast') return true; // voices are onchain, not made by an app
+    const app = cast.app?.fid ?? null;
+    if (kept.size) return app !== null && kept.has(app); // "only these apps" leaves unknown ones out
+    if (app === null) return unknown !== 'hide';
+    return !hidden.has(app);
+  };
+}
 
 const CACHE_MS = 10 * 60_000;
 const MAX_FIDS = 50;
@@ -29,6 +64,29 @@ export class Api {
     this.voices = voices;
     this.users = new TtlCache(CACHE_MS);
     this.verified = new TtlCache(CACHE_MS);
+    this.signers = new TtlCache(CACHE_MS);
+  }
+
+  /** signer key -> app FID, for one author. One request per author per 10 minutes. */
+  async appsOf(network, fid) {
+    return this.signers.get(`${network.name}:${fid}`, async () => {
+      const map = new Map();
+      try {
+        const { data } = await network.get('/v1/signersByFid', { fid });
+        for (const s of data?.signers ?? []) if (typeof s.key === 'string') map.set(s.key.toLowerCase(), appFidOf(s));
+      } catch { /* unknown apps, shown by the stated rule */ }
+      return map;
+    });
+  }
+
+  /** Tags each cast with the app that made it, when its key's record says so. */
+  async withApps(network, casts) {
+    const byFid = new Map();
+    await Promise.all([...new Set(casts.map((c) => c.fid))].map(async (fid) => byFid.set(fid, await this.appsOf(network, fid))));
+    return casts.map((c) => {
+      const appFid = c.signer ? byFid.get(c.fid)?.get(c.signer) ?? null : null;
+      return { ...c, app: appFid ? { fid: appFid } : null };
+    });
   }
 
   /**
@@ -111,7 +169,7 @@ export class Api {
    * The quiet feed: long-form voices plus the casts of the people you chose, nothing else.
    * With no fids, it shows every voice and no casts.
    */
-  async feed(networkName, { fids = [], before, limit = 30, replies = false }) {
+  async feed(networkName, { fids = [], before, limit = 30, replies = false, apps = {} }) {
     const network = this.network(networkName);
     limit = Math.min(Math.max(Number(limit) || 30, 1), 100);
     fids = [...new Set(fids.map(Number).filter((f) => Number.isInteger(f) && f > 0))].slice(0, MAX_FIDS);
@@ -129,19 +187,26 @@ export class Api {
       ?? (fids.length ? null : network.current && network.source(network.current));
     // A chosen node that fails is an error, not a quiet empty feed.
     if (network.pinnedTo && fids.length && errors.length === fids.length) throw httpError(503, errors[0]);
-    const casts = results.flatMap((r) => (r.status === 'fulfilled' ? r.value.casts : []));
+    const casts = await this.withApps(network, results.flatMap((r) => (r.status === 'fulfilled' ? r.value.casts : [])));
 
-    const items = [...voices, ...(await this.renderCasts(network, casts))]
+    // Paging follows the unfiltered timeline, so hiding an app never ends the feed early.
+    const page = [...voices, ...(await this.renderCasts(network, casts))]
       .sort((a, b) => b.timestamp - a.timestamp)
       .slice(0, limit);
-    const users = await this.usersFor(network, items.map((i) => i.fid));
-    const complete = items.length < limit;
+    const items = page.filter(appFilter(apps));
+    // Every app seen on this page, with its name and how many casts it made: the reader chooses from these.
+    const pageCasts = page.filter((i) => i.kind === 'cast');
+    const counts = new Map();
+    for (const c of pageCasts) if (c.app) counts.set(c.app.fid, (counts.get(c.app.fid) ?? 0) + 1);
+    const users = await this.usersFor(network, [...items.map((i) => i.fid), ...counts.keys()]);
     return {
       network: network.name,
       source,
       items,
       users,
-      next: complete ? null : items.at(-1).timestamp,
+      apps: [...counts].map(([fid, count]) => ({ fid, username: users[fid]?.username ?? null, count })).sort((a, b) => b.count - a.count),
+      attribution: { casts: pageCasts.length, traced: pageCasts.filter((c) => c.app).length },
+      next: page.length < limit ? null : page.at(-1).timestamp,
       errors,
     };
   }

@@ -313,3 +313,12 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
 .node-option.ok strong::before { content: "● "; color: var(--signal); }
 .node-option.off strong::before { content: "● "; color: var(--warn); }
 .source.switched { color: var(--amber); }
+
+/* App filter (J8) */
+.app-bar { margin: 4px 0 14px; }
+.chip.app { padding: 2px 10px; gap: 8px; }
+.chip.app .link { font-size: 14px; color: var(--text); text-decoration: none; padding: 2px 0; }
+.chip.app .only { color: var(--slate); font-size: 12px; text-decoration: underline; }
+.chip.app.off { opacity: 0.55; }
+.chip.app.off > .link:first-child { text-decoration: line-through; }
+.check.small { font-size: 13px; color: var(--muted); }

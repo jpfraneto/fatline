@@ -38,7 +38,7 @@ Status, honestly:
 | Client: reading, both networks | Works. |
 | Client: seed phrase → app key | Built: `./infinicaster identity` registers a **gasless** app key (no transaction, no ETH), scoped to casts, reactions, follows and profile only. The seed phrase goes into a hidden prompt and is never saved. Format checked against a real node; not yet run with a real account. |
 | Client: post, reply, like, recast, follow, delete | Built and tested in a real browser against a fake node: each action is signed, sent to your node, and shown as *Confirmed* only once the node returns it. Only this machine (or a write token) can post. Not yet run on the real network. |
-| Client: show or hide posts by the app that made them | Not built yet. |
+| Client: show or hide posts by the app that made them | Works on real data: each cast's signing key is traced to the app FID that asked for it (read from the key's own onchain record), shown as "via @app". In My people, tap an app to hide it, or show only that app; casts from unknown apps follow a visible checkbox. Checked through crackle with @dwr, @v and @vitalik: 20 of 20 casts traced (@warpcast 12, @fireflyapp 8), hiding @warpcast left the 8 Firefly casts. Gasless keys (like the one `identity` makes) are traced only if the node's record names the app. |
 | Tutorial site (English + Spanish) | Not started. |
 | Launchpad: vault, USDC coin on Clanker, server paying itself, onchain daily users | Works on a Base fork (see below). |
 

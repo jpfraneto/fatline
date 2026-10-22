@@ -88,6 +88,11 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
       before: q.get('before') ? Number(q.get('before')) : undefined,
       limit: q.get('limit'),
       replies: q.get('replies') === '1',
+      apps: {
+        hide: (q.get('hideApps') ?? '').split(',').filter((x) => /^\d+$/.test(x)),
+        only: (q.get('onlyApps') ?? '').split(',').filter((x) => /^\d+$/.test(x)),
+        unknown: q.get('unknownApps') === 'hide' ? 'hide' : 'show',
+      },
     })],
     ['GET', /^\/api\/voices\/(\d+)$/, (q, [, id]) => api.voice(sel(q), id)],
     ['GET', /^\/api\/thread$/, (q) => api.thread(sel(q), { fid: q.get('fid'), hash: q.get('hash') })],

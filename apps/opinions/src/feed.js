@@ -20,6 +20,7 @@ function card(item, users, { inThread = false } = {}) {
   const meta = el('div', { class: 'meta' },
     author(item, users),
     el('span', { class: 'muted' }, ' · ', timeAgo(item.timestamp)),
+    item.app ? el('span', { class: 'muted via' }, ` · ${t('via', users[item.app.fid]?.username ? `@${users[item.app.fid].username}` : `fid ${item.app.fid}`)}`) : null,
     el('span', { class: `kind ${item.kind}` }, isVoice ? t('voice') : t('cast', label(item.network))));
   const notes = [];
   if (isVoice && item.claimedFid && !item.verified) notes.push(el('p', { class: 'warn' }, t('claims', item.claimedFid, label(state.network))));
@@ -69,20 +70,62 @@ function composer({ parentId = 0, onSent }) {
   }, text, el('div', { class: 'row' }, fid, count, button), status);
 }
 
+// Which apps' casts to show. Stored in this browser: { hide: [fid], only: [fid], unknown: 'show' | 'hide' }.
+const appChoice = () => ({ hide: [], only: [], unknown: 'show', ...store.get('appFilter', {}) });
+
+/** Chips for every app seen in the feed: tap to hide or show it, or show only that app. */
+function appBar(apps, users, traced, route) {
+  const c = appChoice();
+  const save = (next) => { store.set('appFilter', { ...c, ...next }); route(); };
+  const known = store.get('appsSeen', {});
+  for (const a of apps) known[a.fid] = a.username ?? known[a.fid] ?? null;
+  store.set('appsSeen', known);
+  const all = Object.entries(known).map(([fid, username]) => ({ fid: Number(fid), username }));
+  if (!all.length && !traced.casts) return null;
+  return el('section', { class: 'app-bar' },
+    el('p', { class: 'muted small' }, t('appsHelp'), ' ', traced.casts ? t('traced', traced.traced, traced.casts) : ''),
+    el('div', { class: 'chips' }, ...all.map((a) => {
+      const hidden = c.only.length ? !c.only.includes(a.fid) : c.hide.includes(a.fid);
+      const name = a.username ? `@${a.username}` : `fid ${a.fid}`;
+      return el('span', { class: `chip app${hidden ? ' off' : ''}` },
+        el('button', { type: 'button', class: 'link', 'aria-pressed': String(!hidden), title: hidden ? t('showApp') : t('hideApp'),
+          onclick: () => (c.only.length ? save({ only: hidden ? [...c.only, a.fid] : c.only.filter((x) => x !== a.fid) })
+            : save({ hide: hidden ? c.hide.filter((x) => x !== a.fid) : [...c.hide, a.fid] })) }, name),
+        el('button', { type: 'button', class: 'link only', onclick: () => save({ only: c.only.length === 1 && c.only[0] === a.fid ? [] : [a.fid], hide: [] }) },
+          c.only.length === 1 && c.only[0] === a.fid ? t('allApps') : t('onlyApp')));
+    })),
+    el('label', { class: 'check small' },
+      el('input', { type: 'checkbox', checked: c.unknown !== 'hide', disabled: c.only.length > 0, onchange: (e) => save({ unknown: e.target.checked ? 'show' : 'hide' }) }),
+      el('span', {}, t('unknownApps'))));
+}
+
 export async function feedPage({ fids = null, header = [], route }) {
   const main = $('#main');
   const list = el('div', { class: 'list' });
   const more = el('button', { class: 'more', type: 'button', hidden: true }, t('more'));
+  const bar = el('div');
   const top = [...header];
   if (!fids) top.push(state.config.voices.address ? composer({ onSent: route }) : el('p', { class: 'muted' }, t('voicesOff')));
-  main.replaceChildren(...top, list, more);
+  main.replaceChildren(...top, bar, list, more);
+  const choice = appChoice();
+  const traced = { casts: 0, traced: 0 };
+  const appsSeen = new Map();
 
   let before;
   const load = async () => {
     more.disabled = true;
     try {
-      const page = await api('/api/feed', { network: state.network, fids: fids?.join(','), before, limit: 20 });
+      const page = await api('/api/feed', {
+        network: state.network, fids: fids?.join(','), before, limit: 20,
+        hideApps: choice.hide.join(','), onlyApps: choice.only.join(','), unknownApps: choice.unknown,
+      });
       showSource(page.source);
+      if (fids) {
+        traced.casts += page.attribution?.casts ?? 0;
+        traced.traced += page.attribution?.traced ?? 0;
+        for (const a of page.apps ?? []) appsSeen.set(a.fid, a);
+        bar.replaceChildren(appBar([...appsSeen.values()], page.users, traced, route) ?? '');
+      }
       if (!page.items.length && !before) list.append(el('p', { class: 'muted empty' }, t('empty')));
       list.append(...page.items.map((i) => card(i, page.users)));
       before = page.next;

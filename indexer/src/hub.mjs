@@ -146,6 +146,7 @@ export function normalizeCast(message, network) {
     parent: body.parentCastId ? { fid: body.parentCastId.fid, hash: body.parentCastId.hash } : null,
     parentUrl: body.parentUrl ?? null,
     long: body.type === 'LONG_CAST',
+    signer: typeof message.signer === 'string' ? message.signer.toLowerCase() : null, // the app key that signed it
     timestamp: toMs(d.timestamp),
   };
 }
