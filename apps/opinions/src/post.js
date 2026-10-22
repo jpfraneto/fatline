@@ -1,7 +1,7 @@
 // Posting to Farcaster or Hypersnap with this client's own app key.
 // The key lives on the machine running the indexer; the browser only asks it to sign.
 // Every action shows its real state: sending, then confirmed (read back from the node) or pending.
-import { api, el, state, store, t } from './lib.js';
+import { api, chosenNode, el, state, store, t } from './lib.js';
 
 const CAST_MAX_BYTES = 320;
 
@@ -18,7 +18,7 @@ async function send(path, body, network = state.network) {
   const res = await fetch(new URL(path, location.origin), {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
-    body: JSON.stringify({ ...body, network }),
+    body: JSON.stringify({ ...body, network, node: chosenNode(network) }),
   });
   const out = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(out.error ?? `HTTP ${res.status}`);

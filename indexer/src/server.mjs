@@ -44,17 +44,19 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     const given = (req.headers.authorization ?? '').replace(/^Bearer /, '');
     return Boolean(writeToken && given.length === writeToken.length && timingSafeEqual(Buffer.from(given), Buffer.from(writeToken)));
   };
-  const writer = (network) => {
+  const writer = (network, node) => {
     const key = loadAppKey(config.dataDir);
     if (!key) throw Object.assign(new Error('This client has no app key yet. Run ./infinicaster identity on the machine that runs it.'), { status: 409 });
     const name = network && networks[network] ? network : key.network;
-    return new Writer({ network: networks[name], key });
+    // Posts go to the network the person chose, through the node they chose (no fallback), or the automatic one.
+    return new Writer({ network: node ? networks[name].pinned(node) : networks[name], key });
   };
   const write = (fn) => (q, m, body, req) => {
     if (!mayWrite(req)) throw Object.assign(new Error('Posting is only allowed from this machine, or with its write token.'), { status: 401 });
-    return fn(writer(body?.network ?? q.get('network')), body ?? {});
+    return fn(writer(body?.network ?? q.get('network'), body?.node ?? q.get('node')), body ?? {});
   };
 
+  const sel = (q) => ({ name: q.get('network'), node: q.get('node') });
   const routes = [
     ['GET', /^\/api\/health$/, () => ({ ok: true, voices: voices.status(), launchpad: launchpad.status(), keeper: keeper?.status() ?? null })],
     ['GET', /^\/api\/apps$/, () => launchpad.list()],
@@ -81,15 +83,15 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['POST', /^\/api\/apps\/(0x[0-9a-fA-F]{40})\/checkin$/, (q, [, vault], body) => launchpad.queueCheckIn(vault, body)],
     ['GET', /^\/api\/config$/, () => api.config_()],
     ['GET', /^\/api\/networks$/, () => api.networksStatus()],
-    ['GET', /^\/api\/feed$/, (q) => api.feed(q.get('network'), {
+    ['GET', /^\/api\/feed$/, (q) => api.feed(sel(q), {
       fids: (q.get('fids') ?? '').split(',').filter(Boolean),
       before: q.get('before') ? Number(q.get('before')) : undefined,
       limit: q.get('limit'),
       replies: q.get('replies') === '1',
     })],
-    ['GET', /^\/api\/voices\/(\d+)$/, (q, [, id]) => api.voice(q.get('network'), id)],
-    ['GET', /^\/api\/thread$/, (q) => api.thread(q.get('network'), { fid: q.get('fid'), hash: q.get('hash') })],
-    ['GET', /^\/api\/user$/, (q) => api.resolve(q.get('network'), q.get('q') ?? q.get('fid'))],
+    ['GET', /^\/api\/voices\/(\d+)$/, (q, [, id]) => api.voice(sel(q), id)],
+    ['GET', /^\/api\/thread$/, (q) => api.thread(sel(q), { fid: q.get('fid'), hash: q.get('hash') })],
+    ['GET', /^\/api\/user$/, (q) => api.resolve(sel(q), q.get('q') ?? q.get('fid'))],
     ['GET', /^\/api\/me$/, (q, m, b, req) => {
       const key = loadAppKey(config.dataDir);
       if (!key) return { fid: null, canWrite: false };

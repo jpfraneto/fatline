@@ -7,11 +7,18 @@
       "nodes": [
         {
           "url": "http://127.0.0.1:3381",
-          "own": true
+          "own": true,
+          "label": "Your own node (this machine)"
+        },
+        {
+          "url": "http://46.225.208.199:3381",
+          "own": false,
+          "label": "Infinicaster master node"
         },
         {
           "url": "https://crackle.farcaster.xyz:3381",
-          "own": false
+          "own": false,
+          "label": "crackle.farcaster.xyz"
         }
       ]
     },
@@ -21,11 +28,18 @@
       "nodes": [
         {
           "url": "http://127.0.0.1:4381",
-          "own": true
+          "own": true,
+          "label": "Your own node (this machine)"
+        },
+        {
+          "url": "http://2.31.51.183:4381",
+          "own": false,
+          "label": "Infinicaster Hypersnap node"
         },
         {
           "url": "https://haatz.quilibrium.com",
-          "own": false
+          "own": false,
+          "label": "haatz.quilibrium.com"
         }
       ]
     }
@@ -54,6 +68,14 @@
       "url": "http://46.225.208.199:3381",
       "operator": "Infinicaster",
       "host": "Hetzner cax31, Nuremberg",
+      "apps": []
+    },
+    {
+      "id": "hypersnap",
+      "label": "Infinicaster Hypersnap node",
+      "network": "hypersnap",
+      "url": "http://2.31.51.183:4381",
+      "operator": "Infinicaster",
       "apps": []
     }
   ],

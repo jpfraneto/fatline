@@ -305,3 +305,11 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
 .net-chip.pruned, .net-chip.displaced { color: var(--muted); }
 .net-chip.revoked, .net-chip.failed { color: var(--warn); }
 .net-chip.unseen { border-style: dashed; }
+
+/* Node chooser (Settings) */
+.node-choice { display: grid; gap: 8px; margin-top: 8px; }
+.node-option { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); cursor: pointer; }
+.node-option input { width: auto; margin-top: 4px; accent-color: var(--signal); }
+.node-option.ok strong::before { content: "● "; color: var(--signal); }
+.node-option.off strong::before { content: "● "; color: var(--warn); }
+.source.switched { color: var(--amber); }

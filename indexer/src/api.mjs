@@ -31,10 +31,16 @@ export class Api {
     this.verified = new TtlCache(CACHE_MS);
   }
 
-  network(name) {
-    const n = this.networks[name ?? this.config.defaultNetwork];
+  /**
+   * The network to read: a name, or { name, node } when the person chose a node (then only that node is used),
+   * or an already chosen network passed along.
+   */
+  network(choice) {
+    if (choice && typeof choice.get === 'function') return choice;
+    const { name, node } = choice && typeof choice === 'object' ? choice : { name: choice };
+    const n = this.networks[name || this.config.defaultNetwork];
     if (!n) throw httpError(400, `Unknown network "${name}". Choose one of: ${Object.keys(this.networks).join(', ')}`);
-    return n;
+    return node ? n.pinned(node) : n;
   }
 
   config_() {
@@ -117,10 +123,12 @@ export class Api {
       if (fids.length) voices = voices.filter((v) => v.verified);
     }
 
-    const results = await Promise.allSettled(fids.map((fid) => this.casts(network.name, { fid, before, limit, replies })));
+    const results = await Promise.allSettled(fids.map((fid) => this.casts(network, { fid, before, limit, replies })));
     const errors = results.filter((r) => r.status === 'rejected').map((r) => r.reason.message);
     const source = results.find((r) => r.status === 'fulfilled')?.value.source
       ?? (fids.length ? null : network.current && network.source(network.current));
+    // A chosen node that fails is an error, not a quiet empty feed.
+    if (network.pinnedTo && fids.length && errors.length === fids.length) throw httpError(503, errors[0]);
     const casts = results.flatMap((r) => (r.status === 'fulfilled' ? r.value.casts : []));
 
     const items = [...voices, ...(await this.renderCasts(network, casts))]

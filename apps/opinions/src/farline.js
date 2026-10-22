@@ -250,7 +250,7 @@ function statusView(raw, snap, { how, compact = false } = {}) {
   return el('section', { class: `node-status ${s.state}`, 'aria-live': 'polite' },
     el('div', { class: 'node-head' },
       el('span', { class: 'node-label' }, raw?.label ?? f('node')),
-      raw?.network ? el('span', { class: 'node-net' }, raw.network) : null),
+      raw?.network ? el('span', { class: 'node-net' }, NETWORK_LABEL(raw.network)) : null),
     el('p', { class: 'state-word' }, el('span', { class: 'lamp', 'aria-hidden': 'true' }), stateWord(s.state)),
     signal(s.state, raw?.lastHeartbeatAt),
     el('p', { class: 'reason' }, s.reason || ''),
@@ -439,7 +439,7 @@ export function nodeStrip() {
       const s = effective(raw, snap);
       return el('a', { class: `strip-node ${s.state}`, href: `#/node/${encodeURIComponent(raw.id)}` },
         el('span', { class: 'lamp small', 'aria-hidden': 'true' }),
-        el('span', { class: 'strip-main' }, el('strong', {}, raw.label), ' · ', stateWord(s.state)),
+        el('span', { class: 'strip-main' }, el('strong', {}, raw.label), ' · ', NETWORK_LABEL(raw.network), ' · ', stateWord(s.state)),
         el('span', { class: 'strip-sub' }, f('lastHeartbeat'), ' ', ago(snap, raw.lastHeartbeatAt), ' · ', f('apps', raw.apps.length)),
         signal(s.state, raw.lastHeartbeatAt));
     }));

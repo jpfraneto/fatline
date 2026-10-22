@@ -23,8 +23,13 @@ export const label = (name) => state.config.networks.find((n) => n.name === name
 export const short = (addr) => `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 export const usdc = (units) => (Number(units) / 1e6).toLocaleString(state.lang, { maximumFractionDigits: 2 });
 
+/** The node the person chose for a network, or '' for automatic. */
+export const chosenNode = (network) => store.get(`node:${network}`, '');
+
 export async function api(path, params = {}, body) {
   const url = new URL(path, location.origin);
+  // Reads go through the node the person chose for that network. The server never swaps it for another.
+  if (params.network && !('node' in params)) params = { ...params, node: chosenNode(params.network) };
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== '') url.searchParams.set(k, v);
   const res = await fetch(url, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : undefined);
   const out = await res.json().catch(() => ({}));
@@ -42,11 +47,22 @@ export function el(tag, attrs = {}, ...children) {
   return node;
 }
 
+const lastAuto = {}; // network -> the node automatic mode used last, to say so when it changes
+
 export function showSource(source) {
   const node = $('#source');
-  node.textContent = source ? t('reading', source.node.replace(/^https?:\/\//, ''), source.own) : '';
-  node.classList.toggle('own', Boolean(source?.own));
-  node.hidden = !source;
+  if (!source) { node.hidden = true; return; }
+  const name = source.label ?? source.node.replace(/^https?:\/\//, '');
+  let text = t('reading', name, source.own, source.chosen);
+  if (source.blockDelay > 200) text += ` ${t('behind', source.blockDelay)}`;
+  // Automatic mode may pick another node when one stops answering. It never does that quietly.
+  const before = lastAuto[source.network];
+  if (!source.chosen && before && before !== name) text += ` ${t('switched', before)}`;
+  if (!source.chosen) lastAuto[source.network] = name;
+  node.textContent = text;
+  node.classList.toggle('own', Boolean(source.own));
+  node.classList.toggle('switched', Boolean(!source.chosen && before && before !== name));
+  node.hidden = false;
 }
 
 export function timeAgo(ms) {

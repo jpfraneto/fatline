@@ -14,14 +14,14 @@ export class Network {
     this.name = name;
     this.label = label ?? name;
     this.about = about ?? '';
-    this.nodes = nodes.map((n) => ({ url: n.url.replace(/\/$/, ''), own: Boolean(n.own), status: null }));
+    this.nodes = nodes.map((n) => ({ url: n.url.replace(/\/$/, ''), own: Boolean(n.own), label: n.label ?? null, status: null }));
     this.fetch = fetchImpl;
     this.timeoutMs = timeoutMs;
     this.current = null;
     this.checkedAt = 0;
   }
 
-  async #request(node, path, params = {}) {
+  async request(node, path, params = {}) {
     const url = new URL(node.url + path);
     for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null) url.searchParams.set(k, v);
     const res = await this.fetch(url, { signal: AbortSignal.timeout(this.timeoutMs) });
@@ -33,7 +33,7 @@ export class Network {
   async checkNode(node) {
     const started = Date.now();
     try {
-      const info = await this.#request(node, '/v1/info');
+      const info = await this.request(node, '/v1/info');
       const shards = (info?.shardInfos ?? []).filter((s) => s.shardId !== 0);
       const worstDelay = Math.max(0, ...shards.map((s) => Number(s.blockDelay ?? 0)));
       node.status = {
@@ -71,16 +71,52 @@ export class Network {
   async get(path, params) {
     let node = await this.node();
     try {
-      return { data: await this.#request(node, path, params), node };
+      return { data: await this.request(node, path, params), node };
     } catch {
       this.current = null;
       node = await this.node();
-      return { data: await this.#request(node, path, params), node };
+      return { data: await this.request(node, path, params), node };
     }
   }
 
-  source(node) {
-    return { network: this.name, node: node.url, own: node.own };
+  source(node, { chosen = false } = {}) {
+    return { network: this.name, node: node.url, own: node.own, label: node.label, chosen, blockDelay: node.status?.blockDelay ?? null };
+  }
+
+  /**
+   * This network, read only through the node the person chose. No fallback: if that node is down,
+   * every request fails with a clear error naming it. A node that answers but is behind is still used,
+   * and the source says how far behind it is.
+   */
+  pinned(url) {
+    const want = String(url).replace(/\/$/, '');
+    const node = this.nodes.find((n) => n.url === want);
+    if (!node) throw Object.assign(new Error(`${want} is not one of this server's ${this.label} nodes. Choose one in Settings.`), { status: 400 });
+    const self = this;
+    const name = node.label ?? node.url.replace(/^https?:\/\//, '');
+    const down = (why) => Object.assign(new Error(`The ${this.label} node you chose, ${name}, is not answering${why ? ` (${why})` : ''}. Choose another node in Settings; this client does not switch for you.`), { status: 503 });
+    const check = async () => {
+      const fresh = node.status && Date.now() - Date.parse(node.status.checkedAt) < HEALTH_TTL_MS;
+      if (!fresh) await self.checkNode(node);
+      if (node.status.error || !(node.status.blockDelay >= 0)) throw down(node.status.error);
+      return node;
+    };
+    return {
+      name: this.name, label: this.label, about: this.about, nodes: this.nodes, pinnedTo: node.url,
+      get current() { return node; },
+      node: check,
+      async get(path, params) {
+        await check();
+        try {
+          return { data: await self.request(node, path, params), node };
+        } catch (err) {
+          node.status = { ok: false, error: err.message, checkedAt: new Date().toISOString() };
+          throw down(err.message);
+        }
+      },
+      source: (n) => self.source(n ?? node, { chosen: true }),
+      describe: () => self.describe(),
+    };
   }
 
   describe() {
@@ -89,7 +125,7 @@ export class Network {
       label: this.label,
       about: this.about,
       using: this.current ? this.source(this.current) : null,
-      nodes: this.nodes.map(({ url, own, status }) => ({ url, own, status })),
+      nodes: this.nodes.map(({ url, own, label, status }) => ({ url, own, label, status })),
     };
   }
 }

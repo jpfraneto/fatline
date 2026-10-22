@@ -47,7 +47,7 @@ test('prefers your own node and falls back to the next healthy one, saying which
   const n = new Network('farcaster', { nodes: [{ url: 'http://own', own: true }, { url: 'https://public', own: false }] }, { fetchImpl });
   const node = await n.node();
   assert.equal(node.url, 'https://public');
-  assert.deepEqual(n.source(node), { network: 'farcaster', node: 'https://public', own: false });
+  assert.deepEqual(n.source(node), { network: 'farcaster', node: 'https://public', own: false, label: null, chosen: false, blockDelay: 3 });
   assert.equal(n.describe().nodes[0].status.ok, false);
 });
 
@@ -55,4 +55,30 @@ test('a node far behind is not used', async () => {
   const fetchImpl = async () => new Response(JSON.stringify({ shardInfos: [{ shardId: 1, blockDelay: 50_000 }] }));
   const n = new Network('hypersnap', { nodes: [{ url: 'http://slow', own: true }] }, { fetchImpl });
   await assert.rejects(n.node(), /No reachable/);
+});
+
+test('a chosen node is the only node used: down means a clear error, never a fallback', async () => {
+  const info = { shardInfos: [{ shardId: 1, blockDelay: 0 }], version: 'x' };
+  const asked = [];
+  const fetchImpl = async (url) => {
+    asked.push(new URL(url).host);
+    if (String(url).startsWith('http://master')) throw new Error('connection refused');
+    return new Response(JSON.stringify(String(url).includes('/v1/info') ? info : { messages: [] }));
+  };
+  const n = new Network('farcaster', { label: 'Farcaster', nodes: [{ url: 'http://master', label: 'Infinicaster master' }, { url: 'https://public' }] }, { fetchImpl });
+  const chosen = n.pinned('http://master');
+  await assert.rejects(chosen.get('/v1/castsByFid', { fid: 1 }), (e) => e.status === 503 && /Infinicaster master/.test(e.message) && /does not switch/.test(e.message));
+  assert.ok(!asked.includes('public'), 'the other node was never asked');
+  const ok = n.pinned('https://public/');
+  const { node } = await ok.get('/v1/castsByFid', { fid: 1 });
+  assert.equal(ok.source(node).chosen, true);
+  assert.throws(() => n.pinned('http://evil.example'), (e) => e.status === 400);
+});
+
+test('a chosen node that is catching up is still used, and says how far behind', async () => {
+  const fetchImpl = async (url) => new Response(JSON.stringify(String(url).includes('/v1/info') ? { shardInfos: [{ shardId: 1, blockDelay: 90_000 }] } : {}));
+  const n = new Network('hypersnap', { nodes: [{ url: 'http://new' }] }, { fetchImpl });
+  const chosen = n.pinned('http://new');
+  const { node } = await chosen.get('/v1/info');
+  assert.equal(chosen.source(node).blockDelay, 90_000);
 });

@@ -1,6 +1,6 @@
 // Settings: which network to read (Farcaster or Hypersnap) and which nodes. Not on the front page,
 // but always one tap away, and the app never switches nodes without saying so.
-import { $, api, el, state, store, t } from './lib.js';
+import { $, api, chosenNode, el, state, store, t } from './lib.js';
 
 export async function settingsPage({ onChange }) {
   const main = $('#main');
@@ -29,8 +29,26 @@ export async function settingsPage({ onChange }) {
     el('label', { class: 'muted small' }, t('writeToken'), token),
   );
   const status = await api('/api/networks').catch(() => []);
-  nodes.replaceChildren(...status.filter((n) => n.name === state.network).flatMap((n) => n.nodes.map((node) => el('p', { class: `node ${node.status?.ok ? 'ok' : 'off'}` },
-    el('span', { class: 'mono' }, node.url.replace(/^https?:\/\//, '')), ' ',
-    el('span', { class: 'muted' }, `${node.own ? t('yours') : t('public')} · ${node.status?.ok ? `v${node.status.version} · ${node.status.blockDelay} blocks behind` : node.status?.error ?? 'offline'}`),
-    n.using?.node === node.url ? el('strong', {}, ' ✓') : null))));
+  // One choice per network: automatic, or exactly one node. The choice is stored in this browser.
+  const current = chosenNode(state.network);
+  const choose = (url) => { store.set(`node:${state.network}`, url); onChange(); };
+  const describe = (node) => {
+    const s = node.status;
+    if (!s) return t('unknownState');
+    if (s.error) return `${t('downState')} · ${s.error}`;
+    return `v${s.version ?? '?'} · ${s.blockDelay > 200 ? t('behind', s.blockDelay) : `${s.blockDelay} ${t('blocksBehind')}`}`;
+  };
+  const net = status.find((n) => n.name === state.network);
+  nodes.replaceChildren(
+    el('p', { class: 'muted small' }, t('nodeChoice')),
+    el('div', { class: 'node-choice', role: 'radiogroup', 'aria-label': t('nodes') },
+      el('label', { class: 'node-option' }, el('input', { type: 'radio', name: 'node', checked: !current, onchange: () => choose('') }),
+        el('span', {}, el('strong', {}, t('automaticShort')), el('span', { class: 'muted small' }, ` ${t('automatic')}`),
+          net?.using ? el('span', { class: 'muted small' }, ` · ${t('usingNow', net.using.node.replace(/^https?:\/\//, ''))}`) : null)),
+      ...(net?.nodes ?? []).map((node) => el('label', { class: `node-option ${node.status?.ok ? 'ok' : node.status?.error ? 'off' : ''}` },
+        el('input', { type: 'radio', name: 'node', checked: current === node.url, onchange: () => choose(node.url) }),
+        el('span', {}, el('strong', {}, node.label ?? node.url.replace(/^https?:\/\//, '')), ' ',
+          el('span', { class: 'muted small' }, node.own ? t('yours') : t('public')), el('br'),
+          el('span', { class: 'mono' }, node.url.replace(/^https?:\/\//, '')), ' ',
+          el('span', { class: 'muted small' }, describe(node)))))));
 }
