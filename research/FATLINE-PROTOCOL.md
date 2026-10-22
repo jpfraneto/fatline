@@ -77,14 +77,23 @@ Source: **FIP "Proof of Work Tokenization", Section 10** (github.com/orgs/farcas
 - **hypria.app** (the claim app) looks up an allocation by FID after the person connects a linked wallet and signs. Its public `https://api.hypria.app/api/rankings` returns only the **top 100** by "points" (#1 horsefacts, #2 clanker, #3 ted, #7 cassie). The points may be Hypersnap's soulbound governance score rather than the retro allocation itself: clanker (an app account) is #2, and the retro's app filter would have removed it.
 - **So:** the full ranking isn't public. Either we recompute it on our own node with the FIP's rules (deterministic, ours, checkable by anyone), or we ask the Hypersnap team for the published final list.
 
-## Tiers (owner, 2026-10-22)
+## Tiers (decided, owner, 2026-10-22)
 
-Minting opens in waves by rank: day 1 only the top 777, then, if any are left, the next tier the day after, and so on until all are minted. The owner's first sketch: tier 2 = the next 777 × 777 (603,729 accounts). That is likely more than every account with a score, so tier 2 would effectively be everyone eligible. A gentler curve could be 777 → 7,777 → 77,777 → everyone.
+Minting opens in waves by rank, one wave per day, until all 777 are minted:
+
+| Day | Who can mint |
+|---|---|
+| 1 | ranks 1–777 |
+| 2 | ranks 1–7,777 |
+| 3 | ranks 1–77,777 |
+| 4 on | every ranked account |
+
+**The ranking is computed by us, on our own node**, with the rules of FIP "Proof of Work Tokenization" §6, §8 and §10, at one fixed block that we publish. Anyone with a node can recompute it and check the result. We do not use hypria's list.
 
 ## Open questions
 
 1. **Proving FID ownership on Base:** proposed above (Merkle root of custody + verified addresses at a fixed block). To confirm.
-2. **The $SNAP list:** find the retro distribution contract or the published final list (hypria.app), or recompute.
+2. **The ranking (decided):** we compute it ourselves. See "Tiers".
 3. **Who pays the first claims,** before any vault has fees? Probably the $FATLINE vault, since the launchpad is the first Fatline.
 4. **Naming (decided):** `FATLINERS.sol` is the collection of 777. `FATLINER.sol` is one Fatliner's own code, hello world at first. Different contracts.
 5. **Cost of a body.** A full node is ~$2.75/day (Hetzner, 2026-10-22), so a Fatliner needs about $1,000 a year of fees to stay alive. All 777 alive would be ~$2,100/day. Only the ones whose coins trade will have bodies.
