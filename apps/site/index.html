@@ -1,453 +1,357 @@
 <!doctype html>
-<html lang="en" data-lang="en">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fatline: your own Farcaster node and client</title>
-<meta name="description" content="Fatline: your own Farcaster or Hypersnap read node and your own client, in a few commands. A tutorial that explains the protocol as you go. Formerly Infinicaster.">
-<meta name="theme-color" content="#111820">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111820'/%3E%3Cpath d='M8 34 H24 C28 34 29 24 32 24 C35 24 36 40 40 40 C43 40 44 34 47 34 H56' fill='none' stroke='%23A6D8C2' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fatline</title>
+<meta name="description" content="A USDC-paired launchpad on Base where every Fatline is a coin and its trading fees keep its Farcaster or Hypersnap node alive. Run your own in three commands.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b0a1f'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%23a46bff' stroke-width='4'/%3E%3Ccircle cx='32' cy='32' r='13' fill='none' stroke='%2341e2e8' stroke-width='3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #111820; --surface: #151e27; --text: #F3F0E8; --muted: #9aabb4; --slate: #667D89;
-    --line: rgba(102,125,137,.3); --signal: #A6D8C2; --amber: #d9c38c; --warn: #e59a88;
-    --serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
-    --sans: ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-    --mono: ui-monospace,SFMono-Regular,Menlo,monospace;
-    color-scheme: dark;
-  }
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-      --bg: #F3F0E8; --surface: #fbf9f4; --text: #111820; --muted: #4d5f69; --slate: #667D89;
-      --line: rgba(17,24,32,.14); --signal: #2f7a5c; --amber: #8a6a12; --warn: #a3412c; color-scheme: light;
-    }
+    --bg: #07061a; --bg2: #0d0b26; --panel: rgba(28, 20, 66, .55); --line: rgba(164, 107, 255, .28);
+    --text: #f1eeff; --muted: #a49fc4; --violet: #a46bff; --violet2: #7b3dff; --cyan: #41e2e8; --amber: #ffb547;
+    --radius: 18px;
   }
   * { box-sizing: border-box; }
-  html[data-lang="en"] [lang="es"], html[data-lang="es"] [lang="en"] { display: none !important; }
-  body { margin: 0 auto; max-width: 760px; padding: 20px 16px 96px; background: var(--bg); color: var(--text); font: 17px/1.6 var(--sans); -webkit-text-size-adjust: 100%; }
-  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--slate); }
-  header.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .brand { font: 600 22px var(--serif); text-decoration: none; }
-  .langs { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
-  .langs button { border: 0; background: none; color: var(--muted); padding: 5px 12px; border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer; }
-  .langs button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
-  h1 { font: 500 clamp(30px, 7vw, 46px)/1.1 var(--serif); letter-spacing: -.015em; margin: 36px 0 12px; }
-  h2 { font: 500 26px/1.2 var(--serif); margin: 56px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); }
-  h3 { font: 600 17px var(--sans); margin: 28px 0 6px; }
-  p, li { color: var(--text); }
-  .lede { color: var(--muted); font-size: 19px; margin: 0 0 22px; }
-  .muted { color: var(--muted); }
-  .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--slate); margin: 0; }
-  pre { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; overflow-x: auto; font: 14px/1.6 var(--mono); margin: 12px 0; }
-  code { font-family: var(--mono); font-size: .9em; overflow-wrap: anywhere; }
-  pre code { overflow-wrap: normal; }
-  .c { color: var(--slate); }
-  .quick { border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 8px; background: var(--surface); }
-  .quick pre { background: var(--bg); }
-  .tag { display: inline-block; font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin-left: 6px; vertical-align: 2px; color: var(--muted); }
-  .tag.ok { color: var(--signal); border-color: currentColor; }
-  .tag.no { color: var(--amber); border-color: currentColor; }
-  .note { border-left: 2px solid var(--amber); padding: 2px 0 2px 14px; color: var(--muted); }
-  .concept { border-left: 2px solid var(--signal); padding: 4px 0 4px 14px; margin: 16px 0; }
-  .concept strong:first-child { color: var(--signal); font-weight: 600; }
-  table { border-collapse: collapse; width: 100%; font-size: 15px; margin: 12px 0; }
-  th, td { text-align: left; padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--slate); font-weight: 500; font-size: 13px; }
-  .scroll { overflow-x: auto; }
-  nav.toc ol { padding-left: 20px; margin: 8px 0; }
-  nav.toc a { text-decoration: none; }
-  .line { display: block; width: 100%; height: 40px; margin: 8px 0 0; }
-  .line path { fill: none; stroke: var(--slate); stroke-opacity: .5; stroke-width: 1; }
-  .line .pulse { stroke: var(--signal); stroke-opacity: 1; stroke-width: 1.6; stroke-dasharray: 70 530; animation: flow 3.2s linear infinite; }
-  @keyframes flow { from { stroke-dashoffset: 600; } to { stroke-dashoffset: -70; } }
-  @media (prefers-reduced-motion: reduce) { .line .pulse { animation: none; stroke-dasharray: none; } }
-  footer { margin-top: 64px; font-size: 14px; color: var(--muted); }
+  html { background: var(--bg); }
+  body {
+    margin: 0; color: var(--text); font: 16px/1.5 Inter, system-ui, sans-serif; min-height: 100vh;
+    background:
+      radial-gradient(1200px 600px at 75% -10%, rgba(123, 61, 255, .22), transparent 60%),
+      radial-gradient(900px 500px at -10% 30%, rgba(65, 226, 232, .10), transparent 60%),
+      var(--bg);
+    overflow-x: hidden;
+  }
+  body::before { /* stars */
+    content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .55;
+    background-image:
+      radial-gradient(1px 1px at 12% 18%, #fff, transparent), radial-gradient(1px 1px at 68% 8%, #cfc2ff, transparent),
+      radial-gradient(1px 1px at 82% 44%, #fff, transparent), radial-gradient(1px 1px at 33% 72%, #bff6f8, transparent),
+      radial-gradient(1px 1px at 52% 36%, #fff, transparent), radial-gradient(1px 1px at 91% 86%, #e4dbff, transparent),
+      radial-gradient(1px 1px at 6% 92%, #fff, transparent), radial-gradient(1px 1px at 44% 96%, #fff, transparent);
+  }
+  a { color: inherit; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; position: relative; }
+  header { display: flex; align-items: center; gap: 28px; padding: 18px 0; }
+  .brand { font: 700 28px/1 Cinzel, serif; letter-spacing: .14em; text-decoration: none; }
+  nav { display: flex; gap: 22px; font-size: 15px; color: var(--muted); }
+  nav a { text-decoration: none; padding: 4px 0; }
+  nav a[aria-current] { color: var(--text); border-bottom: 2px solid var(--violet); }
+  .owner { margin-left: auto; display: flex; align-items: center; gap: 10px; padding: 7px 14px 7px 7px;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--panel); text-decoration: none; font-size: 13px; line-height: 1.25; }
+  .owner img, .avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: none;
+    background: linear-gradient(135deg, var(--violet), var(--cyan)); }
+  .owner small, .muted { color: var(--muted); }
+  h1 { font-size: clamp(30px, 5.4vw, 58px); line-height: 1.08; margin: 26px 0 10px; letter-spacing: -.02em; font-weight: 800; }
+  .base { display: inline-block; width: .82em; height: .82em; background: #0052ff; border-radius: .14em; vertical-align: -.08em; margin: 0 .12em;
+    box-shadow: inset 0 0 0 .2em #0052ff, inset 0 0 0 .32em #fff; }
+  .sub { font-size: clamp(17px, 2.2vw, 22px); color: #c9c3ea; margin: 0 0 8px; }
+  .tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .tag.warn { color: var(--amber); border-color: rgba(255, 181, 71, .45); white-space: normal; }
+  .tag.real { color: #bff6f8; border-color: rgba(65, 226, 232, .6); background: rgba(65, 226, 232, .1); letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+  .tag.ex { color: #d6c6ff; border-color: rgba(164, 107, 255, .6); background: rgba(164, 107, 255, .12); letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
+  .dot.snapchain { background: var(--violet); box-shadow: 0 0 8px var(--violet); }
+  .dot.hypersnap { background: var(--cyan); box-shadow: 0 0 8px var(--cyan); }
+  .dot.off { background: #666; box-shadow: none; }
+
+  .quick { margin: 22px 0 0; display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center;
+    padding: 14px 18px; border: 1px solid var(--line); border-radius: var(--radius); background: rgba(10, 8, 30, .7); }
+  .quick b { font-size: 14px; }
+  .quick pre { min-width: 0; margin: 0; overflow-x: auto; font: 13.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: #e7e1ff; }
+  .quick pre i { color: var(--muted); font-style: normal; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; border-radius: 12px; font-weight: 600; font-size: 15px;
+    border: 1px solid rgba(255, 255, 255, .28); background: rgba(255, 255, 255, .02); color: var(--text); text-decoration: none; white-space: nowrap; }
+  .btn.primary { background: linear-gradient(180deg, #8c4dff, #6a2cf0); border-color: #b28aff; box-shadow: 0 0 22px rgba(140, 77, 255, .45); }
+  .btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+
+  .mine { margin: 22px 0 0; display: grid; grid-template-columns: auto 1fr auto; gap: 26px; align-items: center; padding: 22px 26px;
+    border: 1px solid rgba(164, 107, 255, .55); border-radius: 22px; background: linear-gradient(120deg, rgba(60, 30, 140, .45), rgba(20, 14, 52, .6));
+    box-shadow: 0 0 40px rgba(123, 61, 255, .18) inset; }
+  .mine .kicker { font-size: 12px; letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+  .mine h2 { font: 800 30px/1.1 Inter, sans-serif; margin: 2px 0 6px; }
+  .mine .nets { display: grid; gap: 4px; font-size: 14px; }
+  .mine .nets div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .mine .actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
+  .mine .who { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 8px; color: var(--muted); }
+  .who img, .who .avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex: none; }
+
+  .gridhead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 40px 0 14px; }
+  .gridhead h2 { font-size: 26px; margin: 0 8px 0 0; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { font: 500 14px Inter, sans-serif; color: var(--text); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 6px 18px; cursor: pointer; }
+  .chip[aria-pressed="true"] { background: rgba(164, 107, 255, .2); border-color: var(--violet); box-shadow: 0 0 14px rgba(164, 107, 255, .35); }
+  .gridhead .right { margin-left: auto; display: flex; gap: 14px; align-items: center; color: var(--muted); font-size: 14px; }
+  select { background: var(--bg2); color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; font: inherit; }
+
+  .field { position: relative; }
+  .field svg.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  .field svg.links path { fill: none; stroke: url(#linkgrad); stroke-width: 1.2; opacity: .55; }
+  .grid { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 34px 22px; }
+  .card { display: grid; grid-template-columns: 96px 1fr; gap: 12px; align-items: center; }
+  .card[hidden] { display: none; }
+  .card .info { font-size: 14px; color: #d8d3f2; min-width: 0; }
+  .card .ticker { font-weight: 800; font-size: 19px; color: var(--text); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .card .nets { display: inline-flex; gap: 7px; align-items: center; margin: 6px 0; padding: 2px 9px; border-radius: 999px;
+    border: 1px solid var(--line); font-size: 11.5px; background: rgba(10, 8, 30, .6); white-space: nowrap; }
+  .card .nets span { display: inline-flex; gap: 5px; align-items: center; }
+  .card .open { font-weight: 600; text-decoration: none; display: inline-block; margin-top: 2px; }
+  .card .who { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .card .who .avatar, .card .who img { width: 18px; height: 18px; }
+  .orb { position: relative; width: 96px; aspect-ratio: 1; }
+  .orb .rank { position: absolute; left: -6px; top: -6px; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #ddd; display: grid; place-items: center;
+    font-size: 13px; font-weight: 700; background: var(--bg); z-index: 2; }
+  .orb .yours { position: absolute; right: -14px; top: -6px; z-index: 2; font-size: 11px; letter-spacing: .08em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--violet); color: #d6c6ff; background: var(--bg); }
+  .orb svg { width: 100%; height: 100%; overflow: visible; }
+  .orb .spin { transform-origin: 60px 60px; animation: spin 26s linear infinite; }
+  .orb .spin.rev { animation-duration: 38s; animation-direction: reverse; }
+  .card.example .orb { opacity: .78; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .orb .spin { animation: none; } }
+
+  section.about { margin: 56px 0 0; display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; }
+  section.about > div { padding: 22px 24px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); }
+  section.about h2 { margin: 0 0 8px; font-size: 22px; }
+  section.about p { margin: 0 0 10px; color: #d8d3f2; }
+  section.about ol { margin: 0; padding-left: 20px; color: #d8d3f2; }
+  footer { margin: 48px 0 28px; color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
+
+  @media (max-width: 1040px) { .grid { grid-template-columns: repeat(2, 1fr); } .mine { grid-template-columns: auto 1fr; } .mine .actions { grid-column: 1 / -1; justify-content: flex-start; } }
+  @media (max-width: 720px) {
+    header { flex-wrap: wrap; gap: 14px; } .owner { margin-left: 0; order: 3; }
+    .quick { grid-template-columns: minmax(0, 1fr); } .grid { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+    .mine { grid-template-columns: minmax(0, 1fr); text-align: left; padding: 18px; }
+    .mine > div { min-width: 0; } .mine .btn { padding: 11px 14px; } .mine .orbwrap { width: 96px; }
+    section.about { grid-template-columns: 1fr; } .gridhead .right { margin-left: 0; }
+    .field svg.links { display: none; }
+  }
 </style>
 </head>
 <body>
-<header class="top">
-  <a class="brand" href="#">Fatline</a>
-  <div class="langs" role="group" aria-label="Language">
-    <button type="button" data-set="en" aria-pressed="true">English</button>
-    <button type="button" data-set="es" aria-pressed="false">Español</button>
-    <a href="zh.html"><button type="button" aria-pressed="false" tabindex="-1">中文</button></a>
-  </div>
-</header>
-
-<svg class="line" viewBox="0 0 600 40" preserveAspectRatio="none" aria-hidden="true">
-  <path d="M0 20 H210 C240 20 250 8 270 8 C290 8 290 32 310 32 C330 32 340 20 370 20 H600" pathLength="600"/>
-  <path class="pulse" d="M0 20 H210 C240 20 250 8 270 8 C290 8 290 32 310 32 C330 32 340 20 370 20 H600" pathLength="600"/>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="linkgrad" x1="0" x2="1"><stop offset="0" stop-color="#a46bff"/><stop offset="1" stop-color="#41e2e8"/></linearGradient>
+  </defs>
 </svg>
+<div class="wrap">
+  <header>
+    <a class="brand" href="./">FATLINE</a>
+    <nav>
+      <a href="./" aria-current="page">Explore</a>
+      <a href="#about">About</a>
+      <a href="docs/">Docs</a>
+    </nav>
+    <a class="owner" id="owner" href="https://farcaster.xyz/anky" title="The person who runs the first Fatline">
+      <span class="avatar"></span><span>First Fatline · <b>@anky</b><br><small>FID 18350</small></span>
+    </a>
+  </header>
 
-<!-- ============================================================ QUICKSTART -->
-<section lang="en">
-  <h1>Your own Farcaster node and your own client.</h1>
-  <p class="lede">No API keys from anyone. Farcaster or Hypersnap: your choice, as equals. This page explains each step as you go.</p>
-  <p><strong>Fatline</strong> is an open protocol for being on Farcaster on your own terms. You choose the network. You choose the node, and the client always says which one it reads from. And the client can pay for its own server from a USDC vault. This repository is its first implementation. <span class="muted">Formerly Infinicaster.</span></p>
-</section>
-<section lang="es">
-  <h1>Tu propio nodo de Farcaster y tu propio cliente.</h1>
-  <p class="lede">Sin llaves de API de nadie. Farcaster o Hypersnap: tú eliges, en igualdad. Esta página explica cada paso mientras avanzas.</p>
-  <p><strong>Fatline</strong> es un protocolo abierto para estar en Farcaster en tus propios términos. Tú eliges la red. Tú eliges el nodo, y el cliente siempre dice desde cuál lee. Y el cliente puede pagar su propio servidor desde una bóveda de USDC. Este repositorio es su primera implementación. <span class="muted">Antes se llamaba Infinicaster.</span></p>
-</section>
+  <h1>$USDC paired launchpad on <span class="base" role="img" aria-label="Base"></span> Base</h1>
+  <p class="sub">Every Fatline is a coin. Trading fees keep its node alive.</p>
+  <span class="tag warn">Launch contracts tested on a Base fork only. Not deployed yet, so no coin trades today.</span>
 
-<div class="quick">
-  <section lang="en">
-    <p class="eyebrow">Before you start</p>
-    <ul>
-      <li><strong>git</strong>, <strong>Node.js 22.12 or newer</strong> and <strong>ssh</strong> on your computer.</li>
-      <li>A <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> account with a card, and an API token saved in <code>~/.hetzner-token</code> (<code>chmod 600</code>).</li>
-      <li>New Hetzner accounts have limits (ours: 1,385 GB of volumes and 14 vCPUs in total). One node needs a 700 GB volume, so one new account fits <strong>one</strong> full node. A Farcaster node and a Hypersnap node side by side need two servers and two volumes.</li>
-      <li>To post: your Farcaster account's seed phrase, typed only into your own terminal.</li>
-    </ul>
-    <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
+  <div class="quick">
+    <b>Run your own<br>in 3 commands</b>
+<pre><span>./fatline compute</span>          <i># (0) rent a server that can hold a node</i>
+<span>./fatline node farcaster</span>   <i># (1) your own read node, no API keys (or: hypersnap)</i>
+<span>./fatline client</span>           <i># (2) your client, reading from your node</i></pre>
+    <a class="btn" href="docs/">Tutorial ↗</a>
+  </div>
 
-./fatline compute            <span class="c"># (0) rent a machine that can hold a node: price first, then you type "create"</span>
-./fatline node farcaster     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
-./fatline client             <span class="c"># (2) your client, reading from your node, on http://localhost:8787</span></code></pre>
-    <p class="note"><span class="tag no">untested end to end</span> Each step has been run on its own. A complete fresh run of all three, start to finish, has not been done yet. Our own node was built with an earlier one-step version of steps 0 and 1.</p>
-    <p class="muted">No room for a node? <code>./fatline follow</code> copies only the accounts you choose from one node you pick. It is <a href="#follow">not a node</a>.</p>
+  <div class="mine">
+    <div class="orbwrap" id="mine-orb"></div>
+    <div>
+      <div class="kicker">The first Fatline</div>
+      <h2>$FATLINE</h2>
+      <div class="nets" id="mine-nets"><div class="muted">Checking its nodes…</div></div>
+      <div class="who" id="mine-who"></div>
+    </div>
+    <div class="actions">
+      <a class="btn primary" href="docs/">Open Fatline ↗</a>
+      <a class="btn" aria-disabled="true" title="The coin is not launched yet">Trade · soon</a>
+      <a class="btn" href="https://github.com/jpfraneto/fatline">Source ↗</a>
+    </div>
+  </div>
+
+  <div class="gridhead">
+    <h2>Top 8 Fatlines</h2>
+    <div class="chips" role="group" aria-label="Filter by network">
+      <button class="chip" data-f="all" aria-pressed="true">All</button>
+      <button class="chip" data-f="snapchain" aria-pressed="false">Snapchain</button>
+      <button class="chip" data-f="hypersnap" aria-pressed="false">Hypersnap</button>
+      <button class="chip" data-f="both" aria-pressed="false">Both</button>
+    </div>
+    <div class="right">
+      <span id="checked"></span>
+      <label>Sort <select id="sort"><option value="rank">Rank</option><option value="age">Running longest</option></select></label>
+    </div>
+  </div>
+  <div class="field">
+    <svg class="links" id="links" aria-hidden="true"></svg>
+    <div class="grid" id="grid"></div>
+  </div>
+  <p class="muted" style="font-size:13px;margin-top:18px">Only #1 is real: our two nodes, checked every 15 minutes. Cards marked <span class="tag ex">Example</span> show how the board will look once more Fatlines launch. Their names and numbers are made up.</p>
+
+  <section class="about" id="about">
+    <div>
+      <h2>What Fatline is</h2>
+      <p>An open protocol for being on Farcaster on your own terms. You choose the network, Farcaster (Snapchain) or Hypersnap, as equals. You choose the node: your own, ours or a public one, and the client always says which. And the client can pay for its own life: a USDC vault on Base feeds its server.</p>
+      <p>A fatline, as we use the word, is a line you hold at both ends. Your keys sign at one end; your own node listens at the other. Nobody in between rents you the line and can take it back. Keeping it open costs something, so the line carries its own purse.</p>
+      <p class="muted">The word comes from Dan Simmons' <i>Hyperion</i>; what it means here is ours. Formerly Infinicaster.</p>
+    </div>
+    <div>
+      <h2>How a Fatline lives</h2>
+      <ol>
+        <li>Someone runs a node, on Snapchain, Hypersnap or both.</li>
+        <li>They launch its coin, paired with USDC on Base.</li>
+        <li>Trading fees flow into a vault that pays the node's server, day by day.</li>
+        <li>Fed, it lives. Empty, it goes dark, and the board shows it.</li>
+      </ol>
+      <p style="margin-top:12px"><a href="docs/">Read the tutorial ↗</a> · <a href="docs/zh.html">中文</a></p>
+    </div>
   </section>
-  <section lang="es">
-    <p class="eyebrow">Antes de empezar</p>
-    <ul>
-      <li><strong>git</strong>, <strong>Node.js 22.12 o más nuevo</strong> y <strong>ssh</strong> en tu computador.</li>
-      <li>Una cuenta de <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> con tarjeta, y un token de API guardado en <code>~/.hetzner-token</code> (<code>chmod 600</code>).</li>
-      <li>Las cuentas nuevas de Hetzner tienen límites (la nuestra: 1.385 GB de volúmenes y 14 vCPU en total). Un nodo necesita un volumen de 700 GB, así que una cuenta nueva alcanza para <strong>un</strong> nodo completo. Un nodo de Farcaster y uno de Hypersnap lado a lado necesitan dos servidores y dos volúmenes.</li>
-      <li>Para publicar: la frase semilla de tu cuenta de Farcaster, escrita solo en tu propia terminal.</li>
-    </ul>
-    <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 
-./fatline compute            <span class="c"># (0) arrienda una máquina capaz de tener un nodo: primero el precio, luego escribes "create"</span>
-./fatline node farcaster     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
-./fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo, en http://localhost:8787</span></code></pre>
-    <p class="note"><span class="tag no">sin probar de punta a punta</span> Cada paso se ha corrido por separado. Una corrida nueva y completa de los tres, de principio a fin, todavía no se ha hecho. Nuestro propio nodo se armó con una versión anterior que juntaba los pasos 0 y 1.</p>
-    <p class="muted">¿No te cabe un nodo? <code>./fatline follow</code> copia solo las cuentas que elijas desde un nodo que tú eliges. <a href="#follow">No es un nodo</a>.</p>
-  </section>
+  <footer>
+    <span>Fatline · fatline.ink · open source, MIT</span>
+    <span><a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a></span>
+  </footer>
 </div>
 
-<nav class="toc">
-  <section lang="en"><ol>
-    <li><a href="#identity">Who you are on Farcaster: FIDs and custody</a></li>
-    <li><a href="#machine">Step 0: a machine for the node</a></li>
-    <li><a href="#node">Step 1: your read node</a></li>
-    <li><a href="#client">Step 2: your client</a></li>
-    <li><a href="#follow">No room for a node: copy only the accounts you follow</a></li>
-    <li><a href="#post">Posting: your client's own app key</a></li>
-    <li><a href="#filter">Choosing which apps you read</a></li>
-    <li><a href="#cost">What it costs, and how to stop paying</a></li>
-    <li><a href="#trouble">When something goes wrong</a></li>
-    <li><a href="#life">Give your client a life</a></li>
-    <li><a href="#tested">What we have tested, and what we haven't</a></li>
-  </ol></section>
-  <section lang="es"><ol>
-    <li><a href="#identity">Quién eres en Farcaster: FIDs y custodia</a></li>
-    <li><a href="#machine">Paso 0: una máquina para el nodo</a></li>
-    <li><a href="#node">Paso 1: tu nodo de lectura</a></li>
-    <li><a href="#client">Paso 2: tu cliente</a></li>
-    <li><a href="#follow">Sin espacio para un nodo: copia solo las cuentas que sigues</a></li>
-    <li><a href="#post">Publicar: la llave propia de tu cliente</a></li>
-    <li><a href="#filter">Elegir qué apps lees</a></li>
-    <li><a href="#cost">Cuánto cuesta, y cómo dejar de pagar</a></li>
-    <li><a href="#trouble">Cuando algo falla</a></li>
-    <li><a href="#life">Dale vida a tu cliente</a></li>
-    <li><a href="#tested">Qué probamos y qué no</a></li>
-  </ol></section>
-</nav>
-
-<!-- ============================================================ CONCEPTS: IDENTITY -->
-<section id="identity" lang="en">
-  <h2>Who you are on Farcaster</h2>
-  <div class="concept"><strong>FID.</strong> Your Farcaster ID is a number, for example 18350. It is registered in a contract on Optimism (the ID registry). Usernames, posts and follows all hang off this number.</div>
-  <div class="concept"><strong>Custody address.</strong> The Ethereum address that owns your FID. Its seed phrase is the master key of your account: it can add and remove keys, and move the FID. It never signs everyday posts.</div>
-  <div class="concept"><strong>App keys.</strong> Everyday posts are signed by app keys (Ed25519 keys, also called signers). Each app you use, such as Warpcast or Firefly, holds its own key, which your custody address authorized. The record of that authorization names the app's own FID. That is how this client can tell you which app made each post.</div>
-  <div class="concept"><strong>Messages.</strong> A cast, a like, a follow and a profile change are each one signed message: the data, a hash of it, the signature and the key that signed it. Any node can check it without asking anyone.</div>
-</section>
-<section id="identity" lang="es">
-  <h2>Quién eres en Farcaster</h2>
-  <div class="concept"><strong>FID.</strong> Tu ID de Farcaster es un número, por ejemplo 18350. Está registrado en un contrato en Optimism (el registro de IDs). Tu nombre de usuario, tus publicaciones y a quién sigues cuelgan de ese número.</div>
-  <div class="concept"><strong>Dirección custodia.</strong> La dirección de Ethereum dueña de tu FID. Su frase semilla es la llave maestra de tu cuenta: puede agregar y quitar llaves, y mover el FID. Nunca firma las publicaciones de todos los días.</div>
-  <div class="concept"><strong>Llaves de app.</strong> Las publicaciones de todos los días las firman llaves de app (llaves Ed25519, también llamadas signers). Cada app que usas, como Warpcast o Firefly, tiene su propia llave, autorizada por tu dirección custodia. El registro de esa autorización nombra el FID de la app. Así este cliente puede decirte qué app hizo cada publicación.</div>
-  <div class="concept"><strong>Mensajes.</strong> Un cast, un like, un follow y un cambio de perfil son cada uno un mensaje firmado: los datos, su hash, la firma y la llave que firmó. Cualquier nodo puede verificarlo sin preguntarle a nadie.</div>
-</section>
-
-<!-- ============================================================ STEP 0 -->
-<section id="machine" lang="en">
-  <h2>Step 0: a machine for the node</h2>
-  <pre><code>./fatline compute --quote   <span class="c"># price only, nothing is created</span>
-./fatline compute           <span class="c"># asks you to type "create"</span></code></pre>
-  <p>It picks the cheapest server type in stock with at least 16 GB of RAM (on 2026-10-22: <code>cax31</code>, 8 ARM CPUs), adds a 700 GB volume, prints the price and asks before creating anything. It rents the machine only; step 1 puts the node on it. Everything it creates is written to <code>.fatline/hetzner.json</code>, so it can be deleted exactly.</p>
-  <div class="concept"><strong>Why rent at all?</strong> A Farcaster node holds every account's current messages: about 600 GB today. Most laptops don't have that much free disk.</div>
-  <p>Already have a machine with Docker, 16 GB of RAM and about 700 GB free? Skip this step and use <code>./fatline node farcaster --local</code> there. <code>./fatline doctor</code> measures your machine and tells you which path fits.</p>
-  <p class="muted">Prefer paying in USDC? <code>./fatline compute --provider agentmetal</code> rents by the day over x402. <span class="tag no">untested</span> with real money.</p>
-</section>
-<section id="machine" lang="es">
-  <h2>Paso 0: una máquina para el nodo</h2>
-  <pre><code>./fatline compute --quote   <span class="c"># solo el precio, no crea nada</span>
-./fatline compute           <span class="c"># te pide escribir "create"</span></code></pre>
-  <p>Elige el tipo de servidor más barato con stock y al menos 16 GB de RAM (el 2026-10-22: <code>cax31</code>, 8 CPU ARM), le agrega un volumen de 700 GB, muestra el precio y pregunta antes de crear algo. Solo arrienda la máquina; el paso 1 le pone el nodo. Todo lo que crea queda anotado en <code>.fatline/hetzner.json</code>, para poder borrarlo exacto.</p>
-  <div class="concept"><strong>¿Por qué arrendar?</strong> Un nodo de Farcaster guarda los mensajes vigentes de todas las cuentas: unos 600 GB hoy. A la mayoría de los computadores no le sobra tanto disco.</div>
-  <p>¿Ya tienes una máquina con Docker, 16 GB de RAM y unos 700 GB libres? Sáltate este paso y usa <code>./fatline node farcaster --local</code> ahí. <code>./fatline doctor</code> mide tu máquina y te dice qué camino te sirve.</p>
-  <p class="muted">¿Prefieres pagar en USDC? <code>./fatline compute --provider agentmetal</code> arrienda por día vía x402. <span class="tag no">sin probar</span> con dinero real.</p>
-</section>
-
-<!-- ============================================================ STEP 1 -->
-<section id="node" lang="en">
-  <h2>Step 1: your read node</h2>
-  <pre><code>./fatline node farcaster    <span class="c"># or: ./fatline node hypersnap</span></code></pre>
-  <p>It installs that network's node on the machine from step 0 and follows the starting snapshot as it streams in (about 400 GB, roughly 1 to 3 hours). When the node answers on <code>/v1/info</code>, it becomes your own node in <code>fatline.config.json</code>, so step 2 reads from it. A server holds one network; it refuses to put the second one next to the first.</p>
-  <p>With <code>--local</code>, it installs on the machine you are on instead: it downloads that network's official bootstrap script, shows you its address and checksum, and asks before running it.</p>
-  <div class="concept"><strong>Read nodes and validators.</strong> Snapchain, Farcaster's network software, has a small set of validators that agree on the order of messages, in blocks. Your node is a read node: it follows those blocks and keeps its own copy of every message. When you post, your node checks the message and relays it to the validators. You never need a validator's permission to read.</div>
-  <div class="concept"><strong>Farcaster or Hypersnap.</strong> Hypersnap is a community fork of Snapchain. Both speak the same API and accept the same signed messages. Hypersnap keeps the full history; Farcaster prunes old messages to each account's storage limit. Neither is the default here because it is better: you choose.</div>
-  <h3>The starting snapshot</h3>
-  <p>A new node starts from a snapshot of the network instead of replaying years of blocks. On a rented server, this setup <strong>streams</strong> it straight to disk, three shards at once: about 400 GB compressed, in 5,695 pieces, about 600 GB unpacked. Snapchain's own loader keeps up to three copies on disk at its peak; streaming keeps one. The node keeps one day of blocks by default (<code>pruning.block_retention</code>), not the whole history.</p>
-  <p>Our two nodes, measured on 2026-10-22: after the snapshot, each one answered while still 70,000 to 100,000 blocks behind, and caught up at about 270 blocks a minute. <strong>Farcaster:</strong> answered at 06:42 UTC, fully in sync at 12:25 UTC: <span class="tag ok">5 h 43 min</span>. A reboot then took 47 s to answer and 62 s to be back in sync. <strong>Hypersnap:</strong> answered at 10:21 UTC, then stood still for five and a half hours: the validator list in Hypersnap's repository is missing Farcaster's validator change of 2026-10-22 (<a href="https://github.com/farcasterorg/hypersnap/issues/41">issue #41</a>). Our setup now takes the list from Snapchain, and the node moves again. Its time to full sync: <span class="tag no">not measured yet</span>.</p>
-  <h3>Healthy means in sync, not just "running"</h3>
-  <p>A node is healthy when <code>/v1/info</code> shows a small <code>blockDelay</code> on every shard. An open port is not enough. The client and its status page both use this rule.</p>
-  <h3>Why there is no lite node</h3>
-  <p>A lighter node would copy the current state from another node instead of starting from a snapshot. Today the replicators of both Snapchain and Hypersnap refuse the messages that add and remove app keys, so a replica can't follow which keys belong to which account. A full replica would still be about 300–400 GB. If that is too much, see <a href="#follow">copying only the accounts you follow</a>.</p>
-</section>
-<section id="node" lang="es">
-  <h2>Paso 1: tu nodo de lectura</h2>
-  <pre><code>./fatline node farcaster    <span class="c"># o: ./fatline node hypersnap</span></code></pre>
-  <p>Instala el nodo de esa red en la máquina del paso 0 y sigue el snapshot de partida mientras llega (unos 400 GB, más o menos 1 a 3 horas). Cuando el nodo responde en <code>/v1/info</code>, queda como tu propio nodo en <code>fatline.config.json</code>, y el paso 2 lee de él. Un servidor tiene una sola red; no pone la segunda al lado de la primera.</p>
-  <p>Con <code>--local</code>, lo instala en la máquina donde estás: descarga el script oficial de esa red, te muestra su dirección y su checksum, y pregunta antes de correrlo.</p>
-  <div class="concept"><strong>Nodos de lectura y validadores.</strong> Snapchain, el software de la red de Farcaster, tiene un grupo pequeño de validadores que acuerdan el orden de los mensajes, en bloques. Tu nodo es de lectura: sigue esos bloques y guarda su propia copia de cada mensaje. Cuando publicas, tu nodo revisa el mensaje y se lo pasa a los validadores. Nunca necesitas permiso de un validador para leer.</div>
-  <div class="concept"><strong>Farcaster o Hypersnap.</strong> Hypersnap es un fork comunitario de Snapchain. Las dos hablan la misma API y aceptan los mismos mensajes firmados. Hypersnap guarda toda la historia; Farcaster borra mensajes viejos según el límite de almacenamiento de cada cuenta. Ninguna es la opción por defecto por ser mejor: tú eliges.</div>
-  <h3>El snapshot de partida</h3>
-  <p>Un nodo nuevo parte de un snapshot de la red en vez de repetir años de bloques. En un servidor arrendado, esta instalación lo <strong>transmite</strong> directo al disco, tres shards a la vez: unos 400 GB comprimidos, en 5.695 piezas, unos 600 GB descomprimidos. El cargador de Snapchain guarda hasta tres copias en su peor momento; transmitiendo queda una. El nodo guarda un día de bloques por defecto (<code>pruning.block_retention</code>), no toda la historia.</p>
-  <p>Nuestros dos nodos, medidos el 2026-10-22: después del snapshot, cada uno respondió estando aún 70.000 a 100.000 bloques atrás, y se fue poniendo al día a unos 270 bloques por minuto. <strong>Farcaster:</strong> respondió a las 06:42 UTC y quedó sincronizado a las 12:25 UTC: <span class="tag ok">5 h 43 min</span>. Después, un reinicio tardó 47 s en responder y 62 s en volver a estar sincronizado. <strong>Hypersnap:</strong> respondió a las 10:21 UTC y luego se quedó quieto cinco horas y media: a la lista de validadores del repositorio de Hypersnap le falta el cambio de validadores de Farcaster del 2026-10-22 (<a href="https://github.com/farcasterorg/hypersnap/issues/41">issue #41</a>). Nuestra instalación ahora toma la lista de Snapchain, y el nodo avanza de nuevo. Su tiempo hasta sincronizar: <span class="tag no">aún sin medir</span>.</p>
-  <h3>Sano significa sincronizado, no solo "corriendo"</h3>
-  <p>Un nodo está sano cuando <code>/v1/info</code> muestra un <code>blockDelay</code> pequeño en cada shard. Un puerto abierto no basta. El cliente y su página de estado usan esta regla.</p>
-  <h3>Por qué no hay un nodo liviano</h3>
-  <p>Un nodo más liviano copiaría el estado actual desde otro nodo en vez de partir de un snapshot. Hoy los replicadores de Snapchain y de Hypersnap rechazan los mensajes que agregan y quitan llaves de app, así que una réplica no puede seguir qué llaves son de qué cuenta. Una réplica completa igual pesaría unos 300–400 GB. Si es demasiado, mira <a href="#follow">copiar solo las cuentas que sigues</a>.</p>
-</section>
-
-<!-- ============================================================ STEP 2 -->
-<section id="client" lang="en">
-  <h2>Step 2: your client</h2>
-  <pre><code>./fatline client</code></pre>
-  <p>Step 1 already told it where your node is. (A node somewhere else? <code>./fatline init --node http://&lt;IP&gt;:3381</code>.) It installs, builds and starts the client on <a href="http://localhost:8787">http://localhost:8787</a>. Your phone can open it too, if it can reach your computer.</p>
-  <p>The client always says which node it is reading from, at the top of the page. In <strong>Settings</strong> you choose the network (Farcaster or Hypersnap) and the node:</p>
-  <ul>
-    <li><strong>One node:</strong> every read and every post goes only through that node. If it goes down, you see an error naming it. The client never switches behind your back.</li>
-    <li><strong>Automatic:</strong> the first node that answers, in the order listed. It says which one it is using, and tells you if that changes.</li>
-  </ul>
-  <p>Besides your own, the list includes public nodes run by others, such as <code>crackle.farcaster.xyz</code> (Farcaster) and <code>haatz.quilibrium.com</code> (Hypersnap), and the two nodes we run for this project. They are always labeled "public".</p>
-</section>
-<section id="client" lang="es">
-  <h2>Paso 2: tu cliente</h2>
-  <pre><code>./fatline client</code></pre>
-  <p>El paso 1 ya le dijo dónde está tu nodo. (¿Un nodo en otra parte? <code>./fatline init --node http://&lt;IP&gt;:3381</code>.) Instala, compila y parte el cliente en <a href="http://localhost:8787">http://localhost:8787</a>. Tu teléfono también puede abrirlo si alcanza a tu computador.</p>
-  <p>El cliente siempre dice desde qué nodo está leyendo, arriba de la página. En <strong>Ajustes</strong> eliges la red (Farcaster o Hypersnap) y el nodo:</p>
-  <ul>
-    <li><strong>Un nodo:</strong> toda lectura y toda publicación pasan solo por ese nodo. Si se cae, ves un error que lo nombra. El cliente nunca cambia a tus espaldas.</li>
-    <li><strong>Automático:</strong> el primer nodo que responda, en el orden de la lista. Dice cuál está usando, y te avisa si cambia.</li>
-  </ul>
-  <p>Además del tuyo, la lista trae nodos públicos de otros, como <code>crackle.farcaster.xyz</code> (Farcaster) y <code>haatz.quilibrium.com</code> (Hypersnap), y los dos nodos que corremos para este proyecto. Siempre aparecen como "público".</p>
-</section>
-
-<!-- ============================================================ FOLLOW -->
-<section id="follow" lang="en">
-  <h2>No room for a node: copy only the accounts you follow</h2>
-  <pre><code>./fatline follow 18350 @dwr --network farcaster --node crackle --once
-./fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># keeps following; Ctrl+C stops it, a re-run continues</span>
-./fatline follow list</code></pre>
-  <p>It copies the accounts you name (with <code>--following</code>, also everyone they follow) from one node you pick, Farcaster or Hypersnap, your own or a public one, into the client's archive. Open <code>#/archive/&lt;fid&gt;</code> in the client to read one. <code>--node</code> takes a word of the node's name or host, or its URL; only that node is read, and it never switches.</p>
-  <div class="concept"><strong>This is not a node.</strong> Every run says so. It trusts that node: it does not check message signatures or signer keys itself. It does not join the network, and does not help it. It is only as complete and as recent as that node: if the node is behind, so is this.</div>
-  <p>If the node is down, you get a clear error and nothing changes. If it is behind, it is used, with a warning that says how far behind.</p>
-  <div class="scroll"><table>
-    <tr><th>Measured 2026-10-22, into an empty archive</th><th>Messages</th><th>Time</th></tr>
-    <tr><td>Farcaster, crackle: 18350 with <code>--following</code> (8 accounts in all)</td><td>127,333</td><td>125 s</td></tr>
-    <tr><td>Farcaster, our node (still catching up): 18350 and @dwr</td><td>4,824 + 104,545</td><td>293 s</td></tr>
-    <tr><td>Hypersnap, haatz: 18350 and @dwr</td><td>4,824 + 104,545</td><td>46 s</td></tr>
-    <tr><td>Hypersnap, our node (still catching up): 18350 and @dwr</td><td>4,824 + 104,545</td><td>163 s</td></tr>
-  </table></div>
-</section>
-<section id="follow" lang="es">
-  <h2>Sin espacio para un nodo: copia solo las cuentas que sigues</h2>
-  <pre><code>./fatline follow 18350 @dwr --network farcaster --node crackle --once
-./fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># sigue copiando; Ctrl+C lo detiene, y al correrlo de nuevo continúa</span>
-./fatline follow list</code></pre>
-  <p>Copia las cuentas que nombras (con <code>--following</code>, también a todos los que ellas siguen) desde un nodo que tú eliges, de Farcaster o de Hypersnap, tuyo o público, al archivo del cliente. Abre <code>#/archive/&lt;fid&gt;</code> en el cliente para leer una. <code>--node</code> acepta una palabra del nombre o del host del nodo, o su URL; se lee solo ese nodo, y nunca cambia a otro.</p>
-  <div class="concept"><strong>Esto no es un nodo.</strong> Cada corrida lo dice. Confía en ese nodo: no revisa por sí mismo las firmas de los mensajes ni las llaves. No se une a la red, y no la ayuda. Está tan completo y tan al día como ese nodo: si el nodo va atrasado, esto también.</div>
-  <p>Si el nodo está caído, ves un error claro y no cambia nada. Si va atrasado, se usa igual, con un aviso que dice cuánto.</p>
-  <div class="scroll"><table>
-    <tr><th>Medido el 2026-10-22, en un archivo vacío</th><th>Mensajes</th><th>Tiempo</th></tr>
-    <tr><td>Farcaster, crackle: 18350 con <code>--following</code> (8 cuentas en total)</td><td>127.333</td><td>125 s</td></tr>
-    <tr><td>Farcaster, nuestro nodo (aún poniéndose al día): 18350 y @dwr</td><td>4.824 + 104.545</td><td>293 s</td></tr>
-    <tr><td>Hypersnap, haatz: 18350 y @dwr</td><td>4.824 + 104.545</td><td>46 s</td></tr>
-    <tr><td>Hypersnap, nuestro nodo (aún poniéndose al día): 18350 y @dwr</td><td>4.824 + 104.545</td><td>163 s</td></tr>
-  </table></div>
-</section>
-
-<!-- ============================================================ POSTING -->
-<section id="post" lang="en">
-  <h2>Posting: your client's own app key</h2>
-  <pre><code>./fatline identity --fid &lt;your FID&gt; --dry-run   <span class="c"># checks everything, registers nothing</span>
-./fatline identity --fid &lt;your FID&gt;             <span class="c"># registers this client's key</span></code></pre>
-  <p>Run it in your own terminal. It asks for your seed phrase in a hidden prompt, derives your custody address the standard way, and stops if that address does not own the FID you gave. It creates a new app key for this client and registers it with a message your custody address signs. No transaction, no gas. The key can post, react, follow and edit your profile, nothing else. The seed phrase is forgotten as soon as the key is registered, and never saved.</p>
-  <p>Then you can cast, reply, like, recast, follow and delete. Each action shows <em>sending</em>, then <em>confirmed</em> only once your node returns it when asked.</p>
-  <pre><code>./fatline identity show     <span class="c"># is the key active?</span>
-./fatline identity revoke   <span class="c"># remove it from the network and from this machine</span></code></pre>
-  <div class="concept"><strong>Storage rent and server bills are different things.</strong> Storage rent is paid onchain, per account, and sets how many messages the network keeps for you. It does not pay for any server. Your node's server is a separate bill, paid to whoever hosts it.</div>
-  <p class="note">Status: the key registration and every action were tested against a fake node, and crackle accepted the message formats. <span class="tag no">untested</span> with a real account.</p>
-</section>
-<section id="post" lang="es">
-  <h2>Publicar: la llave propia de tu cliente</h2>
-  <pre><code>./fatline identity --fid &lt;tu FID&gt; --dry-run   <span class="c"># revisa todo, no registra nada</span>
-./fatline identity --fid &lt;tu FID&gt;             <span class="c"># registra la llave de este cliente</span></code></pre>
-  <p>Córrelo en tu propia terminal. Te pide tu frase semilla en un campo oculto, deriva tu dirección custodia de la forma estándar, y se detiene si esa dirección no es dueña del FID que diste. Crea una llave nueva para este cliente y la registra con un mensaje que firma tu dirección custodia. Sin transacción, sin gas. La llave puede publicar, reaccionar, seguir y editar tu perfil, nada más. La frase semilla se olvida apenas se registra la llave, y nunca se guarda.</p>
-  <p>Después puedes hacer casts, responder, dar like, recastear, seguir y borrar. Cada acción muestra <em>enviando</em>, y <em>confirmado</em> solo cuando tu nodo la devuelve al preguntarle.</p>
-  <pre><code>./fatline identity show     <span class="c"># ¿está activa la llave?</span>
-./fatline identity revoke   <span class="c"># la quita de la red y de esta máquina</span></code></pre>
-  <div class="concept"><strong>El arriendo de almacenamiento y la cuenta del servidor son cosas distintas.</strong> El arriendo de almacenamiento se paga onchain, por cuenta, y define cuántos mensajes guarda la red para ti. No paga ningún servidor. El servidor de tu nodo es otra cuenta, que se le paga a quien lo hospeda.</div>
-  <p class="note">Estado: el registro de la llave y cada acción se probaron contra un nodo falso, y crackle aceptó el formato de los mensajes. <span class="tag no">sin probar</span> con una cuenta real.</p>
-</section>
-
-<!-- ============================================================ FILTER -->
-<section id="filter" lang="en">
-  <h2>Choosing which apps you read</h2>
-  <p>In <strong>My people</strong>, every cast says which app made it ("via @warpcast"), read from the record of the key that signed it. Tap an app to hide its casts, or show only that app. Casts whose key doesn't name an app follow a rule you can see and change.</p>
-  <p>Measured through crackle on 2026-10-22, with @dwr, @v and @vitalik: 20 of 20 casts were traced to an app (@warpcast and @fireflyapp). Hiding one left only the other's casts.</p>
-</section>
-<section id="filter" lang="es">
-  <h2>Elegir qué apps lees</h2>
-  <p>En <strong>Mi gente</strong>, cada cast dice qué app lo hizo ("vía @warpcast"), leído del registro de la llave que lo firmó. Toca una app para ocultar sus casts, o para ver solo esa. Los casts cuya llave no nombra una app siguen una regla que puedes ver y cambiar.</p>
-  <p>Medido a través de crackle el 2026-10-22, con @dwr, @v y @vitalik: 20 de 20 casts tenían app conocida (@warpcast y @fireflyapp). Al ocultar una quedaron solo los casts de la otra.</p>
-</section>
-
-<!-- ============================================================ COST -->
-<section id="cost" lang="en">
-  <h2>What it costs, and how to stop paying</h2>
-  <div class="scroll"><table>
-    <tr><th>Item</th><th>Price (Hetzner, checked 2026-10-22)</th></tr>
-    <tr><td>Server <code>cax31</code> (8 ARM CPUs, 16 GB RAM) with a 700 GB volume</td><td>about $2.75 per day</td></tr>
-    <tr><td>A second node (the other network), on its own server and volume</td><td>about the same again</td></tr>
-    <tr><td>Your client</td><td>free on your own computer</td></tr>
-  </table></div>
-  <p>Billed by the hour. <code>--quote</code> shows the exact price before anything is created.</p>
-  <pre><code>./fatline compute hetzner down   <span class="c"># deletes the server and its volume; billing stops</span></code></pre>
-  <p>It deletes only what step 0 created, using the record in <code>.fatline/hetzner.json</code>.</p>
-</section>
-<section id="cost" lang="es">
-  <h2>Cuánto cuesta, y cómo dejar de pagar</h2>
-  <div class="scroll"><table>
-    <tr><th>Qué</th><th>Precio (Hetzner, revisado 2026-10-22)</th></tr>
-    <tr><td>Servidor <code>cax31</code> (8 CPU ARM, 16 GB de RAM) con un volumen de 700 GB</td><td>unos USD 2,75 al día</td></tr>
-    <tr><td>Un segundo nodo (la otra red), en su propio servidor y volumen</td><td>más o menos lo mismo otra vez</td></tr>
-    <tr><td>Tu cliente</td><td>gratis en tu propio computador</td></tr>
-  </table></div>
-  <p>Se cobra por hora. <code>--quote</code> muestra el precio exacto antes de crear algo.</p>
-  <pre><code>./fatline compute hetzner down   <span class="c"># borra el servidor y su volumen; se deja de cobrar</span></code></pre>
-  <p>Borra solo lo que creó el paso 0, usando el registro en <code>.fatline/hetzner.json</code>.</p>
-</section>
-
-<!-- ============================================================ TROUBLE -->
-<section id="trouble" lang="en">
-  <h2>When something goes wrong</h2>
-  <h3>"Sold out" when renting</h3>
-  <p>The message lists the server types in stock in that location. Pick one with <code>--type</code>, or another location with <code>--location</code>.</p>
-  <h3>The snapshot stopped</h3>
-  <p>Run step 1 again. Finished shards are kept, and slow pieces are retried.</p>
-  <h3>The client says the node you chose is not answering</h3>
-  <p>That is on purpose: it never switches nodes without telling you. Check the node with <code>./fatline status</code> or <code>compute hetzner status</code>, or choose another node in Settings.</p>
-  <h3>Everything else</h3>
-  <p><code>./fatline doctor</code> checks your machine and every configured node. Problems and questions: <a href="https://github.com/jpfraneto/fatline/issues">GitHub issues</a>.</p>
-</section>
-<section id="trouble" lang="es">
-  <h2>Cuando algo falla</h2>
-  <h3>"Sold out" al arrendar</h3>
-  <p>El mensaje lista los tipos de servidor con stock en esa ubicación. Elige uno con <code>--type</code>, u otra ubicación con <code>--location</code>.</p>
-  <h3>El snapshot se detuvo</h3>
-  <p>Corre de nuevo el paso 1. Los shards terminados se conservan y las piezas lentas se reintentan.</p>
-  <h3>El cliente dice que el nodo que elegiste no responde</h3>
-  <p>Es a propósito: nunca cambia de nodo sin avisarte. Revisa el nodo con <code>./fatline status</code> o <code>compute hetzner status</code>, o elige otro en Ajustes.</p>
-  <h3>Todo lo demás</h3>
-  <p><code>./fatline doctor</code> revisa tu máquina y cada nodo configurado. Problemas y preguntas: <a href="https://github.com/jpfraneto/fatline/issues">issues en GitHub</a>.</p>
-</section>
-
-<!-- ============================================================ LIFE -->
-<section id="life" lang="en">
-  <h2>Give your client a life</h2>
-  <p class="muted">Why "Fatline": a fatline, as we use the word, is a line you hold at both ends. Your keys sign at one end, your own node listens at the other, and nobody in between rents you the line and can take it back. Keeping a line open costs something, so this one carries its own purse. The word comes from Dan Simmons' novel <em>Hyperion</em>; what it means here is ours.</p>
-  <p>The last chapter is that purse: a client can pay for its own server. In the client, <strong>Launch an app</strong> creates a USDC vault on Base, and optionally a coin on Clanker whose trading fees go to that vault, in USDC. The server pays itself from the vault. If the vault runs dry, the server stops being paid and the app dies. Anyone can feed it.</p>
-  <p class="note">Status: proven on a local copy of Base with fake money, against the real Clanker and Uniswap contracts. <span class="tag no">untested</span> with real money; the contracts are not deployed on Base yet, and have had no external audit.</p>
-</section>
-<section id="life" lang="es">
-  <h2>Dale vida a tu cliente</h2>
-  <p class="muted">Por qué "Fatline": una fatline, como usamos la palabra, es una línea que sostienes por ambos extremos. Tus llaves firman en un extremo, tu propio nodo escucha en el otro, y nadie en medio te arrienda la línea ni puede quitártela. Mantener una línea abierta cuesta algo, así que esta lleva su propia bolsa. La palabra viene de la novela <em>Hyperion</em>, de Dan Simmons; lo que significa aquí es nuestro.</p>
-  <p>El último capítulo es esa bolsa: un cliente puede pagar su propio servidor. En el cliente, <strong>Lanzar una app</strong> crea una bóveda de USDC en Base y, si quieres, una moneda en Clanker cuyas comisiones van a esa bóveda, en USDC. El servidor se paga desde la bóveda. Si la bóveda se vacía, el servidor deja de pagarse y la app muere. Cualquiera puede alimentarla.</p>
-  <p class="note">Estado: probado en una copia local de Base con dinero falso, contra los contratos reales de Clanker y Uniswap. <span class="tag no">sin probar</span> con dinero real; los contratos aún no están desplegados en Base y no han tenido auditoría externa.</p>
-</section>
-
-<!-- ============================================================ TESTED -->
-<section id="tested" lang="en">
-  <h2>What we have tested, and what we haven't</h2>
-  <div class="scroll"><table>
-    <tr><th>Part</th><th>Status</th></tr>
-    <tr><td>Reading Farcaster and Hypersnap through public nodes</td><td><span class="tag ok">works</span></td></tr>
-    <tr><td>Choosing a node; a clear error when it is down</td><td><span class="tag ok">works</span> against real nodes</td></tr>
-    <tr><td>Showing or hiding casts by app</td><td><span class="tag ok">works</span> on real data</td></tr>
-    <tr><td>Renting the node's server on Hetzner</td><td><span class="tag ok">done once</span>, our own node, 2026-10-22</td></tr>
-    <tr><td>All three commands, fresh, start to finish</td><td><span class="tag no">untested</span></td></tr>
-    <tr><td>Our own nodes answering, shown as "behind" until in sync</td><td><span class="tag ok">works</span>, both networks, 2026-10-22</td></tr>
-    <tr><td>A read node fully in sync</td><td><span class="tag ok">works</span> Farcaster: 5 h 43 min after it answered, back in sync 62 s after a reboot. Hypersnap: catching up</td></tr>
-    <tr><td>Copying only chosen accounts (<code>follow</code>, not a node)</td><td><span class="tag ok">works</span> on real nodes, both networks</td></tr>
-    <tr><td>Registering an app key and posting with a real account</td><td><span class="tag no">untested</span></td></tr>
-    <tr><td>A replicating (lighter) node</td><td><span class="tag no">not possible today</span>: both networks' replicators refuse key messages</td></tr>
-    <tr><td>A stranger following this page from scratch</td><td><span class="tag no">not yet</span>; could it be you?</td></tr>
-  </table></div>
-</section>
-<section id="tested" lang="es">
-  <h2>Qué probamos y qué no</h2>
-  <div class="scroll"><table>
-    <tr><th>Parte</th><th>Estado</th></tr>
-    <tr><td>Leer Farcaster y Hypersnap desde nodos públicos</td><td><span class="tag ok">funciona</span></td></tr>
-    <tr><td>Elegir un nodo; un error claro si se cae</td><td><span class="tag ok">funciona</span> contra nodos reales</td></tr>
-    <tr><td>Mostrar u ocultar casts según la app</td><td><span class="tag ok">funciona</span> con datos reales</td></tr>
-    <tr><td>Arrendar el servidor del nodo en Hetzner</td><td><span class="tag ok">hecho una vez</span>, nuestro nodo, 2026-10-22</td></tr>
-    <tr><td>Los tres comandos, desde cero, de principio a fin</td><td><span class="tag no">sin probar</span></td></tr>
-    <tr><td>Nuestros nodos respondiendo, marcados "atrasado" hasta sincronizar</td><td><span class="tag ok">funciona</span>, ambas redes, 2026-10-22</td></tr>
-    <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag ok">funciona</span> Farcaster: 5 h 43 min después de responder, sincronizado de nuevo 62 s después de un reinicio. Hypersnap: poniéndose al día</td></tr>
-    <tr><td>Copiar solo algunas cuentas (<code>follow</code>, no es un nodo)</td><td><span class="tag ok">funciona</span> con nodos reales, ambas redes</td></tr>
-    <tr><td>Registrar una llave y publicar con una cuenta real</td><td><span class="tag no">sin probar</span></td></tr>
-    <tr><td>Un nodo replicador (más liviano)</td><td><span class="tag no">no es posible hoy</span>: los replicadores de ambas redes rechazan los mensajes de llaves</td></tr>
-    <tr><td>Una persona nueva siguiendo esta página desde cero</td><td><span class="tag no">todavía no</span>; ¿podrías ser tú?</td></tr>
-  </table></div>
-</section>
-
-<footer>
-  <p lang="en">Fatline · fatline.ink · formerly Infinicaster. Open source, MIT: <a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a>. Snapchain, Hypersnap, Clanker and other dependencies keep their own licenses.</p>
-  <p lang="es">Fatline · fatline.ink · antes Infinicaster. Código abierto, MIT: <a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a>. Snapchain, Hypersnap, Clanker y las demás dependencias mantienen sus propias licencias.</p>
-</footer>
-
 <script>
-  // Language: the reader's choice, remembered in this browser; first visit follows the browser's language.
-  (function () {
-    var saved = null;
-    try { saved = localStorage.getItem('lang'); } catch (e) {}
-    var asked = (location.search.match(/[?&]lang=(en|es)\b/) || [])[1];
-    if (asked) saved = asked;
-    var lang = saved === 'en' || saved === 'es' ? saved : (navigator.language || '').toLowerCase().indexOf('es') === 0 ? 'es' : 'en';
-    function set(l) {
-      document.documentElement.setAttribute('data-lang', l);
-      document.documentElement.lang = l;
-      document.querySelectorAll('.langs button[data-set]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.set === l)); });
-      try { localStorage.setItem('lang', l); } catch (e) {}
-    }
-    document.querySelectorAll('.langs button[data-set]').forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.set); }); });
-    set(lang);
-    // Each section exists once per language with the same id; jump to the one that is showing.
-    function jump() {
-      var id = decodeURIComponent(location.hash.slice(1));
-      if (!id) return;
-      var shown = [].filter.call(document.querySelectorAll('[id]'), function (n) { return n.id === id && n.offsetParent !== null; })[0];
-      if (shown) shown.scrollIntoView();
-    }
-    window.addEventListener('hashchange', jump);
-    jump();
-  })();
+// Example cards: layout only. Made up, and labelled "Example" on the page.
+const EXAMPLES = [
+  { ticker: 'LUMA', nets: ['snapchain'], cap: '$280k', left: '24d' },
+  { ticker: 'GROVE', nets: ['hypersnap'], cap: '$190k', left: '18d' },
+  { ticker: 'ECHO', nets: ['snapchain', 'hypersnap'], cap: '$125k', left: '14d' },
+  { ticker: 'ORBIT', nets: ['snapchain'], cap: '$84k', left: '11d' },
+  { ticker: 'MOSS', nets: ['hypersnap'], cap: '$52k', left: '8d' },
+  { ticker: 'EMBER', nets: ['snapchain', 'hypersnap'], cap: '$31k', left: '3d' },
+  { ticker: 'TIDE', nets: ['hypersnap'], cap: '$18k', left: '1d' },
+];
+const NAME = { snapchain: 'Snapchain', hypersnap: 'Hypersnap' };
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function orb(letter, nets, seed) {
+  const a = nets.includes('snapchain'), b = nets.includes('hypersnap');
+  const c1 = a ? '#a46bff' : '#41e2e8', c2 = b ? '#41e2e8' : '#a46bff', id = 'g' + seed;
+  let arcs = '';
+  for (let i = 0; i < 9; i++) {
+    const r = 30 + (i % 3) * 7, s = (i * 40 + seed * 13) % 360;
+    arcs += `<path d="M ${60 + r * Math.cos(s * Math.PI / 180)} ${60 + r * Math.sin(s * Math.PI / 180)} A ${r} ${r} 0 0 1 ${60 + r * Math.cos((s + 110) * Math.PI / 180)} ${60 + r * Math.sin((s + 110) * Math.PI / 180)}" stroke="${i % 2 ? c1 : c2}" stroke-width="${2.6 - (i % 3) * .6}" fill="none" stroke-linecap="round" opacity="${.55 + (i % 3) * .15}"/>`;
+  }
+  let sparks = '';
+  for (let i = 0; i < 26; i++) {
+    const t = (i * 137.5 + seed * 29) * Math.PI / 180, r = 47 + (i % 5) * 2.4;
+    sparks += `<circle cx="${60 + r * Math.cos(t)}" cy="${60 + r * Math.sin(t)}" r="${i % 4 ? .9 : 1.5}" fill="${i % 2 ? c1 : c2}"/>`;
+  }
+  return `<svg viewBox="0 0 120 120" role="img" aria-label="${esc(letter)}">
+    <defs><radialGradient id="${id}" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#1a0f3d"/><stop offset=".7" stop-color="#0c0824"/><stop offset="1" stop-color="${c1}" stop-opacity=".35"/></radialGradient>
+    <filter id="${id}b" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter></defs>
+    <circle cx="60" cy="60" r="44" fill="none" stroke="${c1}" stroke-width="6" opacity=".45" filter="url(#${id}b)"/>
+    <g class="spin">${sparks}</g>
+    <g class="spin rev">${arcs}</g>
+    <circle cx="60" cy="60" r="25" fill="url(#${id})" stroke="#fff" stroke-opacity=".85" stroke-width="1.5"/>
+    <text x="60" y="61" text-anchor="middle" dominant-baseline="central" font-family="Cinzel, serif" font-weight="700" font-size="26" fill="#fff">${esc(letter)}</text>
+  </svg>`;
+}
+
+function since(iso) {
+  const ms = Date.now() - Date.parse(iso);
+  const h = Math.floor(ms / 3600e3), d = Math.floor(h / 24);
+  return d >= 1 ? `${d} d ${h % 24} h` : `${h} h ${Math.floor(ms / 60e3) % 60} min`;
+}
+function netLine(n) {
+  const cls = n.state === 'offline' ? 'off' : n.network;
+  const what = n.state === 'alive' ? `alive · running ${since(n.since)}`
+    : n.state === 'catching-up' ? `catching up · ${Number(n.blocksBehind).toLocaleString('en')} blocks behind`
+    : 'offline at the last check';
+  return `<div><span class="dot ${cls}"></span><b>${NAME[n.network]}</b> <span class="muted">${what}</span></div>`;
+}
+function who(o) {
+  if (!o) return '';
+  const pic = o.pfp ? `<img src="${esc(o.pfp)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="avatar"></span>';
+  return `${pic}<span>@${esc(o.username ?? '?')} · FID ${esc(o.fid)}</span>`;
+}
+
+let cards = [];
+function render(status) {
+  const real = status?.fatlines ?? [];
+  cards = [];
+  real.forEach((f, i) => cards.push({ real: true, ticker: f.ticker, nets: f.nodes.map((n) => n.network), f, rank: i + 1,
+    age: Math.min(...f.nodes.map((n) => Date.parse(n.since))) }));
+  EXAMPLES.forEach((e, i) => cards.push({ ...e, real: false, rank: real.length + i + 1, age: Infinity }));
+  draw();
+
+  const f = real[0];
+  if (f) {
+    document.getElementById('mine-orb').innerHTML = `<div class="orb" style="width:120px">${orb('F', f.nodes.map((n) => n.network), 0)}</div>`;
+    document.getElementById('mine-nets').innerHTML = f.nodes.map(netLine).join('')
+      + `<div><span class="dot off"></span><b>Coin</b> <span class="muted">not launched yet</span></div>`;
+    document.getElementById('mine-who').innerHTML = who(f.owner);
+    if (f.owner?.pfp) document.querySelector('#owner .avatar').outerHTML = `<img src="${esc(f.owner.pfp)}" alt="" referrerpolicy="no-referrer">`;
+  }
+  if (status?.checkedAt) {
+    const m = Math.max(0, Math.round((Date.now() - Date.parse(status.checkedAt)) / 60e3));
+    document.getElementById('checked').textContent = `Nodes checked ${m < 1 ? 'just now' : m + ' min ago'}`;
+  }
+}
+
+let filter = 'all';
+function draw() {
+  const sort = document.getElementById('sort').value;
+  const list = [...cards].sort((a, b) => sort === 'age' ? a.age - b.age || a.rank - b.rank : a.rank - b.rank);
+  document.getElementById('grid').innerHTML = list.map((c) => {
+    const both = c.nets.length === 2;
+    const show = filter === 'all' || (filter === 'both' ? both : c.nets.includes(filter));
+    const nets = c.nets.map((n) => `<span><span class="dot ${n}"></span>${NAME[n]}</span>`).join('');
+    const body = c.real
+      ? `<div class="ticker">$${esc(c.ticker)} <span class="tag real">Real</span></div>
+         <div>coin not launched yet</div>
+         <div class="muted">running ${since(new Date(c.age).toISOString())}</div>
+         <div class="nets">${nets}</div>
+         <div class="who">${who(c.f.owner)}</div>
+         <a class="open" href="docs/">Open ↗</a>`
+      : `<div class="ticker">$${esc(c.ticker)} <span class="tag ex">Example</span></div>
+         <div>${c.cap} cap</div><div class="muted">${c.left} left</div>
+         <div class="nets">${nets}</div>
+         <div class="who"><span class="avatar"></span><span>@owner · FID</span></div>`;
+    return `<article class="card ${c.real ? '' : 'example'}" ${show ? '' : 'hidden'}>
+      <div class="orb"><span class="rank">${c.rank}</span>${orb(c.ticker[0], c.nets, c.rank)}</div>
+      <div class="info">${body}</div></article>`;
+  }).join('');
+  requestAnimationFrame(links);
+}
+
+// Thin constellation lines between neighbouring orbs (desktop only).
+function links() {
+  const svg = document.getElementById('links'), box = svg.getBoundingClientRect();
+  const pts = [...document.querySelectorAll('#grid .card:not([hidden]) .orb')].map((o) => {
+    const r = o.getBoundingClientRect();
+    return [r.left - box.left + r.width / 2, r.top - box.top + r.height / 2];
+  });
+  let d = '';
+  for (let i = 1; i < pts.length; i++) {
+    const [x1, y1] = pts[i - 1], [x2, y2] = pts[i];
+    d += `M${x1},${y1} C${(x1 + x2) / 2},${y1 + 40} ${(x1 + x2) / 2},${y2 - 40} ${x2},${y2} `;
+  }
+  svg.innerHTML = d ? `<path d="${d}"/>` : '';
+}
+
+document.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => {
+  filter = b.dataset.f;
+  document.querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+  draw();
+}));
+document.getElementById('sort').addEventListener('change', draw);
+addEventListener('resize', () => requestAnimationFrame(links));
+
+fetch('status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null).then((s) => {
+  if (!s) document.getElementById('mine-nets').innerHTML = '<div class="muted">Node status unavailable right now.</div>';
+  render(s ?? { fatlines: [] });
+});
 </script>
 </body>
 </html>

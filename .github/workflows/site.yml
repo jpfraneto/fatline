@@ -1,10 +1,14 @@
-# Publishes apps/site (the tutorial, plain HTML) to GitHub Pages at https://fatline.ink.
+# Publishes apps/site to GitHub Pages at https://fatline.ink: the home page (the Fatline board) and the
+# tutorial at /docs. Every 15 minutes it also checks the real Fatlines' nodes into status.json, because the
+# page is https and the nodes speak plain http.
 name: site
 on:
   push:
     branches: [main]
     paths: ['apps/site/**', '.github/workflows/site.yml']
   workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
 permissions:
   contents: read
   pages: write
@@ -20,6 +24,11 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check the nodes
+        run: node apps/site/status.mjs apps/site/status.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

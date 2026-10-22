@@ -28,3 +28,5 @@ apps/voice/
 apps/checklist/
 # Fork and local deployments (real Base deployments get committed on purpose, later).
 smart-contracts/broadcast/
+# Written by the site workflow every 15 minutes.
+apps/site/status.json

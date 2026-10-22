@@ -1,0 +1,14 @@
+{
+  "note": "Real Fatlines only. Each one is an owner's FID and the nodes that keep it alive. status.mjs checks them; the home page shows what it found.",
+  "fatlines": [
+    {
+      "ticker": "FATLINE",
+      "ownerFid": 18350,
+      "coin": null,
+      "nodes": [
+        { "network": "snapchain", "label": "Fatline master (Hetzner, Nuremberg)", "url": "http://46.225.208.199:3381", "since": "2026-10-22T06:42:00Z" },
+        { "network": "hypersnap", "label": "Fatline Hypersnap (Hetzner, Nuremberg)", "url": "http://2.31.51.183:4381", "since": "2026-10-22T10:21:00Z" }
+      ]
+    }
+  ]
+}
