@@ -31,9 +31,11 @@ Infinicaster — read Farcaster or Hypersnap from your own machine, plus long-fo
 Setup (in this order on a new machine):
   ./infinicaster doctor              Check this machine and the networks; recommends full, light or rent
   ./infinicaster init                Choose the default network (Farcaster or Hypersnap)
-  ./infinicaster node <network>      Run your own read node here (16 GB RAM, Docker; disk: see README).
-                                     Deletes blocks older than 1 day by default; --keep-blocks keeps all
-  ./infinicaster compute [--quote]   No suitable machine? Rent one with a single x402 USDC payment
+  ./infinicaster compute [--quote]   Rent a machine that can hold a node (Hetzner, hourly; needs ~/.hetzner-token)
+                                     x402 USDC sellers instead: --provider vpsagent|agentmetal
+  ./infinicaster node <network>      Install a read node (farcaster or hypersnap) on that machine, wait until it
+                                     answers, and use it. --local installs on this machine instead (16 GB RAM, Docker)
+  ./infinicaster compute status      The rented machine, its disk and node sync. compute down deletes it all
   ./infinicaster up                  Install, build and start the indexer + apps on http://localhost:8787 (also: client)
 
 Posting (your client's own app key, no gas):
@@ -60,6 +62,10 @@ cmd_init() { need_node; node "$ROOT/infra/config-tool.mjs" init "$@"; }
 
 cmd_node() {
   local network="${1:-}"
+  # A machine rented with ./infinicaster compute: install the node there, wait for it, use it.
+  if [ "${2:-}" != "--local" ] && { [ -f "$STATE/hetzner.json" ] || [ -f "$STATE/hetzner-hypersnap.json" ]; }; then
+    need_node; exec node "$ROOT/infra/node-remote.mjs" "$@"
+  fi
   case "$network" in
     farcaster) URL="https://raw.githubusercontent.com/farcasterxyz/snapchain/refs/heads/main/scripts/snapchain-bootstrap.sh"; DIR="$HOME/snapchain" ;;
     hypersnap) URL="https://raw.githubusercontent.com/farcasterorg/hypersnap/@latest/scripts/hypersnap-bootstrap.sh"; DIR="$HOME/hypersnap" ;;
@@ -159,7 +165,11 @@ cmd_status() {
 
 cmd_compute() {
   need_node; install infra
-  if [ "${1:-}" = hetzner ]; then shift; node "$ROOT/infra/hetzner.mjs" "$@"; else node "$ROOT/infra/compute.mjs" "$@"; fi
+  # Default: rent a machine big enough for a node on Hetzner (hourly, card); `node <network>` then installs it.
+  # `compute hetzner` keeps the older one-step flow (rent + Farcaster node). x402/USDC sellers: --provider <name>.
+  if [ "${1:-}" = hetzner ]; then shift; node "$ROOT/infra/hetzner.mjs" "$@"
+  elif printf '%s\n' "$@" | grep -q -- '^--provider'; then node "$ROOT/infra/compute.mjs" "$@"
+  else node "$ROOT/infra/hetzner.mjs" "$@" --no-node; fi
 }
 
 cmd_test() {

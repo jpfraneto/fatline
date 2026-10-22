@@ -1,4 +1,6 @@
-// ./infinicaster compute hetzner [--type cx43] [--location nbg1] [--disk 700] [--quote]
+// ./infinicaster compute hetzner [--type <name>] [--location nbg1] [--disk 700] [--quote] [--no-node]
+//   --type: default is the cheapest type in stock there with 16 GB+ RAM (cx43 and others sell out).
+//   --no-node: rent the machine only; install a node on it with ./infinicaster node farcaster|hypersnap.
 // ./infinicaster compute hetzner status
 // ./infinicaster compute hetzner down        (deletes everything this created; billing stops)
 //
@@ -51,8 +53,8 @@ function args() {
   const get = (n, d) => { const i = a.indexOf(`--${n}`); return i >= 0 ? a[i + 1] : d; };
   return {
     command: a[0] && !a[0].startsWith('--') ? a[0] : 'up',
-    type: get('type', 'cx43'), location: get('location', 'nbg1'), disk: Number(get('disk', '700')),
-    quote: a.includes('--quote'), yes: a.includes('--yes'),
+    type: get('type', null), location: get('location', 'nbg1'), disk: Number(get('disk', '700')),
+    quote: a.includes('--quote'), yes: a.includes('--yes'), noNode: a.includes('--no-node'),
   };
 }
 
@@ -75,11 +77,22 @@ async function price(opts) {
   return { currency: pricing.currency, perHour, perDay: perHour * 24 };
 }
 
+// The cheapest server type with 16 GB+ RAM that Hetzner has in stock in this location right now.
+async function cheapestInStock(location) {
+  const all = (await hz('GET', '/server_types?per_page=50')).server_types;
+  const { pricing } = await hz('GET', '/pricing');
+  const hourly = (t) => Number(pricing.server_types.find((x) => x.name === t.name)?.prices.find((x) => x.location === location)?.price_hourly.gross ?? Infinity);
+  const ok = all.filter((t) => t.memory >= 16 && !t.deprecation && t.locations?.find((l) => l.name === location)?.available).sort((a, b) => hourly(a) - hourly(b));
+  if (!ok.length) throw new Error(`No server type with 16 GB+ RAM is in stock in ${location}. Try --location fsn1 or hel1.`);
+  return ok[0].name;
+}
+
 async function up(opts) {
   // A run that stopped halfway (for example Hetzner had no room) is resumed: its volume and key are reused.
   const old = existsSync(RECORD) ? JSON.parse(readFileSync(RECORD, 'utf8')) : null;
-  if (old?.serverId) throw new Error('A Hetzner node already exists (see .infinicaster/hetzner.json). Use `status` or `down`.');
+  if (old?.serverId && !opts.quote) throw new Error('A Hetzner node already exists (see .infinicaster/hetzner.json). Use `status` or `down`.');
   if (old && old.location !== opts.location) throw new Error(`An unfinished run left a volume in ${old.location}. Use --location ${old.location}, or \`down\` first.`);
+  if (!opts.type) opts.type = await cheapestInStock(opts.location);
   const spec = (await hz('GET', `/server_types?name=${opts.type}`)).server_types[0];
   if (!spec) throw new Error(`Unknown server type ${opts.type}.`);
   // Hetzner sells out of some types. Check before creating anything, and say what is in stock instead.
@@ -91,10 +104,11 @@ async function up(opts) {
   }
   const p = await price(opts);
   console.log(`
+  Server type    ${opts.type}${spec.architecture === 'arm' ? ' (ARM)' : ''}
   What you get   ${spec.cores} CPU · ${spec.memory} GB RAM · ${spec.disk} GB disk + ${opts.disk} GB volume, ${opts.location}
   Price          ~${p.perHour.toFixed(4)} ${p.currency}/hour = ~${p.perDay.toFixed(2)} ${p.currency}/day, billed by the hour on your Hetzner account
   Stop paying    ./infinicaster compute hetzner down   (deletes the server and the volume)
-  It will run    a Farcaster read node: streamed snapshot (~600 GB), 1 day of blocks
+  ${opts.noNode ? 'Next           ./infinicaster node farcaster   (or: node hypersnap) installs a read node on it' : 'It will run    a Farcaster read node: streamed snapshot (~600 GB), 1 day of blocks'}
 `);
   if (opts.quote) return console.log('Quote only. Nothing was created.');
   if (!opts.yes && (await ask('Type "create" to create it: ')) !== 'create') return console.log('Stopped. Nothing was created.');
@@ -130,6 +144,11 @@ async function up(opts) {
   for (let i = 0; i < 60; i++) {
     if (spawnSync('ssh', [...sshArgs(), `root@${record.ipv4}`, 'true']).status === 0) break;
     await sleep(10_000);
+  }
+  if (opts.noNode) {
+    // Docker now, so `node <network>` only has to fetch its image.
+    spawnSync('ssh', [...sshArgs(), `root@${record.ipv4}`, 'command -v docker >/dev/null || (curl -fsSL https://get.docker.com | sh >/dev/null 2>&1)'], { stdio: 'inherit' });
+    return console.log(`The machine is ready at ${record.ipv4}. Next: ./infinicaster node farcaster   (or: node hypersnap)`);
   }
   const put = spawnSync('ssh', [...sshArgs(), `root@${record.ipv4}`, 'cat > /root/node-setup.sh && chmod +x /root/node-setup.sh'], { input: readFileSync(join(ROOT, 'infra/node-setup.sh')) });
   if (put.status !== 0) throw new Error('Could not copy the node setup. Retry: ./infinicaster compute hetzner status');
