@@ -11,6 +11,8 @@
 - **Atlas and minting:** [docs/ATLAS-AND-MINTING.md](docs/ATLAS-AND-MINTING.md): the Memory Atlas, the snapshot commitment, the contract (not deployed), and the owner's open decisions.
 - **Coordination:** [docs/COORDINATION.md](docs/COORDINATION.md): what was agreed with the other sessions, and the remaining dependencies.
 
+**Building the generator?** Start with [GENERATOR.md](GENERATOR.md): what we send you per account, and what you send back.
+
 ## Run it
 
 Needs Node ≥ 22.12. No npm install: there are no dependencies.
