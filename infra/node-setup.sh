@@ -7,7 +7,8 @@
 #                        replicate copy only the current state from other nodes, no old blocks (experimental; does NOT
 #                                  finish on mainnet today: Snapchain's replication refuses KeyAdd/KeyRemove messages,
 #                                  so the copy fails at the first account that has one. Tested 2026-10-22. A full
-#                                  replica would also be ~300-400 GB and take ~11-15 h from a synced source.)
+#                                  replica would also be ~300-400 GB and take ~11-15 h from a synced source.
+#                                  Refused unless INFINICASTER_FORCE=1.)
 #                        snapchain use Snapchain's own download (keeps ~3 copies at its peak)
 #   INFINICASTER_REPLICATION_PEERS=http://IP:3383[,http://IP2:3383]
 #                        with replicate: which nodes to copy state from. Snapchain's default is rho.farcaster.xyz,
@@ -18,6 +19,12 @@ set -euo pipefail
 
 BLOCKS="${INFINICASTER_BLOCKS:-1day}"
 SNAPSHOT="${INFINICASTER_SNAPSHOT:-stream}"
+if [ "$SNAPSHOT" = replicate ] && [ "${INFINICASTER_FORCE:-}" != 1 ]; then
+  echo "Replicate can't finish on mainnet today: Snapchain's replicator refuses KeyAdd/KeyRemove messages"
+  echo "(src/network/replication/replicator.rs), so the copy dies at the first account that has one (tested 2026-10-22)."
+  echo "Use the default (stream), or set INFINICASTER_FORCE=1 to try anyway."
+  exit 1
+fi
 # The bucket root. latest.json lives under FARCASTER_NETWORK_MAINNET/<shard>/, and its key_base already
 # starts with FARCASTER_NETWORK_MAINNET/, so chunks are fetched from the root.
 SNAPSHOT_BUCKET="https://pub-d352dd8819104a778e20d08888c5a661.r2.dev"
