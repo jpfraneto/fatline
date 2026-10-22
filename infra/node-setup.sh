@@ -133,7 +133,9 @@ stream_shard() {
       sleep 0.2
     done
     cat "$parts/$chunk"; rm -f "$parts/$chunk"
-    n=$((n + 1)); [ $((n % 100)) -eq 0 ] && echo "  shard $shard: $n/$total" >&2
+    n=$((n + 1))
+    # An if, not `[ … ] && echo`: as the loop's last command, a false test would fail the whole pipeline.
+    if [ $((n % 100)) -eq 0 ] || [ "$n" -eq "$total" ]; then echo "  shard $shard: $n/$total" >&2; fi
   done | gunzip | tar -x -C .rocks
   rm -rf "$parts"
   touch ".snapshot-shard-$shard.done"

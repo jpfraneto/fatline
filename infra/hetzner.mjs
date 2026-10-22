@@ -18,11 +18,12 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const STATE = join(ROOT, '.infinicaster');
 const RECORD = join(STATE, 'hetzner.json');
-// Volumes other tools attached to the same server (e.g. Hypersnap): { "volumeIds": [..] } or { "volumeId": n }.
+// Other resources on the same account that `down` must also remove (e.g. the Hypersnap node):
+// { "serverId": n?, "ipv4": "…"?, "volumeIds": [..] } or { "volumeId": n }.
 const EXTRA_RECORDS = [join(STATE, 'hetzner-hypersnap.json')];
-const extraVolumes = () => EXTRA_RECORDS.filter((f) => existsSync(f)).flatMap((f) => {
+const extras = () => EXTRA_RECORDS.filter((f) => existsSync(f)).map((f) => {
   const r = JSON.parse(readFileSync(f, 'utf8'));
-  return (r.volumeIds ?? (r.volumeId ? [r.volumeId] : [])).map((id) => ({ id, file: f }));
+  return { file: f, name: f.split('/').pop(), serverId: r.serverId ?? null, ipv4: r.ipv4 ?? null, volumeIds: r.volumeIds ?? (r.volumeId ? [r.volumeId] : []) };
 });
 const SSH_KEY = join(STATE, 'ssh_ed25519');
 const API = 'https://api.hetzner.cloud/v1';
@@ -141,7 +142,7 @@ async function status() {
   const r = JSON.parse(readFileSync(RECORD, 'utf8'));
   const hours = (Date.now() - Date.parse(r.createdAt)) / 3_600_000;
   console.log(`Server ${r.serverId} at ${r.ipv4} (${r.type}, ${r.location}), running ${hours.toFixed(1)} h`);
-  for (const v of extraVolumes()) console.log(`Also attached: volume ${v.id} (from ${v.file.split('/').pop()})`);
+  for (const x of extras()) console.log(`Also on this account (${x.name}): ${x.serverId ? `server ${x.serverId} at ${x.ipv4}, ` : ''}volume(s) ${x.volumeIds.join(', ') || 'none'}`);
   const remote = `tail -n 3 /root/node-setup.log 2>/dev/null; df -h /mnt/HC_Volume_* 2>/dev/null | sed 1d | awk '{print "volume: " $3 " used, " $4 " free"}'; curl -s -m 5 localhost:3381/v1/info | jq -c '.shardInfos[]? | {shard: .shardId, blockDelay}' 2>/dev/null`;
   spawnSync('ssh', [...sshArgs(), `root@${r.ipv4}`, remote], { stdio: 'inherit' });
 }
@@ -149,12 +150,14 @@ async function status() {
 async function down(opts) {
   if (!existsSync(RECORD)) return console.log('Nothing to delete.');
   const r = JSON.parse(readFileSync(RECORD, 'utf8'));
-  const extra = extraVolumes();
-  const vols = [r.volumeId, ...extra.map((v) => v.id)].filter(Boolean);
-  if (!opts.yes && (await ask(`Delete server ${r.serverId} and volume(s) ${vols.join(', ')} (all node data)? Type "delete": `)) !== 'delete') return console.log('Kept.');
-  if (r.serverId) {
-    await hz('DELETE', `/servers/${r.serverId}`).catch((e) => console.log(e.message));
-    console.log('Server deleted.');
+  const extra = extras();
+  const servers = [r.serverId, ...extra.map((x) => x.serverId)].filter(Boolean);
+  const vols = [r.volumeId, ...extra.flatMap((x) => x.volumeIds)].filter(Boolean);
+  if (!opts.yes && (await ask(`Delete server(s) ${servers.join(', ')} and volume(s) ${vols.join(', ')} (all node data)? Type "delete": `)) !== 'delete') return console.log('Kept.');
+  // Servers first: a volume can't be deleted while a server still holds it.
+  for (const id of servers) {
+    await hz('DELETE', `/servers/${id}`).catch((e) => console.log(e.message));
+    console.log(`Server ${id} deleted.`);
   }
   for (const id of vols) {
     // A volume can only be deleted once the server that held it is gone.
@@ -166,7 +169,7 @@ async function down(opts) {
     await hz('DELETE', `/volumes/${id}`).catch((e) => console.log(e.message));
     console.log(`Volume ${id} deleted.`);
   }
-  for (const v of extra) rmSync(v.file, { force: true });
+  for (const x of extra) rmSync(x.file, { force: true });
   if (r.sshKeyId) await hz('DELETE', `/ssh_keys/${r.sshKeyId}`).catch(() => {});
   rmSync(RECORD);
   console.log('Everything this created is gone. Billing has stopped.');
