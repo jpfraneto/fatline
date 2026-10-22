@@ -74,9 +74,10 @@ fi
 [ "$DATA" != /root/hypersnap ] && [ ! -e /root/hypersnap ] && ln -s "$DATA" /root/hypersnap
 cd "$DATA"
 FREE_GB=$(df -BG --output=avail "$DATA" | tail -1 | tr -dc 0-9)
-# A re-run deletes unfinished shards first, so count their space as free.
+# On a re-run, shards already on disk are part of what the node needs (finished ones are kept, unfinished
+# ones are deleted and fetched again), so count their space as available.
 for d in .rocks/shard-*; do
-  if [ -d "$d" ] && [ ! -f ".snapshot-${d#.rocks/}.done" ]; then FREE_GB=$((FREE_GB + $(du -s -BG "$d" | cut -f1 | tr -dc 0-9))); fi
+  if [ -d "$d" ]; then FREE_GB=$((FREE_GB + $(du -s -BG "$d" | cut -f1 | tr -dc 0-9))); fi
 done
 if [ ! -f .snapshot-done ] && [ "$FREE_GB" -lt "$MIN_FREE_GB" ] && [ "${INFINICASTER_FORCE:-}" != 1 ]; then
   echo "Only ${FREE_GB} GB free in $DATA. A full Hypersnap node needs ${MIN_FREE_GB} GB+ to start and keeps growing."
@@ -165,18 +166,22 @@ api() { echo "[api.$1]"; echo "enabled = $([ "$APIS" = on ] && echo true || echo
 
 # 6. The starting snapshot, streamed: download -> unzip -> unpack, one copy on disk.
 #    Same method as node-setup.sh (see the notes there on why each piece is downloaded whole first).
-#    In sync with node-setup.sh at ad2ee2a. TODO: share this code with node-setup.sh.
+#    Same as node-setup.sh at ad2ee2a, plus fetch_piece retrying while it makes progress. TODO: share this code.
 fetch_piece() {
-  local url=$1 out=$2 try
+  local url=$1 out=$2 stuck=0 before after
   # Pieces Cloudflare hasn't cached come slowly (we measured 0.1-4 MB/s per connection), so:
-  # resume a cut download instead of starting over (-C -), give up on a connection only below 100 KB/s
-  # for 60 s, and keep trying. Many pieces download at once, so a slow one doesn't slow the whole shard.
-  for try in $(seq 1 30); do
+  # resume a cut download instead of starting over (-C -), drop a connection only below 100 KB/s for 60 s,
+  # and keep trying for as long as tries make progress. Give up only after 20 tries in a row add no bytes
+  # (a fixed try count failed a whole shard on 2026-10-22: one piece had 60 of 87 MB after 30 slow tries).
+  while [ "$stuck" -lt 20 ]; do
+    before=$(stat -c %s "$out.tmp" 2>/dev/null || echo 0)
     if curl -fsS -C - --connect-timeout 20 --speed-limit 100000 --speed-time 60 --max-time 1800 \
          -o "$out.tmp" "$url" 2>>"$out.log"; then
       mv "$out.tmp" "$out"; rm -f "$out.log"; return 0
     fi
-    sleep $(( try < 6 ? try * 5 : 30 ))
+    after=$(stat -c %s "$out.tmp" 2>/dev/null || echo 0)
+    if [ "$after" -gt "$before" ]; then stuck=0; else stuck=$((stuck + 1)); fi
+    sleep $(( stuck < 6 ? 5 + stuck * 5 : 30 ))
   done
   touch "$out.failed"
 }
