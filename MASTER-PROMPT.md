@@ -33,40 +33,56 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 | J11 | At least one other human goes through it and vouches publicly on Farcaster | A real URL to their own post. **We never write it, post it, or invent it.** |
 | J12 | Extra mile (optional) | Spanish tutorial (required by us anyway), Chinese, a 59-second vertical video, more vouchers. |
 
-## Where we are (2026-10-21)
+## Where we are (handoff: 2026-10-22, ~02:00 UTC)
 
-Built and tested:
-- the machine check (`./infinicaster doctor`);
-- the read client for Farcaster and Hypersnap;
-- x402 server rental;
-- the launchpad contracts, indexer and UI;
-- onchain daily users per app.
+**Resume here.** The owner paused this session to start fresh with new ideas. Ask them for the ideas first, then continue from the next step below.
 
-Details are in the README's "tested / not tested" section.
+### The very next step: a full node on Hetzner (ready, not started)
+- `./infinicaster compute hetzner --quote` shows the price; `./infinicaster compute hetzner` creates everything (it asks you to type "create"). Script: `infra/hetzner.mjs`.
+- It would create a cx43 (8 CPU, 16 GB RAM, 160 GB disk) plus a 700 GB volume in nbg1, Ubuntu 24.04. The quote from the owner's account: **~$0.10/hour, ~$2.50/day**, billed hourly by card on their Hetzner account.
+- It runs `infra/node-setup.sh`: Docker, Snapchain with its questions pre-answered, 1 day of blocks, and the snapshot **streamed** onto the volume.
+- **It needs the owner's explicit "create" in the new session.** It was quoted, not approved.
+- The API token is in `~/.hetzner-token` (mode 600, outside the repository). It was checked (auth works, 0 servers). Never print it.
+- After the node syncs:
+  1. Measure the real disk use. That is the tutorial's number.
+  2. Test whether a second, small node can bootstrap with `Replicate` from ours (`snapshot.replication_peers` pointing at it).
+  3. Run `./infinicaster compute hetzner down` when done. Every hour costs money.
 
-Not built or not proven, in bounty order:
-- **J2, in progress (2026-10-21):** AgentMetal rents by the day for USDC (x402) and sells disk volumes up to 1 TB at $0.01/GB/day. `compute --provider agentmetal --days 1 --disk 700 --node` costs ~11.20 USDC for one day (the owner chose the cheapest run), paid from a dedicated compute wallet (`compute wallet`). `infra/node-setup.sh` streams the snapshot (~600 GB unpacked) and adds swap, because their biggest plan has 8 GB of RAM and Snapchain asks for 16. Server `srv_ty63heep40jd` was rented (4.20 USDC), but AgentMetal's disk endpoint returned HTTP 502 (not charged). The replication bootstrap was tried and is unavailable on public nodes; see STORY.md.
-- **Earlier finding:** no x402 seller found sells a server big enough for a node with its built-in disk. Checked 2026-10-21: VpsAgent goes up to 300 GB, VPSWolf up to 800 GB, and Snapchain asks for 2 TB.
-  - For the bounty: script a regular cloud provider that offers attachable volumes or big disks (paid by card, the person's own account).
-  - Ask the x402 sellers for a bigger plan (VpsAgent has a free `POST /feedback`).
-  - Long term: grant-funded shared nodes (W6c).
-  - Idea: a crypto debit card funded from a vault or the treasury pays the cloud bill. This could work for the treasury paying shared nodes, but not as automatic per-app infrastructure. Reasons:
-    - The card is issued to a person after identity checks.
-    - The card issuer holds the money while it sits on the card.
-    - Some cloud providers refuse prepaid cards.
-  - **Smaller node, no fork (checked 2026-10-21):**
-    - Snapchain already has `pruning.block_retention` for read nodes. It's off by default and deletes old blocks daily.
-    - Messages themselves are already capped by each account's storage rent.
-    - Today's starting snapshot is about 400 GB compressed (5,695 chunks of about 70 MB across shards 0–2).
-    - To do: sync once with `block_retention` set to 7 days and measure the real disk use. That is the number the tutorial gives, not "2 TB" by default.
-    - Forking Snapchain to drop history was rejected: weeks of Rust, and judges asked for a Snapchain read node.
-    - A database with only the relevant casts is what the light path (indexer + public node) already is. It's fine for apps, but it doesn't count as the bounty's node.
-  - **For the bounty, a node is required but who pays for it is not.** The tester must run the commands themselves. A machine we pay for is fine; it would be the first grant.
-- **J3:** a node has never been synced on a fresh machine by us.
-- **J5–J7 built (2026-10-21):** `indexer/src/identity.mjs` (gasless KEY_ADD, scoped, hidden seed prompt, self-revoke) and `indexer/src/writer.mjs` (cast, reply, like, recast, follow, delete, confirm by read-back, resend the same bytes). The UI is in `apps/opinions/src/post.js`. Tested with unit tests, a fake node, and headless Chrome. **Still needed: the real run with @anky (FID 18350).** crackle accepts submissions without a password, so this can happen before our own node exists.
-- **J8 (client filter) not built.**
-- **J9:** no microsite. The README is not a tutorial.
-- **J11:** no tester yet. This is the critical path, and it needs days, because syncing a node takes hours.
+### Money and rented things right now
+- **AgentMetal server `srv_ty63heep40jd` (5.161.202.175)** is paid until 2026-10-22 23:09 UTC (4.20 USDC, no refunds). It's idle.
+  - Its disk endpoint fails: the paid `POST /v1/servers/{id}/storage` returns HTTP 502 within 2 s and nothing is charged.
+  - The background retries were stopped.
+  - Optional free use before it expires: test `infra/server-setup.sh` (the light client with HTTPS) on it, which has never run on a real server.
+  - SSH: `ssh -i .infinicaster/ssh_ed25519 root@5.161.202.175`.
+- **Compute wallet** `0x754ab772Ee4E608A8c3E758AA6E91B6a82727F4E` holds 7.80 USDC on Base. Its key is in `.infinicaster/compute-wallet.key`. The money can go back to the owner, but sending it needs a few cents of ETH for gas.
+- **Reporting the AgentMetal bug:** AgentMetal is run by inbest.cloud (Mexico): `hola@inbest.cloud`, X @inbestcloud, GitHub issues at agentmetal/mcp. A Spanish email draft was given to the owner; they had not sent it yet, as far as we know. Don't post publicly without their yes.
+- **Local processes from earlier demos** may still run on the owner's Mac: an anvil Base fork on :8545 and the indexer on :8787. Both are harmless; stop them if they get in the way.
+
+### Done
+- Machine check, read client (Farcaster and Hypersnap), x402 rental (VpsAgent monthly, AgentMetal daily).
+- Launchpad contracts, indexer and UI, and onchain daily users. Proven on a Base fork.
+- **Posting (J5–J7):**
+  - `./infinicaster identity` (gasless `KEY_ADD`, scoped, hidden seed prompt, self-revoke) in `indexer/src/identity.mjs`.
+  - `indexer/src/writer.mjs`: cast, reply, like, recast, follow, delete; each is confirmed by reading it back.
+  - The UI is in `apps/opinions/src/post.js`.
+  - Posting is owner-only: from the same machine, or with a write token behind a proxy. Other websites are blocked.
+  - Tested by unit tests, a fake node, and headless Chrome (cast, reply, like and follow all confirmed). crackle validated the message formats and accepts submissions without a password.
+- The node keeps 1 day of blocks by default, and the snapshot streams with one copy on disk (~600 GB instead of Snapchain's ~3 copies).
+- Tests: 33 Foundry, 17 indexer, 4 infra, all passing as of this handoff.
+
+### Not done, in bounty order
+- **J3:** no node synced by us yet. That's the next step above.
+- **J5–J7 real run:** the owner runs `./infinicaster identity --fid 18350 --dry-run`, then without `--dry-run`, **in their own terminal** (never paste the seed phrase into an agent chat). Then `./infinicaster up` and cast from My people. Test account: @anky, FID 18350, custody `0x3ae5…6b60`.
+- **J8:** the client filter (show or hide posts by the app that made them). Not built.
+- **J9:** the tutorial site (English and Spanish). Not started.
+- **J11:** testers. The owner's friend (who sent the snapshot analysis) is a candidate. None confirmed yet.
+- **Owner decisions still open:** the launchpad's fee share (%) and its split between grants and the two founders (PrizeSplit); grants treasury design.
+
+### Findings worth keeping
+- No x402 seller sells a server big enough for a node with its built-in disk: VpsAgent goes up to 300 GB, VPSWolf to 800 GB (both monthly). AgentMetal sells disk, but its disk endpoint is broken (see above).
+- Replication bootstrap (`Replicate`) fails today: every public Farcaster node answers *Unimplemented*. So the plan is our own full node, which then serves replication to cheap small nodes. This is unproven until tested.
+- The snapshot on R2 is ~5,700 pieces of ~70 MB: ~400 GB compressed, ~600 GB unpacked (measured ratio ~1.5×). It includes all block history.
+- Rejected ideas and why: forking Snapchain (weeks of Rust, judges want Snapchain); a debit card funded by a vault (identity checks, custodial); the owner's Mac (13 GB free).
 
 ## Workstreams, in order
 

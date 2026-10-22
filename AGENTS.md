@@ -6,7 +6,7 @@ Start here, whatever tool you use:
 2. [MASTER-PROMPT.md](MASTER-PROMPT.md): the plan, the judges' checklist for Balaji's prize (deadline 2026-10-24 14:47:30 UTC), the workstreams in order, and what is done and not done.
 3. [README.md](README.md): how to run it, plus an honest "tested / not tested" list.
 
-Then pick the first unfinished workstream in the master prompt, say which one, build it, test it, and update those three files.
+**The current state and the very next step are in MASTER-PROMPT.md → "Where we are" (Resume here).** Then pick the first unfinished workstream in the master prompt, say which one, build it, test it, and update those three files.
 
 ## Commands
 
@@ -14,6 +14,7 @@ Then pick the first unfinished workstream in the master prompt, say which one, b
 - `./infinicaster test` runs every test: Foundry contracts, indexer, infra. Run it before saying something works.
 - Launchpad on a fork with fake money: `./infinicaster contracts fork`, then `./infinicaster up`. See the README.
 - Posting: `./infinicaster identity`, then `./infinicaster up`.
+- Full node on Hetzner (hourly, card): `./infinicaster compute hetzner --quote`, then `./infinicaster compute hetzner`, `… status`, `… down`. On AgentMetal (daily, USDC): `./infinicaster compute --provider agentmetal --days 1 --disk 700 --node`.
 
 ## Rules
 

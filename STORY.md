@@ -126,6 +126,15 @@ More decisions that day:
   - It also accepts submissions without a password: it refused a test only because the key wasn't registered. So the real @anky test doesn't have to wait for our own node.
 - **Security:** posting is allowed only from the same machine, or with a write token when the client runs behind a server's proxy. Other websites in the same browser are blocked.
 
+## 7. Cheaper node, then a pause (Oct 22, ~01:00–02:00 UTC)
+
+- AgentMetal's disk failed again (HTTP 502 within 2 s, not charged). The owner asked for a cheaper provider "just to test things out".
+- **Hetzner directly**, billed by the hour on the owner's account (card, not USDC): a cx43 with 16 GB RAM plus a 700 GB volume costs **~$2.50/day**, about a fifth of AgentMetal's ~11.20 USDC/day.
+- The owner created an API token, stored only in `~/.hetzner-token` (mode 600).
+- `infra/hetzner.mjs` creates, checks and deletes the whole node (`./infinicaster compute hetzner …`).
+- Quoted, **not created**: the owner paused to start a fresh session with new ideas.
+- A friend independently explained the R2 snapshot, the same file we measured. The friend is a tester candidate.
+
 ## Start from scratch
 
 1. Read the bounty post, then [MASTER-PROMPT.md](MASTER-PROMPT.md), then this file.

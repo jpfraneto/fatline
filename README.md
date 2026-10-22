@@ -26,7 +26,7 @@ Status, honestly:
 | | Status |
 | --- | --- |
 | Machine check, and renting a server for USDC (x402) | Works with mock sellers. New: rent **by the day** from AgentMetal (USDC, x402), add up to 1 TB of disk, and set up a read node unattended (`compute --provider agentmetal --days 1 --disk 700 --node`, ~11 USDC). The keeper then renews one day at a time. Not yet run with real money. |
-| Read node | Keeps 1 day of blocks by default (Snapchain's own `pruning.block_retention`). On a rented server the starting snapshot (~400 GB compressed, ~600 GB unpacked) is **streamed** straight to disk, so it needs one copy of space instead of Snapchain's ~3. Next: sync one for real and measure. |
+| Read node (also on Hetzner, hourly by card: `./infinicaster compute hetzner`, ~$2.50/day) | Keeps 1 day of blocks by default (Snapchain's own `pruning.block_retention`). On a rented server the starting snapshot (~400 GB compressed, ~600 GB unpacked) is **streamed** straight to disk, so it needs one copy of space instead of Snapchain's ~3. Next: sync one for real and measure. |
 | Client: reading, both networks | Works. |
 | Client: seed phrase → app key | Built: `./infinicaster identity` registers a **gasless** app key (no transaction, no ETH), scoped to casts, reactions, follows and profile only. The seed phrase goes into a hidden prompt and is never saved. Format checked against a real node; not yet run with a real account. |
 | Client: post, reply, like, recast, follow, delete | Built and tested in a real browser against a fake node: each action is signed, sent to your node, and shown as *Confirmed* only once the node returns it. Only this machine (or a write token) can post. Not yet run on the real network. |

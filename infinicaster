@@ -157,7 +157,10 @@ cmd_status() {
   fi
 }
 
-cmd_compute() { need_node; install infra; node "$ROOT/infra/compute.mjs" "$@"; }
+cmd_compute() {
+  need_node; install infra
+  if [ "${1:-}" = hetzner ]; then shift; node "$ROOT/infra/hetzner.mjs" "$@"; else node "$ROOT/infra/compute.mjs" "$@"; fi
+}
 
 cmd_test() {
   need_node
