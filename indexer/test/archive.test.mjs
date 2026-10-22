@@ -134,6 +134,19 @@ test('reading: pages by time, filters by type, never shows node URLs', () => {
   assert.equal(page.sources[0].network, 'farcaster');
 });
 
+test('paging never skips messages that share a timestamp', () => {
+  const { archive, fc } = setup();
+  archive.ingest(fc, Array.from({ length: 7 }, (_, i) => cast(i + 1, { protocolTs: 5_000 })), { shard: 1, cursor: 1007 });
+  const seen = [];
+  let before = null;
+  do {
+    const page = archive.read(18350, { limit: 3, before });
+    seen.push(...page.items.map((i) => i.key));
+    before = page.more;
+  } while (before);
+  assert.equal(new Set(seen).size, 7);
+});
+
 test('two processes share one file: a second Archive on the same database sees the same state', () => {
   const dir = mkdtempSync(join(tmpdir(), 'archive-'));
   const a = new Archive(openDb(dir));

@@ -487,10 +487,16 @@ export async function archivePage(fid) {
   const networks = state.config.networks.map((n) => n.name);
   let publishTo = networks.includes(store.get('publishTo', null)) ? store.get('publishTo', null) : state.network;
   let kind = 'cast';
+  let older = []; // pages loaded with "Older"; the live refresh only re-reads the newest page
+  let moreAt = null;
   const region = el('div', { class: 'live-region' });
   let stable = null;
   const path = fid ? `/api/archive/${fid}` : '/api/archive';
-  const load = () => api(path, { types: kind });
+  const load = async () => {
+    const page = await api(path, { types: kind });
+    if (!older.length) moreAt = page.more;
+    return page;
+  };
   const refresh = () => live(load, render);
 
   const selector = () => el('div', { class: 'publish' },
@@ -509,7 +515,7 @@ export async function archivePage(fid) {
     ...Object.entries(f('kinds')).map(([k, label]) => el('button', {
       type: 'button', role: 'radio', 'aria-checked': String(k === kind),
       onclick: (e) => {
-        kind = k;
+        kind = k; older = []; moreAt = null;
         e.currentTarget.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-checked', String(b === e.currentTarget)));
         refresh();
       },
@@ -517,6 +523,13 @@ export async function archivePage(fid) {
 
   const render = (snap) => {
     const a = snap.data;
+    const items = [...a.items, ...older.filter((o) => !a.items.some((i) => i.key === o.key))];
+    const loadOlder = moreAt ? async () => {
+      const next = await api(path, { types: kind, before: moreAt });
+      older = older.concat(next.items);
+      moreAt = next.more;
+      render(snap);
+    } : null;
     if (!stable) {
       stable = el('div', { class: 'stable' },
         el('p', { class: 'eyebrow' }, f('archive'), ' · ', f('archiveOf', a.fid)),
@@ -532,14 +545,15 @@ export async function archivePage(fid) {
       a.tracked ? null : el('p', { class: 'banner' }, f('notTracked')),
       el('div', { class: 'fine' }, f('adapters'), sources),
       freshness(snap),
-      a.items.length
-        ? el('ol', { class: 'archive' }, ...a.items.map((item) => el('li', { class: 'arch-item' },
+      items.length
+        ? el('ol', { class: 'archive' }, ...items.map((item) => el('li', { class: 'arch-item' },
           el('p', { class: 'arch-text' }, archiveText(item)),
           el('p', { class: 'arch-meta' },
             el('time', { datetime: new Date(item.at).toISOString(), title: when(item.at), 'data-at': item.at }, agoText(since(snap, item.at))),
             ...networks.map((n) => el('span', { class: `net-chip ${item.networks[n] ?? 'unseen'}` }, `${NETWORK_LABEL(n)}: ${f('status')[item.networks[n] ?? 'null']}`))))))
         : el('p', { class: 'fine' }, f('emptyArchive')),
-      a.items.some((i) => networks.some((n) => !i.networks[n])) ? el('p', { class: 'fine' }, f('notSeenNote')) : null,
+      loadOlder ? el('button', { type: 'button', class: 'quiet more-ev', onclick: loadOlder }, f('more')) : null,
+      items.some((i) => networks.some((n) => !i.networks[n])) ? el('p', { class: 'fine' }, f('notSeenNote')) : null,
     ].filter(Boolean));
   };
   try { await live(load, render); } catch (err) {

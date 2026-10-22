@@ -218,9 +218,14 @@ export class Archive {
     if (!msgTypes.length) fail(`types must be some of: ${Object.keys(TYPES).join(', ')}`);
     const cap = Math.min(Math.max(Number(limit) || 50, 1), 200);
     const marks = msgTypes.map(() => '?').join(',');
+    // Paging cursor "<ms>_<key>": messages can share a timestamp, so the key breaks ties. A bare ms also works.
+    const [beforeTs, beforeKey] = before ? String(before).split('_') : [];
+    const ts0 = Number.isFinite(Number(beforeTs)) && beforeTs !== undefined ? Number(beforeTs) : Number.MAX_SAFE_INTEGER;
+    const key0 = beforeKey && /^[\w:.|-]{3,128}$/.test(beforeKey) ? beforeKey.toLowerCase() : '';
     const keys = this.db.prepare(`SELECT dedup_key, MAX(protocol_ts) AS ts FROM fl_messages
-      WHERE fid = ? AND msg_type IN (${marks}) AND protocol_ts < ?
-      GROUP BY dedup_key ORDER BY ts DESC LIMIT ?`).all(fid, ...msgTypes, before ? Number(before) : Number.MAX_SAFE_INTEGER, cap);
+      WHERE fid = ? AND msg_type IN (${marks})
+      GROUP BY dedup_key HAVING ts < ? OR (ts = ? AND dedup_key < ?)
+      ORDER BY ts DESC, dedup_key DESC LIMIT ?`).all(fid, ...msgTypes, ts0, ts0, key0, cap);
     const rows = keys.length
       ? this.db.prepare(`SELECT * FROM fl_messages WHERE dedup_key IN (${keys.map(() => '?').join(',')})`).all(...keys.map((k) => k.dedup_key))
       : [];
@@ -233,7 +238,7 @@ export class Archive {
         networks: Object.fromEntries(NETWORKS.map((n) => [n, mine.find((r) => r.network === n)?.status ?? null])),
       };
     });
-    return { fid, items, sources: this.sources(), more: items.length === cap ? items.at(-1).at : null };
+    return { fid, items, sources: this.sources(), more: items.length === cap ? `${items.at(-1).at}_${items.at(-1).key}` : null };
   }
 
   /** What each adapter has done, without its node URL. */
