@@ -312,6 +312,7 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
 .node-option input { width: auto; margin-top: 4px; accent-color: var(--signal); }
 .node-option.ok strong::before { content: "● "; color: var(--signal); }
 .node-option.off strong::before { content: "● "; color: var(--warn); }
+.node-option.behind strong::before { content: "● "; color: var(--amber); } /* answers, but out of sync */
 .source.switched { color: var(--amber); }
 
 /* App filter (J8) */

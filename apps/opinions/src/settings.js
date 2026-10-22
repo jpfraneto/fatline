@@ -45,7 +45,7 @@ export async function settingsPage({ onChange }) {
       el('label', { class: 'node-option' }, el('input', { type: 'radio', name: 'node', checked: !current, onchange: () => choose('') }),
         el('span', {}, el('strong', {}, t('automaticShort')), el('span', { class: 'muted small' }, ` ${t('automatic')}`),
           net?.using ? el('span', { class: 'muted small' }, ` · ${t('usingNow', net.using.node.replace(/^https?:\/\//, ''))}`) : null)),
-      ...(net?.nodes ?? []).map((node) => el('label', { class: `node-option ${node.status?.ok ? 'ok' : node.status?.error ? 'off' : ''}` },
+      ...(net?.nodes ?? []).map((node) => el('label', { class: `node-option ${node.status?.ok ? 'ok' : node.status?.error ? 'off' : node.status ? 'behind' : ''}` },
         el('input', { type: 'radio', name: 'node', checked: current === node.url, onchange: () => choose(node.url) }),
         el('span', {}, el('strong', {}, node.label ?? node.url.replace(/^https?:\/\//, '')), ' ',
           el('span', { class: 'muted small' }, node.own ? t('yours') : t('public')), el('br'),
