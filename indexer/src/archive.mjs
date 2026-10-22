@@ -70,7 +70,9 @@ export class Archive {
   source({ network, nodeUrl, label }) {
     if (!NETWORKS.includes(network)) fail(`unknown network "${network}"`);
     if (typeof nodeUrl !== 'string' || !/^https?:\/\//.test(nodeUrl)) fail('nodeUrl must be an http(s) URL');
-    this.db.prepare('INSERT OR IGNORE INTO fl_sources (network, node_url, label) VALUES (?, ?, ?)').run(network, nodeUrl, String(label ?? network).slice(0, 64));
+    // The label is what readers see; the latest registration wins, so a corrected label replaces an old one.
+    this.db.prepare(`INSERT INTO fl_sources (network, node_url, label) VALUES (?, ?, ?)
+      ON CONFLICT (network, node_url) DO UPDATE SET label = excluded.label`).run(network, nodeUrl, String(label ?? network).slice(0, 64));
     return this.db.prepare('SELECT id FROM fl_sources WHERE network = ? AND node_url = ?').get(network, nodeUrl).id;
   }
 

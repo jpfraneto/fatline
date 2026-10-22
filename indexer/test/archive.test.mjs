@@ -147,6 +147,13 @@ test('paging never skips messages that share a timestamp', () => {
   assert.equal(new Set(seen).size, 7);
 });
 
+test('re-registering a source updates its public label, keeps its id', () => {
+  const { archive, fc } = setup();
+  const again = archive.source({ network: 'farcaster', nodeUrl: 'http://46.225.208.199:3381', label: 'Farcaster (own node)' });
+  assert.equal(again, fc);
+  assert.equal(archive.sources()[0].label, 'Farcaster (own node)');
+});
+
 test('two processes share one file: a second Archive on the same database sees the same state', () => {
   const dir = mkdtempSync(join(tmpdir(), 'archive-'));
   const a = new Archive(openDb(dir));
