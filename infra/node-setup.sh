@@ -21,6 +21,11 @@ say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 VOLUME=$(ls -d /mnt/HC_Volume_* 2>/dev/null | head -1 || true)
 DATA="${VOLUME:-/root}/snapchain"
 mkdir -p "$DATA"
+# A volume added after an earlier run: move that run's (small) folder onto the volume.
+if [ "$DATA" != /root/snapchain ] && [ -d /root/snapchain ] && [ ! -L /root/snapchain ]; then
+  (cd /root/snapchain && docker compose down >/dev/null 2>&1 || true)
+  cp -a /root/snapchain/. "$DATA"/ && rm -rf /root/snapchain
+fi
 if [ "$DATA" != /root/snapchain ] && [ ! -e /root/snapchain ]; then ln -s "$DATA" /root/snapchain; fi
 cd /root/snapchain
 say "Node data lives in $DATA ($(df -h "$DATA" | awk 'NR==2 {print $4}') free)"

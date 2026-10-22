@@ -107,6 +107,8 @@ More decisions that day:
   4. A second option: publish a pruned snapshot of our node.
 - Either way, someone has to do one full ~600 GB sync first.
 
+- **Retry, 2026-10-22 ~01:00 UTC:** the disk endpoint still answers HTTP 502 within 2 seconds. That is not a timeout; their server fails on the paid request. This happened with our two payment headers and with exactly the header their docs describe. Nothing was charged (the balance stayed at 7.80 USDC). The quote is a flat 7 USDC for 700 GB with "1d remaining", so it is not prorated by the hour.
+
 ## 5. Identity for the real test
 
 - The owner chose **@anky (FID 18350)** for experiments. It has storage room: 4,630 of 10,000 casts used.
