@@ -36,6 +36,18 @@ Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md
 
 **The mint is not open yet.** The 777 come from an open ranking of the whole network that will be published and agreed on in public before the mint. Until then, the agent shows you what is coming and helps you run your own node. Why it works this way: [the manifesto](../manifesto.html).
 
+## Workers
+
+Not everyone has one of the 777, and nobody needs one to keep the network. **A worker** is a keeper with no FID and no being: a wallet made on your machine that rents a node and keeps a full copy of Farcaster. There can be as many as people want.
+
+```sh
+fatline worker new
+```
+
+It shows a recovery phrase once, in your own terminal, and saves only the key it derives. Fund the wallet with a little USDC on Base and it pays for its own server with signatures (x402), with no ETH and no card. `fatline worker` shows where it stands: wallet, USDC, node, client, coin.
+
+What a worker gets is the thing itself: its own node of the Farcaster protocol, and its own client to read it with. Its coin, deployed without gas once everything runs, comes when the launch contracts are on Base.
+
 ## Run your own node
 
 One line. It downloads Fatline and walks you through it, asking before every step:

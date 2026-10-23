@@ -23,6 +23,8 @@ Stop paying any time with `fatline compute hetzner down`. The same command is pa
 
 **You are your FID:** `fatline connect` draws a QR code (the Farcaster arch in the middle, a blue and a pink corner for the two networks). Scan it with your phone, sign in with the Farcaster app, and your own node confirms which FID signed ([indexer/src/connect.mjs](indexer/src/connect.mjs)). No seed phrase.
 
+**No FID? Be a worker:** `fatline worker new` makes a wallet on your machine (a recovery phrase shown once, only the key saved, mode 600) that pays for its own node in USDC on Base through x402. No FID, no being, as many as you like; its reward is its own node and client. `fatline worker` shows wallet, USDC, node, client and coin ([infra/worker.mjs](infra/worker.mjs)). Its gasless coin waits for the launch contracts on Base.
+
 **Watch your servers:** `fatline dashboard` opens http://localhost:8790 (only this machine can reach it): CPU, memory and every disk of each server, and how far behind each node's worst shard is, every 15 seconds. It starts from the servers `fatline compute` rented and the nodes marked as yours; `fatline dashboard add <host>` watches another.
 
 **With an agent:** tell Claude Code, Codex or any agent that can run commands: *"Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md"*. The [skill](apps/site/skill.md) keeps you in charge: it shows prices and waits for your yes, and never handles your seed phrase or tokens. For Claude Code you can also install it: `cp -rL skills/fatline-setup ~/.claude/skills/`.

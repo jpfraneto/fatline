@@ -60,6 +60,9 @@ fatline connect
 ```
 In a terminal it draws a QR code; the person scans it with their phone and signs in with the Farcaster app. From an agent shell (no terminal) it opens the sign-in page in their browser instead, which shows the same request; tell them to approve it on their phone. It waits up to 5 minutes. Fatline checks the signature on this machine and asks the node which FID the signing address owns; only then is it saved (`.fatline/identity.json`, public data, no keys). No seed phrase is involved. Report the FID and username it prints. If they'd rather not, skip it.
 
+### 2c. No FID? A worker
+A worker is a node keeper with no Farcaster account: `fatline worker new` makes a wallet on this machine and shows its recovery phrase once. **The person runs it in their own terminal, never you**: it refuses without a terminal, and a phrase must never pass through the chat. After that, `fatline worker` (safe for you) shows the address to fund with USDC on Base, and `fatline compute --provider vpsagent` pays from it (x402, no ETH). Its coin is not available yet; say so.
+
 ### 3. (rent) Their Hetzner token
 They make one at console.hetzner.cloud → their project → Security → API tokens → Generate (Read & Write). Then **they** save it, without pasting it to you. Give them this line to run in their own terminal (macOS, after copying the token):
 ```sh

@@ -46,6 +46,10 @@ You are your FID (no seed phrase):
   fatline connect               A QR code: scan it with your phone, sign in with Farcaster; your node confirms
                                      the FID. --open opens the link on this device. connect show | connect forget
 
+No FID? Be a worker (as many as you like):
+  fatline worker new            A wallet made here (recovery phrase shown once); it pays for a node in USDC (x402)
+  fatline worker                Where it stands: wallet, USDC, node, client, coin. worker restore brings one back
+
 Posting (your client's own app key, no gas):
   fatline identity              Type your seed phrase (hidden, never saved); registers an app key for your FID
   fatline identity show         Is the key active?
@@ -166,6 +170,8 @@ cmd_client() { # your client; on first run, prove who you are (you are your FID)
   cmd_up "$@"
 }
 
+cmd_worker() { need_node; install infra; node "$ROOT/infra/worker.mjs" "$@"; }
+
 cmd_dashboard() { need_node; node "$ROOT/infra/dashboard.mjs" "$@"; }
 
 cmd_up() {
@@ -281,6 +287,6 @@ cmd_contracts() {
 command="${1:-help}"; shift || true
 case "$command" in
   help|-h|--help) cmd_help ;;
-  doctor|init|node|up|client|connect|dashboard|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup) "cmd_$command" "$@" ;;
+  doctor|init|node|up|client|connect|dashboard|worker|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup) "cmd_$command" "$@" ;;
   *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
 esac

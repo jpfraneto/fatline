@@ -81,7 +81,7 @@ function steps(s) {
     },
     connect: {
       title: 'You are your FID',
-      what: 'A QR code appears. Scan it with your phone and sign in with the Farcaster app: it signs with the address that owns your account, and a node confirms which FID that is. No seed phrase. You can skip it and do it later.',
+      what: 'A QR code appears. Scan it with your phone and sign in with the Farcaster app: it signs with the address that owns your account, and a node confirms which FID that is. No seed phrase. No account? Skip it: you can keep a node as a worker (fatline worker new).',
       cost: 'free, a minute',
       cmd: 'fatline connect',
       run: () => fatline('connect'),

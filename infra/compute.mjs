@@ -73,6 +73,8 @@ const usdcBalance = (address) => createPublicClient({ chain: base, transport: ht
 /** The wallet that pays for compute: X402_PRIVATE_KEY, else this machine's compute wallet, else a hidden prompt. */
 async function payingAccount() {
   let key = process.env.X402_PRIVATE_KEY;
+  const workerKey = join(STATE, 'worker.key'); // a worker pays for its own node (fatline worker)
+  if (!key && existsSync(workerKey)) key = readFileSync(workerKey, 'utf8').trim();
   if (!key && existsSync(WALLET_FILE)) key = readFileSync(WALLET_FILE, 'utf8').trim();
   if (!key) key = await ask('Private key of the paying wallet (hidden, never saved): ', { hidden: true });
   return privateKeyToAccount(key.startsWith('0x') ? key : `0x${key}`);
@@ -81,6 +83,12 @@ async function payingAccount() {
 /** A wallet only for compute, so no personal key is ever typed. Fund it with a little USDC on Base; it needs no ETH. */
 async function wallet() {
   mkdirSync(STATE, { recursive: true });
+  if (existsSync(join(STATE, 'worker.key'))) {
+    const worker = privateKeyToAccount(readFileSync(join(STATE, 'worker.key'), 'utf8').trim());
+    console.log(`Paying with your worker wallet: ${worker.address}`);
+    console.log(`USDC on Base:   ${formatUsdc(await usdcBalance(worker.address))}`);
+    return;
+  }
   if (!existsSync(WALLET_FILE)) {
     writeFileSync(WALLET_FILE, generatePrivateKey() + '\n', { mode: 0o600 });
     console.log('Created a new compute wallet. Its key is in .fatline/compute-wallet.key (mode 600, never committed).');
