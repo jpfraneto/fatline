@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fatline Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --paper: #efe2c6; --card: #f6ecd7; --ink: #3a2a1b; --muted: #806a4b; --line: rgba(90, 66, 40, .2); --bar: rgba(90, 66, 40, .14);
+    --blue: #3d8bff; --pink: #ff5fa8; --ok: #2f8a4f; --warn: #c07a12; --bad: #c0392b; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --paper: #17120d; --card: #221a12; --ink: #f1e4c8; --muted: #a8916c; --line: rgba(241, 228, 200, .14); --bar: rgba(241, 228, 200, .1); --ok: #4cc27a; } }
+  :root[data-theme="dark"] { --paper: #17120d; --card: #221a12; --ink: #f1e4c8; --muted: #a8916c; --line: rgba(241, 228, 200, .14); --bar: rgba(241, 228, 200, .1); --ok: #4cc27a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.5 Inter, system-ui, sans-serif; }
+  header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; max-width: 1100px; margin: 0 auto; padding: 28px 16px 8px; }
+  h1 { margin: 0; font: 800 34px/1 Fraunces, Georgia, serif; font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1; }
+  .meta { color: var(--muted); font-size: 13px; }
+  main { max-width: 1100px; margin: 0 auto; padding: 8px 16px 40px; display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(480px, 100%), 1fr)); }
+  .server { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .server h2 { margin: 0; font: 700 21px/1.2 Fraunces, Georgia, serif; font-variation-settings: 'SOFT' 100; }
+  .host { font: 13px 'JetBrains Mono', monospace; color: var(--muted); }
+  .row { display: grid; grid-template-columns: 110px 1fr auto; gap: 10px; align-items: center; margin-top: 10px; font-size: 13.5px; }
+  .row .k { color: var(--muted); }
+  .bar { height: 8px; border-radius: 4px; background: var(--bar); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 4px; background: var(--ok); }
+  .bar i.warn { background: var(--warn); } .bar i.bad { background: var(--bad); }
+  .v { font: 12.5px 'JetBrains Mono', monospace; white-space: nowrap; }
+  .nodes { display: grid; gap: 10px; margin-top: 16px; }
+  .node { border-top: 1px solid var(--line); padding-top: 12px; }
+  .node b { font: 600 15px Fraunces, Georgia, serif; }
+  .dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+  .snapchain .dot { background: var(--blue); box-shadow: 0 0 8px var(--blue); } .hypersnap .dot { background: var(--pink); box-shadow: 0 0 8px var(--pink); }
+  .state { float: right; font-size: 13px; font-weight: 600; } .state.alive { color: var(--ok); } .state.catching { color: var(--warn); } .state.down, .state.starting { color: var(--bad); }
+  .shards { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .shards span { font: 11.5px 'JetBrains Mono', monospace; padding: 2px 7px; border-radius: 6px; background: var(--bar); }
+  .alert { margin-top: 12px; padding: 8px 12px; border-radius: 10px; font-size: 13.5px; background: color-mix(in srgb, var(--bad) 14%, transparent); }
+  .alert.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); }
+  .empty { grid-column: 1 / -1; color: var(--muted); }
+  code { font: 12.5px 'JetBrains Mono', monospace; }
+</style>
+</head>
+<body>
+<header><h1>Your Fatline</h1><span class="meta" id="meta">Checking…</span></header>
+<main id="servers"></main>
+<script>
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const pct = (used, size) => (size ? Math.round((used / size) * 100) : 0);
+const level = (p) => (p >= 93 ? 'bad' : p >= 85 ? 'warn' : '');
+const gb = (mb) => `${Math.round(mb / 1024)} GB`;
+const dur = (s) => { const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600); return d ? `${d} d ${h} h` : `${h} h ${Math.floor((s % 3600) / 60)} min`; };
+const bar = (k, p, v) => `<div class="row"><span class="k">${k}</span><div class="bar"><i class="${level(p)}" style="width:${p}%"></i></div><span class="v">${v}</span></div>`;
+
+function server(s) {
+  const st = s.stats, alerts = [];
+  let h = `<section class="server"><h2>${esc(s.name)}</h2><div class="host">${esc(s.host)}${st ? ` · up ${dur(st.uptimeSec)}` : ''}</div>`;
+  if (st) {
+    h += bar('CPU', Math.round(st.cpu.busyPct), `${st.cpu.busyPct.toFixed(0)}% · load ${st.cpu.load[0].toFixed(1)} / ${st.cpu.cores}`);
+    const mem = pct(st.memory.totalMb - st.memory.availableMb, st.memory.totalMb);
+    h += bar('Memory', mem, `${gb(st.memory.totalMb - st.memory.availableMb)} of ${gb(st.memory.totalMb)}`);
+    for (const d of st.disks) {
+      const p = pct(d.usedMb, d.sizeMb);
+      h += bar(`Disk · ${esc(d.name)}`, p, `${p}% · ${gb(d.freeMb)} free`);
+      if (p >= 85) alerts.push([p >= 93 ? 'bad' : 'warn', `The ${esc(d.name)} disk is ${p}% full (${gb(d.freeMb)} free). The disk guard grows volumes before they fill; if it can't (Hetzner limits), the node stops.`]);
+    }
+    if (s.statsAgeSec > 900) alerts.push(['warn', `These numbers are ${Math.round(s.statsAgeSec / 60)} minutes old: the server stopped reporting.`]);
+  } else {
+    h += `<div class="row"><span class="k">Server</span><span class="v" style="grid-column: 2 / -1">no numbers: <code>http://${esc(s.host)}:8099/stats.json</code> didn't answer</span></div>`;
+  }
+  h += '<div class="nodes">';
+  for (const n of s.nodes) {
+    const cls = n.state === 'catching up' ? 'catching' : n.state;
+    const label = n.network === 'snapchain' ? 'Snapchain' : 'Hypersnap';
+    h += `<div class="node ${n.network}"><span class="dot"></span><b>${label}</b> <span class="host">:${n.port}${n.version ? ` · ${esc(n.version)}` : ''}</span><span class="state ${cls}">${n.state}${n.behind != null ? ` · ${n.behind} blocks behind` : ''}</span>`;
+    if (n.messages) h += `<div class="host">${n.messages.toLocaleString('en-US')} messages</div>`;
+    if (n.shards?.length) h += `<div class="shards">${n.shards.map((x) => `<span>shard ${x.id}: ${x.behind}</span>`).join('')}</div>`;
+    h += '</div>';
+    if (n.state === 'down') alerts.push(['bad', `${label} is not answering on port ${n.port}.`]);
+  }
+  if (!s.nodes.length) h += '<div class="host">No node answering on 3381 or 4381.</div>';
+  h += '</div>' + alerts.map(([k, t]) => `<div class="alert ${k}">${t}</div>`).join('') + '</section>';
+  return h;
+}
+
+async function tick() {
+  try {
+    const d = await (await fetch('/api/status', { cache: 'no-store' })).json();
+    document.getElementById('servers').innerHTML = d.servers.length ? d.servers.map(server).join('') : `<p class="empty">No servers yet. Add one: <code>fatline dashboard add &lt;host&gt;</code></p>`;
+    document.getElementById('meta').textContent = `checked ${new Date(d.at).toLocaleTimeString()} · every 15 s · list: ${d.file}`;
+  } catch { document.getElementById('meta').textContent = 'The dashboard process stopped. Run: fatline dashboard'; }
+}
+tick(); setInterval(tick, 15000);
+</script>
+</body>
+</html>
