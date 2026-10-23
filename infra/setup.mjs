@@ -4,6 +4,9 @@
 // where you stopped (.fatline/setup.json). It only calls the normal ./fatline commands, so every step can
 // also be run by hand.
 //
+// It opens with the license (MIT: read it, change it, share it; asked once) and the Farcaster arch
+// (infra/arch.mjs). When you stop or a step fails, it links to that step's code so you can improve it.
+//
 //   ./fatline setup            guided, in a terminal
 //   ./fatline setup --plan     where you are, and the exact command for each step (for people and agents)
 //   ./fatline setup --reset    forget the progress (rents and files are untouched)
@@ -18,6 +21,7 @@ import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import readline from 'node:readline';
 import { fileURLToPath } from 'node:url';
+import { playArch } from './arch.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const STATE_DIR = join(ROOT, '.fatline');
@@ -25,6 +29,7 @@ const FILE = process.env.FATLINE_SETUP_FILE ?? join(STATE_DIR, 'setup.json'); //
 const args = process.argv.slice(2);
 // The light path reads one public node; the operators of each network run these.
 const PUBLIC = { farcaster: 'crackle', hypersnap: 'haatz' };
+const REPO = 'https://github.com/jpfraneto/fatline';
 
 const load = () => (existsSync(FILE) ? JSON.parse(readFileSync(FILE, 'utf8')) : { done: [] });
 const save = (s) => { mkdirSync(dirname(FILE), { recursive: true }); writeFileSync(FILE, JSON.stringify(s, null, 2) + '\n'); };
@@ -211,6 +216,44 @@ if (!process.stdin.isTTY) {
   process.exit(1);
 }
 
+/** Where a step lives in this file, so whoever stops on it can go and change it. */
+function stepLink(st) {
+  const src = readFileSync(fileURLToPath(import.meta.url), 'utf8').split('\n');
+  const section = st.id === 'node' && s.path === 'local' ? 'local' : null;
+  const from = section ? src.findIndex((l) => l.includes(`const ${section} = {`)) : 0;
+  const k = src.findIndex((l, i) => i >= from && new RegExp(`^\\s+${st.id}: \\{`).test(l));
+  return `${REPO}/blob/main/infra/setup.mjs${k >= 0 ? `#L${k + 1}` : ''}`;
+}
+function contribute(st) {
+  console.log(`
+  This setup is open source, and it's yours to make better. If this step was confusing, slow or missing
+  something, change it:
+    ${st ? `this step's code:  ${stepLink(st)}\n    ` : ''}edit it on GitHub: ${REPO}/edit/main/infra/setup.mjs
+    or just tell us:   ${REPO}/issues/new
+  ${dim('GitHub opens the file in its editor, makes your own copy, and sends your change to us as a pull request.')}
+`);
+}
+
+// The welcome: what this is, and the license you're agreeing to. Asked once; then the arch.
+if (!s.agreed) {
+  console.log(`
+  ${bold('FATLINE')}  ·  your own Farcaster node and your own client
+
+  Everything you are about to run is open source, under the MIT license:
+    ${REPO}
+  You can read every line, change it, and share it. It comes as is, with no warranty.
+  Each step tells you what it does before it runs, and nothing costs money until you type "create".
+`);
+  const a = (await ask('  [Enter] I agree, let\'s begin · q quit: ')).toLowerCase();
+  if (a === 'q') {
+    console.log('\n  Nothing was changed. The code is in this folder whenever you want to read it.');
+    contribute();
+    process.exit(0);
+  }
+  s.agreed = new Date().toISOString(); save(s);
+}
+await playArch();
+
 console.log(bold('\nFatline setup') + dim(`  ·  progress is saved; run ./fatline setup again to continue  ·  ./fatline setup --plan shows every step\n`));
 for (let i = 0; ; i++) {
   const all = steps(s); // the list changes once a path is chosen
@@ -219,9 +262,9 @@ for (let i = 0; ; i++) {
   const n = all.indexOf(st) + 1;
   console.log(`\n${bold(`Step ${n} of ${all.length}: ${st.title}`)}\n  ${st.what}\n  ${dim(`Cost: ${st.cost}.  By hand: ${st.cmd}`)}`);
   const a = (await ask('  [Enter] go · s skip · q stop: ')).toLowerCase();
-  if (a === 'q') { console.log(`\nStopped before "${st.title}". Run ./fatline setup to continue from here.`); break; }
+  if (a === 'q') { console.log(`\nStopped before "${st.title}". Run ./fatline setup to continue from here.`); contribute(st); break; }
   if (a === 's') { s.done.push(st.id); save(s); console.log('  Skipped.'); continue; }
   const ok = await st.run();
   if (ok) { s.done.push(st.id); save(s); console.log(`  ✓ ${st.title}`); }
-  else { console.log(`\n"${st.title}" didn't finish. Fix what it says above, then run ./fatline setup to try this step again.`); process.exit(1); }
+  else { console.log(`\n"${st.title}" didn't finish. Fix what it says above, then run ./fatline setup to try this step again.`); contribute(st); process.exit(1); }
 }
