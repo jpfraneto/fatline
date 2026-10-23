@@ -98,6 +98,8 @@ It must not look like plastic, fabric, ordinary human skin, or a generic robot s
 
 ### Signal System
 
+> **Amendment, 2026-10-23 (the owner):** the network colours are an emergent property: life force or electricity that runs through the being as it does the work of sustaining the network. The permanent portrait shows the being **at rest**: the forehead path, temple node and branches are there as living anatomy (raised veins, a closed pearl-like organ), unlit, with no blue or pink. Blue (Snapchain) and pink (Hypersnap) light appear only through a running node, drawn by a live layer (see §8 on the living manifestation). Where this section speaks of luminous paths in a portrait, read: the paths that a running node lights.
+
 The forehead path and temple node are mandatory species identifiers.
 
 The signal continues beneath the surface as a branching network.

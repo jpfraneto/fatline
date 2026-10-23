@@ -50,6 +50,11 @@ Everyday:
                                      --network, --node <name|URL>, --following (add who they follow), --once
   ./fatline test                Run every test (contracts, indexer, infra)
 
+Fatliners (PFPs from any FID's history, reference-conditioned):
+  ./fatline fatliners prompt --fid 18350        Read our nodes, write traits + prompt + request (no image call)
+                                     --generate makes the image (Codex image tool); --input <file> works offline
+  ./fatline fatliners export --fid 18350        A text-free input file for offline prompt compiling
+
 Contracts (Foundry):
   ./fatline contracts fork      Fork Base locally (real Clanker + USDC, fake money) and deploy there
   ./fatline contracts local     Plain local chain with mock USDC (apps without coins only)
@@ -187,6 +192,11 @@ cmd_test() {
   bold "Infra"; install infra; (cd "$ROOT/infra" && npm test --silent)
 }
 
+cmd_fatliners() {
+  need_node
+  node --experimental-sqlite --no-warnings=ExperimentalWarning "$ROOT/fatliners/bin/pfp.mjs" "$@"
+}
+
 cmd_contracts() {
   command -v forge >/dev/null || fail "Foundry is required: curl -L https://foundry.paradigm.xyz | bash && foundryup"
   local sub="${1:-}"; shift || true
@@ -236,6 +246,6 @@ command="${1:-help}"; shift || true
 case "$command" in
   help|-h|--help) cmd_help ;;
   client) cmd_up "$@" ;;  # for now the same as up; first-run identity setup comes next
-  doctor|init|node|up|dev|status|compute|test|contracts|identity|follow) "cmd_$command" "$@" ;;
+  doctor|init|node|up|dev|status|compute|test|contracts|identity|follow|fatliners) "cmd_$command" "$@" ;;
   *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
 esac

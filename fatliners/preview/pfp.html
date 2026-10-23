@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fatliner PFPs</title>
+<style>
+  :root { --bg:#0d0b0a; --panel:#17130f; --line:#2c251e; --text:#efe7dc; --dim:#a39684; --accent:#e9c46a; --blue:#6cb6ff; --pink:#ff8fc8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:14px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; gap:14px; align-items:center; flex-wrap:wrap; }
+  header h1 { font-size:17px; margin:0; }
+  header a { color:var(--dim); }
+  .fid { display:flex; gap:6px; }
+  .fid input { width:140px; background:var(--panel); border:1px solid var(--line); color:var(--text); border-radius:8px; padding:6px 8px; font:inherit; }
+  button { background:var(--panel); border:1px solid var(--line); color:var(--text); padding:6px 12px; border-radius:8px; cursor:pointer; font:inherit; }
+  button:hover { border-color:var(--accent); }
+  .note { color:var(--dim); font-size:12px; }
+  main { display:grid; grid-template-columns:minmax(0,1fr) 420px; }
+  @media (max-width:1000px) { main { grid-template-columns:1fr; } }
+  section { padding:18px; border-right:1px solid var(--line); min-width:0; }
+  h2 { font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--dim); margin:18px 0 8px; }
+  .gallery { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:12px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; cursor:pointer; }
+  .card.on { border-color:var(--accent); }
+  .card img, .card .empty { display:block; width:100%; aspect-ratio:1; object-fit:cover; background:#0004; }
+  .card .empty { display:grid; place-items:center; color:var(--dim); font-size:12px; }
+  .card p { margin:0; padding:6px 8px; font-size:12px; }
+  .card p small { color:var(--dim); display:block; }
+  .hero { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end; }
+  .hero .big { width:min(100%, 420px); aspect-ratio:1; border-radius:14px; object-fit:cover; background:var(--panel); }
+  .hero figure { margin:0; text-align:center; color:var(--dim); font-size:11px; }
+  .hero figure img { display:block; margin:0 auto 4px; border-radius:50%; }
+  .dim { border:1px solid var(--line); border-radius:10px; padding:8px 10px; margin-bottom:8px; background:var(--panel); }
+  .dim h3 { margin:0 0 2px; font-size:13px; display:flex; justify-content:space-between; gap:8px; }
+  .dim h3 em { font-style:normal; color:var(--accent); font-weight:500; }
+  .dim p { margin:0 0 4px; font-size:12px; }
+  .dim code { font-size:11px; color:var(--dim); word-break:break-word; }
+  pre { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; font-size:11px; white-space:pre-wrap; max-height:420px; overflow:auto; }
+  .ref { width:100%; border-radius:8px; border:1px solid var(--line); }
+  .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:999px; border:1px solid var(--line); color:var(--dim); margin-right:4px; }
+  .tag.ok { border-color:var(--accent); color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Fatliner PFPs</h1>
+  <div class="fid"><input id="fid" inputmode="numeric" placeholder="any FID, e.g. 18350"><button id="go">Prepare</button><label class="note"><input type="checkbox" id="offline"> archive only</label></div>
+  <span class="note" id="msg">Prepare reads our two nodes (Snapchain, Hypersnap) and writes the prompt. It never generates an image: run <code>./fatline fatliners prompt --fid N --generate</code>.</span>
+  <a href="/">SVG generator →</a>
+</header>
+<main>
+  <section>
+    <div id="detail"></div>
+    <h2>All prepared Fatliners</h2>
+    <div class="gallery" id="gallery"></div>
+  </section>
+  <section id="side">
+    <h2>Species reference (attached to every request)</h2>
+    <img class="ref" src="/reference.png" alt="Fatliners master species blueprint">
+    <p class="note" id="refnote"></p>
+    <div id="traits"></div>
+  </section>
+</main>
+<script type="module">
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const day = (ms) => (ms ? new Date(ms).toISOString().slice(0, 10) : '—');
+let current = null;
+
+async function gallery() {
+  const list = await (await fetch('/api/pfp')).json();
+  list.sort((a, b) => (b.portrait ? 1 : 0) - (a.portrait ? 1 : 0) || a.fid - b.fid);
+  $('gallery').innerHTML = list.map((r) => `<div class="card ${current === r.fid ? 'on' : ''}" data-fid="${r.fid}">${r.portrait ? `<img loading="lazy" src="${r.portrait}" alt="">` : '<div class="empty">prompt ready</div>'}<p>${esc(r.name)} <small>FID ${r.fid} · ${esc(r.directions.roots)} · ${esc(r.directions.bloom)}</small></p></div>`).join('') || '<p class="note">Nothing prepared yet.</p>';
+}
+
+function show(r) {
+  current = r.fid;
+  const req = r.request;
+  $('refnote').textContent = `${req.reference.path} · ${req.reference.width}×${req.reference.height} · sha256 ${req.reference.sha256.slice(0, 16)}… · ${req.reference.version}`;
+  const nets = Object.entries(r.coverage.networks).map(([n, c]) => `<span class="tag ${c.status === 'ok' ? 'ok' : ''}">${n === 'farcaster' ? 'Snapchain' : 'Hypersnap'}: ${esc(c.status)} · ${c.messages ?? 0} msgs · ${day(c.oldest)} → ${day(c.newest)}</span>`).join('');
+  const px = (n) => r.portrait ? `<figure><img width="${n}" height="${n}" src="${r.portrait}" alt=""><figcaption>${n} px</figcaption></figure>` : '';
+  $('detail').innerHTML = `
+    <h2>FID ${r.fid} · ${esc(r.blueprint.name)} <span class="tag ${r.status === 'generated' ? 'ok' : ''}">${r.status}</span></h2>
+    <div class="hero">${r.portrait ? `<img class="big" src="${r.portrait}" alt="">` : '<div class="big" style="display:grid;place-items:center;color:var(--dim)">no portrait yet: prompt prepared</div>'}${px(128)}${px(64)}${px(32)}</div>
+    ${r.revisions.length ? `<h2>Revisions (the accepted portrait is above)</h2><div class="hero">${r.revisions.map((u) => `<img width="140" src="${u}" alt="">`).join('')}</div>` : ''}
+    <p>${nets}</p>
+    <p class="note">State: ${esc(r.coverage.state)} · shared ${r.coverage.evidence.both}, Snapchain only ${r.coverage.evidence.farcasterOnly}, Hypersnap only ${r.coverage.evidence.hypersnapOnly} · node operation: ${esc(r.coverage.evidence.nodeOperation)}</p>
+    <p class="note">Prompt ${esc(req.prompt.version)} · sha256 ${req.prompt.sha256.slice(0, 16)}… · snapshot ${day(req.snapshot.snapshotAt)} · commitment ${req.snapshot.commitment.slice(0, 18)}… ${r.generation ? `· image by ${esc(r.generation.provider)} (${esc(r.generation.model)})` : ''}</p>
+    <h2>Prompt <button id="copy">Copy prompt</button> <span class="note" id="copied"></span></h2>
+    <pre>${esc(r.prompt)}</pre>`;
+  $('copy').onclick = async () => { await navigator.clipboard.writeText(r.prompt); $('copied').textContent = 'Copied. Attach the reference image too: the filename in the text is not an attachment.'; };
+  const t = r.traits;
+  $('traits').innerHTML = '<h2>Traits and their evidence</h2>' + ['roots', 'orbit', 'voice', 'pulse', 'bloom', 'network'].map((k) => `<div class="dim"><h3>${k.toUpperCase()} <em>${esc(t[k].value)}</em></h3><p>${esc(t[k].text)}</p><code>${esc(JSON.stringify(t[k].evidence ?? {}))}${t[k].seeded ? ` · seeded: ${esc(t[k].seeded.join(', '))}` : ''}</code></div>`).join('')
+    + `<div class="dim"><h3>IDENTITY <em>seeded</em></h3><p>${esc(Object.entries(t.identity).filter(([k]) => k !== 'seeded').map(([k, v]) => `${k}: ${v}`).join(' · '))}</p></div>`;
+  gallery();
+}
+
+async function open(fid) {
+  const r = await (await fetch(`/api/pfp/${fid}`)).json();
+  if (r.status === 'not-prepared') { $('msg').textContent = `FID ${fid} isn't prepared yet: press Prepare.`; return; }
+  show(r);
+}
+$('gallery').onclick = (e) => { const c = e.target.closest('.card'); if (c) open(Number(c.dataset.fid)); };
+$('go').onclick = async () => {
+  const fid = $('fid').value.trim();
+  if (!/^\d+$/.test(fid) || Number(fid) < 1) { $('msg').textContent = 'A FID is a positive whole number.'; return; }
+  $('msg').textContent = `Reading FID ${fid} from our nodes (a big account can take a few minutes the first time)…`;
+  const r = await (await fetch(`/api/pfp/${fid}${$('offline').checked ? '?offline=1' : ''}`, { method: 'POST' })).json();
+  if (!r.request) { $('msg').textContent = r.message ?? r.status; return; }
+  $('msg').textContent = `FID ${fid}: ${r.status}.`;
+  show(r);
+};
+await gallery();
+const first = document.querySelector('.card');
+if (first) open(Number(first.dataset.fid));
+</script>
+</body>
+</html>

@@ -87,6 +87,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - **Local processes from earlier demos** may still run on the owner's Mac: an anvil Base fork on :8545 and the indexer on :8787. Both are harmless; stop them if they get in the way.
 
 ### Done
+- **Fatliner PFPs from any FID (2026-10-23):** `./fatline fatliners prompt --fid N [--generate]`. Our two nodes → the existing features and DNA → calibrated visual traits → a prompt for `gpt-image-2` with the approved species blueprint attached → a portrait (made through the Codex CLI's image tool on the owner's ChatGPT login; no API key). 16 well-known accounts rendered as a set. Everything: `fatliners/docs/PFP.md`. Not done: recalibrating on the real top 777 once `ranking.tsv` exists; an OpenAI API adapter.
 - Machine check, read client (Farcaster and Hypersnap), x402 rental (VpsAgent monthly, AgentMetal daily).
 - Launchpad contracts, indexer and UI, and onchain daily users. Proven on a Base fork.
 - **Posting (J5–J7):**

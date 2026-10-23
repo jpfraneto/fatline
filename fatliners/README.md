@@ -11,6 +11,8 @@
 - **Atlas and minting:** [docs/ATLAS-AND-MINTING.md](docs/ATLAS-AND-MINTING.md): the Memory Atlas, the snapshot commitment, the contract (not deployed), and the owner's open decisions.
 - **Coordination:** [docs/COORDINATION.md](docs/COORDINATION.md): what was agreed with the other sessions, and the remaining dependencies.
 
+- **PFPs from any FID:** [docs/PFP.md](docs/PFP.md): our nodes → traits → a prompt for `gpt-image-2` with the species blueprint attached → a portrait. `./fatline fatliners prompt --fid 18350`.
+
 **Building the generator?** Start with [GENERATOR.md](GENERATOR.md): what we send you per account, and what you send back.
 
 ## Run it
@@ -20,8 +22,8 @@ Needs Node ≥ 22.12. No npm install: there are no dependencies.
 ```sh
 cd fatliners
 
-npm run preview            # → http://127.0.0.1:7777
-npm test                   # 14 tests: determinism, goldens, fairness, privacy, archive reader, 32/128/1024 px
+npm run preview            # → http://127.0.0.1:7777  (PFPs: /pfp)
+npm test                   # 24 tests (10 for the PFP path): determinism, goldens, fairness, privacy, archive reader, 32/128/1024 px
 npm run sheet              # out/: 36 SVGs + Atlases, PNGs at 32/128/1024, contact sheet, 32 px icon strip
 
 # a real FID from the local Fatline archive (read-only); --registered-at = onchain ID_REGISTER time in ms
@@ -53,6 +55,10 @@ src/atlas.mjs                            Memory Atlas (public / owner)
 src/index.mjs                            generate(history)
 src/sources/archive.mjs                  read-only reader for the Fatline archive (SQLite)
 src/sources/synthetic.mjs                labelled synthetic profiles
+src/sources/node.mjs                     any FID from our pinned nodes (targeted, resumable backfill)
+src/pfp/                                 reference check, PFP traits, prompt compiler, pipeline, Codex image adapter
+prompts/pfp-<n>.prompt.md                versioned PFP prompt templates
+assets/FATLINERS_MASTER_REFERENCE.png    the approved species blueprint (reference image 1)
 bin/                                     preview server, sheet, atlas, cross-engine check
 preview/                                 the preview page (runs src/ in the browser)
 contracts/                               Fatliners.sol + Foundry tests (not deployed)
@@ -68,6 +74,8 @@ contracts/                               Fatliners.sol + Foundry tests (not depl
 - The read-only archive reader, against the real local archive: FID 18350, Farcaster, 320 merged messages.
 - Contract logic: 777 cap, one per FID forever, origin survives transfers, signatures bound to minter and commitment, no payments.
 
+- PFP path (`docs/PFP.md`): reference checks, cache keys, stable prompts, privacy, network colours, accepted portraits surviving retries (unit tests, Codex faked). Live: 16 real FIDs read from both our nodes and rendered through Codex's image tool.
+
 **Mocked / synthetic:**
 - Every being in the contact sheet. Their histories are invented and labelled `synthetic`. They're not FIDs.
 - Registration time is passed by hand (`--registered-at`). The archive doesn't store it yet.
@@ -77,7 +85,7 @@ contracts/                               Fatliners.sol + Foundry tests (not depl
 - The attester service.
 - Deployment or any onchain action (needs the owner's yes).
 - Art storage (IPFS or onchain).
-- Threshold calibration on real FIDs.
+- Threshold calibration on the real top 777 (the PFP traits are calibrated on a 33-account proxy; the SVG DNA isn't calibrated at all).
 - Keeping minted snapshots' hash lists after pruning.
 - Integration into the Fatline client (`apps/` belongs to other sessions).
 - A living layer driven by fresh history.

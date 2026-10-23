@@ -1,5 +1,7 @@
 # The Fatliner generator: the contract between us
 
+> **Species authority:** [SPECIES-CANON.md](SPECIES-CANON.md) (v1.0) and `assets/FATLINERS_MASTER_REFERENCE.png`. What a Fatliner is, its anatomy, the five dimensions, the DNA record and the acceptance tests live there; this page is only the input/output contract.
+
 **Who builds what.** Three people, a third each:
 - **Fatline (this repo):** the nodes, the ranking of every account, the mint tiers, the contracts, the site.
 - **The generator (you):** one Fatliner from one account: its image, its name, its traits.
@@ -79,6 +81,17 @@ The first generator (by FATLINERS-01, in `src/`) uses these, as a starting point
 | Bloom | what they cultivate (channels, making) | the sprout: seed, bud, sprout, fern, blossom |
 
 Rule kept from it: **volume doesn't buy beauty.** Traits come from ratios and shapes, never raw counts, so a quiet account can be as beautiful as a loud one. Rarity comes from the rank, not from how much someone posts.
+
+## The reference-conditioned PFP path (built)
+
+Beside this contract there is now a second way to make a Fatliner's image: a **prompt** compiled from the same history and DNA, sent to `gpt-image-2` **together with** the approved species blueprint (`assets/FATLINERS_MASTER_REFERENCE.png`). It works for any FID, from our own nodes, or offline from an exported file:
+
+```sh
+./fatline fatliners export --fid 18350 > 18350.input.json    # what we send you: fatliners.input/1 (+ coverage)
+./fatline fatliners prompt --input 18350.input.json          # traits.json, blueprint.json, pfp.prompt.txt, pfp.request.json
+```
+
+`generate(input.json) → { name, image, traits }` still holds: `name` = `blueprint.json` name, `traits` = `traits.json` attributes, `image` = `portrait.png` **once an image was generated and accepted**. Until then the status is `prepared`, never `generated`. The prompt is deterministic; the image isn't, so the first accepted image is kept and reused. Everything: [docs/PFP.md](docs/PFP.md).
 
 ## How to plug it in
 

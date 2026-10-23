@@ -135,6 +135,18 @@ More decisions that day:
 - Quoted, **not created**: the owner paused to start a fresh session with new ideas.
 - A friend independently explained the R2 snapshot, the same file we measured. The friend is a tester candidate.
 
+## 8. Fatliner portraits from real histories (Oct 22–23)
+
+- The owner approved a species blueprint (`fatliners/assets/FATLINERS_MASTER_REFERENCE.png`) and asked for a tool: any FID → its history from our nodes → visual traits → a `gpt-image-2` prompt that uses the blueprint → that FID's portrait. Then iterate until it feels like a collection.
+- **No API key, but Codex:** the Codex CLI on this machine is logged in with the owner's ChatGPT account, and its built-in image tool takes the blueprint as an attached image. About 2 minutes per portrait.
+- **Four rounds:**
+  1. The owner's prompt as written: on-species, but generic glossy 3D with orange haze and neon veins.
+  2. One painted style, fixed framing, a flat background colour each: it became a set.
+  3. 16 real accounts showed the traits collapse: every power user got the same orbit, eyes and pulse, because the DNA's thresholds were set on synthetic histories. The traits are now **calibrated** on the quantiles of 33 real active accounts. Also one fixed light.
+  4. The mouth became a seam (it was drifting to human lips), the eyes darker, the expressions readable at avatar size.
+- **Found on the way:** every account we read holds the identical message set on Snapchain and Hypersnap, so all are drawn with braided blue and pink. During the run the Hypersnap volume was detached and the node moved onto the master (another session, commit 542930c); the pipeline labelled those reads "Snapchain read only" instead of guessing.
+- A moving "now" changed every being on each run: the default cutoff is now the collection snapshot, 2026-10-22 00:00 UTC.
+
 ## Start from scratch
 
 1. Read the bounty post, then [MASTER-PROMPT.md](MASTER-PROMPT.md), then this file.
