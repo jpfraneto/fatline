@@ -112,4 +112,4 @@ Tell them to run, **in their own terminal**: `./fatline identity --fid <their FI
 - Snapshot downloads can stall; the setup retries slow pieces on its own. Re-run the node command to follow it.
 - Still stuck: open an issue at https://github.com/jpfraneto/fatline/issues with the command, the last 30 lines of output, the OS, and the path (rent/local/light). Never include tokens or keys.
 
-More: https://fatline.ink/docs/ (tutorial, English, Spanish, Chinese) · https://github.com/jpfraneto/fatline (README: what is tested and what is not).
+More: https://fatline.ink/docs/ (the docs) and https://fatline.ink/docs/tutorial.html (tutorial: English, Spanish, Chinese) · https://github.com/jpfraneto/fatline (README: what is tested and what is not).
