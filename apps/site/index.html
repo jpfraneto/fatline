@@ -276,13 +276,12 @@ function who(o) {
   return `${pic}<span>@${esc(o.username ?? '?')} · FID ${esc(o.fid)}</span>`;
 }
 
-// One line on what keeps it alive: the cost and how full each server's disk is.
+// One line on what keeps it alive: the cost and how full each disk is.
 function body(f) {
-  const s = f.nodes.filter((n) => n.server);
-  if (!s.length) return '';
-  const month = s.reduce((a, n) => a + n.server.cost.monthUsd, 0);
-  const disks = s.filter((n) => n.server.live).map((n) => { const d = n.server.live.disk; return `${NAME[n.network]} disk ${Math.round(100 * d.usedMb / (d.usedMb + d.freeMb))}%`; });
-  return `<div><span class="dot off" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span><b>Body</b> <span class="muted">${s.length} servers · $${month.toFixed(2)}/month${disks.length ? ' · ' + disks.join(' · ') : ''} · <a href="${esc(f.page)}">details</a></span></div>`;
+  const s = f.server;
+  if (!s) return '';
+  const disks = (s.live?.disks ?? []).filter((d) => d.name !== 'local').map((d) => `${NAME[d.name] ?? d.name} disk ${Math.round(100 * d.usedMb / (d.usedMb + d.freeMb))}%`);
+  return `<div><span class="dot off" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span><b>Body</b> <span class="muted">1 server · $${s.cost.monthUsd.toFixed(2)}/month${disks.length ? ' · ' + disks.join(' · ') : ''} · <a href="${esc(f.page)}">details</a></span></div>`;
 }
 
 let cards = [];

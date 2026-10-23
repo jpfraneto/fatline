@@ -40,7 +40,7 @@
   h2 { font-size: 20px; margin: 30px 0 4px; }
   .total { font-size: 15px; color: #d8d3f2; margin: 0 0 14px; }
   .total b { font-size: 22px; color: var(--text); }
-  .servers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+  .servers { display: grid; grid-template-columns: minmax(0, 560px); gap: 16px; }
   .server { padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); min-width: 0; }
   .server h3 { margin: 0; font-size: 17px; display: flex; gap: 8px; align-items: center; }
   .server .spec { font-size: 13.5px; color: var(--muted); margin: 4px 0 12px; }
@@ -85,37 +85,32 @@ function meter(label, pct, detail) {
 }
 function uptime(sec) { const d = Math.floor(sec / 86400), h = Math.floor(sec / 3600) % 24; return d ? `${d} d ${h} h` : `${h} h`; }
 
-// What keeps this Fatline alive: each node's server, how full it is, and what it costs.
+// What keeps this Fatline alive: its server, how full it is, and what it costs.
 function body(f) {
-  const withServer = f.nodes.filter((n) => n.server);
-  if (!withServer.length) return '';
-  const month = withServer.reduce((a, n) => a + n.server.cost.monthUsd, 0);
-  const cards = withServer.map((n) => {
-    const s = n.server, l = s.live, c = s.cost;
-    const meters = l ? [
-      meter('CPU', l.cpuBusyPct, `${l.cpuBusyPct.toFixed(0)}% busy · load ${l.load?.[1]?.toFixed(1)} on ${l.cores} cores`),
-      meter('Memory', 100 * l.memUsedMb / l.memTotalMb, `${(l.memUsedMb / 1024).toFixed(1)} of ${(l.memTotalMb / 1024).toFixed(1)} GB`),
-      meter('Disk (node data)', 100 * l.disk.usedMb / (l.disk.usedMb + l.disk.freeMb), `${gb(l.disk.usedMb)} used · ${gb(l.disk.freeMb)} free`),
-    ].join('') + `<div class="note">Server up ${uptime(l.uptimeSec)} · node container ${esc(l.node)} · measured ${since(l.at)} ago</div>`
-      : '<p class="note warnline">Live numbers unavailable at the last check.</p>';
-    const low = l && l.disk.freeMb < 25 * 1024 ? `<p class="note warnline">Disk is nearly full (under 25 GB free). The disk watch grows the volume or alerts the owner.</p>` : '';
-    return `<div class="server">
-      <h3><span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span>${NAME[n.network]} node</h3>
-      <div class="spec">${esc(s.provider)} ${esc(s.type)} · ${esc(s.location)}<br>${esc(s.cpu)} · ${s.ramGb} GB RAM · ${s.localDiskGb} GB local disk + ${s.volumeGb} GB volume</div>
+  const s = f.server;
+  if (!s) return '';
+  const l = s.live, c = s.cost;
+  const meters = l ? [
+    meter('CPU', l.cpuBusyPct, `${l.cpuBusyPct.toFixed(0)}% busy · load ${l.load?.[1]?.toFixed(1)} on ${l.cores} cores`),
+    meter('Memory', 100 * l.memUsedMb / l.memTotalMb, `${(l.memUsedMb / 1024).toFixed(1)} of ${(l.memTotalMb / 1024).toFixed(1)} GB`),
+    ...l.disks.map((d) => meter(esc(d.label), 100 * d.usedMb / (d.usedMb + d.freeMb), `${gb(d.usedMb)} used · ${gb(d.freeMb)} free`)),
+  ].join('') + `<div class="note">Server up ${uptime(l.uptimeSec)} · ${(l.nodes ?? []).map((n) => `${esc(n.container.split('-')[0])} ${esc(n.state)}`).join(' · ')} · measured ${since(l.at)} ago</div>`
+    : '<p class="note warnline">Live numbers unavailable at the last check.</p>';
+  const low = l?.disks.some((d) => d.freeMb < 25 * 1024) ? '<p class="note warnline">A disk is nearly full (under 25 GB free). The disk watch grows it or alerts the owner.</p>' : '';
+  return `<h2>Its body</h2>
+    <p class="total">Keeping it alive costs <b>${usd(c.monthUsd)}</b> a month, about ${usd(c.dayUsd)} a day.</p>
+    <div class="servers"><div class="server">
+      <h3>${f.nodes.map((n) => `<span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span>`).join('')} One server, ${f.nodes.length} networks</h3>
+      <div class="spec">${esc(s.provider)} ${esc(s.type)} · ${esc(s.location)}<br>${esc(s.cpu)} · ${s.ramGb} GB RAM</div>
       ${meters}${low}
       <table class="cost">
         <tr><td>Server (${esc(s.type)})</td><td>${usd(c.server)}/mo</td></tr>
-        <tr><td>Volume (${s.volumeGb} GB)</td><td>${usd(c.volume)}/mo</td></tr>
+        ${c.volumes.map((v) => `<tr><td>${esc(v.label)}, ${v.gb} GB</td><td>${usd(v.monthUsd)}/mo</td></tr>`).join('')}
         <tr><td>IPv4 address</td><td>${usd(c.ipv4)}/mo</td></tr>
         <tr class="sum"><td>Total</td><td>${usd(c.monthUsd)}/mo · ${usd(c.dayUsd)}/day</td></tr>
-      </table></div>`;
-  }).join('');
-  const asOf = withServer[0].server.cost.pricesAsOf;
-  return `<h2>Its body</h2>
-    <p class="total">Keeping it alive costs <b>${usd(month)}</b> a month, about ${usd(month * 12 / 365)} a day.</p>
-    <div class="servers">${cards}</div>
-    <p class="note">Prices from Hetzner's API (${esc(asOf)}, USD with VAT); Hetzner bills by the hour, capped at the monthly price.
-      Live numbers come from each server every 5 minutes; this page is refreshed every 15.${f.notice ? '<br>' + esc(f.notice) : ''}</p>`;
+      </table></div></div>
+    <p class="note">${s.note ? esc(s.note) + ' ' : ''}Prices from Hetzner's API (${esc(c.pricesAsOf)}, USD with VAT); Hetzner bills by the hour, capped at the monthly price.
+      Live numbers come from the server every 5 minutes; this page is refreshed every 15.${f.notice ? '<br>' + esc(f.notice) : ''}</p>`;
 }
 
 function nodeRows(f) {

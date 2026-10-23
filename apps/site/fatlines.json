@@ -14,39 +14,36 @@
           "network": "snapchain",
           "label": "Fatline master (Hetzner, Nuremberg)",
           "url": "http://46.225.208.199:3381",
-          "since": "2026-10-22T06:42:00Z",
-          "server": {
-            "provider": "Hetzner Cloud",
-            "type": "cax31",
-            "location": "Nuremberg (nbg1)",
-            "cpu": "8 Arm cores (Ampere Altra)",
-            "ramGb": 16,
-            "localDiskGb": 160,
-            "monthUsd": 24.99,
-            "volumeGb": 700,
-            "stats": "http://46.225.208.199:8099/stats.json"
-          }
+          "since": "2026-10-22T06:42:00Z"
         },
         {
           "network": "hypersnap",
-          "label": "Fatline Hypersnap (Hetzner, Nuremberg)",
-          "url": "http://2.31.51.183:4381",
-          "since": "2026-10-22T10:21:00Z",
-          "server": {
-            "provider": "Hetzner Cloud",
-            "type": "cax21",
-            "location": "Nuremberg (nbg1)",
-            "cpu": "4 Arm cores (Ampere Altra)",
-            "ramGb": 8,
-            "localDiskGb": 80,
-            "monthUsd": 12.49,
-            "volumeGb": 685,
-            "stats": "http://2.31.51.183:8099/stats.json"
-          }
+          "label": "Fatline master (Hetzner, Nuremberg)",
+          "url": "http://46.225.208.199:4381",
+          "since": "2026-10-22T10:21:00Z"
         }
       ],
       "page": "/f/FATLINE",
-      "notice": "CPU is higher than usual until about Oct 24: both servers are also extracting data for the Fatliner ranking."
+      "notice": "CPU is higher than usual until about Oct 24: the server is also extracting data for the Fatliner ranking.",
+      "server": {
+        "provider": "Hetzner Cloud",
+        "type": "cax31",
+        "location": "Nuremberg (nbg1)",
+        "cpu": "8 Arm cores (Ampere Altra)",
+        "ramGb": 16,
+        "monthUsd": 24.99,
+        "disks": {
+          "snapchain": "Snapchain data (volume)",
+          "hypersnap": "Hypersnap data (volume)",
+          "local": "Local disk (included)"
+        },
+        "volumes": {
+          "snapchain": 700,
+          "hypersnap": 685
+        },
+        "stats": "http://46.225.208.199:8099/stats.json",
+        "note": "Both networks run on this one server since 2026-10-23 03:01 UTC."
+      }
     }
   ],
   "prices": {

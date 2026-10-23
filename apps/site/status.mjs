@@ -32,20 +32,23 @@ async function profile(fid, nodes) {
   return { fid };
 }
 
-// The server a node runs on: its fixed specs, its live numbers (each server writes them every 5 minutes,
-// infra/server-stats.sh) and what it costs. The volume is billed by its real size, which the server reports.
+// The server a Fatline runs on: its fixed specs, its live numbers (it writes them every 5 minutes,
+// infra/server-stats.sh) and what it costs. Volumes are billed by their real size, which the server reports.
 async function server(s) {
   const live = s.stats ? await get(s.stats) : null;
-  const volumeGb = live?.disk?.volumeDeviceGb ?? s.volumeGb;
-  const month = s.monthUsd + volumeGb * prices.volumePerGbMonth + prices.ipv4Month;
-  const { stats, ...spec } = s;
+  const volumes = Object.entries(s.volumes).map(([name, gb]) => {
+    const size = live?.disks?.find((d) => d.name === name)?.deviceGb ?? gb;
+    return { name, label: s.disks[name], gb: size, monthUsd: +(size * prices.volumePerGbMonth).toFixed(2) };
+  });
+  const month = s.monthUsd + volumes.reduce((a, v) => a + v.monthUsd, 0) + prices.ipv4Month;
+  const { stats, volumes: _v, ...spec } = s;
   return {
-    ...spec, volumeGb,
-    cost: { monthUsd: +month.toFixed(2), dayUsd: +(month * 12 / 365).toFixed(2), server: s.monthUsd,
-      volume: +(volumeGb * prices.volumePerGbMonth).toFixed(2), ipv4: prices.ipv4Month, pricesAsOf: prices.asOf },
+    ...spec,
+    cost: { monthUsd: +month.toFixed(2), dayUsd: +(month * 12 / 365).toFixed(2), server: s.monthUsd, volumes, ipv4: prices.ipv4Month, pricesAsOf: prices.asOf },
     live: live && { at: live.at, cpuBusyPct: live.cpu?.busyPct, load: live.cpu?.load, cores: live.cpu?.cores,
       memTotalMb: live.memory?.totalMb, memUsedMb: live.memory ? live.memory.totalMb - live.memory.availableMb : null,
-      disk: live.disk?.volume, uptimeSec: live.uptimeSec, node: live.node?.state },
+      disks: (live.disks ?? []).map((d) => ({ name: d.name, label: s.disks[d.name] ?? d.name, usedMb: d.usedMb, freeMb: d.freeMb })),
+      uptimeSec: live.uptimeSec, nodes: live.nodes },
   };
 }
 
@@ -60,10 +63,9 @@ for (const f of fatlines) {
       network: n.network, label: n.label, since: n.since, version: info?.version ?? null,
       state: !info ? 'offline' : behind !== null && behind <= 200 ? 'alive' : 'catching-up',
       blocksBehind: behind, messages: info?.dbStats?.numMessages ?? null,
-      server: n.server ? await server(n.server) : null,
     });
   }
-  result.fatlines.push({ ticker: f.ticker, page: f.page, notice: f.notice, coin: f.coin, owner: await profile(f.ownerFid, f.nodes), nodes });
+  result.fatlines.push({ ticker: f.ticker, page: f.page, notice: f.notice, coin: f.coin, server: f.server ? await server(f.server) : null, owner: await profile(f.ownerFid, f.nodes), nodes });
 }
 writeFileSync(out, JSON.stringify(result, null, 2) + '\n');
 console.log(JSON.stringify(result));

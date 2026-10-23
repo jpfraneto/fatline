@@ -32,7 +32,7 @@
           "label": "Your own node (this machine)"
         },
         {
-          "url": "http://2.31.51.183:4381",
+          "url": "http://46.225.208.199:4381",
           "own": false,
           "label": "Fatline Hypersnap node"
         },
@@ -74,7 +74,7 @@
       "id": "hypersnap",
       "label": "Fatline Hypersnap node",
       "network": "hypersnap",
-      "url": "http://2.31.51.183:4381",
+      "url": "http://46.225.208.199:4381",
       "operator": "Fatline",
       "apps": []
     }

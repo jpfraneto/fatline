@@ -20,9 +20,10 @@ const MIN_FREE_GB = 25;   // grow below this
 const STEP_GB = 50;
 const ALERT_EVERY_H = 2;  // repeat a failed-grow alert at most this often
 
+// Both volumes are on the one server (since 2026-10-23).
 const NODES = [
   { name: 'Snapchain (FATLINE master)', ip: '46.225.208.199', volumeId: 107233477, mount: '/mnt/HC_Volume_107233477', base: 700 },
-  { name: 'Hypersnap', ip: '2.31.51.183', volumeId: 107234161, mount: '/mnt/HC_Volume_107234161', base: 685 },
+  { name: 'Hypersnap', ip: '46.225.208.199', volumeId: 107234161, mount: '/mnt/HC_Volume_107234161', base: 685 },
 ];
 const GROW_CAP = 200; // GB over `base`, the size each volume had when this was approved
 

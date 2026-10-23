@@ -52,6 +52,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - **The Fatline adapter reads it:** FID 18350 backfilled with 4,824 messages in 18 s, the same count crackle gave.
 
 ### The Hypersnap node (created 2026-10-22 03:57 UTC by session fatline-ea)
+- **Since 2026-10-23 03:01 UTC it runs on the master (one server, owner's call).** Its 685 GB volume was detached from the cax21 and attached to the master (mounted at the same path, `/mnt/HC_Volume_107234161`); the cax21 and 2.31.51.183 are deleted. Hypersnap's shard 0 (44 GB) lives on the master's local disk (`/srv/hypersnap-shard-0`, bind-mounted in its docker-compose.yml), because the account can't grow volumes. Hypersnap API: http://46.225.208.199:4381. The notes below describe the original setup.
 - **Hetzner `cax21` (ARM, 4 CPU, 8 GB RAM + 16 GB swap) + 685 GB volume in nbg1**, server 171737914 at **2.31.51.183**. Record in `.fatline/hetzner-hypersnap.json`; `compute hetzner status/down` include it (servers are deleted before volumes).
 - It streams the same 2026-10-21 snapshot with `infra/hypersnap-setup.sh`. It is **below Hypersnap's stated 1.5 TB / 16 GB**; watch its disk.
 - **Account limits (Hetzner):** 1,385 GB of volumes in total, 14 shared vCPU, and the account is "too new" to raise them. So no 1 TB volume and no cax41.
