@@ -29,6 +29,8 @@ cmd_help() {
 Fatline — read Farcaster or Hypersnap from your own machine, plus long-form voices onchain.
 
 Setup (in this order on a new machine):
+  ./fatline setup               Guided: every step below, one at a time; stop anywhere, run again to continue
+                                     --plan shows where you are and the command for each step
   ./fatline doctor              Check this machine and the networks; recommends full, light or rent
   ./fatline init                Choose the default network (Farcaster or Hypersnap)
   ./fatline compute [--quote]   Rent a machine that can hold a node (Hetzner, hourly; needs ~/.hetzner-token)
@@ -67,6 +69,8 @@ EOF
 }
 
 cmd_doctor() { need_node; install infra; node "$ROOT/infra/doctor.mjs" "$@"; }
+
+cmd_setup() { need_node; install infra; node "$ROOT/infra/setup.mjs" "$@"; }
 
 cmd_init() { need_node; node "$ROOT/infra/config-tool.mjs" init "$@"; }
 
@@ -255,6 +259,6 @@ command="${1:-help}"; shift || true
 case "$command" in
   help|-h|--help) cmd_help ;;
   client) cmd_up "$@" ;;  # for now the same as up; first-run identity setup comes next
-  doctor|init|node|up|dev|status|compute|test|contracts|identity|follow|feed|fatliners) "cmd_$command" "$@" ;;
+  doctor|init|node|up|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup) "cmd_$command" "$@" ;;
   *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
 esac

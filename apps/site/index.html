@@ -71,6 +71,16 @@
   .quick b { font-size: 14px; }
   .quick pre { min-width: 0; margin: 0; overflow-x: auto; font: 13.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); }
   .quick pre i { color: var(--muted); font-style: normal; }
+  .start { margin: 22px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .startbox { padding: 16px 18px; border: 1px solid var(--line2); border-radius: var(--radius); background: var(--paper2); min-width: 0; }
+  .startbox p { margin: 8px 0 0; font-size: 14px; color: var(--ink2); }
+  .cmd { display: flex; gap: 8px; align-items: center; margin-top: 8px; padding: 8px 8px 8px 12px; border-radius: 10px; background: #2b1f14; color: #f6ecd7; min-width: 0; }
+  .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .copy { flex: none; font: 600 12px Inter, sans-serif; color: #2b1f14; background: #f6ecd7; border: 0; border-radius: 7px; padding: 6px 10px; cursor: pointer; }
+  .byhand { grid-column: 1 / -1; font-size: 14px; color: var(--muted); }
+  .byhand summary { cursor: pointer; }
+  .byhand pre { margin: 8px 0; overflow-x: auto; font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); }
+  .byhand pre i { color: var(--muted); font-style: normal; }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border-radius: 10px; font-weight: 600; font-size: 15px;
     border: 1px solid var(--ink); background: transparent; color: var(--ink); text-decoration: none; white-space: nowrap; }
   .btn.primary { background: var(--ink); color: var(--paper2); box-shadow: 0 4px 14px rgba(58, 42, 27, .25); }
@@ -160,7 +170,7 @@
   @media (max-width: 820px) { .hero, .fl { grid-template-columns: minmax(0, 1fr); } }
   @media (max-width: 720px) {
     header { flex-wrap: wrap; gap: 14px; } .owner { margin-left: 0; order: 3; }
-    .quick { grid-template-columns: minmax(0, 1fr); } .grid { grid-template-columns: minmax(0, 1fr); gap: 26px; }
+    .quick { grid-template-columns: minmax(0, 1fr); } .start { grid-template-columns: minmax(0, 1fr); } .grid { grid-template-columns: minmax(0, 1fr); gap: 26px; }
     .mine { grid-template-columns: minmax(0, 1fr); padding: 18px; }
     .mine .btn { padding: 10px 14px; }
     section.about { grid-template-columns: 1fr; } .gridhead .right { margin-left: 0; }
@@ -180,6 +190,7 @@
       <a href="#fatliners">Fatliners</a>
       <a href="#world">World</a>
       <a href="#about">About</a>
+      <a href="#start">Start</a>
       <a href="docs/">Docs</a>
     </nav>
     <a class="owner" id="owner" href="https://farcaster.xyz/anky" title="The person who runs the first Fatline">
@@ -199,13 +210,24 @@
       <figcaption><span>THE WEAVING · EACH LIFE SPINS A THREAD</span><span class="legend"><span><span class="dot snapchain"></span>SNAPCHAIN</span><span><span class="dot hypersnap"></span>HYPERSNAP</span></span></figcaption>
     </figure>
   </div>
-  <div class="quick">
-        <b>Run your own<br>in 3 commands</b>
+  <div class="start" id="start">
+    <div class="startbox">
+      <div class="kicker">Start here · one line</div>
+      <div class="cmd"><code id="c-install">curl -fsSL https://fatline.ink/install.sh | sh</code><button class="copy" data-copy="c-install">Copy</button></div>
+      <p>Downloads Fatline and walks you through it: check your machine, pick rent / local / light, your node, your client. It asks before every step; stop anywhere, run it again to continue. <a href="install.sh">Read the script</a>.</p>
+    </div>
+    <div class="startbox">
+      <div class="kicker">Or ask your agent</div>
+      <div class="cmd"><code id="c-agent" style="white-space:normal">Help me set up a Fatline. Follow https://fatline.ink/skill.md</code><button class="copy" data-copy="c-agent">Copy</button></div>
+      <p>Paste it into Claude Code, Codex, or any agent that can run commands. <a href="skill.md">The skill</a> keeps you in charge: it shows prices and waits for your yes, and never touches your seed phrase or tokens.</p>
+    </div>
+    <details class="byhand"><summary>By hand: three commands</summary>
 <pre><span>./fatline compute</span>          <i># (0) rent a server that can hold a node</i>
 <span>./fatline node farcaster</span>   <i># (1) your own read node, no API keys (or: hypersnap)</i>
 <span>./fatline client</span>           <i># (2) your client, reading from your node</i></pre>
-        <a class="btn" href="docs/">Tutorial ↗</a>
-      </div>
+      <a href="docs/">Full tutorial ↗</a>
+    </details>
+  </div>
 
   <div class="mine">
     <div id="mine-being" style="width:132px"></div>
@@ -535,6 +557,11 @@ document.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', ()
   draw();
 }));
 document.getElementById('sort').addEventListener('change', draw);
+document.querySelectorAll('.copy').forEach((b) => b.addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent); b.textContent = 'Copied'; }
+  catch { b.textContent = 'Select it'; }
+  setTimeout(() => { b.textContent = 'Copy'; }, 1600);
+}));
 addEventListener('resize', () => requestAnimationFrame(links));
 
 fetch('status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null).then((s) => {

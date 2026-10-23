@@ -100,6 +100,11 @@
       <li>New Hetzner accounts have limits (ours: 1,385 GB of volumes and 14 vCPUs in total). One node needs a 700 GB volume, so one new account fits about <strong>one</strong> full node per volume. We run both networks on one server (8 Arm cores, 16 GB) with two volumes, right at that limit: Hypersnap's smallest shard (44 GB) sits on the server's own disk. $131.82 a month for both.</li>
       <li>To post: your Farcaster account's seed phrase, typed only into your own terminal.</li>
     </ul>
+    <p class="eyebrow">The easy way</p>
+    <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># downloads Fatline into ~/fatline and starts ./fatline setup</span></code></pre>
+    <p><code>./fatline setup</code> takes you through every step below, one at a time. Before each one it says what it does, what it costs and how long it takes, then asks: go, skip or stop. Run it again and it continues where you stopped. <a href="../install.sh">Read the script first</a>; it is short.</p>
+    <p><strong>With an agent:</strong> paste this into Claude Code, Codex or any agent that can run commands: <code>Help me set up a Fatline. Follow https://fatline.ink/skill.md</code>. <a href="../skill.md">The skill</a> tells the agent to show you prices and wait for your yes, and never to touch your seed phrase or tokens. Claude Code users can also install it: copy <code>skills/fatline-setup</code> from the repository into <code>~/.claude/skills/</code>.</p>
+    <p class="eyebrow">By hand</p>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 
 ./fatline compute            <span class="c"># (0) rent a machine that can hold a node: price first, then you type "create"</span>
@@ -116,6 +121,11 @@
       <li>Las cuentas nuevas de Hetzner tienen límites (la nuestra: 1.385 GB de volúmenes y 14 vCPU en total). Un nodo necesita un volumen de 700 GB, así que una cuenta nueva alcanza para <strong>un</strong> nodo completo. Nosotros corremos las dos redes en un solo servidor (8 núcleos Arm, 16 GB) con dos volúmenes, justo en ese límite: el shard más chico de Hypersnap (44 GB) vive en el disco propio del servidor. $131,82 al mes por ambas.</li>
       <li>Para publicar: la frase semilla de tu cuenta de Farcaster, escrita solo en tu propia terminal.</li>
     </ul>
+    <p class="eyebrow">La forma fácil</p>
+    <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># descarga Fatline en ~/fatline y empieza ./fatline setup</span></code></pre>
+    <p><code>./fatline setup</code> te lleva por cada paso de abajo, uno a la vez. Antes de cada uno dice qué hace, cuánto cuesta y cuánto demora, y pregunta: seguir, saltar o parar. Córrelo de nuevo y sigue donde quedaste. <a href="../install.sh">Lee el script primero</a>; es corto.</p>
+    <p><strong>Con un agente:</strong> pega esto en Claude Code, Codex o cualquier agente que pueda correr comandos: <code>Ayúdame a armar un Fatline. Sigue https://fatline.ink/skill.md</code>. <a href="../skill.md">La skill</a> le dice al agente que te muestre los precios y espere tu sí, y que nunca toque tu frase semilla ni tus tokens.</p>
+    <p class="eyebrow">A mano</p>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 
 ./fatline compute            <span class="c"># (0) arrienda una máquina capaz de tener un nodo: primero el precio, luego escribes "create"</span>

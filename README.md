@@ -2,6 +2,18 @@
 
 **Your own Farcaster node and client, in three commands. And a launchpad where every node gets a coin whose trading fees keep it alive.**
 
+**Start here:**
+
+```sh
+curl -fsSL https://fatline.ink/install.sh | sh
+```
+
+It downloads Fatline into `~/fatline` and starts `./fatline setup`, which goes through every step one at a time: check the machine, choose a path (rent a server, run a node locally, or light: no node), the node, the client. Before each step it says what it does, what it costs and how long it takes, then asks: go, skip or stop. Run it again and it continues where you stopped. `./fatline setup --plan` shows where you are and the command for each step. Read [the script](apps/site/install.sh) first; it is short.
+
+**With an agent:** tell Claude Code, Codex or any agent that can run commands: *"Help me set up a Fatline. Follow https://fatline.ink/skill.md"*. The [skill](apps/site/skill.md) keeps you in charge: it shows prices and waits for your yes, and never handles your seed phrase or tokens. For Claude Code you can also install it: `cp -rL skills/fatline-setup ~/.claude/skills/`.
+
+**By hand**, the three commands:
+
 ```sh
 ./fatline compute          # (0) rent a server that can hold a node
 ./fatline node farcaster   # (1) your own read node on it, no API keys (or: node hypersnap)
@@ -197,7 +209,8 @@ See [`test/fork/LaunchOnBase.t.sol`](smart-contracts/test/fork/LaunchOnBase.t.so
 ## What is in this repository
 
 ```
-fatline                      one command for everything (./fatline help)
+fatline                      one command for everything (./fatline help; ./fatline setup guides you)
+skills/fatline-setup/        the agent skill (same file as fatline.ink/skill.md)
 fatline.config.example.json   networks, nodes, contract addresses
 smart-contracts/             Foundry: AppFactory, AppVault, Voices, PrizeSplit
 indexer/                     the backend: apps + vaults, Farcaster/Hypersnap reads, launch builder, keeper
