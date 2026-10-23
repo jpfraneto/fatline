@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fatline Manifesto</title>
+<meta name="description" content="Why the 777 Fatliners exist, how they are born, and what is true today.">
+<meta property="og:image" content="https://fatline.ink/img/world/the-weaving.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23efe2c6'/%3E%3Ccircle cx='32' cy='34' r='20' fill='%233a2a1b'/%3E%3Cpath d='M15 30 Q32 24 49 30' stroke='%23ff5fa8' stroke-width='3' fill='none'/%3E%3Ccircle cx='49' cy='30' r='3' fill='%233d8bff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --paper: #efe2c6; --paper2: #f6ecd7; --ink: #3a2a1b; --muted: #806a4b; --line: rgba(90, 66, 40, .26); --blue: #3d8bff; --pink: #ff5fa8; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --paper: #17120d; --paper2: #221a12; --ink: #f1e4c8; --muted: #a8916c; --line: rgba(241, 228, 200, .18); }
+  }
+  :root[data-theme="dark"] { --paper: #17120d; --paper2: #221a12; --ink: #f1e4c8; --muted: #a8916c; --line: rgba(241, 228, 200, .18); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 18px/1.65 Fraunces, Georgia, serif; font-variation-settings: 'opsz' 18, 'SOFT' 100; }
+  nav { display: flex; justify-content: center; gap: clamp(20px, 6vw, 56px); padding: 28px 16px 0; }
+  nav a { color: var(--ink); text-decoration: none; font: 500 13px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .18em; opacity: .75; }
+  nav a[aria-current] { opacity: 1; text-decoration: underline; text-underline-offset: 6px; }
+  article { max-width: 640px; margin: 0 auto; padding: 56px 16px 80px; }
+  h1 { margin: 0 0 8px; font-weight: 800; font-size: clamp(44px, 9vw, 76px); line-height: 1; font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1; }
+  .sub { margin: 0 0 48px; color: var(--muted); font-style: italic; }
+  h2 { margin: 48px 0 10px; font-weight: 700; font-size: 26px; line-height: 1.2; font-variation-settings: 'opsz' 72, 'SOFT' 100, 'WONK' 1; }
+  h2 span { display: inline-block; min-width: 3em; color: var(--muted); font: 500 14px 'JetBrains Mono', monospace; vertical-align: middle; }
+  p { margin: 0 0 14px; }
+  .light { display: block; height: 2px; margin: 56px 0 0; background: linear-gradient(90deg, var(--blue), var(--pink)); opacity: .7; border-radius: 2px; }
+  .today { margin-top: 18px; font: 15px/1.6 Inter, system-ui, sans-serif; }
+  .today li { margin: 0 0 8px; }
+  .today b { font-weight: 600; }
+  .yes { color: #2f8a4f; } .wait { color: #b8862b; } .no { color: var(--muted); }
+  a { color: inherit; }
+  footer { padding: 0 16px 32px; text-align: center; font: 12.5px Inter, sans-serif; color: var(--muted); }
+</style>
+</head>
+<body>
+<nav aria-label="Main">
+  <a href="docs/">DOCS</a>
+  <a href="manifesto.html" aria-current="page">MANIFESTO</a>
+  <a href="f/FATLINE">$FATLINE</a>
+</nav>
+
+<article>
+  <h1>The Fatline</h1>
+  <p class="sub">The village that gives life to Farcaster.</p>
+
+  <h2><span>I</span>A network is a village</h2>
+  <p>Farcaster lives on nodes. Every node is a full copy of the conversation, kept by someone. When the nodes are few and kept by the same few hands, the network is only as free as they are. Fatline is a way for more of us to keep a copy, and to want to.</p>
+
+  <h2><span>II</span>777 beings</h2>
+  <p>There are 777 Fatliners. Each one is born from one Farcaster account: its history becomes its body. How long it has been around, who it talks with, how it speaks, the rhythm of its days, what it keeps coming back to. Same history, same being. You are your FID.</p>
+
+  <h2><span>III</span>Nobody chooses the 777</h2>
+  <p>They are chosen by an open, deterministic algorithm over the whole network, the same for everyone who runs it. Before the mint, the algorithm and its result are published, rerun and argued over in the open, until they are agreed. Then the mint opens. Minting is free.</p>
+
+  <h2><span>IV</span>A name and a surname</h2>
+  <p>Every Fatliner is born with a name, and its coin's ticker is its surname. The first is Aster, and its coin is $FATLINE: Aster Fatline. Nobody picks them, not even the holder. That is its identity on the network.</p>
+
+  <h2><span>V</span>Hatching</h2>
+  <p>A Fatliner arrives sealed. Its traits are already decided by its history, but they are not revealed. Its holder gives birth to it by lighting its node: the day the node answers, the being hatches.</p>
+
+  <h2><span>VI</span>Will</h2>
+  <p>Only the holder of a Fatliner can light a Fatline: a node, its coin, and its vault, commanded by one FID. The coin's fees pay for the node, day by day. A Fatliner carries as much life as its holder puts into it. Fed, it lives. Left alone, it sleeps, and anyone can wake it by feeding its vault.</p>
+
+  <h2><span>VII</span>The being is the vault</h2>
+  <p>A Fatliner is a wallet of its own. Its coin, its fees and its history live inside it, not in its holder's pocket. If it changes hands, all of it goes along. Every resale pays 8%.</p>
+
+  <h2><span>VIII</span>Fatliners is an app</h2>
+  <p>The first in a network of Farcaster clients, each one reading from nodes its people keep. Every line of it is open source, under the MIT license. Read it, run it, change it, send it back.</p>
+
+  <h2><span>IX</span>Each one is born with a story</h2>
+  <p>The lore is not written on top of the Fatliners; it is woven out of them, one account's history at a time. One day you will walk into your Fatliner's story.</p>
+
+  <span class="light" aria-hidden="true"></span>
+  <h2 style="margin-top:28px">Where it stands today</h2>
+  <ul class="today">
+    <li><b class="yes">Alive:</b> Aster Fatline's two nodes, Snapchain and Hypersnap, in sync on one rented server kept by @anky.</li>
+    <li><b class="yes">Built:</b> the open setup (your own node and client, guided step by step), the archive, the client, and the pipeline that draws a Fatliner from any account's history.</li>
+    <li><b class="wait">Computed, not agreed:</b> the ranking of the whole network. It has not been published or reviewed yet.</li>
+    <li><b class="no">Not yet:</b> the 777 contract, the mint, the reveal, the vault as the being's own wallet, the 8% on resale, and the coins. The launch contracts are tested on a copy of Base only.</li>
+  </ul>
+  <p class="today">Run your own node today: <a href="docs/">the docs</a>. See the village as it is: <a href="explore.html">explore</a>.</p>
+</article>
+
+<footer>Open source, MIT · <a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a></footer>
+</body>
+</html>

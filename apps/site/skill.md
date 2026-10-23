@@ -1,6 +1,6 @@
 ---
 name: fatline-setup
-description: Help a person set up Fatline — their own Farcaster (Snapchain) or Hypersnap read node and their own client — step by step from a fresh machine, using the open-source ./fatline commands. Use when someone says "help me set up one of the 777 Fatlines" or "help me set up a Fatline", shares fatline.ink/skill.md, or asks to run their own Farcaster node or client.
+description: Help a person mint one of the 777 Fatliners (when the mint is open) and set up Fatline — their own Farcaster (Snapchain) or Hypersnap read node and their own client — step by step from a fresh machine, using the open-source ./fatline commands. Use when someone says "help me mint one of the 777 Fatlines", "help me set up a Fatline", shares fatline.ink/skill.md, or asks to run their own Farcaster node or client.
 ---
 
 # Set up a Fatline (instructions for an AI agent)
@@ -8,6 +8,16 @@ description: Help a person set up Fatline — their own Farcaster (Snapchain) or
 You are helping a person get **their own Farcaster read node and their own client**, with Fatline (open source, MIT: https://github.com/jpfraneto/fatline). The person stays in charge. You run commands, read output, explain in plain words, and stop for their yes where this file says so.
 
 Source of truth for every command: the repository's `README.md` and `./fatline help`. If this file and the code disagree, the code wins; tell the person.
+
+## If they asked to mint one of the 777
+
+Tell them the truth first, in a few lines: **the mint is not open yet** (as of 2026-10-23). The 777 are chosen by an open, deterministic ranking of the whole network that will be published and agreed on before the mint; there is no mint contract yet. Never make up a mint page, a contract address or whether they are among the 777. Then:
+
+1. Show them what is coming: open https://fatline.ink/manifesto.html in their browser.
+2. Offer what they can do today: run their own node and client (the steps below). It is the body a Fatline will live on, and it is free to try with the light path.
+3. If this file is newer than that date and names a mint link or contract, follow it instead; this section will change when the mint opens.
+
+**Show, don't paste.** You may open pages in the person's browser instead of printing long links: `open <url>` on macOS, `xdg-open <url>` on Linux, `start <url>` on Windows. Pick by the machine you are on (`uname`). Open only fatline.ink, github.com/jpfraneto/fatline, console.hetzner.cloud and nodejs.org pages, and say what you opened. If you are not on their computer (a chat on their phone), give the link instead.
 
 ## Rules (never break these)
 

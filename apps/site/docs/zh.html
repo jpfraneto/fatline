@@ -67,6 +67,7 @@
 <body>
 <header class="top">
   <a class="brand" href="../">Fatline</a>
+  <nav class="also" style="display:flex;gap:18px;font-size:14px"><a href="../explore.html">Explore the village</a><a href="../manifesto.html">Manifesto</a><a href="../f/FATLINE">$FATLINE</a></nav>
   <div class="langs" role="group" aria-label="语言">
     <a href="./?lang=en"><button type="button" aria-pressed="false">English</button></a>
     <a href="./?lang=es"><button type="button" aria-pressed="false">Español</button></a>
@@ -87,7 +88,7 @@
     <li>新的 Hetzner 账户有额度限制（我们的是：卷总共 1,385 GB，14 个 vCPU）。一个节点需要 700 GB 的卷，所以一个新账户大约每个卷只够<strong>一个</strong>完整节点。我们在一台服务器（8 个 Arm 核心，16 GB）上用两个卷同时运行两个网络，正好在这个额度上：Hypersnap 最小的分片（44 GB）放在服务器自带的磁盘上。两个网络合计每月 131.82 美元。</li>
     <li>发帖需要你 Farcaster 账户的助记词，只在你自己的终端里输入。</li>
   </ul>
-  <p><strong>最简单的方式：</strong><code>curl -fsSL https://fatline.ink/install.sh | sh</code> 会把 Fatline 下载到 <code>~/fatline</code> 并启动 <code>./fatline setup</code>：逐步引导，每一步之前说明它做什么、花多少钱、要多久，然后问你：继续、跳过或停止。再运行一次就从停下的地方继续。<br><strong>用 AI 助手：</strong>把这句话发给 Claude Code、Codex 或任何能运行命令的助手：<code>Help me set up one of the 777 Fatlines. Follow https://fatline.ink/skill.md</code>。它会先给你看价格并等你同意，绝不碰你的助记词或令牌。</p>
+  <p><strong>最简单的方式：</strong><code>curl -fsSL https://fatline.ink/install.sh | sh</code> 会把 Fatline 下载到 <code>~/fatline</code> 并启动 <code>./fatline setup</code>：逐步引导，每一步之前说明它做什么、花多少钱、要多久，然后问你：继续、跳过或停止。再运行一次就从停下的地方继续。<br><strong>用 AI 助手：</strong>把这句话发给 Claude Code、Codex 或任何能运行命令的助手：<code>Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md</code>。它会先给你看价格并等你同意，绝不碰你的助记词或令牌。</p>
 <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 
 ./fatline compute            <span class="c"># (0) 租一台能装下节点的机器：先报价，你输入 "create" 才会创建</span>

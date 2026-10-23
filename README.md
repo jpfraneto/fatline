@@ -21,7 +21,7 @@ fatline node farcaster             # your own read node on it (or hypersnap); wh
 
 Stop paying any time with `fatline compute hetzner down`. The same command is packaged for npm as **`fatlines`**, not published yet. Once it is, `npm install -g fatlines` replaces the first two commands; on first use it downloads the repository into `~/fatline`. The name `fatline` on npm belongs to an unrelated project.
 
-**With an agent:** tell Claude Code, Codex or any agent that can run commands: *"Help me set up one of the 777 Fatlines. Follow https://fatline.ink/skill.md"*. The [skill](apps/site/skill.md) keeps you in charge: it shows prices and waits for your yes, and never handles your seed phrase or tokens. For Claude Code you can also install it: `cp -rL skills/fatline-setup ~/.claude/skills/`.
+**With an agent:** tell Claude Code, Codex or any agent that can run commands: *"Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md"*. The [skill](apps/site/skill.md) keeps you in charge: it shows prices and waits for your yes, and never handles your seed phrase or tokens. For Claude Code you can also install it: `cp -rL skills/fatline-setup ~/.claude/skills/`.
 
 **By hand**, the three commands:
 

@@ -63,7 +63,7 @@
 <div class="wrap">
   <header>
     <a class="brand" href="/">FATLINE</a>
-    <nav><a href="/">Explore</a><a href="/#about">About</a><a href="/docs/">Docs</a></nav>
+    <nav><a href="/explore.html">Explore</a><a href="/manifesto.html">Manifesto</a><a href="/docs/">Docs</a></nav>
   </header>
   <main id="main"><p class="muted">Loading…</p></main>
 </div>
@@ -133,7 +133,7 @@ if (t) {
     if (!f) {
       document.title = 'Not found · Fatline';
       main.innerHTML = `<div class="panel"><div class="kicker">Fatline</div><h1>No $${esc(t[1].toUpperCase())} here</h1>
-        <p class="muted">${s ? 'No Fatline on this board has that name.' : 'The status of the board could not be loaded right now.'}</p><a class="btn primary" href="/">Back to the board</a></div>`;
+        <p class="muted">${s ? 'No Fatline on this board has that name.' : 'The status of the board could not be loaded right now.'}</p><a class="btn primary" href="/explore.html">Back to the board</a></div>`;
       return;
     }
     document.title = `$${f.ticker} · Fatline`;
@@ -142,13 +142,13 @@ if (t) {
       : '<p class="muted">Coin not launched yet. Its page will be /base/&lt;its address&gt;.</p>';
     main.innerHTML = `<div class="panel"><div class="kicker">Fatline</div><h1>$${esc(f.ticker)}</h1>${owner(f)}${coin}
       <h2>Its nodes</h2>${nodeRows(f)}${body(f)}
-      <a class="btn" href="/docs/">Run your own ↗</a><a class="btn primary" href="/">Back to the board</a></div>`;
+      <a class="btn" href="/docs/">Run your own ↗</a><a class="btn primary" href="/explore.html">Back to the board</a></div>`;
   });
 } else if (!m) {
   document.title = 'Not found · Fatline';
   main.innerHTML = `<div class="panel"><div class="kicker">404</div><h1>Nothing here</h1>
     <p class="muted">No page at <code>${esc(location.pathname)}</code>. A coin's page is <code>/base/0x…</code>, its contract address on Base.</p>
-    <a class="btn primary" href="/">Back to the board</a></div>`;
+    <a class="btn primary" href="/explore.html">Back to the board</a></div>`;
 } else {
   const address = m[1];
   fetch('/status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null).then((s) => {
@@ -159,14 +159,14 @@ if (t) {
       main.innerHTML = `<div class="panel"><div class="kicker">Base · coin</div><h1>Not a known Fatline</h1>
         <p><code>${esc(address)}</code></p>
         <p class="muted">No Fatline on this board has this address. It may be any other token on Base, or a Fatline that isn't listed yet.</p>
-        <a class="btn" href="${scan}">See it on Basescan ↗</a><a class="btn primary" href="/">Back to the board</a></div>`;
+        <a class="btn" href="${scan}">See it on Basescan ↗</a><a class="btn primary" href="/explore.html">Back to the board</a></div>`;
       return;
     }
     document.title = `$${f.ticker} · Fatline`;
     main.innerHTML = `<div class="panel"><div class="kicker">Base · Fatline coin</div><h1>$${esc(f.ticker)}</h1>
       <p><code>${esc(address)}</code></p>${owner(f)}
       <h2>Nodes it keeps alive</h2>${nodeRows(f)}${body(f)}
-      <a class="btn" href="${scan}">Basescan ↗</a><a class="btn primary" href="/">Back to the board</a></div>`;
+      <a class="btn" href="${scan}">Basescan ↗</a><a class="btn primary" href="/explore.html">Back to the board</a></div>`;
   });
 }
 </script>
