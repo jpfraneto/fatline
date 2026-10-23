@@ -29,14 +29,16 @@ JOIN fid a ON a.fid = e.src JOIN fid b ON b.fid = e.dst
 WHERE e.ts > a.eff AND e.ts > b.eff;
 
 -- Directed interaction counts (replies, mentions, likes, recasts, follows), post-transfer for both sides.
-CREATE OR REPLACE TABLE inter AS
-SELECT src, dst, count(*) AS n FROM (
-  SELECT e.src, e.dst FROM read_csv(getvariable('dir') || '/chunk-*/inter.tsv.gz', delim = '\t', header = false,
-    columns = {'src': 'UBIGINT', 'dst': 'UBIGINT', 'ts': 'BIGINT', 'kind': 'VARCHAR'}) e
-  JOIN fid a ON a.fid = e.src JOIN fid b ON b.fid = e.dst
-  WHERE e.ts > a.eff AND e.ts > b.eff
-  UNION ALL SELECT src, dst FROM follow
-) GROUP BY src, dst;
+-- Two stages (filter, then count) and 32-bit FIDs, so it fits in memory next to the nodes.
+CREATE OR REPLACE TABLE inter_raw AS
+SELECT e.src::UINTEGER AS src, e.dst::UINTEGER AS dst
+FROM read_csv(getvariable('dir') || '/chunk-*/inter.tsv.gz', delim = '\t', header = false,
+  columns = {'src': 'UBIGINT', 'dst': 'UBIGINT', 'ts': 'BIGINT', 'kind': 'VARCHAR'}) e
+JOIN fid a ON a.fid = e.src JOIN fid b ON b.fid = e.dst
+WHERE e.ts > a.eff AND e.ts > b.eff;
+INSERT INTO inter_raw SELECT src::UINTEGER, dst::UINTEGER FROM follow;
+CREATE OR REPLACE TABLE inter AS SELECT src, dst, count(*) AS n FROM inter_raw GROUP BY src, dst;
+DROP TABLE inter_raw;
 
 -- EigenTrust. Seeds: FIDs ≤ 50,000. Each step: t = 0.15·seed + 0.85·Σ t(j)/outdeg(j) over j follows i.
 CREATE OR REPLACE TABLE outdeg AS SELECT src, count(*)::DOUBLE AS d FROM follow GROUP BY src;
