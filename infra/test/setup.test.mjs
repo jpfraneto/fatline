@@ -14,13 +14,13 @@ const plan = (state) => {
 };
 
 test('setup --plan: each path lists its own steps with the command to run by hand', () => {
-  const rent = plan({ done: ['check', 'choose'], path: 'rent', network: 'hypersnap' });
-  assert.match(rent, /→ 3\. Connect your Hetzner account/);
+  const rent = plan({ done: ['check', 'connect', 'choose'], path: 'rent', network: 'hypersnap' });
+  assert.match(rent, /→ 4\. Connect your Hetzner account/);
   assert.match(rent, /\.\/fatline compute --quote/);
   assert.match(rent, /\.\/fatline node hypersnap\n/);
   assert.match(rent, /Start your client/);
 
-  const light = plan({ done: ['check', 'choose'], path: 'light', network: 'farcaster' });
+  const light = plan({ done: ['check', 'connect', 'choose'], path: 'light', network: 'farcaster' });
   assert.doesNotMatch(light, /Hetzner|compute/, 'the free path never mentions renting');
   assert.match(light, /--node crackle/, 'the light path names a public node, never a missing local one');
 

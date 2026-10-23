@@ -53,11 +53,11 @@ export function sample(n) {
 function hash(i, j) { let h = (i * 374761393 + j * 668265263) ^ 0x5bd1e995; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; }
 
 // ---------------------------------------------------------------- colour
-const mix = (a, b, t) => a.map((v, k) => Math.round(v + (b[k] - v) * t));
+export const mix = (a, b, t) => a.map((v, k) => Math.round(v + (b[k] - v) * t));
 const clamp = (t) => Math.min(1, Math.max(0, t));
 const ease = (t) => 1 - (1 - clamp(t)) ** 3;
 const truecolor = /truecolor|24bit/i.test(process.env.COLORTERM ?? '') || ['iTerm.app', 'WezTerm', 'vscode', 'ghostty'].includes(process.env.TERM_PROGRAM ?? '');
-function sgr(rgb, bg) {
+export function sgr(rgb, bg) {
   if (truecolor) return `\x1b[${bg ? 48 : 38};2;${rgb[0]};${rgb[1]};${rgb[2]}m`;
   const c = rgb.map((v) => Math.round((v / 255) * 5));
   return `\x1b[${bg ? 48 : 38};5;${16 + 36 * c[0] + 6 * c[1] + c[2]}m`;
@@ -96,6 +96,23 @@ export function frame(px, n, t, indent = '  ') {
     let line = indent;
     for (let i = 0; i < n; i++) {
       const top = color(px[j * n + i], n, t), bottom = color(px[(j + 1) * n + i], n, t);
+      if (!top && !bottom) line += '\x1b[0m ';
+      else if (top && !bottom) line += `\x1b[0m${sgr(top)}▀`;
+      else if (!top) line += `\x1b[0m${sgr(bottom)}▄`;
+      else line += `${sgr(top)}${sgr(bottom, true)}▀`;
+    }
+    lines.push(line + '\x1b[0m');
+  }
+  return lines;
+}
+
+/** Paints any w×h pixel grid (colorAt(x, y) → [r,g,b] or null) as text, two pixels per character cell. */
+export function paint(w, h, colorAt, indent = '  ') {
+  const lines = [];
+  for (let y = 0; y < h; y += 2) {
+    let line = indent;
+    for (let x = 0; x < w; x++) {
+      const top = colorAt(x, y), bottom = y + 1 < h ? colorAt(x, y + 1) : null;
       if (!top && !bottom) line += '\x1b[0m ';
       else if (top && !bottom) line += `\x1b[0m${sgr(top)}▀`;
       else if (!top) line += `\x1b[0m${sgr(bottom)}▄`;

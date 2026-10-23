@@ -15,6 +15,7 @@
   "dependencies": {
     "@farcaster/core": "^0.20.0",
     "clanker-sdk": "4.2.19",
+    "qrcode-generator": "2.0.4",
     "viem": "2.57.7"
   }
 }

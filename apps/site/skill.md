@@ -53,6 +53,12 @@ cd ~/fatline
 ```
 Read the result to the person in two lines: what it recommends, and anything missing.
 
+### 2b. You are your FID
+```sh
+./fatline connect
+```
+In a terminal it draws a QR code; the person scans it with their phone and signs in with the Farcaster app. From an agent shell (no terminal) it opens the sign-in page in their browser instead, which shows the same request; tell them to approve it on their phone. It waits up to 5 minutes. Fatline checks the signature on this machine and asks the node which FID the signing address owns; only then is it saved (`.fatline/identity.json`, public data, no keys). No seed phrase is involved. Report the FID and username it prints. If they'd rather not, skip it.
+
 ### 3. (rent) Their Hetzner token
 They make one at console.hetzner.cloud → their project → Security → API tokens → Generate (Read & Write). Then **they** save it, without pasting it to you. Give them this line to run in their own terminal (macOS, after copying the token):
 ```sh

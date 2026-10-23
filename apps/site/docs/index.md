@@ -67,6 +67,8 @@ fatline node farcaster
 3. Rents a server for your node on Hetzner, about $3–5 a day. It shows the price first and creates nothing until you type **create**. To stop paying: `fatline compute hetzner down`.
 4. Installs your own read node: `farcaster` (Snapchain) or `hypersnap`. It takes 1–3 hours, plus catching up. When it answers, `fatline up` opens your client at `localhost:8787`.
 
+**You are your FID.** `fatline connect` shows a QR code with the Farcaster arch in the middle. Scan it with your phone and sign in with the Farcaster app. It signs with the address that owns your account; Fatline checks the signature on your machine and asks your node which FID that address owns. No seed phrase, and no one else decides who you are.
+
 No room for a node? The **light** path copies only the accounts you choose from a public node, for free: `fatline setup` and choose *light*.
 
 Every step in detail: **[the full tutorial](tutorial.html)** · [Español](tutorial.html?lang=es) · [中文](zh.html)

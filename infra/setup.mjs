@@ -79,6 +79,13 @@ function steps(s) {
       cmd: './fatline doctor',
       run: () => fatline('doctor'),
     },
+    connect: {
+      title: 'You are your FID',
+      what: 'A QR code appears. Scan it with your phone and sign in with the Farcaster app: it signs with the address that owns your account, and a node confirms which FID that is. No seed phrase. You can skip it and do it later.',
+      cost: 'free, a minute',
+      cmd: './fatline connect',
+      run: () => fatline('connect'),
+    },
     choose: {
       title: 'Choose a path',
       what: 'rent: a server of your own runs your node (Hetzner, card, ~$3–5/day while it runs). local: your node on this machine with Docker (~1 TB disk, 16 GB RAM). light: no node, copy only the accounts you pick from a public node (free).',

@@ -62,6 +62,8 @@
   @keyframes flow { from { stroke-dashoffset: 600; } to { stroke-dashoffset: -70; } }
   @media (prefers-reduced-motion: reduce) { .line .pulse { animation: none; stroke-dasharray: none; } }
   footer { margin-top: 64px; font-size: 14px; color: var(--muted); }
+  pre { position: relative; }
+  pre .copy { position: absolute; top: 8px; right: 8px; font: 600 12px Inter, system-ui, sans-serif; border: 0; border-radius: 7px; padding: 5px 10px; cursor: pointer; background: #f6ecd7; color: #2b1f14; }
 </style>
 </head>
 <body>
@@ -104,7 +106,9 @@
     <p class="eyebrow">The easy way</p>
     <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># downloads Fatline into ~/fatline and starts ./fatline setup</span></code></pre>
     <p><code>./fatline setup</code> takes you through every step below, one at a time. Before each one it says what it does, what it costs and how long it takes, then asks: go, skip or stop. Run it again and it continues where you stopped. <a href="../install.sh">Read the script first</a>; it is short.</p>
-    <p><strong>With an agent:</strong> paste this into Claude Code, Codex or any agent that can run commands: <code>Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md</code>. <a href="../skill.md">The skill</a> tells the agent to show you prices and wait for your yes, and never to touch your seed phrase or tokens. Claude Code users can also install it: copy <code>skills/fatline-setup</code> from the repository into <code>~/.claude/skills/</code>.</p>
+    <p class="eyebrow">With an agent</p>
+    <pre><code>Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md</code></pre>
+    <p>Paste it into Claude Code, Codex or any agent that can run commands. <a href="../skill.md">The skill</a> tells the agent to show you prices and wait for your yes, and never to touch your seed phrase or tokens. Claude Code users can also install it: copy <code>skills/fatline-setup</code> from the repository into <code>~/.claude/skills/</code>.</p>
     <p class="eyebrow">By hand</p>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 
@@ -125,7 +129,9 @@
     <p class="eyebrow">La forma fácil</p>
     <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># descarga Fatline en ~/fatline y empieza ./fatline setup</span></code></pre>
     <p><code>./fatline setup</code> te lleva por cada paso de abajo, uno a la vez. Antes de cada uno dice qué hace, cuánto cuesta y cuánto demora, y pregunta: seguir, saltar o parar. Córrelo de nuevo y sigue donde quedaste. <a href="../install.sh">Lee el script primero</a>; es corto.</p>
-    <p><strong>Con un agente:</strong> pega esto en Claude Code, Codex o cualquier agente que pueda correr comandos: <code>Ayúdame a mintear uno de los 777 Fatlines. Sigue https://fatline.ink/skill.md</code>. <a href="../skill.md">La skill</a> le dice al agente que te muestre los precios y espere tu sí, y que nunca toque tu frase semilla ni tus tokens.</p>
+    <p class="eyebrow">Con un agente</p>
+    <pre><code>Ayúdame a mintear uno de los 777 Fatlines. Sigue https://fatline.ink/skill.md</code></pre>
+    <p>Pégalo en Claude Code, Codex o cualquier agente que pueda correr comandos. <a href="../skill.md">La skill</a> le dice al agente que te muestre los precios y espere tu sí, y que nunca toque tu frase semilla ni tus tokens.</p>
     <p class="eyebrow">A mano</p>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 
@@ -463,6 +469,19 @@
     window.addEventListener('hashchange', jump);
     jump();
   })();
+</script>
+<script>
+// Every code block gets a Copy button (comments after # are left out of what is copied).
+document.querySelectorAll('pre').forEach((pre) => {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'copy'; b.textContent = 'Copy';
+  b.onclick = async () => {
+    const code = pre.querySelector('code').cloneNode(true); code.querySelectorAll('.c').forEach((c) => c.remove());
+    const text = code.textContent.split('\n').map((l) => l.trimEnd()).join('\n').trim();
+    try { await navigator.clipboard.writeText(text); b.textContent = 'Copied'; } catch { b.textContent = 'Select it'; }
+    setTimeout(() => (b.textContent = 'Copy'), 1600);
+  };
+  pre.append(b);
+});
 </script>
 </body>
 </html>
