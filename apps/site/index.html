@@ -78,9 +78,11 @@
   .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
   .copy { flex: none; font: 600 12px Inter, sans-serif; color: #2b1f14; background: #f6ecd7; border: 0; border-radius: 7px; padding: 6px 10px; cursor: pointer; }
   .byhand { grid-column: 1 / -1; font-size: 14px; color: var(--muted); }
-  .byhand summary { cursor: pointer; }
-  .byhand pre { margin: 8px 0; overflow-x: auto; font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); }
-  .byhand pre i { color: var(--muted); font-style: normal; }
+  .steps { list-style: none; counter-reset: step; margin: 6px 0 10px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 14px 20px; }
+  .steps li { counter-increment: step; min-width: 0; }
+  .steps li::before { content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: var(--paper2); font: 700 12px Inter, sans-serif; }
+  .steps p { margin: 6px 0 0; font-size: 13.5px; }
+  .steps p code { font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); }
   .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border-radius: 10px; font-weight: 600; font-size: 15px;
     border: 1px solid var(--ink); background: transparent; color: var(--ink); text-decoration: none; white-space: nowrap; }
   .btn.primary { background: var(--ink); color: var(--paper2); box-shadow: 0 4px 14px rgba(58, 42, 27, .25); }
@@ -212,21 +214,25 @@
   </div>
   <div class="start" id="start">
     <div class="startbox">
-      <div class="kicker">Start here · one line</div>
+      <div class="kicker">Set up one of the 777 Fatlines · one line</div>
       <div class="cmd"><code id="c-install">curl -fsSL https://fatline.ink/install.sh | sh</code><button class="copy" data-copy="c-install">Copy</button></div>
       <p>Downloads Fatline and walks you through it: check your machine, pick rent / local / light, your node, your client. It asks before every step; stop anywhere, run it again to continue. <a href="install.sh">Read the script</a>.</p>
     </div>
     <div class="startbox">
       <div class="kicker">Or ask your agent</div>
-      <div class="cmd"><code id="c-agent" style="white-space:normal">Help me set up a Fatline. Follow https://fatline.ink/skill.md</code><button class="copy" data-copy="c-agent">Copy</button></div>
+      <div class="cmd"><code id="c-agent" style="white-space:normal">Help me set up one of the 777 Fatlines. Follow https://fatline.ink/skill.md</code><button class="copy" data-copy="c-agent">Copy</button></div>
       <p>Paste it into Claude Code, Codex, or any agent that can run commands. <a href="skill.md">The skill</a> keeps you in charge: it shows prices and waits for your yes, and never touches your seed phrase or tokens.</p>
     </div>
-    <details class="byhand"><summary>By hand: three commands</summary>
-<pre><span>./fatline compute</span>          <i># (0) rent a server that can hold a node</i>
-<span>./fatline node farcaster</span>   <i># (1) your own read node, no API keys (or: hypersnap)</i>
-<span>./fatline client</span>           <i># (2) your client, reading from your node</i></pre>
+    <div class="byhand">
+      <div class="kicker">Or by hand · four commands</div>
+      <ol class="steps">
+        <li><div class="cmd"><code id="c-h1">git clone https://github.com/jpfraneto/fatline</code><button class="copy" data-copy="c-h1">Copy</button></div><p>Downloads the code. All of it is open source (MIT): read it first.</p></li>
+        <li><div class="cmd"><code id="c-h2">cd fatline &amp;&amp; npm install -g .</code><button class="copy" data-copy="c-h2">Copy</button></div><p>Puts the <code>fatline</code> command on your machine, so you can run it from anywhere.</p></li>
+        <li><div class="cmd"><code id="c-h3">fatline compute</code><button class="copy" data-copy="c-h3">Copy</button></div><p>Rents the server that will hold your node (Hetzner, about $3–5/day). It shows the price and creates nothing until you type <b>create</b>. Stop paying any time: <code>fatline compute hetzner down</code>.</p></li>
+        <li><div class="cmd"><code id="c-h4">fatline node farcaster</code><button class="copy" data-copy="c-h4">Copy</button></div><p>Installs your own read node on it (or <code>hypersnap</code>), 1–3 hours plus catching up. When it answers, <code>fatline up</code> opens your client at localhost:8787.</p></li>
+      </ol>
       <a href="docs/">Full tutorial ↗</a>
-    </details>
+    </div>
   </div>
 
   <div class="mine">

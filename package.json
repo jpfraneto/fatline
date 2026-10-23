@@ -1,0 +1,13 @@
+{
+  "name": "fatlines",
+  "version": "0.1.0",
+  "description": "One of the 777 Fatlines: your own Farcaster (Snapchain) or Hypersnap node and your own client. Installs the `fatline` command.",
+  "license": "MIT",
+  "homepage": "https://fatline.ink",
+  "repository": { "type": "git", "url": "git+https://github.com/jpfraneto/fatline.git" },
+  "bugs": "https://github.com/jpfraneto/fatline/issues",
+  "keywords": ["farcaster", "snapchain", "hypersnap", "node", "client", "fatline"],
+  "bin": { "fatline": "bin/fatline.mjs" },
+  "files": ["bin/fatline.mjs"],
+  "engines": { "node": ">=22.12" }
+}

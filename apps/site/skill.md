@@ -1,6 +1,6 @@
 ---
 name: fatline-setup
-description: Help a person set up Fatline — their own Farcaster (Snapchain) or Hypersnap read node and their own client — step by step from a fresh machine, using the open-source ./fatline commands. Use when someone says "help me set up a Fatline", shares fatline.ink/skill.md, or asks to run their own Farcaster node or client.
+description: Help a person set up Fatline — their own Farcaster (Snapchain) or Hypersnap read node and their own client — step by step from a fresh machine, using the open-source ./fatline commands. Use when someone says "help me set up one of the 777 Fatlines" or "help me set up a Fatline", shares fatline.ink/skill.md, or asks to run their own Farcaster node or client.
 ---
 
 # Set up a Fatline (instructions for an AI agent)

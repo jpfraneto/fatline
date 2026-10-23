@@ -10,7 +10,18 @@ curl -fsSL https://fatline.ink/install.sh | sh
 
 It downloads Fatline into `~/fatline` and starts `./fatline setup`, which goes through every step one at a time: check the machine, choose a path (rent a server, run a node locally, or light: no node), the node, the client. Before each step it says what it does, what it costs and how long it takes, then asks: go, skip or stop. Run it again and it continues where you stopped. It opens by saying that everything is open source (MIT) and asking you to agree, then draws the Farcaster arch in the terminal ([`infra/arch.mjs`](infra/arch.mjs); any key skips it, `FATLINE_NO_ANIMATION=1` turns it off). Whenever you stop, or a step fails, it links to that step's code on GitHub so you can change it and send a pull request. `./fatline setup --plan` shows where you are and the command for each step. Read [the script](apps/site/install.sh) first; it is short.
 
-**With an agent:** tell Claude Code, Codex or any agent that can run commands: *"Help me set up a Fatline. Follow https://fatline.ink/skill.md"*. The [skill](apps/site/skill.md) keeps you in charge: it shows prices and waits for your yes, and never handles your seed phrase or tokens. For Claude Code you can also install it: `cp -rL skills/fatline-setup ~/.claude/skills/`.
+**By hand, four commands:**
+
+```sh
+git clone https://github.com/jpfraneto/fatline
+cd fatline && npm install -g .     # the `fatline` command, usable from anywhere (bin/fatline.mjs runs ./fatline in this clone)
+fatline compute                    # rent the server for your node: shows the price, creates nothing until you type "create"
+fatline node farcaster             # your own read node on it (or hypersnap); when it answers, `fatline up` opens your client
+```
+
+Stop paying any time with `fatline compute hetzner down`. The same command is packaged for npm as **`fatlines`**, not published yet. Once it is, `npm install -g fatlines` replaces the first two commands; on first use it downloads the repository into `~/fatline`. The name `fatline` on npm belongs to an unrelated project.
+
+**With an agent:** tell Claude Code, Codex or any agent that can run commands: *"Help me set up one of the 777 Fatlines. Follow https://fatline.ink/skill.md"*. The [skill](apps/site/skill.md) keeps you in charge: it shows prices and waits for your yes, and never handles your seed phrase or tokens. For Claude Code you can also install it: `cp -rL skills/fatline-setup ~/.claude/skills/`.
 
 **By hand**, the three commands:
 
@@ -210,6 +221,7 @@ See [`test/fork/LaunchOnBase.t.sol`](smart-contracts/test/fork/LaunchOnBase.t.so
 
 ```
 fatline                      one command for everything (./fatline help; ./fatline setup guides you)
+bin/fatline.mjs              the `fatline` command on your PATH (npm install -g . here, or the npm package fatlines)
 skills/fatline-setup/        the agent skill (same file as fatline.ink/skill.md)
 fatline.config.example.json   networks, nodes, contract addresses
 smart-contracts/             Foundry: AppFactory, AppVault, Voices, PrizeSplit
