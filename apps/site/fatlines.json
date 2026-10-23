@@ -14,15 +14,45 @@
           "network": "snapchain",
           "label": "Fatline master (Hetzner, Nuremberg)",
           "url": "http://46.225.208.199:3381",
-          "since": "2026-10-22T06:42:00Z"
+          "since": "2026-10-22T06:42:00Z",
+          "server": {
+            "provider": "Hetzner Cloud",
+            "type": "cax31",
+            "location": "Nuremberg (nbg1)",
+            "cpu": "8 Arm cores (Ampere Altra)",
+            "ramGb": 16,
+            "localDiskGb": 160,
+            "monthUsd": 24.99,
+            "volumeGb": 700,
+            "stats": "http://46.225.208.199:8099/stats.json"
+          }
         },
         {
           "network": "hypersnap",
           "label": "Fatline Hypersnap (Hetzner, Nuremberg)",
           "url": "http://2.31.51.183:4381",
-          "since": "2026-10-22T10:21:00Z"
+          "since": "2026-10-22T10:21:00Z",
+          "server": {
+            "provider": "Hetzner Cloud",
+            "type": "cax21",
+            "location": "Nuremberg (nbg1)",
+            "cpu": "4 Arm cores (Ampere Altra)",
+            "ramGb": 8,
+            "localDiskGb": 80,
+            "monthUsd": 12.49,
+            "volumeGb": 685,
+            "stats": "http://2.31.51.183:8099/stats.json"
+          }
         }
-      ]
+      ],
+      "page": "/f/FATLINE",
+      "notice": "CPU is higher than usual until about Oct 24: both servers are also extracting data for the Fatliner ranking."
     }
-  ]
+  ],
+  "prices": {
+    "source": "Hetzner Cloud API /v1/pricing, nbg1, USD incl. VAT",
+    "asOf": "2026-10-23",
+    "volumePerGbMonth": 0.0767,
+    "ipv4Month": 0.6
+  }
 }

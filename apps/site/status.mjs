@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = process.argv[2] ?? join(here, 'status.json');
-const { fatlines } = JSON.parse(readFileSync(join(here, 'fatlines.json'), 'utf8'));
+const { fatlines, prices } = JSON.parse(readFileSync(join(here, 'fatlines.json'), 'utf8'));
 
 async function get(url) {
   try {
@@ -32,6 +32,23 @@ async function profile(fid, nodes) {
   return { fid };
 }
 
+// The server a node runs on: its fixed specs, its live numbers (each server writes them every 5 minutes,
+// infra/server-stats.sh) and what it costs. The volume is billed by its real size, which the server reports.
+async function server(s) {
+  const live = s.stats ? await get(s.stats) : null;
+  const volumeGb = live?.disk?.volumeDeviceGb ?? s.volumeGb;
+  const month = s.monthUsd + volumeGb * prices.volumePerGbMonth + prices.ipv4Month;
+  const { stats, ...spec } = s;
+  return {
+    ...spec, volumeGb,
+    cost: { monthUsd: +month.toFixed(2), dayUsd: +(month * 12 / 365).toFixed(2), server: s.monthUsd,
+      volume: +(volumeGb * prices.volumePerGbMonth).toFixed(2), ipv4: prices.ipv4Month, pricesAsOf: prices.asOf },
+    live: live && { at: live.at, cpuBusyPct: live.cpu?.busyPct, load: live.cpu?.load, cores: live.cpu?.cores,
+      memTotalMb: live.memory?.totalMb, memUsedMb: live.memory ? live.memory.totalMb - live.memory.availableMb : null,
+      disk: live.disk?.volume, uptimeSec: live.uptimeSec, node: live.node?.state },
+  };
+}
+
 const result = { checkedAt: new Date().toISOString(), fatlines: [] };
 for (const f of fatlines) {
   const nodes = [];
@@ -43,9 +60,10 @@ for (const f of fatlines) {
       network: n.network, label: n.label, since: n.since, version: info?.version ?? null,
       state: !info ? 'offline' : behind !== null && behind <= 200 ? 'alive' : 'catching-up',
       blocksBehind: behind, messages: info?.dbStats?.numMessages ?? null,
+      server: n.server ? await server(n.server) : null,
     });
   }
-  result.fatlines.push({ ticker: f.ticker, coin: f.coin, owner: await profile(f.ownerFid, f.nodes), nodes });
+  result.fatlines.push({ ticker: f.ticker, page: f.page, notice: f.notice, coin: f.coin, owner: await profile(f.ownerFid, f.nodes), nodes });
 }
 writeFileSync(out, JSON.stringify(result, null, 2) + '\n');
 console.log(JSON.stringify(result));

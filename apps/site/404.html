@@ -37,6 +37,26 @@
   .btn { display: inline-flex; padding: 11px 18px; border-radius: 12px; font-weight: 600; text-decoration: none;
     border: 1px solid rgba(255, 255, 255, .28); margin: 14px 10px 0 0; }
   .btn.primary { background: linear-gradient(180deg, #8c4dff, #6a2cf0); border-color: #b28aff; }
+  h2 { font-size: 20px; margin: 30px 0 4px; }
+  .total { font-size: 15px; color: #d8d3f2; margin: 0 0 14px; }
+  .total b { font-size: 22px; color: var(--text); }
+  .servers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 16px; }
+  .server { padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); min-width: 0; }
+  .server h3 { margin: 0; font-size: 17px; display: flex; gap: 8px; align-items: center; }
+  .server .spec { font-size: 13.5px; color: var(--muted); margin: 4px 0 12px; }
+  .meter { margin: 10px 0; font-size: 13.5px; }
+  .meter .lbl { display: flex; justify-content: space-between; gap: 8px; }
+  .meter .lbl span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+  .bar { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, .08); overflow: hidden; margin-top: 4px; }
+  .bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--violet), var(--cyan)); }
+  .bar i.hot { background: var(--amber); }
+  .bar i.red { background: #ff5d6c; }
+  table.cost { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 12px; font-variant-numeric: tabular-nums; }
+  table.cost td { padding: 4px 0; border-top: 1px solid rgba(164, 107, 255, .14); }
+  table.cost td:last-child { text-align: right; }
+  table.cost tr.sum td { font-weight: 700; color: var(--text); }
+  .note { font-size: 13px; color: var(--muted); margin-top: 12px; }
+  .warnline { color: var(--amber); }
 </style>
 </head>
 <body>
@@ -48,19 +68,88 @@
   <main id="main"><p class="muted">Loading…</p></main>
 </div>
 <script>
-// GitHub Pages serves this page for every path it has no file for. /base/0x<address> is a coin's page;
-// anything else is a plain "not found".
+// GitHub Pages serves this page for every path it has no file for. /f/<TICKER> is a Fatline's page,
+// /base/0x<address> is its coin's page (the same page, once the coin exists); anything else is "not found".
 const NAME = { snapchain: 'Snapchain', hypersnap: 'Hypersnap' };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const main = document.getElementById('main');
 const m = location.pathname.match(/^\/base\/(0x[0-9a-fA-F]{40})\/?$/);
+const t = location.pathname.match(/^\/f\/([A-Za-z0-9]{1,12})\/?$/);
+const usd = (x) => `$${Number(x).toFixed(2)}`;
+const gb = (mb) => `${Math.round(mb / 1024)} GB`;
 
-function since(iso) {
-  const h = Math.floor((Date.now() - Date.parse(iso)) / 3600e3);
-  return h >= 24 ? `${Math.floor(h / 24)} d ${h % 24} h` : `${h} h`;
+function meter(label, pct, detail) {
+  const p = Math.max(0, Math.min(100, pct));
+  return `<div class="meter"><div class="lbl"><span>${label}</span><span>${detail}</span></div>
+    <div class="bar"><i class="${p >= 92 ? 'red' : p >= 80 ? 'hot' : ''}" style="width:${p.toFixed(1)}%"></i></div></div>`;
+}
+function uptime(sec) { const d = Math.floor(sec / 86400), h = Math.floor(sec / 3600) % 24; return d ? `${d} d ${h} h` : `${h} h`; }
+
+// What keeps this Fatline alive: each node's server, how full it is, and what it costs.
+function body(f) {
+  const withServer = f.nodes.filter((n) => n.server);
+  if (!withServer.length) return '';
+  const month = withServer.reduce((a, n) => a + n.server.cost.monthUsd, 0);
+  const cards = withServer.map((n) => {
+    const s = n.server, l = s.live, c = s.cost;
+    const meters = l ? [
+      meter('CPU', l.cpuBusyPct, `${l.cpuBusyPct.toFixed(0)}% busy · load ${l.load?.[1]?.toFixed(1)} on ${l.cores} cores`),
+      meter('Memory', 100 * l.memUsedMb / l.memTotalMb, `${(l.memUsedMb / 1024).toFixed(1)} of ${(l.memTotalMb / 1024).toFixed(1)} GB`),
+      meter('Disk (node data)', 100 * l.disk.usedMb / (l.disk.usedMb + l.disk.freeMb), `${gb(l.disk.usedMb)} used · ${gb(l.disk.freeMb)} free`),
+    ].join('') + `<div class="note">Server up ${uptime(l.uptimeSec)} · node container ${esc(l.node)} · measured ${since(l.at)} ago</div>`
+      : '<p class="note warnline">Live numbers unavailable at the last check.</p>';
+    const low = l && l.disk.freeMb < 25 * 1024 ? `<p class="note warnline">Disk is nearly full (under 25 GB free). The disk watch grows the volume or alerts the owner.</p>` : '';
+    return `<div class="server">
+      <h3><span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span>${NAME[n.network]} node</h3>
+      <div class="spec">${esc(s.provider)} ${esc(s.type)} · ${esc(s.location)}<br>${esc(s.cpu)} · ${s.ramGb} GB RAM · ${s.localDiskGb} GB local disk + ${s.volumeGb} GB volume</div>
+      ${meters}${low}
+      <table class="cost">
+        <tr><td>Server (${esc(s.type)})</td><td>${usd(c.server)}/mo</td></tr>
+        <tr><td>Volume (${s.volumeGb} GB)</td><td>${usd(c.volume)}/mo</td></tr>
+        <tr><td>IPv4 address</td><td>${usd(c.ipv4)}/mo</td></tr>
+        <tr class="sum"><td>Total</td><td>${usd(c.monthUsd)}/mo · ${usd(c.dayUsd)}/day</td></tr>
+      </table></div>`;
+  }).join('');
+  const asOf = withServer[0].server.cost.pricesAsOf;
+  return `<h2>Its body</h2>
+    <p class="total">Keeping it alive costs <b>${usd(month)}</b> a month, about ${usd(month * 12 / 365)} a day.</p>
+    <div class="servers">${cards}</div>
+    <p class="note">Prices from Hetzner's API (${esc(asOf)}, USD with VAT); Hetzner bills by the hour, capped at the monthly price.
+      Live numbers come from each server every 5 minutes; this page is refreshed every 15.${f.notice ? '<br>' + esc(f.notice) : ''}</p>`;
 }
 
-if (!m) {
+function nodeRows(f) {
+  return f.nodes.map((n) => `<div class="row"><span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span><b>${NAME[n.network]}</b>
+      <span class="muted">${n.state === 'alive' ? `alive · running ${since(n.since)}` : n.state === 'catching-up' ? `catching up · ${Number(n.blocksBehind).toLocaleString('en')} blocks behind` : 'offline at the last check'} · ${esc(n.label)}</span></div>`).join('');
+}
+function owner(f) {
+  const o = f.owner ?? {};
+  return `<div class="row who">${o.pfp ? `<img src="${esc(o.pfp)}" alt="" referrerpolicy="no-referrer">` : ''}<span>@${esc(o.username)} · FID ${esc(o.fid)}</span></div>`;
+}
+
+function since(iso) {
+  const ms = Date.now() - Date.parse(iso), h = Math.floor(ms / 3600e3);
+  return h >= 24 ? `${Math.floor(h / 24)} d ${h % 24} h` : h >= 1 ? `${h} h` : `${Math.max(1, Math.round(ms / 60e3))} min`;
+}
+
+if (t) {
+  fetch('/status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null).then((s) => {
+    const f = (s?.fatlines ?? []).find((x) => x.ticker.toLowerCase() === t[1].toLowerCase());
+    if (!f) {
+      document.title = 'Not found · Fatline';
+      main.innerHTML = `<div class="panel"><div class="kicker">Fatline</div><h1>No $${esc(t[1].toUpperCase())} here</h1>
+        <p class="muted">${s ? 'No Fatline on this board has that name.' : 'The status of the board could not be loaded right now.'}</p><a class="btn primary" href="/">Back to the board</a></div>`;
+      return;
+    }
+    document.title = `$${f.ticker} · Fatline`;
+    const coin = f.coin?.address
+      ? `<p>Coin on Base: <a href="/base/${esc(f.coin.address)}"><code>${esc(f.coin.address)}</code></a></p>`
+      : '<p class="muted">Coin not launched yet. Its page will be /base/&lt;its address&gt;.</p>';
+    main.innerHTML = `<div class="panel"><div class="kicker">Fatline</div><h1>$${esc(f.ticker)}</h1>${owner(f)}${coin}
+      <h2>Its nodes</h2>${nodeRows(f)}${body(f)}
+      <a class="btn" href="/docs/">Run your own ↗</a><a class="btn primary" href="/">Back to the board</a></div>`;
+  });
+} else if (!m) {
   document.title = 'Not found · Fatline';
   main.innerHTML = `<div class="panel"><div class="kicker">404</div><h1>Nothing here</h1>
     <p class="muted">No page at <code>${esc(location.pathname)}</code>. A coin's page is <code>/base/0x…</code>, its contract address on Base.</p>
@@ -79,13 +168,9 @@ if (!m) {
       return;
     }
     document.title = `$${f.ticker} · Fatline`;
-    const o = f.owner ?? {};
-    const nodes = f.nodes.map((n) => `<div class="row"><span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span><b>${NAME[n.network]}</b>
-      <span class="muted">${n.state === 'alive' ? `alive · running ${since(n.since)}` : n.state === 'catching-up' ? `catching up · ${Number(n.blocksBehind).toLocaleString('en')} blocks behind` : 'offline at the last check'} · ${esc(n.label)}</span></div>`).join('');
     main.innerHTML = `<div class="panel"><div class="kicker">Base · Fatline coin</div><h1>$${esc(f.ticker)}</h1>
-      <p><code>${esc(address)}</code></p>
-      <div class="row who">${o.pfp ? `<img src="${esc(o.pfp)}" alt="" referrerpolicy="no-referrer">` : ''}<span>@${esc(o.username)} · FID ${esc(o.fid)}</span></div>
-      <h3>Nodes it keeps alive</h3>${nodes}
+      <p><code>${esc(address)}</code></p>${owner(f)}
+      <h2>Nodes it keeps alive</h2>${nodeRows(f)}${body(f)}
       <a class="btn" href="${scan}">Basescan ↗</a><a class="btn primary" href="/">Back to the board</a></div>`;
   });
 }

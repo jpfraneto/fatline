@@ -170,7 +170,7 @@
       <div class="who" id="mine-who"></div>
     </div>
     <div class="actions">
-      <a class="btn primary" href="docs/">Open Fatline ↗</a>
+      <a class="btn primary" href="f/FATLINE">Open Fatline ↗</a>
       <a class="btn" aria-disabled="true" title="The coin is not launched yet">Trade · soon</a>
       <a class="btn" href="https://github.com/jpfraneto/fatline">Source ↗</a>
     </div>
@@ -276,6 +276,15 @@ function who(o) {
   return `${pic}<span>@${esc(o.username ?? '?')} · FID ${esc(o.fid)}</span>`;
 }
 
+// One line on what keeps it alive: the cost and how full each server's disk is.
+function body(f) {
+  const s = f.nodes.filter((n) => n.server);
+  if (!s.length) return '';
+  const month = s.reduce((a, n) => a + n.server.cost.monthUsd, 0);
+  const disks = s.filter((n) => n.server.live).map((n) => { const d = n.server.live.disk; return `${NAME[n.network]} disk ${Math.round(100 * d.usedMb / (d.usedMb + d.freeMb))}%`; });
+  return `<div><span class="dot off" style="background:var(--amber);box-shadow:0 0 8px var(--amber)"></span><b>Body</b> <span class="muted">${s.length} servers · $${month.toFixed(2)}/month${disks.length ? ' · ' + disks.join(' · ') : ''} · <a href="${esc(f.page)}">details</a></span></div>`;
+}
+
 let cards = [];
 function render(status) {
   const real = status?.fatlines ?? [];
@@ -289,7 +298,8 @@ function render(status) {
   if (f) {
     document.getElementById('mine-orb').innerHTML = `<div class="orb" style="width:120px">${orb('F', f.nodes.map((n) => n.network), 0)}</div>`;
     document.getElementById('mine-nets').innerHTML = f.nodes.map(netLine).join('')
-      + `<div><span class="dot off"></span><b>Coin</b> <span class="muted">not launched yet</span></div>`;
+      + `<div><span class="dot off"></span><b>Coin</b> <span class="muted">not launched yet</span></div>`
+      + body(f);
     document.getElementById('mine-who').innerHTML = who(f.owner);
     if (f.owner?.pfp) document.querySelector('#owner .avatar').outerHTML = `<img src="${esc(f.owner.pfp)}" alt="" referrerpolicy="no-referrer">`;
   }
@@ -313,7 +323,7 @@ function draw() {
          <div class="muted">running ${since(new Date(c.age).toISOString())}</div>
          <div class="nets">${nets}</div>
          <div class="who">${who(c.f.owner)}</div>
-         <a class="open" href="${c.f.coin?.address ? `/base/${esc(c.f.coin.address)}` : 'docs/'}">Open ↗</a>`
+         <a class="open" href="${esc(c.f.page ?? (c.f.coin?.address ? `/base/${c.f.coin.address}` : 'docs/'))}">Open ↗</a>`
       : `<div class="ticker">$${esc(c.ticker)} <span class="tag ex">Example</span></div>
          <div>${c.cap} cap</div><div class="muted">${c.left} left</div>
          <div class="nets">${nets}</div>

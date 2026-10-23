@@ -93,7 +93,7 @@ async function findThread() {
   if (msgs.length) writeFileSync(file, `${msgs.at(-1).message_thread_id}\n`, { mode: 0o600 });
 }
 
-async function telegram(text) {
+export async function telegram(text) {
   await findThread().catch(() => {});
   const res = await fetch(`https://api.telegram.org/bot${secret('.fatline-telegram-token')}/sendMessage`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
