@@ -54,16 +54,14 @@ if (!tracked.length) {
   process.exit(1);
 }
 
-// A larger window when replies are filtered out after the fact, so a page is not lost to filtering.
-const want = opt.limit ?? 30;
-const { items, authors, more } = archive.feed({
+const { items: shown, authors, more: next } = archive.feed({
   before: opt.before,
-  limit: opt.replies ? want : Math.min(want * 3, 200),
+  limit: opt.limit ?? 30,
   fids: opt.fids?.length ? opt.fids : null,
+  replies: Boolean(opt.replies),
 });
-const shown = (opt.replies ? items : items.filter((i) => !i.body?.parent)).slice(0, want);
 
-if (opt.json) { console.log(JSON.stringify({ items: shown, authors, more }, null, 2)); process.exit(0); }
+if (opt.json) { console.log(JSON.stringify({ items: shown, authors, more: next }, null, 2)); process.exit(0); }
 
 const ago = (ms) => {
   const s = (Date.now() - ms) / 1000;
@@ -71,9 +69,9 @@ const ago = (ms) => {
 };
 for (const it of shown) {
   const a = authors[it.fid] ?? {};
-  const where = it.networks.farcaster ?? it.networks.hypersnap ?? '?';
+  const where = Object.entries(it.networks).filter(([, st]) => st === 'merged').map(([n]) => n).join(' + ') || '?';
   console.log(`${a.username ? `@${a.username}` : `fid ${it.fid}`}${a.display ? ` (${a.display})` : ''} · ${ago(it.at)} ago · ${where}${it.body?.parent ? ' · reply' : ''}`);
   console.log(`  ${String(it.body?.text ?? '').replace(/\s+/g, ' ').slice(0, 240)}`);
 }
 console.log(`\n${shown.length} cast(s) from ${new Set(shown.map((i) => i.fid)).size} author(s); ${tracked.length} account(s) tracked.`);
-if (more) console.log(`Next page: ./fatline feed --before ${more}`);
+if (next) console.log(`Next page: ./fatline feed --before ${next}`);

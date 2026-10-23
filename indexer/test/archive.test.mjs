@@ -182,3 +182,24 @@ test('HTTP: /api/archive/:fid reads the archive; bad FIDs are refused', async ()
     assert.equal((await (await fetch(`${base}/api/archive/1`)).json()).tracked, false);
   } finally { server.close(); }
 });
+
+test('feed: all tracked authors in one timeline, one item per message, pages without gaps, newest profile wins', () => {
+  const { archive, fc, hs } = setup();
+  const other = (n, extra = {}) => cast(n, { fid: 3, ...extra });
+  archive.ingest(fc, [cast(1), other(2), cast(3), other(4, { protocolTs: 1_000_003 })], { shard: 1, cursor: 1004 });
+  archive.ingest(hs, [cast(1)], { shard: 1, cursor: 1001 });
+  const page = archive.feed({ limit: 2 });
+  assert.deepEqual(page.items.map((i) => i.fid), [3, 18350], 'both authors, newest first');
+  const all = [];
+  let before = null;
+  do { const p = archive.feed({ limit: 1, before }); all.push(...p.items.map((i) => i.key)); before = p.more; } while (before);
+  assert.equal(all.length, 4, 'a message on both networks is one item; ties on timestamp are not skipped');
+  assert.deepEqual(archive.feed({ fids: [3] }).items.map((i) => i.fid), [3, 3]);
+  archive.ingest(fc, [cast(5, { body: { text: 'a reply', parent: { fid: 3, hash: h(2) } } })], { shard: 1, cursor: 1005 });
+  assert.equal(archive.feed({ limit: 1 }).items[0].body.text, 'a reply');
+  assert.equal(archive.feed({ limit: 1, replies: false }).items[0].body.text, 'cast 4', 'replies are filtered before the limit, so a page is never empty');
+  const name = (n, value, ts) => ({ eventType: 'MERGE_MESSAGE', shard: 1, eventId: 2000 + n, dedupKey: h(500 + n), fid: 3, msgType: 'MESSAGE_TYPE_USER_DATA_ADD', protocolTs: ts, body: { kind: 'user_data', field: 'USER_DATA_TYPE_USERNAME', value } });
+  archive.ingest(fc, [name(2, 'new', 9_000_000), name(1, 'old', 1)], { shard: 1, cursor: 2002 });
+  assert.equal(archive.profiles([3]).username, undefined);
+  assert.equal(archive.profiles([3])[3].username, 'new');
+});

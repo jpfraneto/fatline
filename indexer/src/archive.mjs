@@ -229,20 +229,6 @@ export class Archive {
       WHERE fid = ? AND msg_type IN (${marks})
       GROUP BY dedup_key HAVING ts < ? OR (ts = ? AND dedup_key < ?)
       ORDER BY ts DESC, dedup_key DESC LIMIT ?`).all(fid, ...msgTypes, ts0, ts0, key0, cap);
-    /*
-    const rows = keys.length
-      ? this.db.prepare(`SELECT * FROM fl_messages WHERE dedup_key IN (${keys.map(() => '?').join(',')})`).all(...keys.map((k) => k.dedup_key))
-      : [];
-    const items = keys.map(({ dedup_key: key, ts }) => {
-      const mine = rows.filter((r) => r.dedup_key === key);
-      const best = mine.find((r) => r.status === 'merged' && r.body) ?? mine.find((r) => r.body) ?? mine[0];
-      return {
-        key, fid, type: best.msg_type, at: ts, signer: best.signer,
-        body: best.body ? JSON.parse(best.body) : null,
-        networks: Object.fromEntries(NETWORKS.map((n) => [n, mine.find((r) => r.network === n)?.status ?? null])),
-      };
-    });
-    */
     const items = this.#items(keys.map((k) => ({ key: k.dedup_key, fid, ts: k.ts })));
     return { fid, items, sources: this.sources(), more: items.length === cap ? `${items.at(-1).at}_${items.at(-1).key}` : null };
   }
@@ -254,9 +240,7 @@ export class Archive {
       FROM fl_sources s LEFT JOIN fl_cursors c ON c.source_id = s.id GROUP BY s.id ORDER BY s.id`).all()
       .map((r) => ({ network: r.network, label: r.label, cursorAt: r.cursorAt, lastEventAt: r.lastEventAt }));
   }
-  
-  
-  
+
   /** keys [{key, fid, ts}] -> items, each carrying what every network says about it. */
   #items(keys) {
     const rows = keys.length
@@ -278,7 +262,7 @@ export class Archive {
    * read() is one author; this is all of them, in one query instead of one node call per author.
    * It is a slice: it holds only what ./fatline follow copied.
    */
-  feed({ before = null, limit = 50, fids = null, types = ['cast'] } = {}) {
+  feed({ before = null, limit = 50, fids = null, types = ['cast'], replies = true } = {}) {
     const msgTypes = (types ?? ['cast']).flatMap((t) => TYPES[t] ?? []);
     if (!msgTypes.length) fail(`types must be some of: ${Object.keys(TYPES).join(', ')}`);
     const cap = Math.min(Math.max(Number(limit) || 50, 1), 200);
@@ -288,9 +272,11 @@ export class Archive {
     const key0 = beforeKey && /^[\w:.|-]{3,128}$/.test(beforeKey) ? beforeKey.toLowerCase() : '';
     const marks = msgTypes.map(() => '?').join(',');
     const only = fids?.length ? `AND fid IN (${fids.map(() => '?').join(',')})` : '';
+    // Top-level only: a cast whose body names no parent cast (channel casts count as top-level).
+    const top = replies ? '' : "AND json_extract(body, '$.parent') IS NULL";
     // GROUP BY dedup_key: a message seen on both networks is one item, not two.
     const keys = this.db.prepare(`SELECT dedup_key AS key, fid, MAX(protocol_ts) AS ts FROM fl_messages
-      WHERE msg_type IN (${marks}) AND status = 'merged' ${only}
+      WHERE msg_type IN (${marks}) AND status = 'merged' ${only} ${top}
       GROUP BY dedup_key HAVING ts < ? OR (ts = ? AND dedup_key < ?)
       ORDER BY ts DESC, dedup_key DESC LIMIT ?`)
       .all(...msgTypes, ...(fids ?? []), ts0, ts0, key0, cap);
@@ -310,7 +296,8 @@ export class Archive {
     if (!list.length) return {};
     const rows = this.db.prepare(`SELECT fid, body FROM fl_messages
       WHERE fid IN (${list.map(() => '?').join(',')})
-        AND msg_type = 'MESSAGE_TYPE_USER_DATA_ADD' AND status = 'merged' AND body IS NOT NULL`).all(...list);
+        AND msg_type = 'MESSAGE_TYPE_USER_DATA_ADD' AND status = 'merged' AND body IS NOT NULL
+      ORDER BY protocol_ts`).all(...list); // oldest first, so the newest value wins
     const out = {};
     for (const r of rows) {
       let b; try { b = JSON.parse(r.body); } catch { continue; }
