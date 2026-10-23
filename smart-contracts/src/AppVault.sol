@@ -10,7 +10,10 @@ import {IClankerFeeLocker, IClankerLpLocker} from "./interfaces/IClanker.sol";
 /// Money comes in from three places: the trading fees of the app's coin (already converted to
 /// USDC by Clanker), anyone who deposits, and the owner. Money goes out in two ways: the app's
 /// server (the keeper) pays itself for compute one billing period at a time, and the owner moves
-/// what they want. When there is no USDC left for the next period, the server cannot pay itself
+/// what they want. The USDC is the node's fuel: `aliveUntil()` says how long it lasts.
+///
+/// A vault can belong to a Fatliner: then its owner is, at every moment, whoever holds that NFT.
+/// Sell the Fatliner and the vault, its coin's fees and its history go with it. When there is no USDC left for the next period, the server cannot pay itself
 /// and the app dies. Depositing again brings it back.
 ///
 /// Compute comes in tiers. Higher tiers cost more per second and are unlocked by daily active
@@ -33,8 +36,10 @@ contract AppVault {
     IClankerLpLocker public locker;
     IClankerFeeLocker public feeLocker;
 
-    address public owner;
+    address internal _owner;
     address public pendingOwner;
+    address public ownerNft; // if set, the owner is whoever holds `ownerTokenId` of this NFT
+    uint256 public ownerTokenId;
     address public keeper; // the server's own wallet: it pays the compute provider
     address public coin; // the app's coin, or 0 if the app has none
 
@@ -62,6 +67,8 @@ contract AppVault {
     event UriChanged(string uri);
     event OwnershipTransferStarted(address indexed from, address indexed to);
     event OwnershipTransferred(address indexed from, address indexed to);
+    event BoundToNft(address indexed nft, uint256 indexed tokenId);
+    event Swept(address indexed token, address indexed to, uint256 amount);
 
     error NotFactory();
     error NotOwner();
@@ -74,9 +81,11 @@ contract AppVault {
     error NothingToPay();
     error InsufficientFree();
     error ZeroAddress();
+    error OwnedByNft();
+    error UseWithdraw();
 
     modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
+        if (msg.sender != owner()) revert NotOwner();
         _;
     }
 
@@ -95,13 +104,13 @@ contract AppVault {
         string calldata uri_
     ) external {
         if (msg.sender != factory) revert NotFactory();
-        if (owner != address(0)) revert AlreadyInitialized();
+        if (_owner != address(0)) revert AlreadyInitialized();
         if (owner_ == address(0) || keeper_ == address(0)) revert ZeroAddress();
         if (billingPeriod_ < MIN_PERIOD || billingPeriod_ > MAX_PERIOD) revert BadPeriod();
         usdc = usdc_;
         locker = locker_;
         feeLocker = feeLocker_;
-        owner = owner_;
+        _owner = owner_;
         keeper = keeper_;
         for (uint256 i; i < tiers_.length; i++) {
             _tiers.push(tiers_[i]);
@@ -121,7 +130,22 @@ contract AppVault {
         coin = coin_;
     }
 
+    /// @notice Set once by the factory: from now on this vault belongs to whoever holds that NFT.
+    function bindToNft(address nft, uint256 tokenId) external {
+        if (msg.sender != factory) revert NotFactory();
+        if (ownerNft != address(0)) revert AlreadyInitialized();
+        ownerNft = nft;
+        ownerTokenId = tokenId;
+        emit BoundToNft(nft, tokenId);
+    }
+
     // ------------------------------------------------------------------ views
+
+    function owner() public view returns (address) {
+        if (ownerNft == address(0)) return _owner;
+        (bool ok, bytes memory ret) = ownerNft.staticcall(abi.encodeWithSignature("ownerOf(uint256)", ownerTokenId));
+        return ok && ret.length >= 32 ? abi.decode(ret, (address)) : address(0);
+    }
 
     function tiers() external view returns (Tier[] memory) {
         return _tiers;
@@ -203,6 +227,22 @@ contract AppVault {
         usdc.safeTransfer(to, amount);
         emit Withdrawn(to, amount);
     }
+
+    /// @notice Royalties and gifts can arrive in other tokens or ETH. The owner moves them; USDC uses `withdraw`.
+    function sweep(address token, address to) external onlyOwner returns (uint256 amount) {
+        if (token == usdc) revert UseWithdraw();
+        if (token == address(0)) {
+            amount = address(this).balance;
+            (bool ok,) = to.call{value: amount}("");
+            require(ok, "ETH transfer failed");
+        } else {
+            amount = _balanceOf(token, address(this));
+            token.safeTransfer(to, amount);
+        }
+        emit Swept(token, to, amount);
+    }
+
+    receive() external payable {}
 
     // ------------------------------------------------------------------ power
 
@@ -318,15 +358,18 @@ contract AppVault {
     }
 
     /// @notice Two steps, so ownership never goes to an address that cannot act (e.g. a typo).
+    /// A Fatliner's vault has no transfer of its own: it moves with the NFT.
     function transferOwnership(address to) external onlyOwner {
+        if (ownerNft != address(0)) revert OwnedByNft();
         pendingOwner = to;
-        emit OwnershipTransferStarted(owner, to);
+        emit OwnershipTransferStarted(_owner, to);
     }
 
     function acceptOwnership() external {
         if (msg.sender != pendingOwner) revert NotOwner();
-        emit OwnershipTransferred(owner, msg.sender);
-        owner = msg.sender;
+        if (ownerNft != address(0)) revert OwnedByNft();
+        emit OwnershipTransferred(_owner, msg.sender);
+        _owner = msg.sender;
         pendingOwner = address(0);
     }
 }
