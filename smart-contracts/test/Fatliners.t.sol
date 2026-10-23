@@ -18,7 +18,7 @@ contract FatlinersTest is Test {
     AppFactory factory;
     Fatliners nft;
 
-    address publisher = makeAddr("publisher");
+    address[] attesters;
     address anky = makeAddr("anky"); // FID 18350's address in the list
     address dwr = makeAddr("dwr"); // FID 3
     address v = makeAddr("v"); // FID 2
@@ -39,7 +39,8 @@ contract FatlinersTest is Test {
         AppVault.Tier[] memory t = new AppVault.Tier[](1);
         t[0] = AppVault.Tier(30, 0); // ~2.59 USDC a day: one node's fuel
         factory = new AppFactory(address(usdc), address(clanker), address(locker), address(feeLocker), t);
-        nft = new Fatliners(777, publisher, IFatlineVaults(address(factory)), "https://fatline.ink/fatliners/");
+        for (uint256 i; i < 5; i++) attesters.push(makeAddr(string.concat("attester", vm.toString(i))));
+        nft = new Fatliners(777, attesters, IFatlineVaults(address(factory)), "https://fatline.ink/fatliners/");
         factory.setFatliners(address(nft));
     }
 
@@ -68,11 +69,18 @@ contract FatlinersTest is Test {
         }
     }
 
+    /// The first `n` attesters vote for `root` on `day`.
+    function vote(Fatliners c, uint256 n, uint256 day, bytes32 root, uint256 eligible) internal {
+        for (uint256 i; i < n; i++) {
+            vm.prank(attesters[i]);
+            c.attest(day, root, eligible, "https://fatline.ink/lists/day.json");
+        }
+    }
+
     function publishDayOne() internal returns (bytes32[][] memory proofs) {
         bytes32 root;
         (root, proofs) = dayOneList();
-        vm.prank(publisher);
-        nft.publishRoot(day1, root, 777, "https://fatline.ink/lists/day-1.json");
+        vote(nft, 3, day1, root, 777); // 3 of 5: more than half
     }
 
     // ------------------------------------------------------------ birth
@@ -116,8 +124,7 @@ contract FatlinersTest is Test {
         // Day two: a bigger list (here: anky and someone ranked lower). Yesterday's proof no longer works.
         bytes32 a = nft.leaf(18350, anky, 1, DNA);
         bytes32 b = nft.leaf(99999, late, 5000, keccak256("late"));
-        vm.prank(publisher);
-        nft.publishRoot(day1 + 1, hashPair(a, b), 7777, "https://fatline.ink/lists/day-2.json");
+        vote(nft, 3, day1 + 1, hashPair(a, b), 7777);
         vm.prank(anky);
         vm.expectRevert(Fatliners.NotOnTodaysList.selector);
         nft.mint(18350, 1, DNA, proofs[0]);
@@ -128,25 +135,85 @@ contract FatlinersTest is Test {
         assertEq(nft.ownerOf(99999), late);
     }
 
-    function test_RootsArePostedOnceByThePublisher_NeverForThePast() public {
+    function test_MoreThanHalfOfTheAttesters() public {
+        assertEq(nft.threshold(), 3); // 5 attesters
+        address[] memory four = new address[](4);
+        for (uint256 i; i < 4; i++) four[i] = attesters[i];
+        assertEq(new Fatliners(777, four, IFatlineVaults(address(factory)), "").threshold(), 3); // not 2: no ties
+    }
+
+    function test_AListNeedsAMajority_NoneMeansNoMint() public {
+        (bytes32 root, bytes32[][] memory proofs) = dayOneList();
+        vote(nft, 2, day1, root, 777); // 2 of 5: not yet
+        assertEq(nft.rootOf(day1), bytes32(0));
+        vm.prank(anky);
+        vm.expectRevert(Fatliners.NoRootToday.selector);
+        nft.mint(18350, 1, DNA, proofs[0]);
+        vm.prank(attesters[2]);
+        nft.attest(day1, root, 777, "");
+        assertEq(nft.rootOf(day1), root); // the third vote makes it the list
+    }
+
+    function test_ALyingAttesterCannotWin() public {
         (bytes32 root,) = dayOneList();
-        vm.expectRevert(Fatliners.NotPublisher.selector);
-        nft.publishRoot(day1, root, 777, "");
-        vm.startPrank(publisher);
-        nft.publishRoot(day1, root, 777, "");
-        vm.expectRevert(Fatliners.RootAlreadyPublished.selector);
-        nft.publishRoot(day1, bytes32(uint256(1)), 777, "");
+        bytes32 fake = keccak256("my friends");
+        vm.prank(attesters[0]);
+        nft.attest(day1, fake, 777, "");
+        vm.prank(attesters[1]);
+        nft.attest(day1, fake, 777, ""); // two liars
+        vote(nft, 0, day1, root, 777);
+        for (uint256 i = 2; i < 5; i++) {
+            vm.prank(attesters[i]);
+            nft.attest(day1, root, 777, "");
+        }
+        assertEq(nft.rootOf(day1), root);
+        assertEq(nft.votesFor(day1, keccak256(abi.encode(fake, uint256(777)))), 2);
+    }
+
+    function test_VotingRules() public {
+        (bytes32 root,) = dayOneList();
+        vm.expectRevert(Fatliners.NotAttester.selector);
+        nft.attest(day1, root, 777, "");
+        vm.startPrank(attesters[0]);
+        nft.attest(day1, root, 777, "");
+        vm.expectRevert(Fatliners.AlreadyVoted.selector);
+        nft.attest(day1, root, 777, "");
         vm.expectRevert(Fatliners.PastDay.selector);
-        nft.publishRoot(day1 - 1, root, 777, "");
-        nft.publishRoot(day1 + 1, root, 7777, ""); // tomorrow's list can be posted ahead
+        nft.attest(day1 - 1, root, 777, "");
+        nft.attest(day1 + 1, root, 7777, ""); // tomorrow's vote can come ahead
+        vm.stopPrank();
+        for (uint256 i = 1; i < 3; i++) {
+            vm.prank(attesters[i]);
+            nft.attest(day1, root, 777, ""); // attesters 1 and 2 complete the majority
+        }
+        // An agreed root never changes, even if more votes arrive for another.
+        vm.prank(attesters[3]);
+        nft.attest(day1, keccak256("late change"), 777, "");
+        assertEq(nft.rootOf(day1), root);
+    }
+
+    function test_KeeperLink_ClearedOnEveryTransfer() public {
+        bytes32[][] memory proofs = publishDayOne();
+        vm.prank(anky);
+        nft.mint(18350, 1, DNA, proofs[0]);
+        assertEq(nft.linkedFidOf(18350), 18350); // at birth: its origin
+        vm.prank(anky);
+        nft.transferFrom(anky, buyer, 18350);
+        assertEq(nft.linkedFidOf(18350), 0); // the old frame of reference left with the seller
+        vm.prank(anky);
+        vm.expectRevert(Fatliners.NotHolder.selector);
+        nft.linkFid(18350, 18350);
+        vm.prank(buyer);
+        nft.linkFid(18350, 3); // the buyer lives through FID 3
+        assertEq(nft.linkedFidOf(18350), 3);
+        assertEq(nft.dnaOf(18350), DNA); // the body it was born with stays
     }
 
     function test_NoMoreThanMaxSupply() public {
-        Fatliners small = new Fatliners(1, publisher, IFatlineVaults(address(factory)), "");
+        Fatliners small = new Fatliners(1, attesters, IFatlineVaults(address(factory)), "");
         bytes32 a = small.leaf(18350, anky, 1, DNA);
         bytes32 b = small.leaf(3, dwr, 2, keccak256("dwr"));
-        vm.prank(publisher);
-        small.publishRoot(day1, hashPair(a, b), 2, "");
+        vote(small, 3, day1, hashPair(a, b), 2);
         bytes32[] memory p = new bytes32[](1);
         p[0] = b;
         vm.prank(anky);

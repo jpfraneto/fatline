@@ -15,12 +15,22 @@ interface IFatlineVaults {
 /// @notice 777 beings, each born from one Farcaster account. The token id is the account's FID:
 /// you are your FID.
 ///
-/// Who may mint changes every day. Each day the publisher posts the root of a Merkle tree (a public
-/// fingerprint) of that day's list: on day one the top 777 accounts of the open ranking, on day two
-/// the top 7,777, and so on, each leaf holding the account's FID, the address that may mint it, its
-/// rank and a hash of its history (its DNA). The list and the code that makes it are public, so
-/// anyone can rebuild the tree and check the root. A root can be posted once per day and never
-/// changed. A proof only works against today's root.
+/// Who may mint changes every day. The day's list (on day one the top 777 accounts of the open
+/// ranking, on day two the top 7,777, and so on) is a Merkle tree, each leaf holding the account's FID,
+/// the address that may mint it, its rank and a hash of its history (its DNA).
+///
+/// Nobody posts the list alone. A fixed group of attesters, people who run their own Farcaster nodes,
+/// each compute the list with the same public code and vote for its root. The ranking is
+/// deterministic, so honest attesters get the same root. A root becomes the day's list when more than
+/// half of the attesters voted for it (half rounded down, plus one): two different roots can never
+/// both get there. Without a majority there is no mint that day. An agreed root never changes, and a
+/// proof only works against today's root.
+///
+/// The keeper link: a Fatliner is born from one account (its origin, which never changes), and is
+/// kept by whoever holds it. The holder links the FID they live on Farcaster through; the link is
+/// cleared on every transfer, so a new holder brings their own frame of reference. The contract
+/// records which FID the holder claims; readers check, on a node, that the holder's address belongs
+/// to that FID (as its custody or a verified address) before they trust it.
 ///
 /// Minting is free. When all 777 exist, no more can be made.
 ///
@@ -32,7 +42,9 @@ contract Fatliners is ERC721, IERC2981 {
     uint256 public constant ROYALTY_BPS = 800; // 8%
 
     uint256 public immutable maxSupply;
-    address public immutable publisher; // posts each day's root; cannot change past days
+    address[] internal _attesters;
+    mapping(address => bool) public isAttester;
+    uint256 public immutable threshold; // more than half of the attesters
     IFatlineVaults public immutable vaults; // the factory that gives each Fatliner its vault
     string internal baseUri;
 
@@ -41,12 +53,20 @@ contract Fatliners is ERC721, IERC2981 {
     mapping(uint256 day => uint256) public eligibleOn; // how many accounts that day's list holds
     mapping(uint256 fid => bytes32) public dnaOf; // the history hash at mint: what the being hatches from
     mapping(uint256 fid => uint256) public rankOf;
+    mapping(uint256 day => mapping(address attester => bool)) public voted;
+    mapping(uint256 day => mapping(bytes32 vote => uint256)) public votesFor; // vote = hash(root, eligible)
+    mapping(uint256 fid => uint256) public linkedFidOf; // the keeper link: the FID its holder lives through
 
-    event RootPublished(uint256 indexed day, bytes32 root, uint256 eligible, string list);
+    event Attested(uint256 indexed day, address indexed attester, bytes32 root, uint256 eligible, string list);
+    event RootAgreed(uint256 indexed day, bytes32 root, uint256 eligible, uint256 votes);
+    event FidLinked(uint256 indexed fatliner, uint256 indexed fid, address indexed holder);
     event Born(uint256 indexed fid, address indexed to, uint256 rank, bytes32 dna, uint256 day);
 
-    error NotPublisher();
-    error RootAlreadyPublished();
+    error NotAttester();
+    error AlreadyVoted();
+    error NoAttesters();
+    error DuplicateAttester();
+    error NotHolder();
     error PastDay();
     error NoRootToday();
     error NotOnTodaysList();
@@ -55,13 +75,21 @@ contract Fatliners is ERC721, IERC2981 {
 
     constructor(
         uint256 maxSupply_,
-        address publisher_,
+        address[] memory attesters_,
         IFatlineVaults vaults_,
         string memory baseUri_
     ) ERC721("Fatliners", "FATLINER") {
-        if (publisher_ == address(0) || address(vaults_) == address(0)) revert ZeroAddress();
+        if (attesters_.length == 0) revert NoAttesters();
+        if (address(vaults_) == address(0)) revert ZeroAddress();
+        for (uint256 i; i < attesters_.length; i++) {
+            address a = attesters_[i];
+            if (a == address(0)) revert ZeroAddress();
+            if (isAttester[a]) revert DuplicateAttester();
+            isAttester[a] = true;
+            _attesters.push(a);
+        }
+        threshold = attesters_.length / 2 + 1;
         maxSupply = maxSupply_;
-        publisher = publisher_;
         vaults = vaults_;
         baseUri = baseUri_;
     }
@@ -70,14 +98,25 @@ contract Fatliners is ERC721, IERC2981 {
         return block.timestamp / 1 days;
     }
 
-    /// @notice Post a day's list. `list` is where anyone can download it (and the code that made it).
-    function publishRoot(uint256 day, bytes32 root, uint256 eligible, string calldata list) external {
-        if (msg.sender != publisher) revert NotPublisher();
+    function attesters() external view returns (address[] memory) {
+        return _attesters;
+    }
+
+    /// @notice An attester's vote for a day's list. `list` is where anyone can download what they computed.
+    /// One vote per attester per day. The first root to get more than half of the votes becomes the list.
+    function attest(uint256 day, bytes32 root, uint256 eligible, string calldata list) external {
+        if (!isAttester[msg.sender]) revert NotAttester();
         if (day < today()) revert PastDay();
-        if (rootOf[day] != bytes32(0)) revert RootAlreadyPublished();
-        rootOf[day] = root;
-        eligibleOn[day] = eligible;
-        emit RootPublished(day, root, eligible, list);
+        if (voted[day][msg.sender]) revert AlreadyVoted();
+        voted[day][msg.sender] = true;
+        bytes32 vote = keccak256(abi.encode(root, eligible));
+        uint256 votes = ++votesFor[day][vote];
+        emit Attested(day, msg.sender, root, eligible, list);
+        if (votes == threshold && rootOf[day] == bytes32(0)) {
+            rootOf[day] = root;
+            eligibleOn[day] = eligible;
+            emit RootAgreed(day, root, eligible, votes);
+        }
     }
 
     /// @notice The leaf for one account, as the list builder hashes it (double-hashed, OpenZeppelin style).
@@ -95,7 +134,26 @@ contract Fatliners is ERC721, IERC2981 {
         dnaOf[fid] = dna;
         rankOf[fid] = rank;
         _mint(msg.sender, fid); // reverts if this FID was already born
+        linkedFidOf[fid] = fid; // at birth, its holder is its origin
         emit Born(fid, msg.sender, rank, dna, today());
+        emit FidLinked(fid, fid, msg.sender);
+    }
+
+    /// @notice The keeper link: the holder says which FID they live on Farcaster through.
+    /// 0 removes the link. Readers check on a node that the holder's address belongs to `fid`.
+    function linkFid(uint256 fatliner, uint256 fid) external {
+        if (ownerOf(fatliner) != msg.sender) revert NotHolder();
+        linkedFidOf[fatliner] = fid;
+        emit FidLinked(fatliner, fid, msg.sender);
+    }
+
+    /// @dev A new holder brings their own frame of reference: the link is cleared on every transfer.
+    function _update(address to, uint256 tokenId, address auth) internal override returns (address from) {
+        from = super._update(to, tokenId, auth);
+        if (from != address(0) && from != to && linkedFidOf[tokenId] != 0) {
+            delete linkedFidOf[tokenId];
+            emit FidLinked(tokenId, 0, to);
+        }
     }
 
     function royaltyInfo(uint256 fid, uint256 salePrice) external view returns (address, uint256) {
