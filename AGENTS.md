@@ -10,11 +10,11 @@ Start here, whatever tool you use:
 
 ## Commands
 
-- `./fatline help` lists everything.
-- `./fatline test` runs every test: Foundry contracts, indexer, infra. Run it before saying something works.
-- Launchpad on a fork with fake money: `./fatline contracts fork`, then `./fatline up`. See the README.
-- Posting: `./fatline identity`, then `./fatline up`.
-- Full node on Hetzner (hourly, card): `./fatline compute hetzner --quote`, then `./fatline compute hetzner`, `… status`, `… down`. On AgentMetal (daily, USDC): `./fatline compute --provider agentmetal --days 1 --disk 700 --node`.
+- `fatline help` lists everything.
+- `fatline test` runs every test: Foundry contracts, indexer, infra. Run it before saying something works.
+- Launchpad on a fork with fake money: `fatline contracts fork`, then `fatline up`. See the README.
+- Posting: `fatline identity`, then `fatline up`.
+- Full node on Hetzner (hourly, card): `fatline compute hetzner --quote`, then `fatline compute hetzner`, `… status`, `… down`. On AgentMetal (daily, USDC): `fatline compute --provider agentmetal --days 1 --disk 700 --node`.
 
 ## Rules
 

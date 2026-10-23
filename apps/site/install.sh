@@ -4,7 +4,8 @@
 # What it does, in order (read it before you run it; it is short):
 #   1. checks for git and Node.js 22.12+ (it never installs them for you; it says how)
 #   2. downloads Fatline from github.com/jpfraneto/fatline into ~/fatline (or updates it there)
-#   3. starts ./fatline setup, which asks before every step and never spends money without you typing "create"
+#   3. puts the `fatline` command on your PATH (npm install -g, linked to that folder: git pull updates it)
+#   4. starts fatline setup, which asks before every step and never spends money without you typing "create"
 #
 # Settings: FATLINE_DIR=/somewhere/else   FATLINE_NO_SETUP=1 (download only)
 # Source: https://github.com/jpfraneto/fatline/blob/main/apps/site/install.sh  ·  MIT
@@ -35,10 +36,15 @@ else
   git clone --quiet "$REPO" "$DIR"
 fi
 say "  Version: $(git -C "$DIR" log -1 --format='%h, %cs')"
+if npm install -g "$DIR" --no-audit --no-fund --loglevel=error >/dev/null 2>&1 && command -v fatline >/dev/null 2>&1; then
+  say "  The fatline command is ready: run it from anywhere."
+else
+  say "  Could not put fatline on your PATH (npm install -g needs permission here). Use it from the folder: cd $DIR && ./fatline"
+fi
 say ""
 
 if [ "${FATLINE_NO_SETUP:-}" = 1 ]; then
-  say "  Downloaded. Start when you're ready:  cd $DIR && ./fatline setup"
+  say "  Downloaded. Start when you're ready:  fatline setup"
   exit 0
 fi
 
@@ -47,5 +53,5 @@ if [ -r /dev/tty ] && { : < /dev/tty; } 2>/dev/null; then
   cd "$DIR" && exec ./fatline setup < /dev/tty
 fi
 say "  No terminal to ask questions in (an agent or a script?). Next:"
-say "    cd $DIR && ./fatline setup --plan      # every step and its command"
+say "    fatline setup --plan      # every step and its command"
 say "  Agents: follow https://fatline.ink/skill.md"

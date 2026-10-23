@@ -87,8 +87,8 @@ Rule kept from it: **volume doesn't buy beauty.** Traits come from ratios and sh
 Beside this contract there is now a second way to make a Fatliner's image: a **prompt** compiled from the same history and DNA, sent to `gpt-image-2` **together with** the approved species blueprint (`assets/FATLINERS_MASTER_REFERENCE.png`). It works for any FID, from our own nodes, or offline from an exported file:
 
 ```sh
-./fatline fatliners export --fid 18350 > 18350.input.json    # what we send you: fatliners.input/1 (+ coverage)
-./fatline fatliners prompt --input 18350.input.json          # traits.json, blueprint.json, pfp.prompt.txt, pfp.request.json
+fatline fatliners export --fid 18350 > 18350.input.json    # what we send you: fatliners.input/1 (+ coverage)
+fatline fatliners prompt --input 18350.input.json          # traits.json, blueprint.json, pfp.prompt.txt, pfp.request.json
 ```
 
 `generate(input.json) → { name, image, traits }` still holds: `name` = `blueprint.json` name, `traits` = `traits.json` attributes, `image` = `portrait.png` **once an image was generated and accepted**. Until then the status is `prepared`, never `generated`. The prompt is deterministic; the image isn't, so the first accepted image is kept and reused. Everything: [docs/PFP.md](docs/PFP.md).

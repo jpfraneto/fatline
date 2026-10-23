@@ -118,7 +118,7 @@ More decisions that day:
 ## 6. Posting (Oct 21, night)
 
 - **What was built:**
-  - `./fatline identity` registers a **gasless** app key, following Snapchain's current writing guide: an EIP-712 `KEY_ADD` signed by the custody address. It needs no ETH and confirms in seconds.
+  - `fatline identity` registers a **gasless** app key, following Snapchain's current writing guide: an EIP-712 `KEY_ADD` signed by the custody address. It needs no ETH and confirms in seconds.
   - The key is scoped: it can't add or remove other keys.
   - The client signs casts, replies, likes, recasts, follows and deletes. Each one is read back from the same node before it's shown as confirmed.
 - **Findings from the real network:**
@@ -131,7 +131,7 @@ More decisions that day:
 - AgentMetal's disk failed again (HTTP 502 within 2 s, not charged). The owner asked for a cheaper provider "just to test things out".
 - **Hetzner directly**, billed by the hour on the owner's account (card, not USDC): a cx43 with 16 GB RAM plus a 700 GB volume costs **~$2.50/day**, about a fifth of AgentMetal's ~11.20 USDC/day.
 - The owner created an API token, stored only in `~/.hetzner-token` (mode 600).
-- `infra/hetzner.mjs` creates, checks and deletes the whole node (`./fatline compute hetzner …`).
+- `infra/hetzner.mjs` creates, checks and deletes the whole node (`fatline compute hetzner …`).
 - Quoted, **not created**: the owner paused to start a fresh session with new ideas.
 - A friend independently explained the R2 snapshot, the same file we measured. The friend is a tester candidate.
 
@@ -151,17 +151,17 @@ More decisions that day:
 
 - The owner asked for the README, docs and site to catch up with everything, and for images that make the Fatliners feel like a world where each being's life feeds the network.
 - **The world:** nine scenes in the figurine look (the Weaving, You Are Your FID, Two Currents, the Vault, the Sleeper, the Archive, the Hall of 777, A Node Is Born, a map) and Aster, the being of $FATLINE. Each scene stands for a real part of Fatline. Made through the Bankr LLM gateway with `gpt-image-2.5-sunburst`. The gateway has no image-edit route, so the style reference couldn't be attached; the look is described in words, and it held.
-- **The first outside contribution:** a friend (jvaleskadevs) sent PR #1: `follow --followers --depth` and `./fatline feed`. Reviewed, three bugs fixed (an empty page when replies were hidden, the wrong label for the network, an older username winning), merged.
+- **The first outside contribution:** a friend (jvaleskadevs) sent PR #1: `follow --followers --depth` and `fatline feed`. Reviewed, three bugs fixed (an empty page when replies were hidden, the wrong label for the network, an older username winning), merged.
 
 ## Start from scratch
 
 1. Read the bounty post, then [MASTER-PROMPT.md](MASTER-PROMPT.md), then this file.
-2. `git clone https://github.com/jpfraneto/fatline && cd fatline && ./fatline doctor`
-3. Try the launchpad with fake money: `./fatline contracts fork`, then `./fatline up` (see the README).
+2. `git clone https://github.com/jpfraneto/fatline && cd fatline && fatline doctor`
+3. Try the launchpad with fake money: `fatline contracts fork`, then `fatline up` (see the README).
 4. Node:
-   - `./fatline compute wallet` creates a wallet; fund it with USDC on Base.
-   - `./fatline compute --provider agentmetal --days 1 --disk 700 --node` rents the server and sets up the node.
-   - `./fatline compute status` shows progress.
+   - `fatline compute wallet` creates a wallet; fund it with USDC on Base.
+   - `fatline compute --provider agentmetal --days 1 --disk 700 --node` rents the server and sets up the node.
+   - `fatline compute status` shows progress.
 5. Continue with the first unfinished workstream in the master prompt.
 
 ## Rules that never change

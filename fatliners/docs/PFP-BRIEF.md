@@ -146,8 +146,8 @@ Keep the existing `generate(input.json) → { name, image, traits }` interface c
 Integrate a single prompt-generation command with the existing CLI, supporting the equivalent of:
 
 ```sh
-./fatline fatliners prompt --fid 18350
-./fatline fatliners prompt --fid 12345 --reference fatliners/assets/FATLINERS_MASTER_REFERENCE.png
+fatline fatliners prompt --fid 18350
+fatline fatliners prompt --fid 12345 --reference fatliners/assets/FATLINERS_MASTER_REFERENCE.png
 ```
 
 Also accept an exported generator input JSON so the collaborator can compile a prompt offline without node access. Document the real working commands rather than leaving these as pseudocode.

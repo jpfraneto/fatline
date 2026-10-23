@@ -38,10 +38,10 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 **Latest, on top of the notes below:**
 - **One server, both networks, both in sync** (checked 16:00 UTC: 914,314,232 messages on each, blockDelay ≤ 9). $131.82/month. The ranking extract is finished; nothing else runs on it.
 - **The ranking is done:** `/root/ranking-out/ranking.tsv` on the master, 593,815 ranked, tiers 777 / 7,000 / 70,000 / rest. Deterministic, no manual exclusions (owner's call). Not published yet.
-- **PR #1 merged** (jvaleskadevs): `follow --followers --depth N` and `./fatline feed` (a timeline from the local archive, no node). Reviewed and fixed: replies filtered in SQL (pages could come back empty), the network shown per cast, newest profile field wins; one new test (67 indexer tests). Tried on our master: @anky has 961 followers on Snapchain; copying all their histories is slow (14 accounts in ~10 min).
+- **PR #1 merged** (jvaleskadevs): `follow --followers --depth N` and `fatline feed` (a timeline from the local archive, no node). Reviewed and fixed: replies filtered in SQL (pages could come back empty), the network shown per cast, newest profile field wins; one new test (67 indexer tests). Tried on our master: @anky has 961 followers on Snapchain; copying all their histories is slow (14 accounts in ~10 min).
 - **The world of the Fatliners:** 9 scenes + Aster's portrait, `fatliners/world/` (made through the Bankr LLM gateway, key in `~/.fatline-bankr-key`, ~$0.40). On the landing page (hero, "World" section, Aster on the first card) and in the README.
 - **Site and docs updated** to this state: protocol steps, finished ranking, real portraits, one server, followers and feed.
-- **One-line setup (2026-10-23):** `curl -fsSL https://fatline.ink/install.sh | sh` → clones into ~/fatline → `./fatline setup` (infra/setup.mjs): guided, resumable, asks before each step, three paths (rent / local / light). `--plan` prints the steps and commands. Agent skill at fatline.ink/skill.md (= `skills/fatline-setup/SKILL.md`), plus fatline.ink/llms.txt. Tested: the light path end to end in a fresh clone (crackle, FID 18350, 4,824 messages in 11 s, feed shown); rent and local paths only through `--plan` and a free quote. Found and fixed on the way: on a fresh copy the light path read a local node that doesn't exist.
+- **One-line setup (2026-10-23):** `curl -fsSL https://fatline.ink/install.sh | sh` → clones into ~/fatline → `fatline setup` (infra/setup.mjs): guided, resumable, asks before each step, three paths (rent / local / light). `--plan` prints the steps and commands. Agent skill at fatline.ink/skill.md (= `skills/fatline-setup/SKILL.md`), plus fatline.ink/llms.txt. Tested: the light path end to end in a fresh clone (crackle, FID 18350, 4,824 messages in 11 s, feed shown); rent and local paths only through `--plan` and a free quote. Found and fixed on the way: on a fresh copy the light path read a local node that doesn't exist.
 - **Next, in bounty order:** a stranger runs the three commands (J11); the owner's real identity + cast (J5–J7); deploy AppFactory and launch $FATLINE (needs the owner's yes and money); publish ranking.tsv and its Merkle root; render the 777.
 
 ## Earlier notes (2026-10-22, ~07:15 UTC, overnight run)
@@ -52,7 +52,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - **Hetzner `cax31` (ARM, 8 CPU, 16 GB RAM) + 700 GB volume in nbg1, ~$2.75/day.** Server 171726570 at **46.225.208.199**. Record in `.fatline/hetzner.json`.
 - The owner's decision: **it stays up.** It is the master node of Fatline and will be tied to $FATLINE (each node can be tied to an app running from it).
 - Why cax31 and not cx43: cx43 was sold out in every location (`error during placement`). Snapchain and statsd both publish arm64 images. `hetzner.mjs` checks stock before creating anything and resumes a half-finished run.
-- SSH: `ssh -i .fatline/ssh_ed25519 root@46.225.208.199`. Status: `./fatline compute hetzner status`.
+- SSH: `ssh -i .fatline/ssh_ed25519 root@46.225.208.199`. Status: `fatline compute hetzner status`.
 - **Snapchain runs on it since 2026-10-22 06:42 UTC**, started from the streamed snapshot (no second download).
   - Disk: 557 GB (global 4 MB, shard-0 37 GB, shard-1 262 GB, shard-2 259 GB); 97 GB free on the 688 GB volume.
   - RAM: the Snapchain container uses ~0.4–0.8 GB; CPU 17–77%.
@@ -98,11 +98,11 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - **Local processes from earlier demos** may still run on the owner's Mac: an anvil Base fork on :8545 and the indexer on :8787. Both are harmless; stop them if they get in the way.
 
 ### Done
-- **Fatliner PFPs from any FID (2026-10-23):** `./fatline fatliners prompt --fid N [--generate]`. Our two nodes → the existing features and DNA → calibrated visual traits → a prompt for `gpt-image-2` with the approved species blueprint attached → a portrait (made through the Codex CLI's image tool on the owner's ChatGPT login; no API key). 16 well-known accounts rendered as a set. Everything: `fatliners/docs/PFP.md`. Not done: recalibrating on the real top 777 once `ranking.tsv` exists; an OpenAI API adapter.
+- **Fatliner PFPs from any FID (2026-10-23):** `fatline fatliners prompt --fid N [--generate]`. Our two nodes → the existing features and DNA → calibrated visual traits → a prompt for `gpt-image-2` with the approved species blueprint attached → a portrait (made through the Codex CLI's image tool on the owner's ChatGPT login; no API key). 16 well-known accounts rendered as a set. Everything: `fatliners/docs/PFP.md`. Not done: recalibrating on the real top 777 once `ranking.tsv` exists; an OpenAI API adapter.
 - Machine check, read client (Farcaster and Hypersnap), x402 rental (VpsAgent monthly, AgentMetal daily).
 - Launchpad contracts, indexer and UI, and onchain daily users. Proven on a Base fork.
 - **Posting (J5–J7):**
-  - `./fatline identity` (gasless `KEY_ADD`, scoped, hidden seed prompt, self-revoke) in `indexer/src/identity.mjs`.
+  - `fatline identity` (gasless `KEY_ADD`, scoped, hidden seed prompt, self-revoke) in `indexer/src/identity.mjs`.
   - `indexer/src/writer.mjs`: cast, reply, like, recast, follow, delete; each is confirmed by reading it back.
   - The UI is in `apps/opinions/src/post.js`.
   - Posting is owner-only: from the same machine, or with a write token behind a proxy. Other websites are blocked.
@@ -112,7 +112,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 
 ### Not done, in bounty order
 - **J3: done.** The master synced every shard (12:25 UTC) and survived a reboot (in sync again 62 s after it). See "The master node" above.
-- **J5–J7 real run:** the owner runs `./fatline identity --fid 18350 --dry-run`, then without `--dry-run`, **in their own terminal** (never paste the seed phrase into an agent chat). Then `./fatline up` and cast from My people. Test account: @anky, FID 18350, custody `0x3ae5…6b60`.
+- **J5–J7 real run:** the owner runs `fatline identity --fid 18350 --dry-run`, then without `--dry-run`, **in their own terminal** (never paste the seed phrase into an agent chat). Then `fatline up` and cast from My people. Test account: @anky, FID 18350, custody `0x3ae5…6b60`.
 - **J8:** the client filter (show or hide posts by the app that made them). Not built.
 - **J9:** the tutorial site (English and Spanish). Not started.
 - **J11:** testers. The owner's friend (who sent the snapshot analysis) is a candidate. None confirmed yet.
@@ -133,7 +133,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 ## Workstreams, in order
 
 ### W1. Write path (J5–J7). Start now.
-- **Identity tool:** a separate local command (`./fatline identity`), never the web page or the agent chat.
+- **Identity tool:** a separate local command (`fatline identity`), never the web page or the agent chat.
   - Read the seed phrase from a hidden prompt.
   - Derive the custody address on the standard path only and look up its FID on the node.
   - Fail clearly if they don't match.
@@ -152,7 +152,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - Measure how many casts get attributed and print the number. Don't promise 100%.
 
 ### W3. The three commands (J1–J4)
-- The quickstart is exactly `./fatline compute`, `./fatline node <farcaster|hypersnap>`, `./fatline client`. `client` is `up` plus the first-run guide to `identity`.
+- The quickstart is exactly `fatline compute`, `fatline node <farcaster|hypersnap>`, `fatline client`. `client` is `up` plus the first-run guide to `identity`.
 - **Compute:**
   - Keep `doctor`, which uses this machine if it's big enough.
   - Add one path that really provisions ≥2 TB: a cloud provider API scripted end to end, or an x402 seller with enough disk if one exists.
@@ -207,7 +207,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - **Never invent:** no fake testers, quotes, vouches, numbers or screenshots. If something is untested, say "untested".
 - **Open and user's choice:** Farcaster and Hypersnap are equals. Node choice lives in Settings and is always labeled. No hidden fallback to a hosted API.
 - **No slop:** plain, short sentences. Each feature works or is labeled as not working. Delete instead of padding. One clear way to do each thing.
-- **Keep the README's "tested / not tested" section true after every change.** Run `./fatline test` before claiming anything works.
+- **Keep the README's "tested / not tested" section true after every change.** Run `fatline test` before claiming anything works.
 - **Order:** finish the earliest unfinished workstream before polishing a later one, unless the owner says otherwise.
 
 ## Working loop for any agent session

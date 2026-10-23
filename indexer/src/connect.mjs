@@ -1,6 +1,6 @@
-// ./fatline connect [--network farcaster|hypersnap] [--open]
-// ./fatline connect show
-// ./fatline connect forget
+// fatline connect [--network farcaster|hypersnap] [--open]
+// fatline connect show
+// fatline connect forget
 //
 // You are your FID. This proves which Farcaster account you are, with your phone, and no seed phrase:
 //   1. It opens a Sign In with Farcaster request for fatline.ink and shows it as a QR code (the arch in the middle).
@@ -11,7 +11,7 @@
 //   4. The handshake: it asks your node which FID that address owns. Only if your node agrees is it saved.
 // The relay (relay.farcaster.xyz, Farcaster's) only carries the request and the signed message between your
 // phone and this machine; it decides nothing. The proof is saved in .fatline/identity.json: public data, no keys.
-// Posting as yourself still needs an app key: ./fatline identity.
+// Posting as yourself still needs an app key: fatline identity.
 import { randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -87,7 +87,7 @@ async function connect(opts, config) {
   for (;;) {
     s = await relay('/v1/channel/status', { token: channel.channelToken }).catch(() => null);
     if (s?.state === 'completed') break;
-    if (Date.now() > deadline) throw new Error('No sign-in after 5 minutes. Run ./fatline connect again when you have your phone.');
+    if (Date.now() > deadline) throw new Error('No sign-in after 5 minutes. Run fatline connect again when you have your phone.');
     await new Promise((r) => setTimeout(r, 1500));
   }
 
@@ -103,7 +103,7 @@ async function connect(opts, config) {
   console.log(`  \x1b[1mFID ${identity.fid}${identity.username ? ` · @${identity.username}` : ''}\x1b[0m`);
   console.log(`  signed by its custody address ${identity.custody}`);
   console.log(`  confirmed by ${node.url}${node.own ? ', your own node' : ''}`);
-  console.log(`  \x1b[2mSaved to .fatline/identity.json (public: the signed message, no keys). Forget it: ./fatline connect forget\x1b[0m\n`);
+  console.log(`  \x1b[2mSaved to .fatline/identity.json (public: the signed message, no keys). Forget it: fatline connect forget\x1b[0m\n`);
 }
 
 async function main() {
@@ -112,7 +112,7 @@ async function main() {
   const config = loadConfig();
   if (a[0] === 'show') {
     const id = loadIdentity(config);
-    console.log(id ? `FID ${id.fid}${id.username ? ` (@${id.username})` : ''}, custody ${id.custody}, confirmed by ${id.node} on ${id.verifiedAt.slice(0, 10)}.` : 'Not connected. Run ./fatline connect');
+    console.log(id ? `FID ${id.fid}${id.username ? ` (@${id.username})` : ''}, custody ${id.custody}, confirmed by ${id.node} on ${id.verifiedAt.slice(0, 10)}.` : 'Not connected. Run fatline connect');
     return;
   }
   if (a[0] === 'forget') { rmSync(identityPath(config), { force: true }); console.log('Forgotten. Nothing else was touched.'); return; }

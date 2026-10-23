@@ -1,9 +1,9 @@
-// ./fatline compute [--quote] [--sku server_small_1mo] [--region EU] [--network farcaster] [--max-usdc 20] [--vault 0x…]
-// ./fatline compute --provider agentmetal --plan medium --days 3 --disk 1000 --node [--quote]
-// ./fatline compute wallet        (create or show this machine's paying wallet; fund it with USDC on Base)
-// ./fatline compute disk --disk 700 (buy or retry the extra disk, then set up)
-// ./fatline compute status        (how the rented server and its node are doing)
-// ./fatline compute deploy        (re-run only the setup step on the rented server)
+// fatline compute [--quote] [--sku server_small_1mo] [--region EU] [--network farcaster] [--max-usdc 20] [--vault 0x…]
+// fatline compute --provider agentmetal --plan medium --days 3 --disk 1000 --node [--quote]
+// fatline compute wallet        (create or show this machine's paying wallet; fund it with USDC on Base)
+// fatline compute disk --disk 700 (buy or retry the extra disk, then set up)
+// fatline compute status        (how the rented server and its node are doing)
+// fatline compute deploy        (re-run only the setup step on the rented server)
 //
 // Rents a server with ONE x402 payment and sets Fatline up on it.
 // The payment is a single signed USDC authorization on Base. It buys a fixed amount of time;
@@ -183,7 +183,7 @@ async function deployDaily(opts, p) {
     ip = (await (await fetch(`${p.api}/v1/servers/${secret.rental_id}`)).json().catch(() => ({}))).ipv4;
     if (!ip) await sleep(15_000);
   }
-  if (!ip) throw new Error('The server has no IP yet. Try again later: ./fatline compute deploy');
+  if (!ip) throw new Error('The server has no IP yet. Try again later: fatline compute deploy');
   record.ipv4 = ip;
   writeFileSync(PUBLIC_FILE, JSON.stringify(record, null, 2));
   const target = `root@${ip}`;
@@ -200,7 +200,7 @@ async function deployDaily(opts, p) {
     // The snapshot takes hours, so the setup runs on the server by itself; this machine can disconnect.
     spawnSync('ssh', [...sshArgs(), target, 'setsid nohup /root/node-setup.sh > /root/node-setup.log 2>&1 < /dev/null &'], { stdio: 'inherit' });
     console.log(`The node is being set up on ${ip}. It streams a ~400 GB snapshot first (hours).`);
-    console.log('Follow it with: ./fatline compute status');
+    console.log('Follow it with: fatline compute status');
     return;
   }
   await deploy(opts);
@@ -218,7 +218,7 @@ async function addDisk(opts) {
 }
 
 async function status() {
-  if (!existsSync(PUBLIC_FILE)) throw new Error('No rented server. Run ./fatline compute first.');
+  if (!existsSync(PUBLIC_FILE)) throw new Error('No rented server. Run fatline compute first.');
   const record = JSON.parse(readFileSync(PUBLIC_FILE, 'utf8'));
   console.log(`Server ${record.rentalId} at ${record.ipv4} (${record.provider}), paid until ${record.paidUntil}`);
   const remote = `tail -n 4 /root/node-setup.log 2>/dev/null; echo; df -h /mnt/HC_Volume_* / 2>/dev/null | sed 1d | awk '{print "disk " $6 ": " $3 " used, " $4 " free"}'; free -g | awk '/Mem|Swap/ {print $1 " " $3 "/" $2 " GB"}'; curl -s -m 5 localhost:3381/v1/info | jq -c '.shardInfos[]? | {shard: .shardId, height: .maxHeight, blockDelay}' 2>/dev/null`;
@@ -301,12 +301,12 @@ async function waitForServer(secret, provider) {
     process.stdout.write('.');
     await sleep(15_000);
   }
-  throw new Error('The server did not become ready in 20 minutes. Check later with: ./fatline compute deploy');
+  throw new Error('The server did not become ready in 20 minutes. Check later with: fatline compute deploy');
 }
 
 /** Copies this repository to the server and runs infra/server-setup.sh there. */
 async function deploy(opts) {
-  if (!existsSync(SECRET_FILE)) throw new Error('No rental found. Run ./fatline compute first.');
+  if (!existsSync(SECRET_FILE)) throw new Error('No rental found. Run fatline compute first.');
   const secret = JSON.parse(readFileSync(SECRET_FILE, 'utf8'));
   const record = JSON.parse(readFileSync(PUBLIC_FILE, 'utf8'));
   const provider = JSON.parse(readFileSync(join(ROOT, 'infra/providers.json'), 'utf8')).providers[secret.provider];
@@ -343,7 +343,7 @@ async function deploy(opts) {
   const network = opts.network ?? record.network ?? '';
   console.log('Running the setup on the server (Node.js, build, services, HTTPS)…');
   const setup = spawnSync('ssh', [...sshOpts, target, `FATLINE_IP=${ip} FATLINE_NETWORK=${network} FATLINE_VAULT=${opts.vault} bash /opt/fatline/infra/server-setup.sh`], { env, stdio: 'inherit' });
-  if (setup.status !== 0) throw new Error('Setup on the server failed. Fix it and re-run: ./fatline compute deploy');
+  if (setup.status !== 0) throw new Error('Setup on the server failed. Fix it and re-run: fatline compute deploy');
 
   console.log(`\nFatline is alive at https://${ip.replaceAll('.', '-')}.sslip.io until ${record.paidUntil}.`);
   console.log(`SSH: ssh root@${ip}${pub ? '' : ' (password in .fatline/compute.secret.json)'}`);

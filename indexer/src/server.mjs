@@ -46,7 +46,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
   };
   const writer = (network, node) => {
     const key = loadAppKey(config.dataDir);
-    if (!key) throw Object.assign(new Error('This client has no app key yet. Run ./fatline identity on the machine that runs it.'), { status: 409 });
+    if (!key) throw Object.assign(new Error('This client has no app key yet. Run fatline identity on the machine that runs it.'), { status: 409 });
     const name = network && networks[network] ? network : key.network;
     // Posts go to the network the person chose, through the node they chose (no fallback), or the automatic one.
     return new Writer({ network: node ? networks[name].pinned(node) : networks[name], key });
@@ -74,7 +74,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
       if (!archive) throw Object.assign(new Error('The archive is not set up on this server.'), { status: 503 });
       const own = loadAppKey(config.dataDir)?.fid ?? null;
       const who = fid ? Number(fid) : own;
-      if (!who) throw Object.assign(new Error('This client has no FID yet. Run ./fatline identity.'), { status: 404 });
+      if (!who) throw Object.assign(new Error('This client has no FID yet. Run fatline identity.'), { status: 404 });
       const types = (q.get('types') ?? 'cast').split(',').filter((x) => ARCHIVE_TYPES[x]);
       return { ...archive.read(who, { before: q.get('before'), types: types.length ? types : ['cast'], limit: q.get('limit') }), tracked: archive.fids().includes(who), own: who === own, at: Date.now() };
     }],
@@ -146,7 +146,7 @@ function json(res, status, body) {
 function serveApp(dir, pathname, res) {
   if (!existsSync(dir)) {
     res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
-    return res.end('The indexer is running. The app is not built yet: run ./fatline up\nAPI: /api/networks, /api/feed\n');
+    return res.end('The indexer is running. The app is not built yet: run fatline up\nAPI: /api/networks, /api/feed\n');
   }
   let file = normalize(join(dir, decodeURIComponent(pathname)));
   if (!file.startsWith(dir)) return res.writeHead(403).end();

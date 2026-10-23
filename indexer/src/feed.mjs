@@ -1,5 +1,5 @@
-// ./fatline feed: a timeline built from the local SQL archive alone. No node, no network, no keys.
-// The archive holds only the accounts you chose (./fatline follow), so this is a slice, not the network.
+// fatline feed: a timeline built from the local SQL archive alone. No node, no network, no keys.
+// The archive holds only the accounts you chose (fatline follow), so this is a slice, not the network.
 import { Archive } from './archive.mjs';
 import { loadConfig } from './config.mjs';
 import { openDb } from './db.mjs';
@@ -16,17 +16,17 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === '--stats') opt.stats = true;
   else if (a === '--replies') opt.replies = true;
   else if (a === '--help' || a === '-h') opt.help = true;
-  else { console.error(`Unknown option ${a}. See: ./fatline feed --help`); process.exit(1); }
+  else { console.error(`Unknown option ${a}. See: fatline feed --help`); process.exit(1); }
 }
 
 const config = loadConfig();
 const archive = new Archive(openDb(config.dataDir));
 
 if (opt.help) {
-  console.log(`Usage: ./fatline feed [--limit N] [--before <cursor>] [--fids 1,2] [--replies] [--json] [--stats]
+  console.log(`Usage: fatline feed [--limit N] [--before <cursor>] [--fids 1,2] [--replies] [--json] [--stats]
 
 Reads only the local SQL archive. No node, no network, no API keys.
-It is a slice: only the accounts ./fatline follow copied.
+It is a slice: only the accounts fatline follow copied.
 
   --limit N     how many casts (default 30, max 200)
   --before X    continue from a previous run's "Next page" cursor
@@ -50,7 +50,7 @@ if (opt.stats) {
 
 const tracked = archive.fids();
 if (!tracked.length) {
-  console.error('The archive is empty. Run: ./fatline follow <fid> --following --followers');
+  console.error('The archive is empty. Run: fatline follow <fid> --following --followers');
   process.exit(1);
 }
 
@@ -74,4 +74,4 @@ for (const it of shown) {
   console.log(`  ${String(it.body?.text ?? '').replace(/\s+/g, ' ').slice(0, 240)}`);
 }
 console.log(`\n${shown.length} cast(s) from ${new Set(shown.map((i) => i.fid)).size} author(s); ${tracked.length} account(s) tracked.`);
-if (next) console.log(`Next page: ./fatline feed --before ${next}`);
+if (next) console.log(`Next page: fatline feed --before ${next}`);

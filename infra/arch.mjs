@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// The Farcaster arch, drawn in the terminal. Played once when ./fatline setup starts.
+// The Farcaster arch, drawn in the terminal. Played once when fatline setup starts.
 // Preview it on its own:  node infra/arch.mjs
 //
 // How it draws: the icon (a purple rounded square with a white arch, 400×400 units) is sampled into a grid

@@ -104,19 +104,20 @@
       <li>To post: your Farcaster account's seed phrase, typed only into your own terminal.</li>
     </ul>
     <p class="eyebrow">The easy way</p>
-    <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># downloads Fatline into ~/fatline and starts ./fatline setup</span></code></pre>
-    <p><code>./fatline setup</code> takes you through every step below, one at a time. Before each one it says what it does, what it costs and how long it takes, then asks: go, skip or stop. Run it again and it continues where you stopped. <a href="../install.sh">Read the script first</a>; it is short.</p>
+    <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># downloads Fatline into ~/fatline and starts fatline setup</span></code></pre>
+    <p><code>fatline setup</code> takes you through every step below, one at a time. Before each one it says what it does, what it costs and how long it takes, then asks: go, skip or stop. Run it again and it continues where you stopped. <a href="../install.sh">Read the script first</a>; it is short.</p>
     <p class="eyebrow">With an agent</p>
     <pre><code>Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md</code></pre>
     <p>Paste it into Claude Code, Codex or any agent that can run commands. <a href="../skill.md">The skill</a> tells the agent to show you prices and wait for your yes, and never to touch your seed phrase or tokens. Claude Code users can also install it: copy <code>skills/fatline-setup</code> from the repository into <code>~/.claude/skills/</code>.</p>
     <p class="eyebrow">By hand</p>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
+npm install -g .             <span class="c"># the fatline command, from anywhere</span>
 
-./fatline compute            <span class="c"># (0) rent a machine that can hold a node: price first, then you type "create"</span>
-./fatline node farcaster     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
-./fatline client             <span class="c"># (2) your client, reading from your node, on http://localhost:8787</span></code></pre>
+fatline compute            <span class="c"># (0) rent a machine that can hold a node: price first, then you type "create"</span>
+fatline node farcaster     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
+fatline client             <span class="c"># (2) your client, reading from your node, on http://localhost:8787</span></code></pre>
     <p class="note"><span class="tag no">untested end to end</span> Each step has been run on its own. A complete fresh run of all three, start to finish, has not been done yet. Our own node was built with an earlier one-step version of steps 0 and 1.</p>
-    <p class="muted">No room for a node? <code>./fatline follow</code> copies only the accounts you choose from one node you pick. It is <a href="#follow">not a node</a>.</p>
+    <p class="muted">No room for a node? <code>fatline follow</code> copies only the accounts you choose from one node you pick. It is <a href="#follow">not a node</a>.</p>
   </section>
   <section lang="es">
     <p class="eyebrow">Antes de empezar</p>
@@ -127,19 +128,20 @@
       <li>Para publicar: la frase semilla de tu cuenta de Farcaster, escrita solo en tu propia terminal.</li>
     </ul>
     <p class="eyebrow">La forma fácil</p>
-    <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># descarga Fatline en ~/fatline y empieza ./fatline setup</span></code></pre>
-    <p><code>./fatline setup</code> te lleva por cada paso de abajo, uno a la vez. Antes de cada uno dice qué hace, cuánto cuesta y cuánto demora, y pregunta: seguir, saltar o parar. Córrelo de nuevo y sigue donde quedaste. <a href="../install.sh">Lee el script primero</a>; es corto.</p>
+    <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># descarga Fatline en ~/fatline y empieza fatline setup</span></code></pre>
+    <p><code>fatline setup</code> te lleva por cada paso de abajo, uno a la vez. Antes de cada uno dice qué hace, cuánto cuesta y cuánto demora, y pregunta: seguir, saltar o parar. Córrelo de nuevo y sigue donde quedaste. <a href="../install.sh">Lee el script primero</a>; es corto.</p>
     <p class="eyebrow">Con un agente</p>
     <pre><code>Ayúdame a mintear uno de los 777 Fatlines. Sigue https://fatline.ink/skill.md</code></pre>
     <p>Pégalo en Claude Code, Codex o cualquier agente que pueda correr comandos. <a href="../skill.md">La skill</a> le dice al agente que te muestre los precios y espere tu sí, y que nunca toque tu frase semilla ni tus tokens.</p>
     <p class="eyebrow">A mano</p>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
+npm install -g .             <span class="c"># the fatline command, from anywhere</span>
 
-./fatline compute            <span class="c"># (0) arrienda una máquina capaz de tener un nodo: primero el precio, luego escribes "create"</span>
-./fatline node farcaster     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
-./fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo, en http://localhost:8787</span></code></pre>
+fatline compute            <span class="c"># (0) arrienda una máquina capaz de tener un nodo: primero el precio, luego escribes "create"</span>
+fatline node farcaster     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
+fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo, en http://localhost:8787</span></code></pre>
     <p class="note"><span class="tag no">sin probar de punta a punta</span> Cada paso se ha corrido por separado. Una corrida nueva y completa de los tres, de principio a fin, todavía no se ha hecho. Nuestro propio nodo se armó con una versión anterior que juntaba los pasos 0 y 1.</p>
-    <p class="muted">¿No te cabe un nodo? <code>./fatline follow</code> copia solo las cuentas que elijas desde un nodo que tú eliges. <a href="#follow">No es un nodo</a>.</p>
+    <p class="muted">¿No te cabe un nodo? <code>fatline follow</code> copia solo las cuentas que elijas desde un nodo que tú eliges. <a href="#follow">No es un nodo</a>.</p>
   </section>
 </div>
 
@@ -191,27 +193,27 @@
 <!-- ============================================================ STEP 0 -->
 <section id="machine" lang="en">
   <h2>Step 0: a machine for the node</h2>
-  <pre><code>./fatline compute --quote   <span class="c"># price only, nothing is created</span>
-./fatline compute           <span class="c"># asks you to type "create"</span></code></pre>
+  <pre><code>fatline compute --quote   <span class="c"># price only, nothing is created</span>
+fatline compute           <span class="c"># asks you to type "create"</span></code></pre>
   <p>It picks the cheapest server type in stock with at least 16 GB of RAM (on 2026-10-22: <code>cax31</code>, 8 ARM CPUs), adds a 700 GB volume, prints the price and asks before creating anything. It rents the machine only; step 1 puts the node on it. Everything it creates is written to <code>.fatline/hetzner.json</code>, so it can be deleted exactly.</p>
   <div class="concept"><strong>Why rent at all?</strong> A Farcaster node holds every account's current messages: about 600 GB today. Most laptops don't have that much free disk.</div>
-  <p>Already have a machine with Docker, 16 GB of RAM and about 700 GB free? Skip this step and use <code>./fatline node farcaster --local</code> there. <code>./fatline doctor</code> measures your machine and tells you which path fits.</p>
-  <p class="muted">Prefer paying in USDC? <code>./fatline compute --provider agentmetal</code> rents by the day over x402. <span class="tag no">untested</span> with real money.</p>
+  <p>Already have a machine with Docker, 16 GB of RAM and about 700 GB free? Skip this step and use <code>fatline node farcaster --local</code> there. <code>fatline doctor</code> measures your machine and tells you which path fits.</p>
+  <p class="muted">Prefer paying in USDC? <code>fatline compute --provider agentmetal</code> rents by the day over x402. <span class="tag no">untested</span> with real money.</p>
 </section>
 <section id="machine" lang="es">
   <h2>Paso 0: una máquina para el nodo</h2>
-  <pre><code>./fatline compute --quote   <span class="c"># solo el precio, no crea nada</span>
-./fatline compute           <span class="c"># te pide escribir "create"</span></code></pre>
+  <pre><code>fatline compute --quote   <span class="c"># solo el precio, no crea nada</span>
+fatline compute           <span class="c"># te pide escribir "create"</span></code></pre>
   <p>Elige el tipo de servidor más barato con stock y al menos 16 GB de RAM (el 2026-10-22: <code>cax31</code>, 8 CPU ARM), le agrega un volumen de 700 GB, muestra el precio y pregunta antes de crear algo. Solo arrienda la máquina; el paso 1 le pone el nodo. Todo lo que crea queda anotado en <code>.fatline/hetzner.json</code>, para poder borrarlo exacto.</p>
   <div class="concept"><strong>¿Por qué arrendar?</strong> Un nodo de Farcaster guarda los mensajes vigentes de todas las cuentas: unos 600 GB hoy. A la mayoría de los computadores no le sobra tanto disco.</div>
-  <p>¿Ya tienes una máquina con Docker, 16 GB de RAM y unos 700 GB libres? Sáltate este paso y usa <code>./fatline node farcaster --local</code> ahí. <code>./fatline doctor</code> mide tu máquina y te dice qué camino te sirve.</p>
-  <p class="muted">¿Prefieres pagar en USDC? <code>./fatline compute --provider agentmetal</code> arrienda por día vía x402. <span class="tag no">sin probar</span> con dinero real.</p>
+  <p>¿Ya tienes una máquina con Docker, 16 GB de RAM y unos 700 GB libres? Sáltate este paso y usa <code>fatline node farcaster --local</code> ahí. <code>fatline doctor</code> mide tu máquina y te dice qué camino te sirve.</p>
+  <p class="muted">¿Prefieres pagar en USDC? <code>fatline compute --provider agentmetal</code> arrienda por día vía x402. <span class="tag no">sin probar</span> con dinero real.</p>
 </section>
 
 <!-- ============================================================ STEP 1 -->
 <section id="node" lang="en">
   <h2>Step 1: your read node</h2>
-  <pre><code>./fatline node farcaster    <span class="c"># or: ./fatline node hypersnap</span></code></pre>
+  <pre><code>fatline node farcaster    <span class="c"># or: fatline node hypersnap</span></code></pre>
   <p>It installs that network's node on the machine from step 0 and follows the starting snapshot as it streams in (about 400 GB, roughly 1 to 3 hours). When the node answers on <code>/v1/info</code>, it becomes your own node in <code>fatline.config.json</code>, so step 2 reads from it. A server holds one network; it refuses to put the second one next to the first.</p>
   <p>With <code>--local</code>, it installs on the machine you are on instead: it downloads that network's official bootstrap script, shows you its address and checksum, and asks before running it.</p>
   <div class="concept"><strong>Read nodes and validators.</strong> Snapchain, Farcaster's network software, has a small set of validators that agree on the order of messages, in blocks. Your node is a read node: it follows those blocks and keeps its own copy of every message. When you post, your node checks the message and relays it to the validators. You never need a validator's permission to read.</div>
@@ -226,7 +228,7 @@
 </section>
 <section id="node" lang="es">
   <h2>Paso 1: tu nodo de lectura</h2>
-  <pre><code>./fatline node farcaster    <span class="c"># o: ./fatline node hypersnap</span></code></pre>
+  <pre><code>fatline node farcaster    <span class="c"># o: fatline node hypersnap</span></code></pre>
   <p>Instala el nodo de esa red en la máquina del paso 0 y sigue el snapshot de partida mientras llega (unos 400 GB, más o menos 1 a 3 horas). Cuando el nodo responde en <code>/v1/info</code>, queda como tu propio nodo en <code>fatline.config.json</code>, y el paso 2 lee de él. Un servidor tiene una sola red; no pone la segunda al lado de la primera.</p>
   <p>Con <code>--local</code>, lo instala en la máquina donde estás: descarga el script oficial de esa red, te muestra su dirección y su checksum, y pregunta antes de correrlo.</p>
   <div class="concept"><strong>Nodos de lectura y validadores.</strong> Snapchain, el software de la red de Farcaster, tiene un grupo pequeño de validadores que acuerdan el orden de los mensajes, en bloques. Tu nodo es de lectura: sigue esos bloques y guarda su propia copia de cada mensaje. Cuando publicas, tu nodo revisa el mensaje y se lo pasa a los validadores. Nunca necesitas permiso de un validador para leer.</div>
@@ -243,8 +245,8 @@
 <!-- ============================================================ STEP 2 -->
 <section id="client" lang="en">
   <h2>Step 2: your client</h2>
-  <pre><code>./fatline client</code></pre>
-  <p>Step 1 already told it where your node is. (A node somewhere else? <code>./fatline init --node http://&lt;IP&gt;:3381</code>.) It installs, builds and starts the client on <a href="http://localhost:8787">http://localhost:8787</a>. Your phone can open it too, if it can reach your computer.</p>
+  <pre><code>fatline client</code></pre>
+  <p>Step 1 already told it where your node is. (A node somewhere else? <code>fatline init --node http://&lt;IP&gt;:3381</code>.) It installs, builds and starts the client on <a href="http://localhost:8787">http://localhost:8787</a>. Your phone can open it too, if it can reach your computer.</p>
   <p>The client always says which node it is reading from, at the top of the page. In <strong>Settings</strong> you choose the network (Farcaster or Hypersnap) and the node:</p>
   <ul>
     <li><strong>One node:</strong> every read and every post goes only through that node. If it goes down, you see an error naming it. The client never switches behind your back.</li>
@@ -254,8 +256,8 @@
 </section>
 <section id="client" lang="es">
   <h2>Paso 2: tu cliente</h2>
-  <pre><code>./fatline client</code></pre>
-  <p>El paso 1 ya le dijo dónde está tu nodo. (¿Un nodo en otra parte? <code>./fatline init --node http://&lt;IP&gt;:3381</code>.) Instala, compila y parte el cliente en <a href="http://localhost:8787">http://localhost:8787</a>. Tu teléfono también puede abrirlo si alcanza a tu computador.</p>
+  <pre><code>fatline client</code></pre>
+  <p>El paso 1 ya le dijo dónde está tu nodo. (¿Un nodo en otra parte? <code>fatline init --node http://&lt;IP&gt;:3381</code>.) Instala, compila y parte el cliente en <a href="http://localhost:8787">http://localhost:8787</a>. Tu teléfono también puede abrirlo si alcanza a tu computador.</p>
   <p>El cliente siempre dice desde qué nodo está leyendo, arriba de la página. En <strong>Ajustes</strong> eliges la red (Farcaster o Hypersnap) y el nodo:</p>
   <ul>
     <li><strong>Un nodo:</strong> toda lectura y toda publicación pasan solo por ese nodo. Si se cae, ves un error que lo nombra. El cliente nunca cambia a tus espaldas.</li>
@@ -267,11 +269,11 @@
 <!-- ============================================================ FOLLOW -->
 <section id="follow" lang="en">
   <h2>No room for a node: copy only the accounts you follow</h2>
-  <pre><code>./fatline follow 18350 @dwr --network farcaster --node crackle --once
-./fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># keeps following; Ctrl+C stops it, a re-run continues</span>
-./fatline follow 18350 --followers --once                              <span class="c"># everyone who follows them (--depth 2: their neighbours too)</span>
-./fatline follow list
-./fatline feed --limit 20                                              <span class="c"># a timeline from your copy alone: no node, no network, no keys</span></code></pre>
+  <pre><code>fatline follow 18350 @dwr --network farcaster --node crackle --once
+fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># keeps following; Ctrl+C stops it, a re-run continues</span>
+fatline follow 18350 --followers --once                              <span class="c"># everyone who follows them (--depth 2: their neighbours too)</span>
+fatline follow list
+fatline feed --limit 20                                              <span class="c"># a timeline from your copy alone: no node, no network, no keys</span></code></pre>
   <p>It copies the accounts you name (with <code>--following</code>, also everyone they follow) from one node you pick, Farcaster or Hypersnap, your own or a public one, into the client's archive. Open <code>#/archive/&lt;fid&gt;</code> in the client to read one. <code>--node</code> takes a word of the node's name or host, or its URL; only that node is read, and it never switches.</p>
   <div class="concept"><strong>This is not a node.</strong> Every run says so. It trusts that node: it does not check message signatures or signer keys itself. It does not join the network, and does not help it. It is only as complete and as recent as that node: if the node is behind, so is this.</div>
   <p>If the node is down, you get a clear error and nothing changes. If it is behind, it is used, with a warning that says how far behind.</p>
@@ -285,11 +287,11 @@
 </section>
 <section id="follow" lang="es">
   <h2>Sin espacio para un nodo: copia solo las cuentas que sigues</h2>
-  <pre><code>./fatline follow 18350 @dwr --network farcaster --node crackle --once
-./fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># sigue copiando; Ctrl+C lo detiene, y al correrlo de nuevo continúa</span>
-./fatline follow 18350 --followers --once                              <span class="c"># todos los que las siguen (--depth 2: también sus vecinos)</span>
-./fatline follow list
-./fatline feed --limit 20                                              <span class="c"># un timeline solo desde tu copia: sin nodo, sin red, sin llaves</span></code></pre>
+  <pre><code>fatline follow 18350 @dwr --network farcaster --node crackle --once
+fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># sigue copiando; Ctrl+C lo detiene, y al correrlo de nuevo continúa</span>
+fatline follow 18350 --followers --once                              <span class="c"># todos los que las siguen (--depth 2: también sus vecinos)</span>
+fatline follow list
+fatline feed --limit 20                                              <span class="c"># un timeline solo desde tu copia: sin nodo, sin red, sin llaves</span></code></pre>
   <p>Copia las cuentas que nombras (con <code>--following</code>, también a todos los que ellas siguen) desde un nodo que tú eliges, de Farcaster o de Hypersnap, tuyo o público, al archivo del cliente. Abre <code>#/archive/&lt;fid&gt;</code> en el cliente para leer una. <code>--node</code> acepta una palabra del nombre o del host del nodo, o su URL; se lee solo ese nodo, y nunca cambia a otro.</p>
   <div class="concept"><strong>Esto no es un nodo.</strong> Cada corrida lo dice. Confía en ese nodo: no revisa por sí mismo las firmas de los mensajes ni las llaves. No se une a la red, y no la ayuda. Está tan completo y tan al día como ese nodo: si el nodo va atrasado, esto también.</div>
   <p>Si el nodo está caído, ves un error claro y no cambia nada. Si va atrasado, se usa igual, con un aviso que dice cuánto.</p>
@@ -305,23 +307,23 @@
 <!-- ============================================================ POSTING -->
 <section id="post" lang="en">
   <h2>Posting: your client's own app key</h2>
-  <pre><code>./fatline identity --fid &lt;your FID&gt; --dry-run   <span class="c"># checks everything, registers nothing</span>
-./fatline identity --fid &lt;your FID&gt;             <span class="c"># registers this client's key</span></code></pre>
+  <pre><code>fatline identity --fid &lt;your FID&gt; --dry-run   <span class="c"># checks everything, registers nothing</span>
+fatline identity --fid &lt;your FID&gt;             <span class="c"># registers this client's key</span></code></pre>
   <p>Run it in your own terminal. It asks for your seed phrase in a hidden prompt, derives your custody address the standard way, and stops if that address does not own the FID you gave. It creates a new app key for this client and registers it with a message your custody address signs. No transaction, no gas. The key can post, react, follow and edit your profile, nothing else. The seed phrase is forgotten as soon as the key is registered, and never saved.</p>
   <p>Then you can cast, reply, like, recast, follow and delete. Each action shows <em>sending</em>, then <em>confirmed</em> only once your node returns it when asked.</p>
-  <pre><code>./fatline identity show     <span class="c"># is the key active?</span>
-./fatline identity revoke   <span class="c"># remove it from the network and from this machine</span></code></pre>
+  <pre><code>fatline identity show     <span class="c"># is the key active?</span>
+fatline identity revoke   <span class="c"># remove it from the network and from this machine</span></code></pre>
   <div class="concept"><strong>Storage rent and server bills are different things.</strong> Storage rent is paid onchain, per account, and sets how many messages the network keeps for you. It does not pay for any server. Your node's server is a separate bill, paid to whoever hosts it.</div>
   <p class="note">Status: the key registration and every action were tested against a fake node, and crackle accepted the message formats. <span class="tag no">untested</span> with a real account.</p>
 </section>
 <section id="post" lang="es">
   <h2>Publicar: la llave propia de tu cliente</h2>
-  <pre><code>./fatline identity --fid &lt;tu FID&gt; --dry-run   <span class="c"># revisa todo, no registra nada</span>
-./fatline identity --fid &lt;tu FID&gt;             <span class="c"># registra la llave de este cliente</span></code></pre>
+  <pre><code>fatline identity --fid &lt;tu FID&gt; --dry-run   <span class="c"># revisa todo, no registra nada</span>
+fatline identity --fid &lt;tu FID&gt;             <span class="c"># registra la llave de este cliente</span></code></pre>
   <p>Córrelo en tu propia terminal. Te pide tu frase semilla en un campo oculto, deriva tu dirección custodia de la forma estándar, y se detiene si esa dirección no es dueña del FID que diste. Crea una llave nueva para este cliente y la registra con un mensaje que firma tu dirección custodia. Sin transacción, sin gas. La llave puede publicar, reaccionar, seguir y editar tu perfil, nada más. La frase semilla se olvida apenas se registra la llave, y nunca se guarda.</p>
   <p>Después puedes hacer casts, responder, dar like, recastear, seguir y borrar. Cada acción muestra <em>enviando</em>, y <em>confirmado</em> solo cuando tu nodo la devuelve al preguntarle.</p>
-  <pre><code>./fatline identity show     <span class="c"># ¿está activa la llave?</span>
-./fatline identity revoke   <span class="c"># la quita de la red y de esta máquina</span></code></pre>
+  <pre><code>fatline identity show     <span class="c"># ¿está activa la llave?</span>
+fatline identity revoke   <span class="c"># la quita de la red y de esta máquina</span></code></pre>
   <div class="concept"><strong>El arriendo de almacenamiento y la cuenta del servidor son cosas distintas.</strong> El arriendo de almacenamiento se paga onchain, por cuenta, y define cuántos mensajes guarda la red para ti. No paga ningún servidor. El servidor de tu nodo es otra cuenta, que se le paga a quien lo hospeda.</div>
   <p class="note">Estado: el registro de la llave y cada acción se probaron contra un nodo falso, y crackle aceptó el formato de los mensajes. <span class="tag no">sin probar</span> con una cuenta real.</p>
 </section>
@@ -348,7 +350,7 @@
     <tr><td>Your client</td><td>free on your own computer</td></tr>
   </table></div>
   <p>Billed by the hour. <code>--quote</code> shows the exact price before anything is created.</p>
-  <pre><code>./fatline compute hetzner down   <span class="c"># deletes the server and its volume; billing stops</span></code></pre>
+  <pre><code>fatline compute hetzner down   <span class="c"># deletes the server and its volume; billing stops</span></code></pre>
   <p>It deletes only what step 0 created, using the record in <code>.fatline/hetzner.json</code>.</p>
 </section>
 <section id="cost" lang="es">
@@ -360,7 +362,7 @@
     <tr><td>Tu cliente</td><td>gratis en tu propio computador</td></tr>
   </table></div>
   <p>Se cobra por hora. <code>--quote</code> muestra el precio exacto antes de crear algo.</p>
-  <pre><code>./fatline compute hetzner down   <span class="c"># borra el servidor y su volumen; se deja de cobrar</span></code></pre>
+  <pre><code>fatline compute hetzner down   <span class="c"># borra el servidor y su volumen; se deja de cobrar</span></code></pre>
   <p>Borra solo lo que creó el paso 0, usando el registro en <code>.fatline/hetzner.json</code>.</p>
 </section>
 
@@ -372,9 +374,9 @@
   <h3>The snapshot stopped</h3>
   <p>Run step 1 again. Finished shards are kept, and slow pieces are retried.</p>
   <h3>The client says the node you chose is not answering</h3>
-  <p>That is on purpose: it never switches nodes without telling you. Check the node with <code>./fatline status</code> or <code>compute hetzner status</code>, or choose another node in Settings.</p>
+  <p>That is on purpose: it never switches nodes without telling you. Check the node with <code>fatline status</code> or <code>compute hetzner status</code>, or choose another node in Settings.</p>
   <h3>Everything else</h3>
-  <p><code>./fatline doctor</code> checks your machine and every configured node. Problems and questions: <a href="https://github.com/jpfraneto/fatline/issues">GitHub issues</a>.</p>
+  <p><code>fatline doctor</code> checks your machine and every configured node. Problems and questions: <a href="https://github.com/jpfraneto/fatline/issues">GitHub issues</a>.</p>
 </section>
 <section id="trouble" lang="es">
   <h2>Cuando algo falla</h2>
@@ -383,9 +385,9 @@
   <h3>El snapshot se detuvo</h3>
   <p>Corre de nuevo el paso 1. Los shards terminados se conservan y las piezas lentas se reintentan.</p>
   <h3>El cliente dice que el nodo que elegiste no responde</h3>
-  <p>Es a propósito: nunca cambia de nodo sin avisarte. Revisa el nodo con <code>./fatline status</code> o <code>compute hetzner status</code>, o elige otro en Ajustes.</p>
+  <p>Es a propósito: nunca cambia de nodo sin avisarte. Revisa el nodo con <code>fatline status</code> o <code>compute hetzner status</code>, o elige otro en Ajustes.</p>
   <h3>Todo lo demás</h3>
-  <p><code>./fatline doctor</code> revisa tu máquina y cada nodo configurado. Problemas y preguntas: <a href="https://github.com/jpfraneto/fatline/issues">issues en GitHub</a>.</p>
+  <p><code>fatline doctor</code> revisa tu máquina y cada nodo configurado. Problemas y preguntas: <a href="https://github.com/jpfraneto/fatline/issues">issues en GitHub</a>.</p>
 </section>
 
 <!-- ============================================================ LIFE -->

@@ -11,7 +11,7 @@
 - **Atlas and minting:** [docs/ATLAS-AND-MINTING.md](docs/ATLAS-AND-MINTING.md): the Memory Atlas, the snapshot commitment, the contract (not deployed), and the owner's open decisions.
 - **Coordination:** [docs/COORDINATION.md](docs/COORDINATION.md): what was agreed with the other sessions, and the remaining dependencies.
 
-- **PFPs from any FID:** [docs/PFP.md](docs/PFP.md): our nodes → traits → a prompt for `gpt-image-2` with the species blueprint attached → a portrait. `./fatline fatliners prompt --fid 18350`.
+- **PFPs from any FID:** [docs/PFP.md](docs/PFP.md): our nodes → traits → a prompt for `gpt-image-2` with the species blueprint attached → a portrait. `fatline fatliners prompt --fid 18350`.
 
 **Building the generator?** Start with [GENERATOR.md](GENERATOR.md): what we send you per account, and what you send back.
 

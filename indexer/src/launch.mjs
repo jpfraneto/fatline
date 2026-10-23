@@ -3,7 +3,7 @@
 // with the vault as the only fee admin. AppFactory checks all of this onchain and reverts otherwise.
 //
 //   node indexer/src/launch.mjs <vault> <tokenAdmin> <name> <symbol> [image] [chainId] [startMarketCapUsd]
-// prints the calldata hex (used by the fork test and by ./fatline launch).
+// prints the calldata hex (used by the fork test and by fatline launch).
 import { Clanker } from 'clanker-sdk/v4';
 import { keccak256, toHex } from 'viem';
 

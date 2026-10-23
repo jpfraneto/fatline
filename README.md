@@ -8,32 +8,32 @@
 curl -fsSL https://fatline.ink/install.sh | sh
 ```
 
-It downloads Fatline into `~/fatline` and starts `./fatline setup`, which goes through every step one at a time: check the machine, choose a path (rent a server, run a node locally, or light: no node), the node, the client. Before each step it says what it does, what it costs and how long it takes, then asks: go, skip or stop. Run it again and it continues where you stopped. It opens by saying that everything is open source (MIT) and asking you to agree, then draws the Farcaster arch in the terminal ([`infra/arch.mjs`](infra/arch.mjs); any key skips it, `FATLINE_NO_ANIMATION=1` turns it off). Whenever you stop, or a step fails, it links to that step's code on GitHub so you can change it and send a pull request. `./fatline setup --plan` shows where you are and the command for each step. Read [the script](apps/site/install.sh) first; it is short.
+It downloads Fatline into `~/fatline` and starts `fatline setup`, which goes through every step one at a time: check the machine, choose a path (rent a server, run a node locally, or light: no node), the node, the client. Before each step it says what it does, what it costs and how long it takes, then asks: go, skip or stop. Run it again and it continues where you stopped. It opens by saying that everything is open source (MIT) and asking you to agree, then draws the Farcaster arch in the terminal ([`infra/arch.mjs`](infra/arch.mjs); any key skips it, `FATLINE_NO_ANIMATION=1` turns it off). Whenever you stop, or a step fails, it links to that step's code on GitHub so you can change it and send a pull request. `fatline setup --plan` shows where you are and the command for each step. Read [the script](apps/site/install.sh) first; it is short.
 
 **By hand, four commands:**
 
 ```sh
 git clone https://github.com/jpfraneto/fatline
-cd fatline && npm install -g .     # the `fatline` command, usable from anywhere (bin/fatline.mjs runs ./fatline in this clone)
+cd fatline && npm install -g .     # the `fatline` command, usable from anywhere (bin/fatline.mjs runs fatline in this clone)
 fatline compute                    # rent the server for your node: shows the price, creates nothing until you type "create"
 fatline node farcaster             # your own read node on it (or hypersnap); when it answers, `fatline up` opens your client
 ```
 
 Stop paying any time with `fatline compute hetzner down`. The same command is packaged for npm as **`fatlines`**, not published yet. Once it is, `npm install -g fatlines` replaces the first two commands; on first use it downloads the repository into `~/fatline`. The name `fatline` on npm belongs to an unrelated project.
 
-**You are your FID:** `./fatline connect` draws a QR code (the Farcaster arch in the middle, a blue and a pink corner for the two networks). Scan it with your phone, sign in with the Farcaster app, and your own node confirms which FID signed ([indexer/src/connect.mjs](indexer/src/connect.mjs)). No seed phrase.
+**You are your FID:** `fatline connect` draws a QR code (the Farcaster arch in the middle, a blue and a pink corner for the two networks). Scan it with your phone, sign in with the Farcaster app, and your own node confirms which FID signed ([indexer/src/connect.mjs](indexer/src/connect.mjs)). No seed phrase.
 
 **With an agent:** tell Claude Code, Codex or any agent that can run commands: *"Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md"*. The [skill](apps/site/skill.md) keeps you in charge: it shows prices and waits for your yes, and never handles your seed phrase or tokens. For Claude Code you can also install it: `cp -rL skills/fatline-setup ~/.claude/skills/`.
 
 **By hand**, the three commands:
 
 ```sh
-./fatline compute          # (0) rent a server that can hold a node
-./fatline node farcaster   # (1) your own read node on it, no API keys (or: node hypersnap)
-./fatline client           # (2) your client, reading from your node
+fatline compute          # (0) rent a server that can hold a node
+fatline node farcaster   # (1) your own read node on it, no API keys (or: node hypersnap)
+fatline client           # (2) your client, reading from your node
 ```
 
-Before them: `git clone https://github.com/jpfraneto/fatline && cd fatline`. You need git, ssh and Node.js 22.12+, plus a Hetzner Cloud account with a card and an API token in `~/.hetzner-token`. Or use Docker on a machine of your own: `./fatline node farcaster --local`. The tutorial is at [fatline.ink/docs](https://fatline.ink/docs/), in English, Spanish and Chinese.
+Before them: `git clone https://github.com/jpfraneto/fatline && cd fatline && npm install -g .` (the `fatline` command). You need git, ssh and Node.js 22.12+, plus a Hetzner Cloud account with a card and an API token in `~/.hetzner-token`. Or use Docker on a machine of your own: `fatline node farcaster --local`. The tutorial is at [fatline.ink/docs](https://fatline.ink/docs/), in English, Spanish and Chinese.
 
 **Status:** each command has been run on its own; a fresh run of all three, start to finish, by a stranger, is untested.
 
@@ -45,7 +45,7 @@ Before them: `git clone https://github.com/jpfraneto/fatline && cd fatline`. You
 | **The client** | Reads from either network through a node you pick, and says which. Posting with a gasless app key is built and tested against a fake node; not yet run on the real network. |
 | **The launchpad** | A coin on Clanker paired with USDC, 100% of its fees into a vault that pays the node. Proven on a Base fork with the real Clanker and Uniswap contracts. **Not deployed on Base yet, so $FATLINE does not trade.** |
 | **The 777 Fatliners** | The ranking is done: 593,815 accounts scored on both our nodes and averaged ([ranking/](ranking/README.md)). Portraits can be made for any FID ([fatliners/docs/PFP.md](fatliners/docs/PFP.md)); the full 777 are not rendered yet. The contract is written and tested, not deployed. |
-| **No room for a node?** | `./fatline follow` copies only the accounts you choose from one node, and `./fatline feed` reads them back offline. Not a node: it trusts that node. [More below](#copy-only-the-accounts-you-follow-not-a-node). |
+| **No room for a node?** | `fatline follow` copies only the accounts you choose from one node, and `fatline feed` reads them back offline. Not a node: it trusts that node. [More below](#copy-only-the-accounts-you-follow-not-a-node). |
 
 ## What Fatline is
 
@@ -101,12 +101,12 @@ Status, honestly:
 | | Status |
 | --- | --- |
 | Machine check, and renting a server for USDC (x402) | Works with mock sellers. New: rent **by the day** from AgentMetal (USDC, x402), add up to 1 TB of disk, and set up a read node unattended (`compute --provider agentmetal --days 1 --disk 700 --node`, ~11 USDC). The keeper then renews one day at a time. Not yet run with real money. |
-| Read node (on Hetzner, hourly by card: `./fatline compute hetzner`) | Works. Keeps 1 day of blocks by default (Snapchain's own `pruning.block_retention`). The starting snapshot (~400 GB compressed, ~600 GB unpacked) is **streamed** straight to disk, so it needs one copy of space instead of Snapchain's ~3. Farcaster: in sync 5 h 43 min after it answered; a reboot took 47 s to answer and 62 s to be in sync again. Hypersnap: stalled for 5 hours on a stale validator list in Hypersnap's repository ([issue #41](https://github.com/farcasterorg/hypersnap/issues/41)); our setup takes the list from Snapchain, and it has been in sync since. Since 2026-10-23 both run on one server, $131.82/month. A disk guard grows a volume before it fills and alerts on Telegram. |
+| Read node (on Hetzner, hourly by card: `fatline compute hetzner`) | Works. Keeps 1 day of blocks by default (Snapchain's own `pruning.block_retention`). The starting snapshot (~400 GB compressed, ~600 GB unpacked) is **streamed** straight to disk, so it needs one copy of space instead of Snapchain's ~3. Farcaster: in sync 5 h 43 min after it answered; a reboot took 47 s to answer and 62 s to be in sync again. Hypersnap: stalled for 5 hours on a stale validator list in Hypersnap's repository ([issue #41](https://github.com/farcasterorg/hypersnap/issues/41)); our setup takes the list from Snapchain, and it has been in sync since. Since 2026-10-23 both run on one server, $131.82/month. A disk guard grows a volume before it fills and alerts on Telegram. |
 | Client: reading, both networks | Works. |
-| Client: seed phrase → app key | Built: `./fatline identity` registers a **gasless** app key (no transaction, no ETH), scoped to casts, reactions, follows and profile only. The seed phrase goes into a hidden prompt and is never saved. Format checked against a real node; not yet run with a real account. |
+| Client: seed phrase → app key | Built: `fatline identity` registers a **gasless** app key (no transaction, no ETH), scoped to casts, reactions, follows and profile only. The seed phrase goes into a hidden prompt and is never saved. Format checked against a real node; not yet run with a real account. |
 | Client: post, reply, like, recast, follow, delete | Built and tested in a real browser against a fake node: each action is signed, sent to your node, and shown as *Confirmed* only once the node returns it. Only this machine (or a write token) can post. Not yet run on the real network. |
 | Client: show or hide posts by the app that made them | Works on real data: each cast's signing key is traced to the app FID that asked for it (read from the key's own onchain record), shown as "via @app". In My people, tap an app to hide it, or show only that app; casts from unknown apps follow a visible checkbox. Checked through crackle with @dwr, @v and @vitalik: 20 of 20 casts traced (@warpcast 12, @fireflyapp 8), hiding @warpcast left the 8 Firefly casts. Gasless keys (like the one `identity` makes) are traced only if the node's record names the app. |
-| Copy only chosen accounts (`./fatline follow`, not a node) | Works on real nodes, both networks (numbers [below](#copy-only-the-accounts-you-follow-not-a-node)). |
+| Copy only chosen accounts (`fatline follow`, not a node) | Works on real nodes, both networks (numbers [below](#copy-only-the-accounts-you-follow-not-a-node)). |
 | Tutorial site | Live at [fatline.ink](https://fatline.ink): the home page is minimal (DOCS · MANIFESTO · $FATLINE and the agent prompt); the board (real nodes, labelled examples) is at [/explore.html](https://fatline.ink/explore.html); [/docs](https://fatline.ink/docs/) renders one Markdown file ([apps/site/docs/index.md](apps/site/docs/index.md)); the full tutorial is at [/docs/tutorial.html](https://fatline.ink/docs/tutorial.html) in English, Spanish and Chinese. The Chinese page was reviewed against the English on 2026-10-22 by the AI agent; a native speaker's read is still welcome. |
 | Launchpad: vault, USDC coin on Clanker, server paying itself, onchain daily users | Works on a Base fork (see below). |
 
@@ -145,7 +145,7 @@ The main page shows a strip with every node this server watches. Each one links 
 `#/archive` shows this client's own FID as one archive, read from two independent network adapters: one tails a Farcaster node, one a Hypersnap node. Each item says what each network holds: *held*, *pruned*, *revoked*, *replaced or removed*, *failed*, or *not seen*. "Not seen" can mean it existed before this server started watching. The *Publish to* selector only chooses where your next post goes.
 
 - Storage: SQLite tables in the indexer's database (`fl_events` is the log, `fl_messages` the state per network), behind [`indexer/src/archive.mjs`](indexer/src/archive.mjs). The adapters write only through that module. Design and reasons: [research/FATLINE-ARCHIVE.md](research/FATLINE-ARCHIVE.md).
-- Who writes to it: one adapter per network ([`indexer/src/adapters/`](indexer/src/adapters/), each reading only the node it was given), and `./fatline follow` (below). Open `#/archive/<fid>` to read any account the archive holds.
+- Who writes to it: one adapter per network ([`indexer/src/adapters/`](indexer/src/adapters/), each reading only the node it was given), and `fatline follow` (below). Open `#/archive/<fid>` to read any account the archive holds.
 - Checked on 2026-10-22 for FID 18350: haatz and our own Hypersnap node each gave the same 4,824 messages (138 casts, 4,492 cast removals, 175 reactions, 7 follows, 9 profile fields, 3 verifications), with no message only on one side and no difference in status or content. crackle gave the same 4,824 on Farcaster. Whether Hypersnap keeps what Farcaster prunes is not shown by this: both only serve live messages when asked for one account's history.
 
 ## Copy only the accounts you follow (not a node)
@@ -153,13 +153,13 @@ The main page shows a strip with every node this server watches. Each one links 
 The small option, for when a full node is too much:
 
 ```sh
-./fatline follow 18350 @dwr --network farcaster --node crackle --once
-./fatline follow 18350 --following --network hypersnap --node haatz   # keeps following; Ctrl+C stops it, a re-run continues
-./fatline follow list
-./fatline feed --limit 20               # a timeline from the local archive alone: no node, no network, no keys
+fatline follow 18350 @dwr --network farcaster --node crackle --once
+fatline follow 18350 --following --network hypersnap --node haatz   # keeps following; Ctrl+C stops it, a re-run continues
+fatline follow list
+fatline feed --limit 20               # a timeline from the local archive alone: no node, no network, no keys
 ```
 
-- `--network farcaster|hypersnap`: which network (default: your `./fatline init` choice).
+- `--network farcaster|hypersnap`: which network (default: your `fatline init` choice).
 - `--node`: a word of the node's name or host, or its URL, from `fatline.config.json` (default: the first one listed). Only that node is read. It never switches to another.
 - `--following`: also add everyone the named accounts follow, as that node knows it.
 - `--followers`: also add everyone who follows the named accounts. With `--depth 2`, their neighbours too (that can be tens of thousands of accounts).
@@ -182,7 +182,7 @@ Measured on 2026-10-22, `--once` into an empty archive:
 
 While following, 5 new messages from a tracked account on crackle all arrived in one round.
 
-**Why not a lite node?** A lighter node would copy the current state from another node instead of starting from a snapshot. Today the replicators of both Snapchain and Hypersnap refuse KeyAdd and KeyRemove messages, so a replica can't follow which keys belong to which account. `./fatline node` refuses replication for that reason (`FATLINE_FORCE=1` to try anyway). And a full replica would still be about 300–400 GB.
+**Why not a lite node?** A lighter node would copy the current state from another node instead of starting from a snapshot. Today the replicators of both Snapchain and Hypersnap refuse KeyAdd and KeyRemove messages, so a replica can't follow which keys belong to which account. `fatline node` refuses replication for that reason (`FATLINE_FORCE=1` to try anyway). And a full replica would still be about 300–400 GB.
 
 ## How the money flows
 
@@ -222,7 +222,7 @@ See [`test/fork/LaunchOnBase.t.sol`](smart-contracts/test/fork/LaunchOnBase.t.so
 ## What is in this repository
 
 ```
-fatline                      one command for everything (./fatline help; ./fatline setup guides you)
+fatline                      one command for everything (fatline help; fatline setup guides you)
 bin/fatline.mjs              the `fatline` command on your PATH (npm install -g . here, or the npm package fatlines)
 skills/fatline-setup/        the agent skill (same file as fatline.ink/skill.md)
 fatline.config.example.json   networks, nodes, contract addresses
@@ -245,8 +245,8 @@ AGENTS.md                    start here: for any agent or person continuing the 
 A local fork of Base runs the real Clanker, Uniswap and USDC contracts with fake money. You need Node.js 22.12+ and [Foundry](https://getfoundry.sh).
 
 ```sh
-./fatline contracts fork          # fork Base, deploy AppFactory + Voices, fund a dev wallet with 10,000 USDC
-./fatline up                      # in another terminal: indexer + app on http://localhost:8787
+fatline contracts fork          # fork Base, deploy AppFactory + Voices, fund a dev wallet with 10,000 USDC
+fatline up                      # in another terminal: indexer + app on http://localhost:8787
 node infra/fork-demo.mjs               # launch an app like the browser does, then trade its coin
 node infra/fork-crowd.mjs <vault> 25   # 25 people check in for free; the keeper posts them onchain
 ```
@@ -259,7 +259,7 @@ You need **git** and **Node.js 22.12 or newer**. A full node also needs Docker.
 
 ```sh
 git clone <this repository> fatline && cd fatline
-./fatline doctor
+fatline doctor
 ```
 
 `doctor` measures CPUs, memory, free disk, Docker and Node.js, and checks every configured node of both networks. It recommends one of three paths:
@@ -271,11 +271,11 @@ git clone <this repository> fatline && cd fatline
 | **Rent** | Neither of the above | One x402 USDC payment rents a server and sets the light system up on it |
 
 ```sh
-./fatline init                    # choose the default network (readers can switch in Settings)
-./fatline node farcaster          # full path only: run your own node (or: node hypersnap)
-./fatline compute --quote         # rent path: price only, nothing is signed
-./fatline compute --vault 0x…     # rent path: pay with one signature, set the server up
-./fatline up                      # install, build, start on :8787
+fatline init                    # choose the default network (readers can switch in Settings)
+fatline node farcaster          # full path only: run your own node (or: node hypersnap)
+fatline compute --quote         # rent path: price only, nothing is signed
+fatline compute --vault 0x…     # rent path: pay with one signature, set the server up
+fatline up                      # install, build, start on :8787
 ```
 
 **Renting.** `compute` asks the seller for a price (HTTP 402). You sign **one** USDC authorization ([x402](https://github.com/coinbase/x402), EIP-3009), and the seller settles it as one USDC transfer on Base. The script copies this repository to the server and runs [`infra/server-setup.sh`](infra/server-setup.sh). Setup installs Node.js (checksum verified), builds everything, creates **the server's own keeper wallet**, and serves HTTPS at `https://<ip>.sslip.io`.
@@ -285,8 +285,8 @@ Once the vault owner runs `setKeeper(<that address>)`, the server pays itself fr
 ## Launch for real, on Base
 
 ```sh
-BASE_RPC_URL=https://mainnet.base.org ./fatline contracts deploy   # AppFactory + Voices; asks for the key
-./fatline up                                                     # then: Launch an app
+BASE_RPC_URL=https://mainnet.base.org fatline contracts deploy   # AppFactory + Voices; asks for the key
+fatline up                                                     # then: Launch an app
 ```
 
 The factory is wired to Clanker's Base contracts, as used by `clanker-sdk@4.2.19`:
@@ -306,7 +306,7 @@ Opinions longer than a cast (up to 16 KiB), stored onchain on Base, independent 
 [`PrizeSplit`](smart-contracts/src/PrizeSplit.sol) is a payout address owned 50/50 by two people. It has no owner and no way to change the split.
 
 ```sh
-BASE_RPC_URL=https://mainnet.base.org ./fatline contracts split 0xPersonA 0xPersonB
+BASE_RPC_URL=https://mainnet.base.org fatline contracts split 0xPersonA 0xPersonB
 ```
 
 ## The two networks (checked 2026-10-21)
@@ -381,4 +381,4 @@ Dependencies keep their own licenses (checked 2026-10-22):
 | [Snapchain](https://github.com/farcasterxyz/snapchain) | the Farcaster node | GPL-3.0 |
 | [Hypersnap](https://github.com/farcasterorg/hypersnap) | the Hypersnap node | GPL-3.0 |
 
-The node software is not part of this repository. `./fatline node` downloads each project's own published scripts and Docker images when you install, so their GPL-3.0 code runs under its own license. Clanker and Uniswap contracts are called onchain, not copied.
+The node software is not part of this repository. `fatline node` downloads each project's own published scripts and Docker images when you install, so their GPL-3.0 code runs under its own license. Clanker and Uniswap contracts are called onchain, not copied.

@@ -1,4 +1,4 @@
-// Small edits to fatline.config.json, used by ./fatline.
+// Small edits to fatline.config.json, used by fatline.
 //   init [--network farcaster|hypersnap] [--node URL]   choose a network (asks when not given)
 //   own-node <network> <url>                             mark a node as yours, first in line
 //   contracts <chainId> <rpc>                            read the latest forge deployment (Voices, AppFactory) into the config

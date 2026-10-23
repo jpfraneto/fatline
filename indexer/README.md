@@ -3,7 +3,7 @@
 The backend that feeds the apps. It reads the network the reader chose (Farcaster or Hypersnap) from the first healthy node in the config, preferring your own. It also rebuilds the Voices feed from contract logs into SQLite. Deleting `.fatline/indexer.sqlite` and restarting gives the same feed.
 
 ```sh
-npm ci && npm start        # or from the root: ./fatline up
+npm ci && npm start        # or from the root: fatline up
 npm test
 ```
 

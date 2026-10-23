@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Turns a fresh Linux server into a Farcaster read node (Snapchain), unattended.
-# Run as root on the server. ./fatline compute --node does this for you.
+# Run as root on the server. fatline compute --node does this for you.
 #
 #   FATLINE_BLOCKS=1day     keep this much block history (Snapchain pruning.block_retention); "all" keeps everything
 #   FATLINE_SNAPSHOT=stream    stream the starting snapshot straight to disk (needs ~1 copy of space, ~600 GB)

@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-// ./fatline setup: the whole path, one step at a time. Before each step it says what the step does, what it
+// fatline setup: the whole path, one step at a time. Before each step it says what the step does, what it
 // costs and how long it takes, then asks: Enter to go, s to skip, q to stop. Run it again and it picks up
-// where you stopped (.fatline/setup.json). It only calls the normal ./fatline commands, so every step can
+// where you stopped (.fatline/setup.json). It only calls the normal fatline commands, so every step can
 // also be run by hand.
 //
 // It opens with the license (MIT: read it, change it, share it; asked once) and the Farcaster arch
 // (infra/arch.mjs). When you stop or a step fails, it links to that step's code so you can improve it.
 //
-//   ./fatline setup            guided, in a terminal
-//   ./fatline setup --plan     where you are, and the exact command for each step (for people and agents)
-//   ./fatline setup --reset    forget the progress (rents and files are untouched)
+//   fatline setup            guided, in a terminal
+//   fatline setup --plan     where you are, and the exact command for each step (for people and agents)
+//   fatline setup --reset    forget the progress (rents and files are untouched)
 //
 // Three paths:
 //   rent   a Hetzner server (card, billed by the hour) runs your own node; your client runs here.
@@ -76,14 +76,14 @@ function steps(s) {
       title: 'Check this machine',
       what: 'Measures CPU, memory, disk, Docker and Node.js, and pings the public nodes of both networks.',
       cost: 'free, a few seconds',
-      cmd: './fatline doctor',
+      cmd: 'fatline doctor',
       run: () => fatline('doctor'),
     },
     connect: {
       title: 'You are your FID',
       what: 'A QR code appears. Scan it with your phone and sign in with the Farcaster app: it signs with the address that owns your account, and a node confirms which FID that is. No seed phrase. You can skip it and do it later.',
       cost: 'free, a minute',
-      cmd: './fatline connect',
+      cmd: 'fatline connect',
       run: () => fatline('connect'),
     },
     choose: {
@@ -121,21 +121,21 @@ function steps(s) {
       title: 'See the price',
       what: 'Asks Hetzner which server fits a node right now and what it costs. Nothing is created.',
       cost: 'free',
-      cmd: './fatline compute --quote',
+      cmd: 'fatline compute --quote',
       run: () => fatline('compute', '--quote'),
     },
     rent: {
       title: 'Rent the server',
-      what: 'Creates the server and a 700 GB disk on your account. It asks you to type "create" first. From then on Hetzner bills by the hour until you run: ./fatline compute hetzner down',
+      what: 'Creates the server and a 700 GB disk on your account. It asks you to type "create" first. From then on Hetzner bills by the hour until you run: fatline compute hetzner down',
       cost: 'the price you just saw, by the hour',
-      cmd: './fatline compute',
+      cmd: 'fatline compute',
       run: () => fatline('compute') && hetznerRecord(),
     },
     node: {
       title: `Install your ${net} node on it`,
       what: 'Copies the setup script to the server and streams the network snapshot (~400 GB) straight to its disk. You can Ctrl-C: the setup keeps going on the server, and this step follows it again when you come back.',
       cost: '1–3 hours',
-      cmd: `./fatline node ${net}`,
+      cmd: `fatline node ${net}`,
       run: () => fatline('node', net),
     },
   };
@@ -144,16 +144,16 @@ function steps(s) {
       title: `Run your ${net} node on this machine`,
       what: `Downloads the official ${net === 'farcaster' ? 'Snapchain' : 'Hypersnap'} bootstrap script, shows where it is so you can read it, and runs it with Docker after you say yes.`,
       cost: 'free; hours of download; ~1 TB disk',
-      cmd: `./fatline node ${net} --local`,
+      cmd: `fatline node ${net} --local`,
       run: () => fatline('node', net, '--local'),
     },
   };
   const nodePaths = {
     sync: {
       title: 'Wait until your node is in sync',
-      what: 'Checks your node every minute until every shard is a few blocks behind or less. It can take ~6 hours after the snapshot. You can stop and come back: run ./fatline setup again.',
+      what: 'Checks your node every minute until every shard is a few blocks behind or less. It can take ~6 hours after the snapshot. You can stop and come back: run fatline setup again.',
       cost: 'time only',
-      cmd: './fatline status',
+      cmd: 'fatline status',
       run: async () => {
         const url = ownNodeUrl(net);
         if (!url) { console.log('  No node of yours in fatline.config.json yet. Finish the node step first.'); return false; }
@@ -172,7 +172,7 @@ function steps(s) {
       title: 'Copy the accounts you care about',
       what: 'Copies the accounts you name (FIDs or @names), and everyone they follow if you want, from one public node into a local archive. This is not a node: it trusts that node.',
       cost: 'free; minutes',
-      cmd: `./fatline follow <fid|@name> --following --network ${net} --node ${PUBLIC[net]} --once`,
+      cmd: `fatline follow <fid|@name> --following --network ${net} --node ${PUBLIC[net]} --once`,
       run: async () => {
         const who = (await ask('  Which accounts? (FIDs or @names, space-separated) : ')).split(/\s+/).filter(Boolean);
         if (!who.length) return false;
@@ -185,17 +185,17 @@ function steps(s) {
       title: 'Read your timeline',
       what: 'Prints the newest casts from your copy alone: no node, no network, no keys.',
       cost: 'free',
-      cmd: './fatline feed --limit 20',
+      cmd: 'fatline feed --limit 20',
       run: () => fatline('feed', '--limit', '20'),
     },
   };
   const end = {
     client: {
       title: 'Start your client',
-      what: `Builds the web app and serves it at http://localhost:8787, reading ${s.path === 'light' ? 'from the node you chose' : 'from your own node'}. It stays running in this terminal; Ctrl-C stops it, ./fatline up starts it again.`,
+      what: `Builds the web app and serves it at http://localhost:8787, reading ${s.path === 'light' ? 'from the node you chose' : 'from your own node'}. It stays running in this terminal; Ctrl-C stops it, fatline up starts it again.`,
       cost: 'free',
-      cmd: `./fatline init --network ${net} && ./fatline up`,
-      run: () => fatline('init', '--network', net, ...(s.path === 'light' ? ['--node', ''] : [])) && (s.done.push('client'), save(s), console.log(bold('\n  Setup is done. Starting the client (Ctrl-C to stop).\n  Later: post as yourself with ./fatline identity --fid <your FID>, in your own terminal (seed phrase in a hidden prompt, never in a chat).' + (s.path === 'rent' ? '\n  Stop paying for the server: ./fatline compute hetzner down' : '') + '\n')), fatline('up'), process.exit(0)),
+      cmd: `fatline init --network ${net} && fatline up`,
+      run: () => fatline('init', '--network', net, ...(s.path === 'light' ? ['--node', ''] : [])) && (s.done.push('client'), save(s), console.log(bold('\n  Setup is done. Starting the client (Ctrl-C to stop).\n  Later: post as yourself with fatline identity --fid <your FID>, in your own terminal (seed phrase in a hidden prompt, never in a chat).' + (s.path === 'rent' ? '\n  Stop paying for the server: fatline compute hetzner down' : '') + '\n')), fatline('up'), process.exit(0)),
     },
   };
   const path = s.path === 'local' ? { ...local, ...nodePaths } : s.path === 'light' ? light : { ...rent, ...nodePaths };
@@ -215,11 +215,11 @@ if (args.includes('--plan')) {
     if (!done && !next) next = st;
     console.log(`${done ? '✓' : next === st ? '→' : ' '} ${i + 1}. ${st.title}  ${dim(st.cost)}\n     ${st.cmd}`);
   }
-  if (!s.path) console.log(dim('\nThe steps after "Choose a path" depend on the path. Guided: ./fatline setup'));
+  if (!s.path) console.log(dim('\nThe steps after "Choose a path" depend on the path. Guided: fatline setup'));
   process.exit(0);
 }
 if (!process.stdin.isTTY) {
-  console.log('./fatline setup asks questions, so it needs a terminal. To see the steps and their commands: ./fatline setup --plan');
+  console.log('fatline setup asks questions, so it needs a terminal. To see the steps and their commands: fatline setup --plan');
   process.exit(1);
 }
 
@@ -261,17 +261,17 @@ if (!s.agreed) {
 }
 await playArch();
 
-console.log(bold('\nFatline setup') + dim(`  ·  progress is saved; run ./fatline setup again to continue  ·  ./fatline setup --plan shows every step\n`));
+console.log(bold('\nFatline setup') + dim(`  ·  progress is saved; run fatline setup again to continue  ·  fatline setup --plan shows every step\n`));
 for (let i = 0; ; i++) {
   const all = steps(s); // the list changes once a path is chosen
   const st = all.find((x) => !s.done.includes(x.id));
-  if (!st) { console.log('Every step is done. Start the client any time with ./fatline up'); break; }
+  if (!st) { console.log('Every step is done. Start the client any time with fatline up'); break; }
   const n = all.indexOf(st) + 1;
   console.log(`\n${bold(`Step ${n} of ${all.length}: ${st.title}`)}\n  ${st.what}\n  ${dim(`Cost: ${st.cost}.  By hand: ${st.cmd}`)}`);
   const a = (await ask('  [Enter] go · s skip · q stop: ')).toLowerCase();
-  if (a === 'q') { console.log(`\nStopped before "${st.title}". Run ./fatline setup to continue from here.`); contribute(st); break; }
+  if (a === 'q') { console.log(`\nStopped before "${st.title}". Run fatline setup to continue from here.`); contribute(st); break; }
   if (a === 's') { s.done.push(st.id); save(s); console.log('  Skipped.'); continue; }
   const ok = await st.run();
   if (ok) { s.done.push(st.id); save(s); console.log(`  ✓ ${st.title}`); }
-  else { console.log(`\n"${st.title}" didn't finish. Fix what it says above, then run ./fatline setup to try this step again.`); contribute(st); process.exit(1); }
+  else { console.log(`\n"${st.title}" didn't finish. Fix what it says above, then run fatline setup to try this step again.`); contribute(st); process.exit(1); }
 }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Fatline: one command to check, build and run the whole system.
-# Run ./fatline help for the list of commands.
+# Run fatline help for the list of commands.
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE="$ROOT/.fatline"
@@ -29,47 +29,47 @@ cmd_help() {
 Fatline — read Farcaster or Hypersnap from your own machine, plus long-form voices onchain.
 
 Setup (in this order on a new machine):
-  ./fatline setup               Guided: every step below, one at a time; stop anywhere, run again to continue
+  fatline setup                 Guided: every step below, one at a time; stop anywhere, run again to continue
                                      --plan shows where you are and the command for each step
-  ./fatline doctor              Check this machine and the networks; recommends full, light or rent
-  ./fatline init                Choose the default network (Farcaster or Hypersnap)
-  ./fatline compute [--quote]   Rent a machine that can hold a node (Hetzner, hourly; needs ~/.hetzner-token)
+  fatline doctor                Check this machine and the networks; recommends full, light or rent
+  fatline init                  Choose the default network (Farcaster or Hypersnap)
+  fatline compute [--quote]     Rent a machine that can hold a node (Hetzner, hourly; needs ~/.hetzner-token)
                                      x402 USDC sellers instead: --provider vpsagent|agentmetal
-  ./fatline node <network>      Install a read node (farcaster or hypersnap) on that machine, wait until it
+  fatline node <network>        Install a read node (farcaster or hypersnap) on that machine, wait until it
                                      answers, and use it. --local installs on this machine instead (16 GB RAM, Docker)
-  ./fatline compute status      The rented machine, its disk and node sync. compute down deletes it all
-  ./fatline up                  Install, build and start the indexer + apps on http://localhost:8787
-  ./fatline client              The same, but first asks you to connect (below) if you haven't
+  fatline compute status        The rented machine, its disk and node sync. compute down deletes it all
+  fatline up                    Install, build and start the indexer + apps on http://localhost:8787
+  fatline client                The same, but first asks you to connect (below) if you haven't
 
 You are your FID (no seed phrase):
-  ./fatline connect             A QR code: scan it with your phone, sign in with Farcaster; your node confirms
+  fatline connect               A QR code: scan it with your phone, sign in with Farcaster; your node confirms
                                      the FID. --open opens the link on this device. connect show | connect forget
 
 Posting (your client's own app key, no gas):
-  ./fatline identity            Type your seed phrase (hidden, never saved); registers an app key for your FID
-  ./fatline identity show       Is the key active?
-  ./fatline identity revoke     Remove the key from the network and from this machine
+  fatline identity              Type your seed phrase (hidden, never saved); registers an app key for your FID
+  fatline identity show         Is the key active?
+  fatline identity revoke       Remove the key from the network and from this machine
 
 Everyday:
-  ./fatline status              Node sync and indexer health
-  ./fatline dev                 Indexer + app with live reload (for changing the app)
-  ./fatline follow <fid|@name>  Keep a local archive of only these accounts, from one node (not a node itself).
+  fatline status                Node sync and indexer health
+  fatline dev                   Indexer + app with live reload (for changing the app)
+  fatline follow <fid|@name>    Keep a local archive of only these accounts, from one node (not a node itself).
                                      --network, --node <name|URL>, --following (add who they follow),
                                      --followers (add who follows them), --depth N, --once
-  ./fatline feed [--limit N]    A timeline from the local SQL archive alone: no node, no network, no keys.
+  fatline feed [--limit N]      A timeline from the local SQL archive alone: no node, no network, no keys.
                                      --before <cursor>, --fids a,b, --replies, --json, --stats
-  ./fatline test                Run every test (contracts, indexer, infra)
+  fatline test                  Run every test (contracts, indexer, infra)
 
 Fatliners (PFPs from any FID's history, reference-conditioned):
-  ./fatline fatliners prompt --fid 18350        Read our nodes, write traits + prompt + request (no image call)
+  fatline fatliners prompt --fid 18350          Read our nodes, write traits + prompt + request (no image call)
                                      --generate makes the image (Codex image tool); --input <file> works offline
-  ./fatline fatliners export --fid 18350        A text-free input file for offline prompt compiling
+  fatline fatliners export --fid 18350          A text-free input file for offline prompt compiling
 
 Contracts (Foundry):
-  ./fatline contracts fork      Fork Base locally (real Clanker + USDC, fake money) and deploy there
-  ./fatline contracts local     Plain local chain with mock USDC (apps without coins only)
-  ./fatline contracts deploy    Deploy Voices + AppFactory to Base (asks for the key; set BASE_RPC_URL)
-  ./fatline contracts split <addressA> <addressB>   Deploy a 50/50 PrizeSplit to Base
+  fatline contracts fork        Fork Base locally (real Clanker + USDC, fake money) and deploy there
+  fatline contracts local       Plain local chain with mock USDC (apps without coins only)
+  fatline contracts deploy      Deploy Voices + AppFactory to Base (asks for the key; set BASE_RPC_URL)
+  fatline contracts split <addressA> <addressB>     Deploy a 50/50 PrizeSplit to Base
 EOF
 }
 
@@ -81,14 +81,14 @@ cmd_init() { need_node; node "$ROOT/infra/config-tool.mjs" init "$@"; }
 
 cmd_node() {
   local network="${1:-}"
-  # A machine rented with ./fatline compute: install the node there, wait for it, use it.
+  # A machine rented with fatline compute: install the node there, wait for it, use it.
   if [ "${2:-}" != "--local" ] && { [ -f "$STATE/hetzner.json" ] || [ -f "$STATE/hetzner-hypersnap.json" ]; }; then
     need_node; exec node "$ROOT/infra/node-remote.mjs" "$@"
   fi
   case "$network" in
     farcaster) URL="https://raw.githubusercontent.com/farcasterxyz/snapchain/refs/heads/main/scripts/snapchain-bootstrap.sh"; DIR="$HOME/snapchain" ;;
     hypersnap) URL="https://raw.githubusercontent.com/farcasterorg/hypersnap/@latest/scripts/hypersnap-bootstrap.sh"; DIR="$HOME/hypersnap" ;;
-    *) fail "usage: ./fatline node farcaster|hypersnap" ;;
+    *) fail "usage: fatline node farcaster|hypersnap" ;;
   esac
   docker info >/dev/null 2>&1 || fail "Docker must be installed and running. See https://docs.docker.com/engine/install/"
   local other; other=$([ "$network" = farcaster ] && echo hypersnap || echo farcaster)
@@ -107,7 +107,7 @@ cmd_node() {
       echo "  $DIR/docker-compose.override.yml exists and is yours; not touching it. Add SNAPCHAIN_PRUNING__BLOCK_RETENTION yourself if you want pruning."
     else
       cat > "$DIR/docker-compose.override.yml" <<YAML
-# Written by ./fatline node. Delete this file (or run with --keep-blocks) to keep every block.
+# Written by fatline node. Delete this file (or run with --keep-blocks) to keep every block.
 services:
   snapchain:
     environment:
@@ -129,7 +129,7 @@ YAML
   need_node
   node "$ROOT/infra/config-tool.mjs" own-node "$network" "http://127.0.0.1:3381"
   bold "The node is starting. It downloads a snapshot first; this can take hours."
-  echo "Watch progress with: ./fatline status   (healthy when blockDelay is near 0 on every shard)"
+  echo "Watch progress with: fatline status   (healthy when blockDelay is near 0 on every shard)"
 }
 
 cmd_follow() {
@@ -160,7 +160,7 @@ cmd_client() { # your client; on first run, prove who you are (you are your FID)
   if [ ! -f "$ROOT/.fatline/identity.json" ] && [ -t 0 ] && [ -t 1 ]; then
     printf 'Connect your Farcaster account first (scan a QR code with your phone)? [Y/n] '
     read -r ok
-    case "$ok" in n|N) ;; *) (cmd_connect) || echo "Not connected; starting the client anyway. Later: ./fatline connect" ;; esac
+    case "$ok" in n|N) ;; *) (cmd_connect) || echo "Not connected; starting the client anyway. Later: fatline connect" ;; esac
   fi
   cmd_up "$@"
 }
@@ -205,7 +205,7 @@ cmd_status() {
       }' "$STATE/status.json"
     curl -fsS "http://127.0.0.1:$port/api/health"; echo
   else
-    echo "  not running on port $port. Start it with ./fatline up"
+    echo "  not running on port $port. Start it with fatline up"
   fi
 }
 
@@ -268,10 +268,10 @@ cmd_contracts() {
       forge script script/Deploy.s.sol --rpc-url "$BASE_RPC_URL" --broadcast --interactives 1
       need_node; node "$ROOT/infra/config-tool.mjs" contracts 8453 "$BASE_RPC_URL" ;;
     split)
-      [ $# -eq 2 ] || fail "usage: ./fatline contracts split <addressA> <addressB>"
+      [ $# -eq 2 ] || fail "usage: fatline contracts split <addressA> <addressB>"
       [ -n "${BASE_RPC_URL:-}" ] || fail "Set BASE_RPC_URL first."
       VOICES=false FACTORY=false SPLIT_A="$1" SPLIT_B="$2" forge script script/Deploy.s.sol --rpc-url "$BASE_RPC_URL" --broadcast --interactives 1 ;;
-    *) fail "usage: ./fatline contracts test|local|fork|deploy|split" ;;
+    *) fail "usage: fatline contracts test|local|fork|deploy|split" ;;
   esac
 }
 

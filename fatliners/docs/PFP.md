@@ -7,7 +7,7 @@
 | ![Tero](img/v7/fid-18350.jpg) | ![Kirim](img/v7/fid-3.jpg) | ![Shouvi](img/v7/fid-299673.jpg) | ![Edis](img/v7/fid-509202.jpg) | ![Somaeben](img/v7/fid-1721477.jpg) |
 | Tero · 18350 · gold-mended · storyteller | Kirim · 3 · basalt · storyteller | Shouvi · 299673 · moss · regular | Edis · 509202 · moss · maker | Somaeben · 1721477 · marble · linker |
 
-`./fatline fatliners prompt --fid <n>[,<n>…] --generate` makes these today, for any FID. The sections further down describe the earlier painted-bust versions (v4); the pipeline around them is unchanged.
+`fatline fatliners prompt --fid <n>[,<n>…] --generate` makes these today, for any FID. The sections further down describe the earlier painted-bust versions (v4); the pipeline around them is unchanged.
 
 **How we got here (the owner's feedback, round by round):**
 - v4 painted busts: "they all look so much the same" → v5: bolder traits, recalibrated on 39 real top-777 accounts (`calibration/pfp-5.json`, now the default).
@@ -57,11 +57,11 @@ This path sits **beside** the deterministic SVG generator. It reuses the same hi
 ## Commands
 
 ```sh
-./fatline fatliners prompt --fid 18350                  # read our nodes, write traits + prompt + request. No image call.
-./fatline fatliners prompt --fid 2,3,5650 --generate    # also make the images (see "Image generation")
-./fatline fatliners prompt --fid 12345 --reference fatliners/assets/FATLINERS_MASTER_REFERENCE.png
-./fatline fatliners export --fid 18350 > 18350.input.json   # text-free input, for someone without node access
-./fatline fatliners prompt --input 18350.input.json     # compile offline from that file
+fatline fatliners prompt --fid 18350                  # read our nodes, write traits + prompt + request. No image call.
+fatline fatliners prompt --fid 2,3,5650 --generate    # also make the images (see "Image generation")
+fatline fatliners prompt --fid 12345 --reference fatliners/assets/FATLINERS_MASTER_REFERENCE.png
+fatline fatliners export --fid 18350 > 18350.input.json   # text-free input, for someone without node access
+fatline fatliners prompt --input 18350.input.json     # compile offline from that file
 node fatliners/bin/pfp-sheet.mjs                        # contact sheet of every accepted portrait
 cd fatliners && npm run preview                         # → http://127.0.0.1:7777/pfp
 ```

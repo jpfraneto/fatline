@@ -2,7 +2,7 @@
 // `fatline` on your PATH. Two ways to get it:
 //   npm install -g fatlines        from npm
 //   npm install -g .               inside a clone of github.com/jpfraneto/fatline (links that clone)
-// It runs ./fatline in your copy of the repository, so `fatline compute` = `./fatline compute`.
+// It runs fatline in your copy of the repository, so `fatline compute` = `fatline compute`.
 // Which copy: the clone this file lives in; else $FATLINE_DIR; else ~/fatline, downloaded with git on first use.
 import { spawnSync } from 'node:child_process';
 import { existsSync, realpathSync } from 'node:fs';

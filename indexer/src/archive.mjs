@@ -260,7 +260,7 @@ export class Archive {
   /**
    * A timeline across the whole archive: the newest casts from every tracked FID, newest first.
    * read() is one author; this is all of them, in one query instead of one node call per author.
-   * It is a slice: it holds only what ./fatline follow copied.
+   * It is a slice: it holds only what fatline follow copied.
    */
   feed({ before = null, limit = 50, fids = null, types = ['cast'], replies = true } = {}) {
     const msgTypes = (types ?? ['cast']).flatMap((t) => TYPES[t] ?? []);

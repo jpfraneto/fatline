@@ -1,4 +1,4 @@
-// ./fatline doctor
+// fatline doctor
 // Looks at this machine and at the networks, then says which way of running Fatline fits:
 //   1. full  — run your own Farcaster or Hypersnap node here, plus the indexer and apps
 //   2. light — run the indexer and apps here, reading from a node that already exists
@@ -130,15 +130,15 @@ export async function main() {
   console.log(bold(`\nRecommendation for ${label}`));
   if (plan === 'full') {
     console.log(`  Run your own ${label} node here, then the indexer and apps:`);
-    console.log(`    ./fatline node ${chosen}`);
-    console.log('    ./fatline up');
+    console.log(`    fatline node ${chosen}`);
+    console.log('    fatline up');
     console.log(dim('  The node downloads a snapshot (hundreds of GB) and can take hours to catch up.'));
     console.log(dim('  It also needs ports 3381-3383 (TCP and UDP) reachable from the internet.'));
   } else if (plan === 'light') {
     const r = reachable[chosen];
     console.log(`  This machine can't hold a full node, but it can run the indexer and apps,`);
     console.log(`  reading ${label} from ${r.url} (${r.own ? 'your node' : yellow('a public node you do not control')}).`);
-    console.log('    ./fatline up');
+    console.log('    fatline up');
     if (!r.own) {
       console.log(dim('  The app always shows which node it reads from. To be fully independent later,'));
       console.log(dim('  run a node on a bigger machine and put its URL first in fatline.config.json.'));
@@ -148,7 +148,7 @@ export async function main() {
     if (!m.nodeOk) console.log(`  ${red('•')} Install Node.js 22.12+ (https://nodejs.org) and run doctor again; or`);
     console.log(`  ${yellow('•')} rent a server with one x402 payment (USDC on Base). It runs the indexer and`);
     console.log('    apps and reads from a public node. You pay once; that payment is how long it lives:');
-    console.log('      ./fatline compute            # shows the price, asks before paying');
+    console.log('      fatline compute            # shows the price, asks before paying');
   }
 
   const report = { checkedAt: new Date().toISOString(), network: chosen, machine: m, full, light, reachable, plan };
