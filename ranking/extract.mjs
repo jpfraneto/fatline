@@ -47,6 +47,11 @@ async function* pages(path) {
 
 // requestFid from SignedKeyRequestMetadata: abi.encode(tuple(uint256 requestFid, address, bytes, uint256)).
 // Word 0 is the tuple offset (0x20), word 1 is requestFid.
+// Write with backpressure: wait when the gzip buffer is full, so busy accounts don't fill the memory.
+async function put(stream, text) {
+  if (text && !stream.write(text)) await new Promise((r) => stream.once('drain', r));
+}
+
 function requestFid(b64) {
   try {
     const buf = Buffer.from(b64 ?? '', 'base64');
@@ -66,32 +71,39 @@ async function fid(f, w) {
   // App keys: key → requesting app FID (onchain keys; gasless keys are counted by signer only).
   const appOf = new Map();
   for await (const evs of pages(`/v1/onChainSignersByFid?fid=${f}`)) {
+    let out = '';
     for (const e of evs) {
       const b = e.signerEventBody ?? {};
       if (b.eventType === 'SIGNER_EVENT_TYPE_ADD' && b.key) {
         const app = b.metadataType === 1 ? requestFid(b.metadata) : 0;
         appOf.set(b.key, app);
-        if (app) w.signers.write(`${f}\t${app}\n`);
+        if (app) out += `${f}\t${app}\n`;
       }
     }
+    await put(w.signers, out);
   }
   for await (const msgs of pages(`/v1/linksByFid?fid=${f}&link_type=follow`)) {
+    let out = '';
     for (const m of msgs) {
       const d = m.data, t = d?.linkBody?.targetFid;
-      if (d?.type === 'MESSAGE_TYPE_LINK_ADD' && t && t !== f) w.follows.write(`${f}\t${t}\t${d.timestamp}\n`);
+      if (d?.type === 'MESSAGE_TYPE_LINK_ADD' && t && t !== f) out += `${f}\t${t}\t${d.timestamp}\n`;
     }
+    await put(w.follows, out);
   }
   for (const [type, code] of [['REACTION_TYPE_LIKE', 'l'], ['REACTION_TYPE_RECAST', 'c']]) {
     for await (const msgs of pages(`/v1/reactionsByFid?fid=${f}&reaction_type=${type}`)) {
+      let out = '';
       for (const m of msgs) {
         const d = m.data, t = d?.reactionBody?.targetCastId?.fid;
-        if (d?.type === 'MESSAGE_TYPE_REACTION_ADD' && t && t !== f) w.inter.write(`${f}\t${t}\t${d.timestamp}\t${code}\n`);
+        if (d?.type === 'MESSAGE_TYPE_REACTION_ADD' && t && t !== f) out += `${f}\t${t}\t${d.timestamp}\t${code}\n`;
       }
+      await put(w.inter, out);
     }
   }
   let casts = 0, replies = 0, first = 0, last = 0;
   const apps = new Set(), days = new Set();
   for await (const msgs of pages(`/v1/castsByFid?fid=${f}`)) {
+    let out = '';
     for (const m of msgs) {
       const d = m.data, b = d?.castAddBody;
       if (d?.type !== 'MESSAGE_TYPE_CAST_ADD' || !b) continue;
@@ -99,14 +111,15 @@ async function fid(f, w) {
       first = first ? Math.min(first, ts) : ts; last = Math.max(last, ts);
       casts++;
       const p = b.parentCastId?.fid;
-      if (p) { replies++; if (p !== f) w.inter.write(`${f}\t${p}\t${ts}\tr\n`); }
-      for (const mm of new Set(b.mentions ?? [])) if (mm !== f) w.inter.write(`${f}\t${mm}\t${ts}\tm\n`);
+      if (p) { replies++; if (p !== f) out += `${f}\t${p}\t${ts}\tr\n`; }
+      for (const mm of new Set(b.mentions ?? [])) if (mm !== f) out += `${f}\t${mm}\t${ts}\tm\n`;
       const app = appOf.get(m.signer);
       if (app) apps.add(app);
       days.add(Math.floor(ts / 86400));
     }
+    await put(w.inter, out);
   }
-  w.fids.write(`${f}\t${reg}\t${transfer}\t${casts}\t${replies}\t${first}\t${last}\t${days.size}\t${[...apps].sort((a, b) => a - b).join(',')}\n`);
+  await put(w.fids, `${f}\t${reg}\t${transfer}\t${casts}\t${replies}\t${first}\t${last}\t${days.size}\t${[...apps].sort((a, b) => a - b).join(',')}\n`);
 }
 
 function writers(dir) {
@@ -114,6 +127,7 @@ function writers(dir) {
   const w = {};
   for (const n of names) {
     const gz = createGzip({ level: 6 });
+    gz.setMaxListeners(PARALLEL + 10); // each worker may wait for 'drain'
     gz.pipe(createWriteStream(join(dir, `${n}.tsv.gz`)));
     w[n] = gz;
   }
