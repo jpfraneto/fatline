@@ -1,5 +1,7 @@
 # The Fatliners: species guide
 
+> **Superseded for the look and the rules:** [SPECIES-CANON.md](../SPECIES-CANON.md) (v1.0, 2026-10-23) and its blueprint `assets/FATLINERS_MASTER_REFERENCE.png` are the authority now: a mineral being with a full small body, not the flat pebble below. This page stays as the history of the first direction.
+
 777 beings. 777 histories. One species.
 
 ## Who they are
