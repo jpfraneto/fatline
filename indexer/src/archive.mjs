@@ -61,7 +61,8 @@ export class Archive {
         network TEXT NOT NULL, dedup_key TEXT NOT NULL, fid INTEGER NOT NULL, msg_type TEXT, protocol_ts INTEGER, signer TEXT,
         status TEXT NOT NULL, first_event INTEGER NOT NULL, last_event INTEGER NOT NULL, body TEXT,
         PRIMARY KEY (network, dedup_key));
-      CREATE INDEX IF NOT EXISTS fl_messages_fid ON fl_messages (fid, protocol_ts);`);
+      CREATE INDEX IF NOT EXISTS fl_messages_fid ON fl_messages (fid, protocol_ts);
+      CREATE INDEX IF NOT EXISTS fl_messages_feed ON fl_messages (msg_type, status, protocol_ts DESC);`);
   }
 
   // ------------------------------------------------------------------ for adapters
@@ -228,6 +229,7 @@ export class Archive {
       WHERE fid = ? AND msg_type IN (${marks})
       GROUP BY dedup_key HAVING ts < ? OR (ts = ? AND dedup_key < ?)
       ORDER BY ts DESC, dedup_key DESC LIMIT ?`).all(fid, ...msgTypes, ts0, ts0, key0, cap);
+    /*
     const rows = keys.length
       ? this.db.prepare(`SELECT * FROM fl_messages WHERE dedup_key IN (${keys.map(() => '?').join(',')})`).all(...keys.map((k) => k.dedup_key))
       : [];
@@ -240,6 +242,8 @@ export class Archive {
         networks: Object.fromEntries(NETWORKS.map((n) => [n, mine.find((r) => r.network === n)?.status ?? null])),
       };
     });
+    */
+    const items = this.#items(keys.map((k) => ({ key: k.dedup_key, fid, ts: k.ts })));
     return { fid, items, sources: this.sources(), more: items.length === cap ? `${items.at(-1).at}_${items.at(-1).key}` : null };
   }
 
@@ -249,5 +253,73 @@ export class Archive {
         (SELECT MAX(ingested_at) FROM fl_events e WHERE e.source_id = s.id) AS lastEventAt
       FROM fl_sources s LEFT JOIN fl_cursors c ON c.source_id = s.id GROUP BY s.id ORDER BY s.id`).all()
       .map((r) => ({ network: r.network, label: r.label, cursorAt: r.cursorAt, lastEventAt: r.lastEventAt }));
+  }
+  
+  
+  
+  /** keys [{key, fid, ts}] -> items, each carrying what every network says about it. */
+  #items(keys) {
+    const rows = keys.length
+      ? this.db.prepare(`SELECT * FROM fl_messages WHERE dedup_key IN (${keys.map(() => '?').join(',')})`).all(...keys.map((k) => k.key))
+      : [];
+    return keys.map(({ key, fid, ts }) => {
+      const mine = rows.filter((r) => r.dedup_key === key);
+      const best = mine.find((r) => r.status === 'merged' && r.body) ?? mine.find((r) => r.body) ?? mine[0];
+      return {
+        key, fid, type: best.msg_type, at: ts, signer: best.signer,
+        body: best.body ? JSON.parse(best.body) : null,
+        networks: Object.fromEntries(NETWORKS.map((n) => [n, mine.find((r) => r.network === n)?.status ?? null])),
+      };
+    });
+  }
+
+  /**
+   * A timeline across the whole archive: the newest casts from every tracked FID, newest first.
+   * read() is one author; this is all of them, in one query instead of one node call per author.
+   * It is a slice: it holds only what ./fatline follow copied.
+   */
+  feed({ before = null, limit = 50, fids = null, types = ['cast'] } = {}) {
+    const msgTypes = (types ?? ['cast']).flatMap((t) => TYPES[t] ?? []);
+    if (!msgTypes.length) fail(`types must be some of: ${Object.keys(TYPES).join(', ')}`);
+    const cap = Math.min(Math.max(Number(limit) || 50, 1), 200);
+    // Paging cursor "<ms>_<key>", same shape read() uses. Timestamps tie, so the key breaks ties.
+    const [beforeTs, beforeKey] = before ? String(before).split('_') : [];
+    const ts0 = beforeTs !== undefined && Number.isFinite(Number(beforeTs)) ? Number(beforeTs) : Number.MAX_SAFE_INTEGER;
+    const key0 = beforeKey && /^[\w:.|-]{3,128}$/.test(beforeKey) ? beforeKey.toLowerCase() : '';
+    const marks = msgTypes.map(() => '?').join(',');
+    const only = fids?.length ? `AND fid IN (${fids.map(() => '?').join(',')})` : '';
+    // GROUP BY dedup_key: a message seen on both networks is one item, not two.
+    const keys = this.db.prepare(`SELECT dedup_key AS key, fid, MAX(protocol_ts) AS ts FROM fl_messages
+      WHERE msg_type IN (${marks}) AND status = 'merged' ${only}
+      GROUP BY dedup_key HAVING ts < ? OR (ts = ? AND dedup_key < ?)
+      ORDER BY ts DESC, dedup_key DESC LIMIT ?`)
+      .all(...msgTypes, ...(fids ?? []), ts0, ts0, key0, cap);
+    const items = this.#items(keys);
+    return {
+      items,
+      authors: this.profiles(items.map((i) => i.fid)),
+      tracked: this.fids().length,
+      more: items.length === cap ? `${items.at(-1).at}_${items.at(-1).key}` : null,
+      at: Date.now(),
+    };
+  }
+
+  /** Handles and avatars for a set of FIDs, so a feed is readable with no node. */
+  profiles(fids) {
+    const list = [...new Set(fids.map(Number))].filter((f) => Number.isSafeInteger(f) && f > 0);
+    if (!list.length) return {};
+    const rows = this.db.prepare(`SELECT fid, body FROM fl_messages
+      WHERE fid IN (${list.map(() => '?').join(',')})
+        AND msg_type = 'MESSAGE_TYPE_USER_DATA_ADD' AND status = 'merged' AND body IS NOT NULL`).all(...list);
+    const out = {};
+    for (const r of rows) {
+      let b; try { b = JSON.parse(r.body); } catch { continue; }
+      const p = (out[r.fid] ??= { fid: r.fid });
+      const field = String(b.field ?? '');
+      if (/USERNAME/i.test(field)) p.username = b.value;
+      else if (/PFP/i.test(field)) p.pfp = b.value;
+      else if (/DISPLAY/i.test(field)) p.display = b.value;
+    }
+    return out;
   }
 }

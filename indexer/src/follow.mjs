@@ -1,12 +1,15 @@
 // ./fatline follow: keep a local archive of only the accounts you choose, read from one node.
 //
-//   ./fatline follow <fid|@name>... [--network farcaster|hypersnap] [--node URL|name] [--following] [--once]
+//   ./fatline follow <fid|@name>... [--network farcaster|hypersnap] [--node URL|name] [--following] [--followers] [--depth N] [--once]
 //   ./fatline follow list
 //
 // --network    which network to read (default: the one chosen with ./fatline init)
 // --node       which of that network's nodes in fatline.config.json to read, by URL or by a word of its
 //              name or host (e.g. crackle, haatz, master). Default: the first one listed. Only that node is read.
 // --following  also add every account the named accounts follow (as that node knows it)
+// --followers  also add every account that follows the named accounts (as that node knows it)
+// --depth      how many hops to walk in the directions chosen (default: 1). 2 gets follows-of-follows too,
+//              which on a mid-size account can be tens of thousands of FIDs.
 // --once       copy what the node has now, catch up with its new events, then exit. Without it, it keeps following.
 //
 // This is not a node. A Snapchain or Hypersnap node checks every message itself and keeps all accounts. Since
@@ -25,8 +28,8 @@ const NOT_A_NODE = [
 ];
 
 const argv = process.argv.slice(2);
-const flags = new Set(['--following', '--once', '--help']);
-const valueFlags = new Set(['--network', '--node']);
+const flags = new Set(['--following', '--followers', '--once', '--help']);
+const valueFlags = new Set(['--network', '--node', '--depth']);
 const opt = {};
 const names = [];
 for (let i = 0; i < argv.length; i++) {
@@ -48,7 +51,7 @@ if (names[0] === 'list') {
   process.exit(0);
 }
 if (!names.length || opt.help || names[0] === 'help') {
-  console.log(`Usage: ./fatline follow <fid|@name>... [--network farcaster|hypersnap] [--node URL|name] [--following] [--once]
+  console.log(`Usage: ./fatline follow <fid|@name>... [--network farcaster|hypersnap] [--node URL|name] [--following] [--followers] [--depth N] [--once]
        ./fatline follow list
 
 ${NOT_A_NODE.join('\n')}`);
@@ -90,12 +93,33 @@ for (const n of names) {
   fids.push(Number(proof.fid));
 }
 
-if (opt.following) {
-  for (const fid of [...fids]) {
-    const follows = await followsOf(fid);
-    console.log(`FID ${fid} follows ${follows.length} account(s) on this node; adding them.`);
-    for (const f of follows) if (!fids.includes(f)) fids.push(f);
+// The named accounts are the seeds; --following / --followers add their neighbours, --depth times over.
+// The seed list is captured first, so with both flags set a hop-2 walk means "who the people around
+// my seeds are", not "the followers of the people my seeds follow".
+const seeds = [...fids];
+const depth = Math.max(1, Number(opt.depth ?? 1));
+if (opt.depth != null && !Number.isFinite(Number(opt.depth))) die(`--depth needs a number, got "${opt.depth}".`);
+if (opt.following || opt.followers) {
+  const seen = new Set(seeds);
+  let frontier = seeds;
+  for (let hop = 1; hop <= depth && frontier.length; hop++) {
+    const next = [];
+    for (const fid of frontier) {
+      if (opt.following) {
+        const follows = await followsOf(fid);
+        console.log(`  hop ${hop}: FID ${fid} follows ${follows.length} account(s) on this node.`);
+        for (const f of follows) if (!seen.has(f)) { seen.add(f); next.push(f); }
+      }
+      if (opt.followers) {
+        const followers = await followersOf(fid);
+        console.log(`  hop ${hop}: ${followers.length} account(s) follow FID ${fid} on this node.`);
+        for (const f of followers) if (!seen.has(f)) { seen.add(f); next.push(f); }
+      }
+    }
+    frontier = next;
+    if (hop < depth && frontier.length) console.log(`  ${frontier.length} new account(s) at hop ${hop}; walking one more.`);
   }
+  fids.splice(0, fids.length, ...seen);
 }
 
 for (const fid of fids) archive.track(fid);
@@ -145,6 +169,7 @@ function pickNode(net, want) {
 
 async function followsOf(fid) {
   const out = [];
+  const seenTokens = new Set();
   let pageToken;
   do {
     const page = await adapter.get('/v1/linksByFid', { fid, link_type: 'follow', page_size: 1000, pageToken });
@@ -153,6 +178,29 @@ async function followsOf(fid) {
       if (t) out.push(Number(t));
     }
     pageToken = page.nextPageToken || undefined;
+    if (pageToken && seenTokens.has(pageToken)) { console.log(`  FID ${fid}: page token repeated after ${out.length} link(s); stopping.`); break; }
+    if (pageToken) seenTokens.add(pageToken);
+  } while (pageToken);
+  return [...new Set(out)];
+}
+
+async function followersOf(fid) {
+  const out = [];
+  const seenTokens = new Set();
+  let pageToken;
+  do {
+    const page = await adapter.get('/v1/linksByTargetFid', {
+      target_fid: fid, link_type: 'follow', page_size: 1000, pageToken,
+    });
+    for (const m of page.messages ?? []) {
+      const d = m.data ?? {};
+      if (d.linkBody && d.linkBody.type !== 'follow') continue; // some builds ignore link_type
+      if (d.type === 'MESSAGE_TYPE_LINK_REMOVE') continue;      // a withdrawn follow is not an edge
+      if (d.fid) out.push(Number(d.fid));
+    }
+    pageToken = page.nextPageToken || undefined;
+    if (pageToken && seenTokens.has(pageToken)) { console.log(`  FID ${fid}: page token repeated after ${out.length} link(s); stopping.`); break; }
+    if (pageToken) seenTokens.add(pageToken);
   } while (pageToken);
   return [...new Set(out)];
 }

@@ -47,7 +47,10 @@ Everyday:
   ./fatline status              Node sync and indexer health
   ./fatline dev                 Indexer + app with live reload (for changing the app)
   ./fatline follow <fid|@name>  Keep a local archive of only these accounts, from one node (not a node itself).
-                                     --network, --node <name|URL>, --following (add who they follow), --once
+                                     --network, --node <name|URL>, --following (add who they follow),
+                                     --followers (add who follows them), --depth N, --once
+  ./fatline feed [--limit N]    A timeline from the local SQL archive alone: no node, no network, no keys.
+                                     --before <cursor>, --fids a,b, --replies, --json, --stats
   ./fatline test                Run every test (contracts, indexer, infra)
 
 Contracts (Foundry):
@@ -119,6 +122,12 @@ cmd_follow() {
   need_node
   install indexer
   cd "$ROOT/indexer" && node --experimental-sqlite --no-warnings=ExperimentalWarning src/follow.mjs "$@"
+}
+
+cmd_feed() {
+  need_node
+  install indexer
+  cd "$ROOT/indexer" && node --experimental-sqlite --no-warnings=ExperimentalWarning src/feed.mjs "$@"
 }
 
 cmd_identity() {
@@ -236,6 +245,6 @@ command="${1:-help}"; shift || true
 case "$command" in
   help|-h|--help) cmd_help ;;
   client) cmd_up "$@" ;;  # for now the same as up; first-run identity setup comes next
-  doctor|init|node|up|dev|status|compute|test|contracts|identity|follow) "cmd_$command" "$@" ;;
+  doctor|init|node|up|dev|status|compute|test|contracts|identity|follow|feed) "cmd_$command" "$@" ;;
   *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
 esac
