@@ -97,7 +97,7 @@
     <ul>
       <li><strong>git</strong>, <strong>Node.js 22.12 or newer</strong> and <strong>ssh</strong> on your computer.</li>
       <li>A <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> account with a card, and an API token saved in <code>~/.hetzner-token</code> (<code>chmod 600</code>).</li>
-      <li>New Hetzner accounts have limits (ours: 1,385 GB of volumes and 14 vCPUs in total). One node needs a 700 GB volume, so one new account fits <strong>one</strong> full node. A Farcaster node and a Hypersnap node side by side need two servers and two volumes.</li>
+      <li>New Hetzner accounts have limits (ours: 1,385 GB of volumes and 14 vCPUs in total). One node needs a 700 GB volume, so one new account fits about <strong>one</strong> full node per volume. We run both networks on one server (8 Arm cores, 16 GB) with two volumes, right at that limit: Hypersnap's smallest shard (44 GB) sits on the server's own disk. $131.82 a month for both.</li>
       <li>To post: your Farcaster account's seed phrase, typed only into your own terminal.</li>
     </ul>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
@@ -113,7 +113,7 @@
     <ul>
       <li><strong>git</strong>, <strong>Node.js 22.12 o más nuevo</strong> y <strong>ssh</strong> en tu computador.</li>
       <li>Una cuenta de <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> con tarjeta, y un token de API guardado en <code>~/.hetzner-token</code> (<code>chmod 600</code>).</li>
-      <li>Las cuentas nuevas de Hetzner tienen límites (la nuestra: 1.385 GB de volúmenes y 14 vCPU en total). Un nodo necesita un volumen de 700 GB, así que una cuenta nueva alcanza para <strong>un</strong> nodo completo. Un nodo de Farcaster y uno de Hypersnap lado a lado necesitan dos servidores y dos volúmenes.</li>
+      <li>Las cuentas nuevas de Hetzner tienen límites (la nuestra: 1.385 GB de volúmenes y 14 vCPU en total). Un nodo necesita un volumen de 700 GB, así que una cuenta nueva alcanza para <strong>un</strong> nodo completo. Nosotros corremos las dos redes en un solo servidor (8 núcleos Arm, 16 GB) con dos volúmenes, justo en ese límite: el shard más chico de Hypersnap (44 GB) vive en el disco propio del servidor. $131,82 al mes por ambas.</li>
       <li>Para publicar: la frase semilla de tu cuenta de Farcaster, escrita solo en tu propia terminal.</li>
     </ul>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
@@ -252,7 +252,9 @@
   <h2>No room for a node: copy only the accounts you follow</h2>
   <pre><code>./fatline follow 18350 @dwr --network farcaster --node crackle --once
 ./fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># keeps following; Ctrl+C stops it, a re-run continues</span>
-./fatline follow list</code></pre>
+./fatline follow 18350 --followers --once                              <span class="c"># everyone who follows them (--depth 2: their neighbours too)</span>
+./fatline follow list
+./fatline feed --limit 20                                              <span class="c"># a timeline from your copy alone: no node, no network, no keys</span></code></pre>
   <p>It copies the accounts you name (with <code>--following</code>, also everyone they follow) from one node you pick, Farcaster or Hypersnap, your own or a public one, into the client's archive. Open <code>#/archive/&lt;fid&gt;</code> in the client to read one. <code>--node</code> takes a word of the node's name or host, or its URL; only that node is read, and it never switches.</p>
   <div class="concept"><strong>This is not a node.</strong> Every run says so. It trusts that node: it does not check message signatures or signer keys itself. It does not join the network, and does not help it. It is only as complete and as recent as that node: if the node is behind, so is this.</div>
   <p>If the node is down, you get a clear error and nothing changes. If it is behind, it is used, with a warning that says how far behind.</p>
@@ -268,7 +270,9 @@
   <h2>Sin espacio para un nodo: copia solo las cuentas que sigues</h2>
   <pre><code>./fatline follow 18350 @dwr --network farcaster --node crackle --once
 ./fatline follow 18350 --following --network hypersnap --node haatz   <span class="c"># sigue copiando; Ctrl+C lo detiene, y al correrlo de nuevo continúa</span>
-./fatline follow list</code></pre>
+./fatline follow 18350 --followers --once                              <span class="c"># todos los que las siguen (--depth 2: también sus vecinos)</span>
+./fatline follow list
+./fatline feed --limit 20                                              <span class="c"># un timeline solo desde tu copia: sin nodo, sin red, sin llaves</span></code></pre>
   <p>Copia las cuentas que nombras (con <code>--following</code>, también a todos los que ellas siguen) desde un nodo que tú eliges, de Farcaster o de Hypersnap, tuyo o público, al archivo del cliente. Abre <code>#/archive/&lt;fid&gt;</code> en el cliente para leer una. <code>--node</code> acepta una palabra del nombre o del host del nodo, o su URL; se lee solo ese nodo, y nunca cambia a otro.</p>
   <div class="concept"><strong>Esto no es un nodo.</strong> Cada corrida lo dice. Confía en ese nodo: no revisa por sí mismo las firmas de los mensajes ni las llaves. No se une a la red, y no la ayuda. Está tan completo y tan al día como ese nodo: si el nodo va atrasado, esto también.</div>
   <p>Si el nodo está caído, ves un error claro y no cambia nada. Si va atrasado, se usa igual, con un aviso que dice cuánto.</p>
@@ -392,7 +396,7 @@
     <tr><td>Renting the node's server on Hetzner</td><td><span class="tag ok">done once</span>, our own node, 2026-10-22</td></tr>
     <tr><td>All three commands, fresh, start to finish</td><td><span class="tag no">untested</span></td></tr>
     <tr><td>Our own nodes answering, shown as "behind" until in sync</td><td><span class="tag ok">works</span>, both networks, 2026-10-22</td></tr>
-    <tr><td>A read node fully in sync</td><td><span class="tag ok">works</span> Farcaster: 5 h 43 min after it answered, back in sync 62 s after a reboot. Hypersnap: catching up</td></tr>
+    <tr><td>A read node fully in sync</td><td><span class="tag ok">works</span> Farcaster: 5 h 43 min after it answered, back in sync 62 s after a reboot. Hypersnap: in sync too; both run on one server since 2026-10-23</td></tr>
     <tr><td>Copying only chosen accounts (<code>follow</code>, not a node)</td><td><span class="tag ok">works</span> on real nodes, both networks</td></tr>
     <tr><td>Registering an app key and posting with a real account</td><td><span class="tag no">untested</span></td></tr>
     <tr><td>A replicating (lighter) node</td><td><span class="tag no">not possible today</span>: both networks' replicators refuse key messages</td></tr>
@@ -409,7 +413,7 @@
     <tr><td>Arrendar el servidor del nodo en Hetzner</td><td><span class="tag ok">hecho una vez</span>, nuestro nodo, 2026-10-22</td></tr>
     <tr><td>Los tres comandos, desde cero, de principio a fin</td><td><span class="tag no">sin probar</span></td></tr>
     <tr><td>Nuestros nodos respondiendo, marcados "atrasado" hasta sincronizar</td><td><span class="tag ok">funciona</span>, ambas redes, 2026-10-22</td></tr>
-    <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag ok">funciona</span> Farcaster: 5 h 43 min después de responder, sincronizado de nuevo 62 s después de un reinicio. Hypersnap: poniéndose al día</td></tr>
+    <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag ok">funciona</span> Farcaster: 5 h 43 min después de responder, sincronizado de nuevo 62 s después de un reinicio. Hypersnap: también sincronizado; los dos corren en un solo servidor desde el 2026-10-23</td></tr>
     <tr><td>Copiar solo algunas cuentas (<code>follow</code>, no es un nodo)</td><td><span class="tag ok">funciona</span> con nodos reales, ambas redes</td></tr>
     <tr><td>Registrar una llave y publicar con una cuenta real</td><td><span class="tag no">sin probar</span></td></tr>
     <tr><td>Un nodo replicador (más liviano)</td><td><span class="tag no">no es posible hoy</span>: los replicadores de ambas redes rechazan los mensajes de llaves</td></tr>

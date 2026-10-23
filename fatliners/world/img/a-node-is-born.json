@@ -1,0 +1,24 @@
+{
+  "slug": "a-node-is-born",
+  "title": "A Node Is Born",
+  "caption": "Its coin's fees fill the basin. When there is enough to pay for a node, the tower lights up and the Fatliner has a body.",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "1024x1536",
+  "gateway": "llm.bankr.bot",
+  "world": "world/1",
+  "madeAt": "2026-10-23T15:47:59.849Z",
+  "usage": {
+    "input_tokens": 356,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 356
+    },
+    "output_tokens": 601,
+    "output_tokens_details": {
+      "image_tokens": 601,
+      "text_tokens": 0
+    },
+    "total_tokens": 957
+  },
+  "prompt": "A photograph of a handmade miniature world, in the style of collectible designer-toy dioramas: tiny Fatliner figurines with a huge round smooth stone head on a small soft body, simple calm sweet faces (two small dark almond eyes, almost no nose, a tiny mouth or none), each with one thin line of light running across its forehead and ending in a small bright node at the temple. Their bodies are carved from different stones: ivory, sand, marble with veins, dark basalt, moss-covered stone, stone mended with gold seams, milky opal. The world around them is ancient overgrown stone ruins floating above a sea of clouds: arches, aqueducts, terraces, stairs, ivy, small white daisies, warm lanterns. Cinematic warm golden-hour light, soft haze, tilt-shift miniature photography with shallow depth of field, rich detail, cosy, playful and a little magical. No humans. No hats, crowns or costumes on the figurines. No text, letters, numbers, logos or banners anywhere unless the scene asks for them.\n\nThe scene: Tall vertical view. On a mossy stone terrace, a small sand-coloured Fatliner kneels beside a carved round stone basin. Small plain round golden tokens with no markings trickle into the basin from a carved stone channel above, one by one. From the basin rises a slender stone tower, like a tiny lighthouse made of old masonry, freshly awakened: its windows glowing warmly, thin veins of blue and pink light climbing its walls toward a bright lamp at the top that sends a beam up into the sky. The Fatliner looks up at it with quiet wonder. Several other figurines watch from the stairs below. Clouds and sunset behind."
+}

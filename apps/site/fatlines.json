@@ -24,7 +24,6 @@
         }
       ],
       "page": "/f/FATLINE",
-      "notice": "CPU is higher than usual until about Oct 24: the server is also extracting data for the Fatliner ranking.",
       "server": {
         "provider": "Hetzner Cloud",
         "type": "cax31",

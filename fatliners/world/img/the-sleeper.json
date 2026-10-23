@@ -1,0 +1,24 @@
+{
+  "slug": "the-sleeper",
+  "title": "The Sleeper",
+  "caption": "A being can sleep. Dormancy is not death: anyone who feeds the vault brings it back.",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "1536x1024",
+  "gateway": "llm.bankr.bot",
+  "world": "world/1",
+  "madeAt": "2026-10-23T15:47:25.125Z",
+  "usage": {
+    "input_tokens": 361,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 361
+    },
+    "output_tokens": 343,
+    "output_tokens_details": {
+      "image_tokens": 343,
+      "text_tokens": 0
+    },
+    "total_tokens": 704
+  },
+  "prompt": "A photograph of a handmade miniature world, in the style of collectible designer-toy dioramas: tiny Fatliner figurines with a huge round smooth stone head on a small soft body, simple calm sweet faces (two small dark almond eyes, almost no nose, a tiny mouth or none), each with one thin line of light running across its forehead and ending in a small bright node at the temple. Their bodies are carved from different stones: ivory, sand, marble with veins, dark basalt, moss-covered stone, stone mended with gold seams, milky opal. The world around them is ancient overgrown stone ruins floating above a sea of clouds: arches, aqueducts, terraces, stairs, ivy, small white daisies, warm lanterns. Cinematic warm golden-hour light, soft haze, tilt-shift miniature photography with shallow depth of field, rich detail, cosy, playful and a little magical. No humans. No hats, crowns or costumes on the figurines. No text, letters, numbers, logos or banners anywhere unless the scene asks for them.\n\nThe scene: Blue hour, just after sunset, in a quiet alcove of the ruins. A small marble Fatliner lies curled up asleep on a bed of moss, its forehead line dark, little daisies and moss growing over its shoulder. Behind it stands its small stone tower, unlit. Another Fatliner, mended with gold seams, has just arrived, carrying a small lantern in one hand and a single plain glowing golden token in the other, and gently sets the token down beside the sleeper. The very first faint white flicker is returning along the sleeper's forehead line, and the lowest window of the tower has begun to glow. Tender, hopeful, hushed."
+}

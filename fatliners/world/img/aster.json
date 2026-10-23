@@ -1,0 +1,24 @@
+{
+  "slug": "aster",
+  "title": "Aster",
+  "caption": "Aster, the being of the first Fatline. Its life is giving birth to the others.",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "1024x1024",
+  "gateway": "llm.bankr.bot",
+  "world": "world/1",
+  "madeAt": "2026-10-23T15:48:58.043Z",
+  "usage": {
+    "input_tokens": 372,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 372
+    },
+    "output_tokens": 196,
+    "output_tokens_details": {
+      "image_tokens": 196,
+      "text_tokens": 0
+    },
+    "total_tokens": 568
+  },
+  "prompt": "A photograph of a handmade miniature world, in the style of collectible designer-toy dioramas: tiny Fatliner figurines with a huge round smooth stone head on a small soft body, simple calm sweet faces (two small dark almond eyes, almost no nose, a tiny mouth or none), each with one thin line of light running across its forehead and ending in a small bright node at the temple. Their bodies are carved from different stones: ivory, sand, marble with veins, dark basalt, moss-covered stone, stone mended with gold seams, milky opal. The world around them is ancient overgrown stone ruins floating above a sea of clouds: arches, aqueducts, terraces, stairs, ivy, small white daisies, warm lanterns. Cinematic warm golden-hour light, soft haze, tilt-shift miniature photography with shallow depth of field, rich detail, cosy, playful and a little magical. No humans. No hats, crowns or costumes on the figurines. No text, letters, numbers, logos or banners anywhere unless the scene asks for them.\n\nThe scene: Portrait of one single Fatliner figurine, centred and filling most of the frame: Aster, made of warm ivory stone with fine pale veins, a few tiny white daisies growing on the top of its head. It sits cross-legged on a mossy ledge of the ruins at golden hour, cupping in both small hands a cluster of tiny glowing seeds of light. Along its forehead the line of light glows white, with one faint strand of electric blue and one faint strand of soft pink running beside it to the temple node. A few of the seeds have floated up from its hands and drift away toward distant towers in the clouds, where the first windows are lighting up. Calm, kind, quietly proud."
+}

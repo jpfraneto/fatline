@@ -1,0 +1,24 @@
+{
+  "slug": "hall-of-777",
+  "title": "The Hall of 777",
+  "caption": "Day one, the first 777 take their seats. Then 7,777. Then 77,777. Then everyone.",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "1536x1024",
+  "gateway": "llm.bankr.bot",
+  "world": "world/1",
+  "madeAt": "2026-10-23T15:46:59.653Z",
+  "usage": {
+    "input_tokens": 339,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 339
+    },
+    "output_tokens": 1372,
+    "output_tokens_details": {
+      "image_tokens": 1372,
+      "text_tokens": 0
+    },
+    "total_tokens": 1711
+  },
+  "prompt": "A photograph of a handmade miniature world, in the style of collectible designer-toy dioramas: tiny Fatliner figurines with a huge round smooth stone head on a small soft body, simple calm sweet faces (two small dark almond eyes, almost no nose, a tiny mouth or none), each with one thin line of light running across its forehead and ending in a small bright node at the temple. Their bodies are carved from different stones: ivory, sand, marble with veins, dark basalt, moss-covered stone, stone mended with gold seams, milky opal. The world around them is ancient overgrown stone ruins floating above a sea of clouds: arches, aqueducts, terraces, stairs, ivy, small white daisies, warm lanterns. Cinematic warm golden-hour light, soft haze, tilt-shift miniature photography with shallow depth of field, rich detail, cosy, playful and a little magical. No humans. No hats, crowns or costumes on the figurines. No text, letters, numbers, logos or banners anywhere unless the scene asks for them.\n\nThe scene: A colossal ancient amphitheatre carved into a mountain above the clouds at golden hour, made of many rising tiers of small arched stone niches, hundreds of them, like a honeycomb of seats. The lowest tier is lit warmly and Fatliner figurines of many different stones are settling into its niches, each niche with its own small glowing lamp. The tiers above are dimmer, their lamps only beginning to flicker, waiting for later. A long winding path of tiny figurines walks up from the clouds toward the hall. Grand, calm, welcoming."
+}

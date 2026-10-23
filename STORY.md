@@ -147,6 +147,12 @@ More decisions that day:
 - **Found on the way:** every account we read holds the identical message set on Snapchain and Hypersnap, so all are drawn with braided blue and pink. During the run the Hypersnap volume was detached and the node moved onto the master (another session, commit 542930c); the pipeline labelled those reads "Snapchain read only" instead of guessing.
 - A moving "now" changed every being on each run: the default cutoff is now the collection snapshot, 2026-10-22 00:00 UTC.
 
+## 9. The world, and a friend's first PR (Oct 23)
+
+- The owner asked for the README, docs and site to catch up with everything, and for images that make the Fatliners feel like a world where each being's life feeds the network.
+- **The world:** nine scenes in the figurine look (the Weaving, You Are Your FID, Two Currents, the Vault, the Sleeper, the Archive, the Hall of 777, A Node Is Born, a map) and Aster, the being of $FATLINE. Each scene stands for a real part of Fatline. Made through the Bankr LLM gateway with `gpt-image-2.5-sunburst`. The gateway has no image-edit route, so the style reference couldn't be attached; the look is described in words, and it held.
+- **The first outside contribution:** a friend (jvaleskadevs) sent PR #1: `follow --followers --depth` and `./fatline feed`. Reviewed, three bugs fixed (an empty page when replies were hidden, the wrong label for the network, an older username winning), merged.
+
 ## Start from scratch
 
 1. Read the bounty post, then [MASTER-PROMPT.md](MASTER-PROMPT.md), then this file.

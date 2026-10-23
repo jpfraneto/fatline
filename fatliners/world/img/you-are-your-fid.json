@@ -1,0 +1,24 @@
+{
+  "slug": "you-are-your-fid",
+  "title": "You Are Your FID",
+  "caption": "One cast, one more stitch. The being is drawn from its history, and its history is what feeds the line.",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "1024x1024",
+  "gateway": "llm.bankr.bot",
+  "world": "world/1",
+  "madeAt": "2026-10-23T15:46:32.329Z",
+  "usage": {
+    "input_tokens": 335,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 335
+    },
+    "output_tokens": 439,
+    "output_tokens_details": {
+      "image_tokens": 439,
+      "text_tokens": 0
+    },
+    "total_tokens": 774
+  },
+  "prompt": "A photograph of a handmade miniature world, in the style of collectible designer-toy dioramas: tiny Fatliner figurines with a huge round smooth stone head on a small soft body, simple calm sweet faces (two small dark almond eyes, almost no nose, a tiny mouth or none), each with one thin line of light running across its forehead and ending in a small bright node at the temple. Their bodies are carved from different stones: ivory, sand, marble with veins, dark basalt, moss-covered stone, stone mended with gold seams, milky opal. The world around them is ancient overgrown stone ruins floating above a sea of clouds: arches, aqueducts, terraces, stairs, ivy, small white daisies, warm lanterns. Cinematic warm golden-hour light, soft haze, tilt-shift miniature photography with shallow depth of field, rich detail, cosy, playful and a little magical. No humans. No hats, crowns or costumes on the figurines. No text, letters, numbers, logos or banners anywhere unless the scene asks for them.\n\nThe scene: Close, intimate view. One small ivory-stone Fatliner sits at a tiny wooden desk in a window niche of the ruins, carefully writing a short line onto a small stone tablet with a stylus. As it writes, its forehead line brightens, and a single thread of light leaves its temple node, goes out through the open arched window and joins a faint glowing net in the golden sky outside. A small stack of earlier tablets beside it, each with a soft glow. A mug, a candle, ivy around the window."
+}

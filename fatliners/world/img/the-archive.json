@@ -1,0 +1,24 @@
+{
+  "slug": "the-archive",
+  "title": "The Archive",
+  "caption": "Their bodies are memory. They keep what was said, on each network, and never erase a difference.",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "1536x1024",
+  "gateway": "llm.bankr.bot",
+  "world": "world/1",
+  "madeAt": "2026-10-23T15:47:53.106Z",
+  "usage": {
+    "input_tokens": 342,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 342
+    },
+    "output_tokens": 601,
+    "output_tokens_details": {
+      "image_tokens": 601,
+      "text_tokens": 0
+    },
+    "total_tokens": 943
+  },
+  "prompt": "A photograph of a handmade miniature world, in the style of collectible designer-toy dioramas: tiny Fatliner figurines with a huge round smooth stone head on a small soft body, simple calm sweet faces (two small dark almond eyes, almost no nose, a tiny mouth or none), each with one thin line of light running across its forehead and ending in a small bright node at the temple. Their bodies are carved from different stones: ivory, sand, marble with veins, dark basalt, moss-covered stone, stone mended with gold seams, milky opal. The world around them is ancient overgrown stone ruins floating above a sea of clouds: arches, aqueducts, terraces, stairs, ivy, small white daisies, warm lanterns. Cinematic warm golden-hour light, soft haze, tilt-shift miniature photography with shallow depth of field, rich detail, cosy, playful and a little magical. No humans. No hats, crowns or costumes on the figurines. No text, letters, numbers, logos or banners anywhere unless the scene asks for them.\n\nThe scene: A vast library carved into a cliff of the floating ruins, open to the golden sky on one side. Tall shelves hold thousands of thin stone tablets, each glowing softly from within. Tiny Fatliner figurines climb wooden ladders, carry tablets in their arms, and file them onto the shelves. In the foreground, at a reading table, an opal Fatliner holds a magnifying glass over two identical tablets side by side, one glowing faintly blue, the other faintly pink, comparing them with great care. Dust in the sunbeams, candles, ivy."
+}

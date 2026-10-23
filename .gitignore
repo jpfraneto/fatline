@@ -30,3 +30,6 @@ apps/checklist/
 smart-contracts/broadcast/
 # Written by the site workflow every 15 minutes.
 apps/site/status.json
+
+# World scenes: the full-size PNGs stay local (fatliners/bin/world.mjs remakes them); the JPGs are committed.
+fatliners/world/img/*.png

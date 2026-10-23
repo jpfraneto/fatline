@@ -1,0 +1,24 @@
+{
+  "slug": "the-weaving",
+  "title": "The Weaving",
+  "caption": "Every Fatliner, just by living, spins a thread. Where the threads meet, there is a network.",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "1536x1024",
+  "gateway": "llm.bankr.bot",
+  "world": "world/1",
+  "madeAt": "2026-10-23T15:45:55.351Z",
+  "usage": {
+    "input_tokens": 387,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 387
+    },
+    "output_tokens": 1372,
+    "output_tokens_details": {
+      "image_tokens": 1372,
+      "text_tokens": 0
+    },
+    "total_tokens": 1759
+  },
+  "prompt": "A photograph of a handmade miniature world, in the style of collectible designer-toy dioramas: tiny Fatliner figurines with a huge round smooth stone head on a small soft body, simple calm sweet faces (two small dark almond eyes, almost no nose, a tiny mouth or none), each with one thin line of light running across its forehead and ending in a small bright node at the temple. Their bodies are carved from different stones: ivory, sand, marble with veins, dark basalt, moss-covered stone, stone mended with gold seams, milky opal. The world around them is ancient overgrown stone ruins floating above a sea of clouds: arches, aqueducts, terraces, stairs, ivy, small white daisies, warm lanterns. Cinematic warm golden-hour light, soft haze, tilt-shift miniature photography with shallow depth of field, rich detail, cosy, playful and a little magical. No humans. No hats, crowns or costumes on the figurines. No text, letters, numbers, logos or banners anywhere unless the scene asks for them.\n\nThe scene: Wide view at dusk across the cloud ruins. Dozens of tiny Fatliner figurines sit along stone aqueducts, terraces and stairs, each at its own small everyday task: reading a book, writing on a slate, sipping from a mug, painting at a tiny easel, two of them talking side by side. From the forehead line of every figurine one hair-thin thread of light rises into the sky. Most threads are pale white; where a figurine is working, its thread glows electric blue or soft pink. High above the ruins all the threads meet and weave into one vast, delicate, glowing net stretched across the evening sky between the arches, like a constellation made of their threads. No one is in charge: the net is simply what their small lives make together."
+}

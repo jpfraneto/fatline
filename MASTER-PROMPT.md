@@ -33,7 +33,17 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 | J11 | At least one other human goes through it and vouches publicly on Farcaster | A real URL to their own post. **We never write it, post it, or invent it.** |
 | J12 | Extra mile (optional) | Spanish tutorial (required by us anyway), Chinese, a 59-second vertical video, more vouchers. |
 
-## Where we are (2026-10-22, ~07:15 UTC, overnight run)
+## Where we are (2026-10-23, ~16:00 UTC)
+
+**Latest, on top of the notes below:**
+- **One server, both networks, both in sync** (checked 16:00 UTC: 914,314,232 messages on each, blockDelay ≤ 9). $131.82/month. The ranking extract is finished; nothing else runs on it.
+- **The ranking is done:** `/root/ranking-out/ranking.tsv` on the master, 593,815 ranked, tiers 777 / 7,000 / 70,000 / rest. Deterministic, no manual exclusions (owner's call). Not published yet.
+- **PR #1 merged** (jvaleskadevs): `follow --followers --depth N` and `./fatline feed` (a timeline from the local archive, no node). Reviewed and fixed: replies filtered in SQL (pages could come back empty), the network shown per cast, newest profile field wins; one new test (67 indexer tests). Tried on our master: @anky has 961 followers on Snapchain; copying all their histories is slow (14 accounts in ~10 min).
+- **The world of the Fatliners:** 9 scenes + Aster's portrait, `fatliners/world/` (made through the Bankr LLM gateway, key in `~/.fatline-bankr-key`, ~$0.40). On the landing page (hero, "World" section, Aster on the first card) and in the README.
+- **Site and docs updated** to this state: protocol steps, finished ranking, real portraits, one server, followers and feed.
+- **Next, in bounty order:** a stranger runs the three commands (J11); the owner's real identity + cast (J5–J7); deploy AppFactory and launch $FATLINE (needs the owner's yes and money); publish ranking.tsv and its Merkle root; render the 777.
+
+## Earlier notes (2026-10-22, ~07:15 UTC, overnight run)
 
 **Resume here.** The owner approved the master node and went to sleep. The agent runs the full pipeline overnight and posts each shipped update to the Fatline Telegram group (bot token in `~/.fatline-telegram-token`, chat id in `~/.fatline-telegram-chat`, both mode 600, never in the repo).
 
@@ -97,7 +107,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
   - Posting is owner-only: from the same machine, or with a write token behind a proxy. Other websites are blocked.
   - Tested by unit tests, a fake node, and headless Chrome (cast, reply, like and follow all confirmed). crackle validated the message formats and accepts submissions without a password.
 - The node keeps 1 day of blocks by default, and the snapshot streams with one copy on disk (~600 GB instead of Snapchain's ~3 copies).
-- Tests: 33 Foundry, 17 indexer, 4 infra, all passing as of this handoff.
+- Tests: 33 Foundry, 67 indexer, 10 infra, 24 Fatliners (+10 Foundry for the collection).
 
 ### Not done, in bounty order
 - **J3: done.** The master synced every shard (12:25 UTC) and survived a reboot (in sync again 62 s after it). See "The master node" above.

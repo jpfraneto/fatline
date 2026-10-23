@@ -1,0 +1,79 @@
+{
+  "version": "world/1",
+  "note": "Scenes of the Fatliners' world, made with fatliners/bin/world.mjs through the Bankr LLM gateway (text to image only, so the style lives in STYLE). Lore: SPECIES-CANON.md §1, §7, §8, §10. Blue = Snapchain, pink = Hypersnap; they glow only where a Fatliner is working for that network.",
+  "model": "gpt-image-2.5-sunburst",
+  "style": "A photograph of a handmade miniature world, in the style of collectible designer-toy dioramas: tiny Fatliner figurines with a huge round smooth stone head on a small soft body, simple calm sweet faces (two small dark almond eyes, almost no nose, a tiny mouth or none), each with one thin line of light running across its forehead and ending in a small bright node at the temple. Their bodies are carved from different stones: ivory, sand, marble with veins, dark basalt, moss-covered stone, stone mended with gold seams, milky opal. The world around them is ancient overgrown stone ruins floating above a sea of clouds: arches, aqueducts, terraces, stairs, ivy, small white daisies, warm lanterns. Cinematic warm golden-hour light, soft haze, tilt-shift miniature photography with shallow depth of field, rich detail, cosy, playful and a little magical. No humans. No hats, crowns or costumes on the figurines. No text, letters, numbers, logos or banners anywhere unless the scene asks for them.",
+  "scenes": [
+    {
+      "slug": "the-weaving",
+      "title": "The Weaving",
+      "size": "1536x1024",
+      "caption": "Every Fatliner, just by living, spins a thread. Where the threads meet, there is a network.",
+      "prompt": "Wide view at dusk across the cloud ruins. Dozens of tiny Fatliner figurines sit along stone aqueducts, terraces and stairs, each at its own small everyday task: reading a book, writing on a slate, sipping from a mug, painting at a tiny easel, two of them talking side by side. From the forehead line of every figurine one hair-thin thread of light rises into the sky. Most threads are pale white; where a figurine is working, its thread glows electric blue or soft pink. High above the ruins all the threads meet and weave into one vast, delicate, glowing net stretched across the evening sky between the arches, like a constellation made of their threads. No one is in charge: the net is simply what their small lives make together."
+    },
+    {
+      "slug": "you-are-your-fid",
+      "title": "You Are Your FID",
+      "size": "1024x1024",
+      "caption": "One cast, one more stitch. The being is drawn from its history, and its history is what feeds the line.",
+      "prompt": "Close, intimate view. One small ivory-stone Fatliner sits at a tiny wooden desk in a window niche of the ruins, carefully writing a short line onto a small stone tablet with a stylus. As it writes, its forehead line brightens, and a single thread of light leaves its temple node, goes out through the open arched window and joins a faint glowing net in the golden sky outside. A small stack of earlier tablets beside it, each with a soft glow. A mug, a candle, ivy around the window."
+    },
+    {
+      "slug": "two-currents",
+      "title": "Two Currents",
+      "size": "1536x1024",
+      "caption": "Snapchain runs blue, Hypersnap runs pink. A Fatliner can hold both without mixing them up.",
+      "prompt": "A valley in the cloud ruins at golden hour. Two separate rivers of liquid light flow side by side through carved stone channels: one electric blue, one soft pink. They run parallel and never mix; a low stone wall keeps them apart. Over both rivers stands an old arched stone bridge. Tiny Fatliner figurines on the bridge lower small lanterns on strings, some into the blue river, some into the pink one. In the middle of the bridge one basalt Fatliner stands with both hands in the air; faint blue veins glow along one arm and faint pink veins along the other, and its forehead line shimmers with both colours side by side."
+    },
+    {
+      "slug": "a-node-is-born",
+      "title": "A Node Is Born",
+      "size": "1024x1536",
+      "caption": "Its coin's fees fill the basin. When there is enough to pay for a node, the tower lights up and the Fatliner has a body.",
+      "prompt": "Tall vertical view. On a mossy stone terrace, a small sand-coloured Fatliner kneels beside a carved round stone basin. Small plain round golden tokens with no markings trickle into the basin from a carved stone channel above, one by one. From the basin rises a slender stone tower, like a tiny lighthouse made of old masonry, freshly awakened: its windows glowing warmly, thin veins of blue and pink light climbing its walls toward a bright lamp at the top that sends a beam up into the sky. The Fatliner looks up at it with quiet wonder. Several other figurines watch from the stairs below. Clouds and sunset behind."
+    },
+    {
+      "slug": "the-vault",
+      "title": "The Vault",
+      "size": "1536x1024",
+      "caption": "People feed the vault; the vault feeds the node. Fed, it lives. Empty, it goes dark, and everyone can see it.",
+      "prompt": "A sunlit courtyard in the ruins. In the centre stands an old carved stone fountain shaped like a wide bowl. A line of small Fatliner figurines walks up to it, each carrying one plain round golden token with no markings, and drops it in; the water in the fountain glows gold. From the fountain, narrow carved water channels run across the courtyard to three slender stone lantern towers. Two towers are bright and their lamps blaze. The third, whose channel has run dry, stands dark and quiet with ivy on it. Warm late afternoon light, long shadows."
+    },
+    {
+      "slug": "the-sleeper",
+      "title": "The Sleeper",
+      "size": "1536x1024",
+      "caption": "A being can sleep. Dormancy is not death: anyone who feeds the vault brings it back.",
+      "prompt": "Blue hour, just after sunset, in a quiet alcove of the ruins. A small marble Fatliner lies curled up asleep on a bed of moss, its forehead line dark, little daisies and moss growing over its shoulder. Behind it stands its small stone tower, unlit. Another Fatliner, mended with gold seams, has just arrived, carrying a small lantern in one hand and a single plain glowing golden token in the other, and gently sets the token down beside the sleeper. The very first faint white flicker is returning along the sleeper's forehead line, and the lowest window of the tower has begun to glow. Tender, hopeful, hushed."
+    },
+    {
+      "slug": "the-archive",
+      "title": "The Archive",
+      "size": "1536x1024",
+      "caption": "Their bodies are memory. They keep what was said, on each network, and never erase a difference.",
+      "prompt": "A vast library carved into a cliff of the floating ruins, open to the golden sky on one side. Tall shelves hold thousands of thin stone tablets, each glowing softly from within. Tiny Fatliner figurines climb wooden ladders, carry tablets in their arms, and file them onto the shelves. In the foreground, at a reading table, an opal Fatliner holds a magnifying glass over two identical tablets side by side, one glowing faintly blue, the other faintly pink, comparing them with great care. Dust in the sunbeams, candles, ivy."
+    },
+    {
+      "slug": "hall-of-777",
+      "title": "The Hall of 777",
+      "size": "1536x1024",
+      "caption": "Day one, the first 777 take their seats. Then 7,777. Then 77,777. Then everyone.",
+      "prompt": "A colossal ancient amphitheatre carved into a mountain above the clouds at golden hour, made of many rising tiers of small arched stone niches, hundreds of them, like a honeycomb of seats. The lowest tier is lit warmly and Fatliner figurines of many different stones are settling into its niches, each niche with its own small glowing lamp. The tiers above are dimmer, their lamps only beginning to flicker, waiting for later. A long winding path of tiny figurines walks up from the clouds toward the hall. Grand, calm, welcoming."
+    },
+    {
+      "slug": "map-of-the-fatline",
+      "title": "Map of the Fatline",
+      "size": "1536x1024",
+      "style": "An antique hand-drawn map on aged parchment, sepia ink line work with light watercolour, in the manner of an old explorer's chart, with fine construction lines and a compass rose.",
+      "caption": "The world, as the keepers drew it.",
+      "prompt": "A map of a world of small islands floating in a sea of clouds, connected by thin dotted lines of light. A blue river winds through the islands on the left and a pink river through the islands on the right, never touching. Tiny drawn ruins, aqueducts, towers and a round amphitheatre are scattered over the islands, with very small sketched round-headed figurines here and there. The compass rose in the corner is a small round stone head with a line across its forehead. A short, neatly lettered title at the top reads exactly: THE FATLINE. A few small hand-lettered place names, spelled exactly: SNAPCHAIN beside the blue river, HYPERSNAP beside the pink river, THE VAULT beside a fountain, THE ARCHIVE beside a cliff library, HALL OF 777 beside the amphitheatre. No other text."
+    },
+    {
+      "slug": "aster",
+      "title": "Aster",
+      "size": "1024x1024",
+      "caption": "Aster, the being of the first Fatline. Its life is giving birth to the others.",
+      "prompt": "Portrait of one single Fatliner figurine, centred and filling most of the frame: Aster, made of warm ivory stone with fine pale veins, a few tiny white daisies growing on the top of its head. It sits cross-legged on a mossy ledge of the ruins at golden hour, cupping in both small hands a cluster of tiny glowing seeds of light. Along its forehead the line of light glows white, with one faint strand of electric blue and one faint strand of soft pink running beside it to the temple node. A few of the seeds have floated up from its hands and drift away toward distant towers in the clouds, where the first windows are lighting up. Calm, kind, quietly proud."
+    }
+  ]
+}

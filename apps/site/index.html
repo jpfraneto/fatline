@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fatline</title>
-<meta name="description" content="A USDC-paired launchpad on Base where every Fatline is a coin and its trading fees keep its Farcaster or Hypersnap node alive. Home of the 777 Fatliners. Run your own in three commands.">
-<meta property="og:image" content="https://fatline.ink/img/blueprint.jpg">
+<meta name="description" content="A USDC-paired launchpad on Base where every Fatline is a coin and its trading fees keep its Farcaster or Hypersnap node alive. Home of the 777 Fatliners, the beings whose lives keep the network. Run your own node in three commands.">
+<meta property="og:image" content="https://fatline.ink/img/world/the-weaving.jpg">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23efe2c6'/%3E%3Cpath d='M32 8C52 8 58 22 57 34C56 46 46 54 32 54C18 54 8 46 7 34C6 22 12 8 32 8Z' fill='%23dccaa4' stroke='%233a2a1b' stroke-width='2'/%3E%3Cpath d='M7 30C18 22 30 30 46 21' fill='none' stroke='%233d8bff' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='47' cy='21' r='5' fill='%23fff' stroke='%23ff5fa8' stroke-width='2'/%3E%3Cellipse cx='23' cy='38' rx='6' ry='4' fill='%231c1410' transform='rotate(20 23 38)'/%3E%3Cellipse cx='41' cy='38' rx='6' ry='4' fill='%231c1410' transform='rotate(-20 41 38)'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -131,6 +131,20 @@
   .dims div { font-size: 13px; color: var(--ink2); }
   .dims b { display: block; font: 700 13px Cinzel, serif; letter-spacing: .14em; color: var(--ink); margin-bottom: 2px; }
 
+  .portraits { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 0; }
+  .portraits figure { margin: 0; }
+  .portraits img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; display: block; border-radius: 12px; border: 1px solid var(--line2); }
+  .portraits figcaption { font-size: 12px; color: var(--muted); margin-top: 4px; text-align: center; }
+  .scenes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin-top: 18px; }
+  .scene { margin: 0; }
+  .scene img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; display: block; border-radius: 12px; border: 1px solid var(--line2); box-shadow: 0 10px 30px rgba(90, 60, 20, .14); }
+  .scene figcaption { padding: 8px 2px 0; font-size: 14.5px; color: var(--ink2); }
+  .scene figcaption b { font: 700 15px Cinzel, serif; letter-spacing: .06em; color: var(--ink); }
+  .scene figcaption small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+  .scene.wide { grid-column: 1 / -1; }
+  .lead { max-width: 760px; color: var(--ink2); margin: 0; }
+  .aster { width: 132px; aspect-ratio: 1; border-radius: 50%; object-fit: cover; display: block; border: 1px solid var(--line2); box-shadow: 0 0 0 4px var(--paper2), 0 0 0 5px var(--line2); }
+  .being img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; border: 1px solid var(--ink2); }
   section.about { margin: 64px 0 0; display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; }
   section.about > div { padding: 22px 24px; border: 1px solid var(--line2); border-radius: var(--radius); background: var(--paper2); }
   section.about h2 { margin: 0 0 8px; font: 700 21px Cinzel, serif; letter-spacing: .04em; }
@@ -151,6 +165,8 @@
     .mine .btn { padding: 10px 14px; }
     section.about { grid-template-columns: 1fr; } .gridhead .right { margin-left: 0; }
     .dims { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .portraits { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .scenes { grid-template-columns: minmax(0, 1fr); }
     .field svg.links { display: none; }
   }
 </style>
@@ -162,6 +178,7 @@
     <nav>
       <a href="./" aria-current="page">Explore</a>
       <a href="#fatliners">Fatliners</a>
+      <a href="#world">World</a>
       <a href="#about">About</a>
       <a href="docs/">Docs</a>
     </nav>
@@ -174,12 +191,12 @@
     <div>
       <div class="kicker">Every Fatline is a coin · its fees keep its node alive</div>
       <h1>$USDC paired launchpad on <span class="base" role="img" aria-label="Base"></span> Base</h1>
-      <p class="sub">Run a Farcaster node on Snapchain, Hypersnap or both. Launch its coin. The trading fees pay for its server, day by day.</p>
+      <p class="sub">Run a Farcaster node on Snapchain, Hypersnap or both. Launch its coin. The trading fees pay for its server, day by day. Every node that lives is one more copy of the network kept by someone who isn't a company.</p>
       <span class="tag warn">Launch contracts tested on a Base fork only. Not deployed yet, so no coin trades today.</span>
     </div>
     <figure class="plate">
-      <a href="img/blueprint.jpg"><img src="img/species.jpg" width="980" height="540" alt="The Fatliner species blueprint: front, profile and back of a small mineral being with a large head, dark eyes, a glowing line across its forehead ending in a temple node, and blue and pink signal paths under its skin."></a>
-      <figcaption><span>MASTER SPECIES BLUEPRINT</span><span class="legend"><span><span class="dot snapchain"></span>SNAPCHAIN</span><span><span class="dot hypersnap"></span>HYPERSNAP</span></span></figcaption>
+      <a href="#world"><img src="img/world/the-weaving.jpg" width="1400" height="933" alt="Dusk over floating stone ruins. Dozens of tiny stone Fatliner figurines sit on terraces and aqueducts, reading, painting, talking. From each one's forehead a thread of light rises, some white, some blue, some pink, and high above they weave into one glowing net across the sky."></a>
+      <figcaption><span>THE WEAVING · EACH LIFE SPINS A THREAD</span><span class="legend"><span><span class="dot snapchain"></span>SNAPCHAIN</span><span><span class="dot hypersnap"></span>HYPERSNAP</span></span></figcaption>
     </figure>
   </div>
   <div class="quick">
@@ -222,7 +239,7 @@
     <svg class="links" id="links" aria-hidden="true"></svg>
     <div class="grid" id="grid"></div>
   </div>
-  <p class="muted" style="font-size:13px;margin-top:18px">Only #1 is real: our two nodes, checked every 15 minutes. Cards marked <span class="tag ex">Example</span> show how the board will look once more Fatlines launch. Their names and numbers are made up. The beings on the cards are sketches of the species; real Fatliners are drawn from their account's history.</p>
+  <p class="muted" style="font-size:13px;margin-top:18px">Only #1 is real: our two nodes, checked every 15 minutes. Cards marked <span class="tag ex">Example</span> show how the board will look once more Fatlines launch. Their names and numbers are made up. The beings on the example cards are sketches of the species; real Fatliners are drawn from their account's history.</p>
 
   <section class="section" id="fatliners">
     <header>
@@ -234,18 +251,25 @@
         <p class="motto">YOU ARE YOUR FID</p>
         <p>A Fatliner is a small mineral being born from one Farcaster account. Its body is drawn from that account's history: how long it has been around, who it talks with, how it speaks, the rhythm of its activity, what it keeps coming back to. Same history, same being.</p>
         <p>The line of light across its forehead is its signal. Blue paths are Snapchain, pink paths are Hypersnap. A Fatliner can hold both without mixing them up.</p>
-        <p>Each one can wake up as a living node of the Fatline. Hold one and it can run its own server, fed by its own coin.</p>
+        <p>Each one can wake up as a living node of the Fatline. Hold one and it can run its own server, fed by its own coin. Its threads are its messages; a node that keeps them is how the network goes on.</p>
         <ul class="tiers" aria-label="Who can mint, and when">
           <li><b>Day 1</b><span>The top 777 accounts</span></li>
           <li><b>Day 2</b><span>The top 7,777</span></li>
           <li><b>Day 3</b><span>The top 77,777</span></li>
           <li><b>Day 4</b><span>Everyone</span></li>
         </ul>
-        <p class="muted" style="font-size:14px">The ranking is computed from our own Snapchain and Hypersnap nodes, the average of both networks. A big following buys a place in line, not a better-looking being. Minting is not open yet.</p>
+        <p class="muted" style="font-size:14px"><b>The ranking is done:</b> 593,815 accounts scored on our own Snapchain and Hypersnap nodes with the rules behind Hypersnap's $SNAP retro, each account's share averaged across both networks. Deterministic, nobody edited by hand: anyone with a node can recompute it (<a href="https://github.com/jpfraneto/fatline/tree/main/ranking">how</a>). A big following buys a place in line, not a better-looking being. <b>Minting is not open yet:</b> the contract is written and tested, not deployed.</p>
       </div>
       <figure class="plate">
-        <a href="img/blueprint.jpg"><img src="img/head.jpg" width="380" height="330" alt="Close-up of a Fatliner head: a porous stone cranium, large dark almond eyes and a glowing forehead path ending in a bright temple node."></a>
-        <figcaption><span>FOREHEAD PATH &amp; TEMPLE NODE</span><a href="img/blueprint.jpg">full blueprint ↗</a></figcaption>
+        <div class="portraits">
+          <figure><img src="img/pfp/fid-18350.jpg" alt="Tero, a gold-mended stone figurine reading a book" loading="lazy"><figcaption>Tero · 18350</figcaption></figure>
+          <figure><img src="img/pfp/fid-3.jpg" alt="Kirim, a basalt figurine with a book" loading="lazy"><figcaption>Kirim · 3</figcaption></figure>
+          <figure><img src="img/pfp/fid-299673.jpg" alt="Shouvi, a mossy stone figurine" loading="lazy"><figcaption>Shouvi · 299673</figcaption></figure>
+          <figure><img src="img/pfp/fid-509202.jpg" alt="Edis, a mossy figurine with a paintbrush" loading="lazy"><figcaption>Edis · 509202</figcaption></figure>
+          <figure><img src="img/pfp/fid-1721477.jpg" alt="Somaeben, a marble figurine with a laptop" loading="lazy"><figcaption>Somaeben · 1721477</figcaption></figure>
+        </div>
+        <figcaption><span>DRAWN FROM REAL HISTORIES · READ FROM OUR NODES</span><a href="https://github.com/jpfraneto/fatline/blob/main/fatliners/docs/PFP.md">how ↗</a></figcaption>
+        <p class="muted" style="font-size:13px;margin:8px 4px 0">Five test portraits. The stone is Roots (age, comebacks), the thing it holds is Voice, the forehead line is Pulse, what grows on its head is Bloom. The 777 aren't rendered yet. <a href="img/blueprint.jpg">Species blueprint ↗</a></p>
       </figure>
     </div>
     <figure class="plate" style="margin-top:26px">
@@ -260,6 +284,24 @@
     </figure>
   </section>
 
+  <section class="section" id="world">
+    <header>
+      <div class="kicker">Where they live · the spaces between transmissions</div>
+      <h2>The world of the Fatliners</h2>
+    </header>
+    <p class="lead">Old stone ruins floating above a sea of clouds. Nobody runs the place. Every Fatliner, just by living, spins a thread of light, and where the threads meet there is a network. Blue threads are Snapchain, pink are Hypersnap; they glow where a Fatliner is working for that network. Each picture below is a real part of Fatline.</p>
+    <div class="scenes">
+      <figure class="scene"><img src="img/world/you-are-your-fid.jpg" alt="A small ivory figurine writes on a stone tablet at a desk by a window; a thread of light leaves its forehead and joins a glowing net in the sky." loading="lazy"><figcaption><b>You are your FID</b> One cast, one more stitch. <small>Each being is drawn from its account's own messages, read from our nodes.</small></figcaption></figure>
+      <figure class="scene"><img src="img/world/two-currents.jpg" alt="Figurines on a stone bridge lower lanterns into two separate rivers of light, one blue, one pink; one dark figurine in the middle raises arms glowing blue and pink." loading="lazy"><figcaption><b>Two currents</b> Snapchain runs blue, Hypersnap runs pink, never mixed. <small>Both networks are equals; the archive keeps what each one says, side by side.</small></figcaption></figure>
+      <figure class="scene"><img src="img/world/the-vault.jpg" alt="Figurines line up to drop golden tokens into a stone fountain; channels carry the glowing water to lantern towers that light up." loading="lazy"><figcaption><b>The vault</b> People feed the vault; the vault feeds the node. <small>Coin trading fees, in USDC, pay the node's server.</small></figcaption></figure>
+      <figure class="scene"><img src="img/world/the-sleeper.jpg" alt="At blue hour a marble figurine sleeps curled on moss beside a dark tower; a gold-mended friend sets down a glowing token and a lantern." loading="lazy"><figcaption><b>The sleeper</b> Dormancy is not death. <small>If the vault runs dry the node goes dark, and the board shows it. Any deposit brings it back.</small></figcaption></figure>
+      <figure class="scene"><img src="img/world/the-archive.jpg" alt="A cliff library of glowing stone tablets; figurines on ladders file them, and an opal figurine compares a blue tablet and a pink tablet with a magnifying glass." loading="lazy"><figcaption><b>The archive</b> They keep what was said, and never erase a difference. <small>Every message is stored once per network, with what each network says about it.</small></figcaption></figure>
+      <figure class="scene"><img src="img/world/hall-of-777.jpg" alt="A vast amphitheatre of stone niches above the clouds; the lowest tiers glow as figurines take their seats, and a long line of them walks up the path." loading="lazy"><figcaption><b>The hall of 777</b> Day one, the first 777 take their seats. <small>Then 7,777, then 77,777, then everyone ranked.</small></figcaption></figure>
+      <figure class="scene wide"><img src="img/world/map-of-the-fatline.jpg" alt="An antique parchment map of floating islands: a blue river labelled Snapchain, a pink river labelled Hypersnap, The Vault, The Archive and the Hall of 777." loading="lazy"><figcaption><b>Map of the Fatline</b> The world, as the keepers drew it.</figcaption></figure>
+    </div>
+    <p class="muted" style="font-size:13px;margin-top:14px">Scenes made with gpt-image-2.5 through the Bankr LLM gateway, from the prompts in <a href="https://github.com/jpfraneto/fatline/tree/main/fatliners/world">fatliners/world</a>. Illustrations, not live data.</p>
+  </section>
+
   <section class="about" id="about">
     <div>
       <h2>What Fatline is</h2>
@@ -270,10 +312,11 @@
     <div>
       <h2>How a Fatline lives</h2>
       <ol>
-        <li>Someone runs a node, on Snapchain, Hypersnap or both.</li>
-        <li>They launch its coin, paired with USDC on Base.</li>
-        <li>Trading fees flow into a vault that pays the node's server, day by day.</li>
-        <li>Fed, it lives. Empty, it goes dark, and the board shows it.</li>
+        <li>Someone runs a node, on Snapchain, Hypersnap or both. That node is the Fatline's body.</li>
+        <li>They launch its coin, paired with USDC on Base. Its page is <code>fatline.ink/base/&lt;address&gt;</code>.</li>
+        <li>100% of the trading fees flow into its vault, which pays the server. Nobody can redirect them, not even us.</li>
+        <li>It is born when the fees cover its node. Fed, it lives. Empty, it goes dark, and the board shows it.</li>
+        <li>The first Fatline, $FATLINE, is the launchpad itself: its life is giving birth to the others.</li>
       </ol>
       <p style="margin-top:12px"><a href="docs/">Read the tutorial ↗</a> · <a href="docs/zh.html">中文</a></p>
     </div>
@@ -300,6 +343,7 @@ const EXAMPLES = [
   { name: 'Ember', ticker: 'EMBER', nets: ['snapchain', 'hypersnap'], cap: '$31k', left: '3d', mat: 'gold', eye: 'almond', wave: [7, 2.2, 2.6], orbit: 2, bloom: null },
   { name: 'Tide', ticker: 'TIDE', nets: ['hypersnap'], cap: '$18k', left: '1d', mat: 'slate', eye: 'round', wave: [4, 4, .9], orbit: 2, bloom: null },
 ];
+const ASTER_IMG = '<img class="aster" src="img/world/aster.jpg" alt="Aster, an ivory stone figurine with daisies on its head, holding tiny seeds of light">';
 const NAME = { snapchain: 'Snapchain', hypersnap: 'Hypersnap' };
 const COLOR = { snapchain: '#3d8bff', hypersnap: '#ff5fa8' };
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -430,7 +474,7 @@ function render(status) {
   draw();
 
   const f = real[0];
-  document.getElementById('mine-being').innerHTML = being(ASTER, f ? f.nodes.map((n) => n.network) : ['snapchain', 'hypersnap'], 900);
+  document.getElementById('mine-being').innerHTML = ASTER_IMG;
   if (f) {
     document.getElementById('mine-nets').innerHTML = f.nodes.map(netLine).join('')
       + `<div><span class="dot off"></span><b>Coin</b> <span class="muted">not launched yet</span></div>`
@@ -464,7 +508,7 @@ function draw() {
          <div class="nets">${nets}</div>
          <div class="who"><span class="avatar"></span><span>@owner · FID</span></div>`;
     return `<article class="card ${c.real ? '' : 'example'}" ${show ? '' : 'hidden'}>
-      <div class="being"><span class="rank">${c.rank}</span>${being(c, c.nets, c.rank)}</div>
+      <div class="being"><span class="rank">${c.rank}</span>${c.real && c.rank === 1 ? ASTER_IMG.replace('class="aster" ', '') : being(c, c.nets, c.rank)}</div>
       <div class="info">${info}</div></article>`;
   }).join('');
   requestAnimationFrame(links);

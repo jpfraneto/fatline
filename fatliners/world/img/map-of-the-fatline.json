@@ -1,0 +1,24 @@
+{
+  "slug": "map-of-the-fatline",
+  "title": "Map of the Fatline",
+  "caption": "The world, as the keepers drew it.",
+  "model": "gpt-image-2.5-sunburst",
+  "size": "1536x1024",
+  "gateway": "llm.bankr.bot",
+  "world": "world/1",
+  "madeAt": "2026-10-23T15:47:48.331Z",
+  "usage": {
+    "input_tokens": 223,
+    "input_tokens_details": {
+      "image_tokens": 0,
+      "text_tokens": 223
+    },
+    "output_tokens": 1372,
+    "output_tokens_details": {
+      "image_tokens": 1372,
+      "text_tokens": 0
+    },
+    "total_tokens": 1595
+  },
+  "prompt": "An antique hand-drawn map on aged parchment, sepia ink line work with light watercolour, in the manner of an old explorer's chart, with fine construction lines and a compass rose.\n\nThe scene: A map of a world of small islands floating in a sea of clouds, connected by thin dotted lines of light. A blue river winds through the islands on the left and a pink river through the islands on the right, never touching. Tiny drawn ruins, aqueducts, towers and a round amphitheatre are scattered over the islands, with very small sketched round-headed figurines here and there. The compass rose in the corner is a small round stone head with a line across its forehead. A short, neatly lettered title at the top reads exactly: THE FATLINE. A few small hand-lettered place names, spelled exactly: SNAPCHAIN beside the blue river, HYPERSNAP beside the pink river, THE VAULT beside a fountain, THE ARCHIVE beside a cliff library, HALL OF 777 beside the amphitheatre. No other text."
+}
