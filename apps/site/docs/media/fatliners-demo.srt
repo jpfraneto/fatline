@@ -1,0 +1,251 @@
+1
+00:00:10,800 --> 00:00:17,620
+In Dan Simmons' Hyperion, humanity lives across hundreds of worlds.
+
+2
+00:00:18,820 --> 00:00:21,200
+Two things hold them together.
+
+3
+00:00:22,100 --> 00:00:28,200
+The farcasters: portals. Step through a door and you are on another planet.
+
+4
+00:00:29,200 --> 00:00:38,720
+And the fatline: an instant line between the stars, the voice that carries news from world to world.
+
+5
+00:00:40,540 --> 00:00:42,560
+Here's the twist in the book.
+
+6
+00:00:43,320 --> 00:00:47,200
+The farcasters were built by the TechnoCore, the AIs.
+
+7
+00:00:48,280 --> 00:00:52,560
+And they didn't just build the network, they lived inside it.
+
+8
+00:00:53,180 --> 00:00:58,040
+Every time a human stepped through, the core was feeding on them.
+
+9
+00:00:58,400 --> 00:01:05,340
+The network that connected everyone belonged to something that wasn't them.
+
+10
+00:01:06,380 --> 00:01:11,020
+And when it fell, the worlds were suddenly alone.
+
+11
+00:01:12,540 --> 00:01:15,780
+Farcaster took its name from that book.
+
+12
+00:01:16,500 --> 00:01:20,240
+And today Farcaster is at a crossroads of its own.
+
+13
+00:01:20,240 --> 00:01:22,340
+There are different tribes.
+
+14
+00:01:23,440 --> 00:01:28,440
+People who stay with Snapchain.
+
+15
+00:01:29,060 --> 00:01:32,540
+People who forked and built Hypersnap.
+
+16
+00:01:33,640 --> 00:01:38,040
+Builders who just want open infrastructure that doesn't disappear.
+
+17
+00:01:39,040 --> 00:01:41,520
+People who want coins and markets.
+
+18
+00:01:42,440 --> 00:01:47,880
+And underneath all of it, people who simply want a place to belong.
+
+19
+00:01:48,880 --> 00:01:51,620
+Everyone is asking the same question.
+
+20
+00:01:51,820 --> 00:01:54,940
+Who keeps the network alive?
+
+21
+00:01:55,820 --> 00:01:58,520
+Fatline is my answer.
+
+22
+00:02:00,260 --> 00:02:02,020
+There are 777 beings.
+
+23
+00:02:02,600 --> 00:02:03,520
+The Fatliners.
+
+24
+00:02:04,200 --> 00:02:07,020
+Each one is born from one Farcaster account.
+
+25
+00:02:07,980 --> 00:02:08,720
+Your history.
+
+26
+00:02:09,200 --> 00:02:10,840
+How long you have been here.
+
+27
+00:02:11,480 --> 00:02:12,720
+Who you talk to.
+
+28
+00:02:13,080 --> 00:02:14,000
+How you speak.
+
+29
+00:02:14,480 --> 00:02:16,060
+Becomes its body.
+
+30
+00:02:16,820 --> 00:02:18,560
+You are your FID.
+
+31
+00:02:19,240 --> 00:02:23,080
+Each Fatliner keeps a node of the network alive.
+
+32
+00:02:23,660 --> 00:02:25,800
+A full copy of the conversation.
+
+33
+00:02:26,600 --> 00:02:29,060
+Its own coin pays for that node.
+
+34
+00:02:29,500 --> 00:02:30,500
+Day by day.
+
+35
+00:02:31,200 --> 00:02:32,720
+Fed, it lives.
+
+36
+00:02:33,400 --> 00:02:35,400
+Left alone, it sleeps.
+
+37
+00:02:35,800 --> 00:02:37,840
+And anyone can wake it.
+
+38
+00:02:39,040 --> 00:02:41,920
+And this is the part I care about most.
+
+39
+00:02:42,740 --> 00:02:45,160
+A Fatliner doesn't choose a side.
+
+40
+00:02:45,740 --> 00:02:47,400
+It can hold Snapchain.
+
+41
+00:02:47,400 --> 00:02:49,400
+It can hold Hypersnap.
+
+42
+00:02:49,740 --> 00:02:51,240
+It can hold both.
+
+43
+00:02:51,660 --> 00:02:56,080
+Or any other network of Farcaster in the future.
+
+44
+00:02:56,880 --> 00:02:57,820
+A blue line.
+
+45
+00:02:58,340 --> 00:02:59,460
+And a pink line.
+
+46
+00:03:00,160 --> 00:03:01,180
+Side by side.
+
+47
+00:03:01,660 --> 00:03:02,500
+Never mixed.
+
+48
+00:03:03,200 --> 00:03:06,180
+We always tell you which one you are reading.
+
+49
+00:03:06,740 --> 00:03:07,500
+You choose.
+
+50
+00:03:08,540 --> 00:03:11,720
+In the book, the network fed on people.
+
+51
+00:03:12,500 --> 00:03:15,040
+Here it is the other way around.
+
+52
+00:03:15,380 --> 00:03:20,600
+The beings come out of the network and they feed it back.
+
+53
+00:03:21,140 --> 00:03:23,840
+That's the peace we are proposing.
+
+54
+00:03:24,920 --> 00:03:27,200
+Not deciding which chain wins.
+
+55
+00:03:27,860 --> 00:03:30,200
+More of us keeping copies.
+
+56
+00:03:30,640 --> 00:03:35,320
+Each in our own way.
+
+57
+00:03:35,820 --> 00:03:37,040
+Each one a thread.
+
+58
+00:03:37,660 --> 00:03:38,200
+Together.
+
+59
+00:03:38,780 --> 00:03:39,320
+The weave.
+
+60
+00:03:40,000 --> 00:03:51,400
+If you want one of the 777, open your AI agent and say:
+
+61
+00:03:52,100 --> 00:03:56,900
+Help me mint one of the 777 Fatlines.
+
+62
+00:03:57,740 --> 00:03:59,560
+Everything is open source.
+
+63
+00:04:00,240 --> 00:04:03,340
+Come build it with us.

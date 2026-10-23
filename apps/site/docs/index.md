@@ -1,8 +1,8 @@
 # Fatline
 
-<video class="demo" controls playsinline preload="metadata" poster="../img/world/the-weaving.jpg" src="media/fatliners-demo.mp4"></video>
+<video class="demo" controls playsinline preload="metadata" poster="media/fatliners-demo.jpg" src="media/fatliners-demo.mp4"></video>
 
-*The first demo of the Fatliners and the network they keep.*
+*The first demo: Hyperion, the tribes of Farcaster, and the 777. ([Transcript](media/fatliners-demo.srt))*
 
 ## Where the name comes from
 

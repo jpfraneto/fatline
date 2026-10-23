@@ -34,7 +34,7 @@
   article strong { font-weight: 650; }
   article :not(pre) > code { font: .84em 'JetBrains Mono', ui-monospace, monospace; padding: .1em .35em; border-radius: 5px; background: color-mix(in srgb, var(--ink) 9%, transparent); }
 
-  .demo { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; background: #1a130d; object-fit: cover; box-shadow: 0 18px 50px rgba(50, 30, 10, .25); }
+  .demo { display: block; width: auto; max-width: 100%; height: min(78vh, 760px); aspect-ratio: 9 / 16; margin: 0 auto; border-radius: 18px; background: #1a130d; object-fit: cover; box-shadow: 0 18px 50px rgba(50, 30, 10, .25); }
   .demo-missing { display: grid; place-items: center; width: 100%; aspect-ratio: 16 / 9; border-radius: 16px; color: #f6ecd7; text-align: center; padding: 16px;
     background: linear-gradient(rgba(20, 14, 8, .55), rgba(20, 14, 8, .55)), url(../img/world/the-weaving.jpg) center / cover; font: 500 14px/1.5 'JetBrains Mono', monospace; letter-spacing: .06em; }
   .demo + p, .demo-missing + p { margin-top: 10px; color: var(--muted); font-size: 15px; text-align: center; }
