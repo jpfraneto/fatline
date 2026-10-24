@@ -9,7 +9,7 @@
 - [Tutorial](https://fatline.ink/docs/tutorial.html): every step, English, Spanish, Chinese.
 
 - [Manifesto](https://fatline.ink/manifesto.html): the 777, how they hatch, the circle, and what is true today.
-- [Contracts on Base](https://github.com/jpfraneto/fatline/blob/main/smart-contracts/deployments/base.json): Fatliners 0x73B27C61F9370398EF778c1b3a14BD1Ea899e7e5, launchpad 0x341AE48f22cc4F7428C969a559cb832912A1119F.
+- [Contracts on Base](https://github.com/jpfraneto/fatline/blob/main/smart-contracts/deployments/base.json): Fatliners 0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49 (also the launchpad: at most 777 coins, one per egg or Fatliner).
 
 ## Source
 - [Repository](https://github.com/jpfraneto/fatline): README has what is tested and what is not.

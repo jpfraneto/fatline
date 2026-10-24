@@ -47,8 +47,8 @@ Before them: `git clone https://github.com/jpfraneto/fatline && cd fatline && np
 | --- | --- |
 | **Our node** | One Hetzner server (`cax31`, 8 Arm cores, 16 GB) in Nuremberg runs **both** networks: Snapchain (Farcaster) and Hypersnap, each in sync, each with its own disk. $131.82/month, about $4.33/day. Live numbers: [fatline.ink/f/FATLINE](https://fatline.ink/f/FATLINE). |
 | **The client** | Reads from either network through a node you pick, and says which. Posting with a gasless app key works on the real network: tested with @anky (cast, reply, like, recast, follow, and undoing each). Shows which app made each cast, and hides or shows apps. |
-| **The launchpad** | **On Base:** [`0x341AE48f22cc4F7428C969a559cb832912A1119F`](https://basescan.org/address/0x341AE48f22cc4F7428C969a559cb832912A1119F). **One coin per Fatliner, and only Fatliners: at most 777 coins.** $FATLINE launches first, and every ticker must be its Fatliner's surname. Paired with USDC on Clanker, 100% of fees into the Fatliner's vault, which pays its node. $FATLINE is ready (simulated against Base) and waits for Aster's holder: `fatline coin launch`. |
-| **The 777 Fatliners** | **On Base:** [`0x73B27C61F9370398EF778c1b3a14BD1Ea899e7e5`](https://basescan.org/address/0x73B27C61F9370398EF778c1b3a14BD1Ea899e7e5). **Eggs** for any account (one each, unlimited, onchain, can't be moved), kept warm by a node; after three warm days **the egg itself hatches** into one of the 777, with a surname read from its DNA. Aster (#18350, surname Fatline) was born at deployment. Our server is the first attester. Portraits can be made for any FID ([fatliners/docs/PFP.md](fatliners/docs/PFP.md)). |
+| **The launchpad** | **On Base:** [`0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49`](https://basescan.org/address/0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49). **The same contract as the Fatliners: one coin per egg or Fatliner, at most 777 coins.** $FATLINE launches first, and every ticker must be its Fatliner's surname. Paired with USDC on Clanker, 100% of fees into the Fatliner's vault, which pays its node. $FATLINE is ready (simulated against Base) and waits for Aster's holder: `fatline coin launch`. |
+| **The 777 Fatliners** | **On Base:** [`0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49`](https://basescan.org/address/0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49). **Eggs** for any account (one each, unlimited, onchain, can't be moved), kept warm by a node; after three warm days **the egg itself hatches** into one of the 777, with a surname read from its DNA. Aster (#18350, surname Fatline) was born at deployment. Our server is the first attester. Portraits can be made for any FID ([fatliners/docs/PFP.md](fatliners/docs/PFP.md)). |
 | **No room for a node?** | `fatline follow` copies only the accounts you choose from one node, and `fatline feed` reads them back offline. Not a node: it trusts that node. [More below](#copy-only-the-accounts-you-follow-not-a-node). |
 
 ## What Fatline is
@@ -291,10 +291,9 @@ Once the vault owner runs `setKeeper(<that address>)`, the server pays itself fr
 
 | | |
 | --- | --- |
-| AppFactory (the launchpad) | [`0x341AE48f22cc4F7428C969a559cb832912A1119F`](https://basescan.org/address/0x341AE48f22cc4F7428C969a559cb832912A1119F) |
-| Fatliners | [`0x73B27C61F9370398EF778c1b3a14BD1Ea899e7e5`](https://basescan.org/address/0x73B27C61F9370398EF778c1b3a14BD1Ea899e7e5) |
+| Fatliners (also the launchpad) | [`0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49`](https://basescan.org/address/0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49) |
 | Aster (#18350), the genesis Fatliner | born to FID 18350's custody; DNA `0xde5d5dfa…6bb904` (its history to 03:00 UTC, the same from our nodes and from crackle + haatz) |
-| Aster's vault (every royalty, and $FATLINE's fees) | [`0xAc854e1109503C703031D094f6aCfaa132B70d6d`](https://basescan.org/address/0xAc854e1109503C703031D094f6aCfaa132B70d6d) (made when the coin launches) |
+| Aster's vault (every royalty, and $FATLINE's fees) | [`0x0Ce1917Fe7779B3933226CCbd1285E11a990b0Ff`](https://basescan.org/address/0x0Ce1917Fe7779B3933226CCbd1285E11a990b0Ff) (made when the coin launches) |
 | The genesis attester (our server) | `0x37757a1D0E0117EB169dDADBa10C18c796343bAE`, hatchery at `http://46.225.208.199:8791` |
 
 ```sh

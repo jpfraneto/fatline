@@ -2,7 +2,7 @@
 
 Foundry project. No upgradability, no protocol owner, no protocol fee.
 
-**On Base (chain 8453), deployed 2026-10-24:** AppFactory [`0x341AE48f22cc4F7428C969a559cb832912A1119F`](https://basescan.org/address/0x341AE48f22cc4F7428C969a559cb832912A1119F) and Fatliners [`0x73B27C61F9370398EF778c1b3a14BD1Ea899e7e5`](https://basescan.org/address/0x73B27C61F9370398EF778c1b3a14BD1Ea899e7e5), linked (`setFatliners`). Aster (#18350) was born in the constructor. Addresses, transactions, block and Aster's DNA: [`deployments/base.json`](deployments/base.json). How it was deployed: `FATLINERS=true VOICES=false GENESIS=… GENESIS_URL=… GENESIS_FID=18350 GENESIS_TO=… GENESIS_DNA=… GENESIS_LAID_AT=… forge script script/Deploy.s.sol --broadcast`, from the genesis server.
+**On Base (chain 8453), deployed 2026-10-24:** Fatliners [`0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49`](https://basescan.org/address/0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49), which is also the launchpad (one contract; vaults are clones of one AppVault). Aster (#18350) was born in the constructor. Addresses, transactions, block and Aster's DNA: [`deployments/base.json`](deployments/base.json). How it was deployed: `FATLINERS=true VOICES=false GENESIS=… GENESIS_URL=… GENESIS_FID=18350 GENESIS_TO=… GENESIS_DNA=… GENESIS_LAID_AT=… forge script script/Deploy.s.sol --broadcast`, from the genesis server.
 
 | Contract | What it does |
 | --- | --- |
