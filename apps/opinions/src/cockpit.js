@@ -1,6 +1,8 @@
 // The cockpit: the client's home. Your node, your egg (or your Fatliner), and the one next step.
 // Everything comes from /api/cockpit, refreshed every 15 seconds while the tab is visible.
-import { $, api, el } from './lib.js';
+import { $, api, el, state } from './lib.js';
+import { card } from './feed.js';
+import { castComposer } from './post.js';
 
 const POLL_MS = 15_000;
 // Each stone's egg, alive under the arch (the same art the token's metadata shows; on Arweave).
@@ -78,29 +80,68 @@ function nodeRow(x) {
     el('small', { class: 'ck-what' }, what, x.messages ? ` · ${n(x.messages)} messages` : ''));
 }
 
-function render(d) {
+// How a cast leaves this window right now: through your own node, or (while it catches up) through another.
+function casting(d) {
+  const nodes = Array.isArray(d.nodes) ? d.nodes : [];
+  const own = nodes.filter((x) => x.own);
+  const ready = own.find((x) => x.synced);
+  const behind = own.filter((x) => x.answering && !x.synced).sort((a, b) => a.blocksBehind - b.blocksBehind)[0];
+  if (!d.me.canWrite) return { ok: false, text: 'This window has no key to speak with yet. Run fatline identity, or tap Cast and sign once with your wallet.' };
+  if (ready) return { ok: true, text: `Your casts leave through your own node (${NET[ready.network] ?? ready.label}), signed here by you.` };
+  if (behind) return { ok: false, text: `Your node is still catching up (${n(behind.blocksBehind)} blocks behind), so it can't check new casts yet. Until it can, your casts are still signed here, by you, and go out through Fatline's master node, which is not yours. You'll see which node carried each one.` };
+  return { ok: false, text: "Your node isn't answering yet. Your casts are signed here and go out through Fatline's master node, which is not yours, until yours is in sync." };
+}
+
+function hero(d) {
   const s = story(d);
   const a = art(d);
   const tk = d.token ?? {};
   const name = d.me.username ? `@${d.me.username}` : d.me.fid ? `FID ${d.me.fid}` : 'Your Fatline';
+  return el('div', { class: `ck-hero ck-${s.mood}` },
+    el('div', { class: 'ck-fire' }, el('figure', { class: `ck-art${a.dim ? ' dim' : ''}` }, el('img', { src: a.src, alt: a.alt, width: 320, height: 320 }))),
+    el('p', { class: 'ck-who' }, d.me.pfp ? el('img', { src: d.me.pfp, alt: '' }) : null, name, d.me.fid ? el('small', {}, ` · FID ${d.me.fid}`) : null,
+      tk.surname && tk.stage !== 'none' ? el('small', {}, ` · ${tk.surname}`) : null, tk.stone ? el('small', {}, ` · ${tk.stone}`) : null),
+    el('h1', { class: 'ck-title' }, s.title),
+    el('p', { class: 'ck-line' }, s.line),
+    tk.stage === 'egg' ? days(d.hatch) : null,
+    s.next ? cmd(s.next) : null);
+}
+
+function lower(d) {
+  const tk = d.token ?? {};
   const slots = tk.slots && tk.slots.fatliners != null ? (tk.slots.eggs != null ? `${tk.slots.eggs + tk.slots.fatliners} of ${tk.slots.max} taken (${tk.slots.eggs} eggs, ${tk.slots.fatliners} Fatliners)` : `${tk.slots.fatliners} of ${tk.slots.max} hatched`) : null;
   const nodes = Array.isArray(d.nodes) ? d.nodes : [];
-  return el('section', { class: `ck ck-${s.mood}` },
-    el('div', { class: 'ck-hero' },
-      el('figure', { class: `ck-art${a.dim ? ' dim' : ''}` }, el('img', { src: a.src, alt: a.alt, width: 320, height: 320 })),
-      el('p', { class: 'ck-who' }, d.me.pfp ? el('img', { src: d.me.pfp, alt: '' }) : null, name, d.me.fid ? el('small', {}, ` · FID ${d.me.fid}`) : null,
-        tk.surname && tk.stage !== 'none' ? el('small', {}, ` · ${tk.surname}`) : null, tk.stone ? el('small', {}, ` · ${tk.stone}`) : null),
-      el('h1', { class: 'ck-title' }, s.title),
-      el('p', { class: 'ck-line' }, s.line),
-      tk.stage === 'egg' ? days(d.hatch) : null,
-      s.next ? cmd(s.next) : null),
+  const scan = (x) => el('a', { href: `https://basescan.org/address/${x}`, target: '_blank', rel: 'noopener' }, `${x.slice(0, 6)}…${x.slice(-4)}`);
+  const app = tk.app
+    ? el('p', { class: 'ck-app' }, 'This window runs its own smart contract: ', scan(tk.app), '.')
+    : tk.stage === 'egg'
+      ? el('p', { class: 'ck-app' }, 'This window has no smart contract yet. You can set one, once, while your egg is hatching: after that it is final.')
+      : null;
+  return [
+    app,
     el('h2', { class: 'ck-h' }, 'Your nodes'),
     el('ul', { class: 'ck-nodes' }, nodes.length ? nodes.map(nodeRow) : el('li', {}, el('small', {}, 'No nodes configured. Run fatline setup.'))),
     el('p', { class: 'ck-foot' },
       slots ? `The 777: ${slots}. ` : '',
-      tk.contract ? el('a', { href: `https://basescan.org/address/${tk.contract}`, target: '_blank', rel: 'noopener' }, 'The contract') : null,
+      tk.contract ? el('a', { href: `https://basescan.org/address/${tk.contract}`, target: '_blank', rel: 'noopener' }, 'The Fatliners contract') : null,
       ' · ', el('a', { href: 'https://fatline.ink', target: '_blank', rel: 'noopener' }, 'fatline.ink'),
-      ' · ', el('span', { class: 'ck-at' }, `checked ${ago(d.at)}`)));
+      ' · ', el('span', { class: 'ck-at' }, `checked ${ago(d.at)}`)),
+  ];
+}
+
+// Around the fire: your voice and your people's, through this window.
+function fire(fids, onCast) {
+  const list = el('div', { class: 'list ck-around' }, el('p', { class: 'muted' }, 'Listening…'));
+  const load = async () => {
+    try {
+      const page = await api('/api/feed', { network: state.network, fids: fids.join(','), limit: 8 });
+      list.replaceChildren(...(page.items.length ? page.items.map((i) => card(i, page.users)) : [el('p', { class: 'muted' }, 'Quiet for now. Say something, or add your people in My people.')]));
+    } catch (err) {
+      list.replaceChildren(el('p', { class: 'muted' }, /No reachable|synced/i.test(err.message) ? "Your people's casts appear here once a node in sync can read them." : err.message));
+    }
+  };
+  load();
+  return { list, load };
 }
 
 let timer = null;
@@ -108,14 +149,32 @@ export async function cockpitPage() {
   clearTimeout(timer);
   const main = $('#main');
   main.replaceChildren(el('p', { class: 'ck-loading' }, 'Looking at your node…'));
+  let d;
+  try { d = await api('/api/cockpit'); }
+  catch (err) { main.replaceChildren(el('p', { class: 'warn' }, `Can't reach this Fatline's server: ${err.message}`)); return; }
+  // The parts that change with the node are redrawn on each check; the fire (what you type, what was said) stays.
+  const top = el('div', {}, hero(d));
+  const way = el('p', { class: 'ck-way' });
+  const showWay = (x) => { const c = casting(x); way.className = `ck-way ${c.ok ? 'ok' : 'via'}`; way.textContent = c.text; };
+  showWay(d);
+  const fids = [...new Set([...(state.people ?? []).map((p) => p.fid), ...(d.me.fid ? [d.me.fid] : [])])];
+  const around = fire(fids);
+  const bottom = el('div', {}, ...lower(d));
+  main.replaceChildren(el('section', { class: 'ck' }, top,
+    el('section', { class: 'ck-circle', 'aria-labelledby': 'ck-fire-h' },
+      el('h2', { class: 'ck-h', id: 'ck-fire-h' }, 'By the fire'),
+      el('p', { class: 'ck-sub' }, 'Your Fatliner, you, and your people. Talk about life.'),
+      way,
+      castComposer({ onDone: () => setTimeout(around.load, 1500) }),
+      around.list),
+    bottom));
   const tick = async () => {
-    if (!document.body.contains(main) || location.hash.replace(/^#/, '') && !/^\/?$/.test(location.hash.slice(1))) return;
+    if (!document.body.contains(top) || !/^\/?$/.test(location.hash.slice(1))) return;
     if (!document.hidden) {
-      try { main.replaceChildren(render(await api('/api/cockpit'))); }
-      catch (err) { main.replaceChildren(el('p', { class: 'warn' }, `Can't reach this Fatline's server: ${err.message}`)); }
+      try { const x = await api('/api/cockpit'); top.replaceChildren(hero(x)); showWay(x); bottom.replaceChildren(...lower(x)); } catch { /* keep the last view; the next check retries */ }
     }
     timer = setTimeout(tick, POLL_MS);
   };
-  await tick();
+  timer = setTimeout(tick, POLL_MS);
 }
 export function leaveCockpit() { clearTimeout(timer); }

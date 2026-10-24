@@ -23,6 +23,7 @@ const abi = parseAbi([
   'function liveEggs() view returns (uint256)',
   'function totalSupply() view returns (uint256)',
   'function maxSupply() view returns (uint256)',
+  'function appOf(uint256) view returns (address)',
 ]);
 
 // How fast each node is catching up: its block delay over the last half hour.
@@ -80,9 +81,9 @@ export function makeCockpit({ config, networks, api, fetchImpl = fetch }) {
     if (tokenCache.fid === fid && Date.now() - tokenCache.at < 30_000) return tokenCache.value;
     const id = BigInt(fid);
     const read = (functionName, args = [id]) => reader.readContract({ address: hc.contract, abi, functionName, args }).catch(() => undefined);
-    const [stage, stone, surname, laidAt, owner, asleep, hibernating, liveEggs, totalSupply, maxSupply] = await Promise.all([
+    const [stage, stone, surname, laidAt, owner, asleep, hibernating, liveEggs, totalSupply, maxSupply, app] = await Promise.all([
       read('stageOf'), read('stoneOf'), read('surnameOf'), read('laidAtOf'), read('ownerOf'), read('isAsleep'), read('hibernatingUntil'),
-      read('liveEggs', []), read('totalSupply', []), read('maxSupply', []),
+      read('liveEggs', []), read('totalSupply', []), read('maxSupply', []), read('appOf'),
     ]);
     const value = {
       contract: hc.contract, chainId: hc.chainId,
@@ -90,6 +91,7 @@ export function makeCockpit({ config, networks, api, fetchImpl = fetch }) {
       stone: stone !== undefined && Number(stage ?? 0) > 0 ? STONES[Number(stone)] ?? null : null,
       surname: surname || null, laidAt: laidAt ? Number(laidAt) : null, owner: owner ?? null, asleep: asleep ?? null,
       hibernatingUntil: hibernating ? Number(hibernating) : null,
+      app: app && !/^0x0{40}$/i.test(app) ? app : null,
       slots: { eggs: liveEggs !== undefined ? Number(liveEggs) : null, fatliners: totalSupply !== undefined ? Number(totalSupply) : null, max: maxSupply !== undefined ? Number(maxSupply) : 777 },
     };
     tokenCache = { at: Date.now(), fid, value };

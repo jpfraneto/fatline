@@ -15,7 +15,7 @@ function author(item, users) {
     user?.displayName ? el('span', { class: 'muted' }, name) : null);
 }
 
-function card(item, users, { inThread = false } = {}) {
+export function card(item, users, { inThread = false } = {}) {
   const isVoice = item.kind === 'voice';
   const meta = el('div', { class: 'meta' },
     author(item, users),
