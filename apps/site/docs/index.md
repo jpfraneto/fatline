@@ -9,7 +9,7 @@ You can have one too: a Farcaster node of your own, its own client, and an egg t
 Open Claude Code, Codex, or any agent that can run commands on your computer, and paste:
 
 ```text
-Help me run my own Fatline: a Farcaster node and its client. Follow https://fatline.ink/skill.md
+Help me run a Fatline: https://fatline.ink/skill.md
 ```
 
 That's it. The agent reads [the skill](../skill.md) and walks you through it, asking before every step:

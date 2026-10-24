@@ -27,7 +27,7 @@ You approve the payments in your own wallet: a QR code for your phone wallet (Wa
 
 **Watch your servers:** `fatline dashboard` opens http://localhost:8790 (only this machine can reach it): CPU, memory and every disk of each server, and how far behind each node's worst shard is, every 15 seconds. It starts from the servers `fatline compute` rented and the nodes marked as yours; `fatline dashboard add <host>` watches another.
 
-**With an agent:** tell Claude Code, Codex or any agent that can run commands: *"Help me run my own Fatline. Follow https://fatline.ink/skill.md"*. The [skill](apps/site/skill.md) keeps you in charge: it shows prices and waits for your yes, and never handles your seed phrase or tokens. For Claude Code you can also install it: `cp -rL skills/fatline-setup ~/.claude/skills/`.
+**With an agent:** tell Claude Code, Codex or any agent that can run commands: *"Help me run a Fatline: https://fatline.ink/skill.md"*. The [skill](apps/site/skill.md) keeps you in charge: it shows prices and waits for your yes, and never handles your seed phrase or tokens. For Claude Code you can also install it: `cp -rL skills/fatline-setup ~/.claude/skills/`.
 
 **By hand**, the three commands:
 
