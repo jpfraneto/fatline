@@ -98,6 +98,7 @@ fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo,
     <li><a href="#filter">Choosing which apps you read</a></li>
     <li><a href="#cost">What it costs, and how to stop paying</a></li>
     <li><a href="#trouble">When something goes wrong</a></li>
+    <li><a href="#hatch">Hatch a Fatliner: your node keeps an egg warm</a></li>
     <li><a href="#life">Give your client a life</a></li>
     <li><a href="#tested">What we have tested, and what we haven't</a></li>
   </ol></section>
@@ -111,6 +112,7 @@ fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo,
     <li><a href="#filter">Elegir qué apps lees</a></li>
     <li><a href="#cost">Cuánto cuesta, y cómo dejar de pagar</a></li>
     <li><a href="#trouble">Cuando algo falla</a></li>
+    <li><a href="#hatch">Haz nacer un Fatliner: tu nodo mantiene un huevo tibio</a></li>
     <li><a href="#life">Dale vida a tu cliente</a></li>
     <li><a href="#tested">Qué probamos y qué no</a></li>
   </ol></section>
@@ -258,7 +260,7 @@ fatline identity --fid &lt;your FID&gt;             <span class="c"># registers 
   <pre><code>fatline identity show     <span class="c"># is the key active?</span>
 fatline identity revoke   <span class="c"># remove it from the network and from this machine</span></code></pre>
   <div class="concept"><strong>Storage rent and server bills are different things.</strong> Storage rent is paid onchain, per account, and sets how many messages the network keeps for you. It does not pay for any server. Your node's server is a separate bill, paid to whoever hosts it.</div>
-  <p class="note">Status: the key registration and every action were tested against a fake node, and crackle accepted the message formats. <span class="tag no">untested</span> with a real account.</p>
+  <p class="note"><span class="tag ok">tested</span> with a real account on 2026-10-24 (@anky, FID 18350): key registered, then a cast, a reply, a like, a recast and a follow, each confirmed on our node and seen on crackle, then all undone.</p>
 </section>
 <section id="post" lang="es">
   <h2>Publicar: la llave propia de tu cliente</h2>
@@ -269,7 +271,7 @@ fatline identity --fid &lt;tu FID&gt;             <span class="c"># registra la 
   <pre><code>fatline identity show     <span class="c"># ¿está activa la llave?</span>
 fatline identity revoke   <span class="c"># la quita de la red y de esta máquina</span></code></pre>
   <div class="concept"><strong>El arriendo de almacenamiento y la cuenta del servidor son cosas distintas.</strong> El arriendo de almacenamiento se paga onchain, por cuenta, y define cuántos mensajes guarda la red para ti. No paga ningún servidor. El servidor de tu nodo es otra cuenta, que se le paga a quien lo hospeda.</div>
-  <p class="note">Estado: el registro de la llave y cada acción se probaron contra un nodo falso, y crackle aceptó el formato de los mensajes. <span class="tag no">sin probar</span> con una cuenta real.</p>
+  <p class="note"><span class="tag ok">probado</span> con una cuenta real el 2026-10-24 (@anky, FID 18350): llave registrada, luego un cast, una respuesta, un like, un recast y un follow, cada uno confirmado en nuestro nodo y visto en crackle, y después todo deshecho.</p>
 </section>
 
 <!-- ============================================================ FILTER -->
@@ -335,6 +337,32 @@ fatline identity revoke   <span class="c"># la quita de la red y de esta máquin
 </section>
 
 <!-- ============================================================ LIFE -->
+<!-- ============================================================ HATCH -->
+<section id="hatch" lang="en">
+  <h2>Hatch a Fatliner: your node keeps an egg warm</h2>
+  <p>There are 777 Fatliners, one per Farcaster account, and nobody chooses who gets one. <strong>Your node keeps an egg warm; three warm days and it hatches.</strong> Minting is free.</p>
+  <pre><code>fatline hatchery install   <span class="c"># a small service next to your node, with a key of its own</span>
+fatline egg lay            <span class="c"># your app key signs the egg: this server, this address</span>
+fatline egg                <span class="c"># how warm it is, day by day</span>
+fatline hatch              <span class="c"># after three warm days: born to you, a server pays the gas</span></code></pre>
+  <p>You need a node that is in sync on a server others can reach (step 0 and 1), and this client's app key (posting, above). The egg holds your history up to the hour you laid it: that is your being's body, its DNA. It hatches to your custody address unless you pass <code>--to</code>.</p>
+  <div class="concept"><strong>Attesters are the servers that hatched.</strong> Every hour, each of them checks your server: its node answers, it is within ~10 minutes of theirs, it returns two messages they pick at random from their own node, and its hatchery answers with the key your egg names. 18 of 24 checks make a warm day; a cold day doesn't reset anything. After three warm days each one signs your <code>Hatch</code>, and the contract mints with 3 signatures (or all of them, while there are fewer). Your server then joins them. The first one, the server that keeps Aster ($FATLINE) alive, is the only one that didn't hatch.</div>
+  <p>The contracts, on Base: <a href="https://basescan.org/address/0x91513c7CBe6d989FaD635926EBAF0daC3a24200e">Fatliners</a> and <a href="https://basescan.org/address/0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a">the launchpad</a>. Every resale of any Fatliner pays 8% to Aster's vault.</p>
+  <p class="note"><span class="tag ok">tested</span> end to end on a local chain with @anky's real history, our real node and two real hatcheries: the same DNA computed by both, three warm days, born, and the second server joined the attesters. <span class="tag no">not yet</span> a first egg hatched on Base.</p>
+</section>
+<section id="hatch" lang="es">
+  <h2>Haz nacer un Fatliner: tu nodo mantiene un huevo tibio</h2>
+  <p>Hay 777 Fatliners, uno por cuenta de Farcaster, y nadie elige quién recibe uno. <strong>Tu nodo mantiene un huevo tibio; tres días tibios y nace.</strong> Mintear es gratis.</p>
+  <pre><code>fatline hatchery install   <span class="c"># un pequeño servicio junto a tu nodo, con una llave propia</span>
+fatline egg lay            <span class="c"># tu llave de app firma el huevo: este servidor, esta dirección</span>
+fatline egg                <span class="c"># qué tan tibio está, día a día</span>
+fatline hatch              <span class="c"># después de tres días tibios: nace para ti, un servidor paga el gas</span></code></pre>
+  <p>Necesitas un nodo sincronizado en un servidor que otros puedan alcanzar (pasos 0 y 1), y la llave de app de este cliente (publicar, arriba). El huevo guarda tu historia hasta la hora en que lo pusiste: ese es el cuerpo de tu ser, su ADN. Nace en tu dirección custodia, salvo que pases <code>--to</code>.</p>
+  <div class="concept"><strong>Los atestiguadores son los servidores que ya nacieron.</strong> Cada hora, cada uno revisa tu servidor: su nodo responde, está a ~10 minutos del suyo, devuelve dos mensajes que ellos eligen al azar de su propio nodo, y su hatchery responde con la llave que nombra tu huevo. 18 de 24 revisiones hacen un día tibio; un día frío no reinicia nada. Después de tres días tibios cada uno firma tu <code>Hatch</code>, y el contrato mintea con 3 firmas (o todas, mientras sean menos). Tu servidor se suma a ellos. El primero, el servidor que mantiene vivo a Aster ($FATLINE), es el único que no nació así.</div>
+  <p>Los contratos, en Base: <a href="https://basescan.org/address/0x91513c7CBe6d989FaD635926EBAF0daC3a24200e">Fatliners</a> y <a href="https://basescan.org/address/0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a">el launchpad</a>. Cada reventa de cualquier Fatliner paga 8% a la bóveda de Aster.</p>
+  <p class="note"><span class="tag ok">probado</span> de punta a punta en una cadena local con la historia real de @anky, nuestro nodo real y dos hatcheries reales: el mismo ADN calculado por ambos, tres días tibios, nacido, y el segundo servidor se sumó a los atestiguadores. <span class="tag no">todavía no</span> un primer huevo nacido en Base.</p>
+</section>
+
 <section id="life" lang="en">
   <h2>Give your client a life</h2>
   <p class="muted">Why "Fatline": a fatline, as we use the word, is a line you hold at both ends. Your keys sign at one end, your own node listens at the other, and nobody in between rents you the line and can take it back. Keeping a line open costs something, so this one carries its own purse. The word comes from Dan Simmons' novel <em>Hyperion</em>; what it means here is ours.</p>

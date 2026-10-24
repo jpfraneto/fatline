@@ -65,7 +65,7 @@ for (const f of fatlines) {
       blocksBehind: behind, messages: info?.dbStats?.numMessages ?? null,
     });
   }
-  result.fatlines.push({ ticker: f.ticker, name: f.name, image: f.image, page: f.page, notice: f.notice, coin: f.coin, server: f.server ? await server(f.server) : null, owner: await profile(f.ownerFid, f.nodes), nodes });
+  result.fatlines.push({ ticker: f.ticker, name: f.name, image: f.image, page: f.page, notice: f.notice, coin: f.coin, fatliner: f.fatliner ?? null, server: f.server ? await server(f.server) : null, owner: await profile(f.ownerFid, f.nodes), nodes });
 }
 writeFileSync(out, JSON.stringify(result, null, 2) + '\n');
 console.log(JSON.stringify(result));

@@ -53,6 +53,7 @@
   table.cost { width: 100%; border-collapse: collapse; margin-top: 14px; font: 14px var(--sans); font-variant-numeric: tabular-nums; }
   table.cost td { padding: 8px 0; border-top: 1px solid var(--line); }
   table.cost td:last-child { text-align: right; font: 13px var(--mono); }
+  table.cost code { background: none; padding: 0; font-size: 13px; }
   table.cost tr.sum td { font-weight: 600; }
   .note { margin-top: 14px; color: var(--muted); font: 13px/1.6 var(--sans); }
   .warnline { color: var(--amber); }
@@ -115,6 +116,20 @@ function body(f) {
       Live numbers come from the server every 5 minutes; this page is refreshed every 15.${f.notice ? '<br>' + esc(f.notice) : ''}</p>`;
 }
 
+// The Fatliner behind this Fatline, on Base.
+function being(f) {
+  const b = f.fatliner;
+  if (!b) return '';
+  const scan = (a) => `https://basescan.org/address/${a}`;
+  return `<h2>Its being</h2>
+    <p>Fatliner <b>#${esc(b.id)}</b>${b.genesis ? ', the genesis Fatliner' : ''}, born ${esc(b.born.slice(0, 10))} in <a href="${scan(esc(b.contract))}">the Fatliners contract</a>. ${b.note ? esc(b.note) : ''}</p>
+    <table class="cost">
+      <tr><td>DNA (its history, sealed)</td><td><code>${esc(b.dna.slice(0, 10))}…${esc(b.dna.slice(-6))}</code></td></tr>
+      <tr><td>Its vault</td><td><a href="${scan(esc(b.vault))}"><code>${esc(b.vault.slice(0, 6))}…${esc(b.vault.slice(-4))}</code></a></td></tr>
+      <tr><td>Born in</td><td><a href="https://basescan.org/tx/${esc(b.bornTx)}"><code>${esc(b.bornTx.slice(0, 10))}…</code></a></td></tr>
+    </table>`;
+}
+
 function nodeRows(f) {
   return f.nodes.map((n) => `<div class="row"><span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span><b>${NAME[n.network]}</b>
       <span class="muted">${n.state === 'alive' ? `alive · running ${since(n.since)}` : n.state === 'catching-up' ? `catching up · ${Number(n.blocksBehind).toLocaleString('en')} blocks behind` : 'offline at the last check'} · ${esc(n.label)}</span></div>`).join('');
@@ -142,9 +157,9 @@ if (t) {
     document.title = `$${f.ticker} · Fatline`;
     const coin = f.coin?.address
       ? `<p>Coin on Base: <a href="/base/${esc(f.coin.address)}"><code>${esc(f.coin.address)}</code></a></p>`
-      : '<p class="muted">Coin not launched yet. Its page will be /base/&lt;its address&gt;.</p>';
+      : `<p class="muted">${esc(f.coin?.note ?? 'Coin not launched yet.')}</p>`;
     main.innerHTML = `<div><div class="kicker">Fatline</div><h1>$${esc(f.ticker)}</h1>${owner(f)}${coin}
-      <h2>Its nodes</h2>${nodeRows(f)}${body(f)}
+      ${being(f)}<h2>Its nodes</h2>${nodeRows(f)}${body(f)}
       <div class="links"><a class="btn primary" href="/docs/">Run your own</a><a class="btn" href="/explore.html">The board</a></div></div>`;
   });
 } else if (!m) {

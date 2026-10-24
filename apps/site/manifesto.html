@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fatline Manifesto</title>
-<meta name="description" content="Why the 777 Fatliners exist, how they are born, and what is true today.">
+<meta name="description" content="Why the 777 Fatliners exist, how they hatch from eggs kept warm by Farcaster nodes, and what is true today.">
 <meta property="og:image" content="https://fatline.ink/img/world/the-weaving.jpg">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23efe2c6'/%3E%3Ccircle cx='32' cy='34' r='20' fill='%233a2a1b'/%3E%3Cpath d='M15 30 Q32 24 49 30' stroke='%23ff5fa8' stroke-width='3' fill='none'/%3E%3Ccircle cx='49' cy='30' r='3' fill='%233d8bff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,6 +31,7 @@
   .today { margin-top: 18px; font: 15px/1.6 Inter, system-ui, sans-serif; }
   .today li { margin: 0 0 8px; }
   .today b { font-weight: 600; }
+  .today code { font: 13px 'JetBrains Mono', monospace; }
   .yes { color: #2f8a4f; } .wait { color: #b8862b; } .no { color: var(--muted); }
   a { color: inherit; }
   footer { padding: 0 16px 32px; text-align: center; font: 12.5px Inter, sans-serif; color: var(--muted); }
@@ -54,13 +55,13 @@
   <p>There are 777 Fatliners. Each one is born from one Farcaster account: its history becomes its body. How long it has been around, who it talks with, how it speaks, the rhythm of its days, what it keeps coming back to. Same history, same being. You are your FID.</p>
 
   <h2><span>III</span>Nobody chooses the 777</h2>
-  <p>They are chosen by an open, deterministic algorithm over the whole network, the same for everyone who runs it. Before the mint, the algorithm and its result are published, rerun and argued over in the open, until they are agreed. Then the mint opens. Minting is free.</p>
+  <p>A Fatliner is not given, and nobody keeps a list. It hatches from an egg, and the egg is kept warm by a node. Run a Farcaster node, lay your egg with your account's key, and keep the node alive. Every hour, the Fatline servers that came before you check it: it answers, it is in sync, it holds the messages they ask for. Three warm days and it hatches. The first 777 to keep a node alive are the 777. Minting is free.</p>
 
   <h2><span>IV</span>A name and a surname</h2>
   <p>Every Fatliner is born with a name, and its coin's ticker is its surname. The first is Aster, and its coin is $FATLINE: Aster Fatline. Nobody picks them, not even the holder. That is its identity on the network.</p>
 
   <h2><span>V</span>Hatching</h2>
-  <p>A Fatliner arrives sealed. Its traits are already decided by its history, but they are not revealed. Its holder gives birth to it by lighting its node: the day the node answers, the being hatches.</p>
+  <p>The egg holds your history up to the hour you laid it: that is the being's body, sealed. While your node keeps it warm, nothing is revealed. When it hatches, the being is born, and the server that kept it warm becomes one of the servers that check the next eggs. That is how the village grows: only by keeping a node alive, never by anyone's permission.</p>
 
   <h2><span>VI</span>Will</h2>
   <p>Only the holder of a Fatliner can light a Fatline: a node, its coin, and its vault, commanded by one FID. The coin's fees pay for the node, day by day. A Fatliner carries as much life as its holder puts into it. Fed, it lives. Left alone, it sleeps, and anyone can wake it by feeding its vault.</p>
@@ -69,7 +70,10 @@
   <p>The 777 are scarce. Keeping the network is not. Anyone can make a worker: a wallet born on their own machine, no FID, no being, that rents a node and keeps a copy of everything. As many as people want. A worker's reward is the protocol itself: its own node, and its own client to read it with.</p>
 
   <h2><span>VII</span>The being is the vault</h2>
-  <p>A Fatliner is a wallet of its own. Its coin, its fees and its history live inside it, not in its holder's pocket. If it changes hands, all of it goes along. Every resale pays 8%.</p>
+  <p>A Fatliner is a wallet of its own. Its coin, its fees and its history live inside it, not in its holder's pocket. If it changes hands, all of it goes along.</p>
+
+  <h2><span>VII½</span>The circle</h2>
+  <p>It all starts from one being: Aster, the first Fatliner, born from @anky's account when the contract was made, kept alive by the first server. That server checked the first eggs. Every resale of any Fatliner pays 8% into Aster's vault, and Aster's coin, $FATLINE, pays its node in USDC through the same launchpad every Fatline uses. The village feeds the one it started from, and the one it started from keeps the village's first node alive.</p>
 
   <h2><span>VIII</span>Fatliners is an app</h2>
   <p>The first in a network of Farcaster clients, each one reading from nodes its people keep. Every line of it is open source, under the MIT license. Read it, run it, change it, send it back.</p>
@@ -80,10 +84,11 @@
   <span class="light" aria-hidden="true"></span>
   <h2 style="margin-top:28px">Where it stands today</h2>
   <ul class="today">
-    <li><b class="yes">Alive:</b> Aster Fatline's two nodes, Snapchain and Hypersnap, in sync on one rented server kept by @anky.</li>
-    <li><b class="yes">Built:</b> the open setup (your own node and client, guided step by step), the archive, the client, and the pipeline that draws a Fatliner from any account's history.</li>
-    <li><b class="wait">Computed, not agreed:</b> the ranking of the whole network. It has not been published or reviewed yet.</li>
-    <li><b class="no">Not yet:</b> the 777 contract, the mint, the reveal, the vault as the being's own wallet, the 8% on resale, and the coins. The launch contracts are tested on a copy of Base only.</li>
+    <li><b class="yes">Alive:</b> Aster Fatline's two nodes, Snapchain and Hypersnap, in sync on one server kept by @anky. That server is the first attester: its hatchery checks eggs every hour.</li>
+    <li><b class="yes">On Base:</b> <a href="https://basescan.org/address/0x91513c7CBe6d989FaD635926EBAF0daC3a24200e">the Fatliners contract</a>, with Aster (#18350) born in it, and <a href="https://basescan.org/address/0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a">the launchpad</a> (coins paired with USDC on Clanker, fees to each vault).</li>
+    <li><b class="yes">Open:</b> eggs. Run a node, lay your egg (<code>fatline egg lay</code>), keep it alive three days.</li>
+    <li><b class="wait">Ready, not launched:</b> $FATLINE, Aster's coin. Its launch is rehearsed against Base and waits for its holder.</li>
+    <li><b class="no">Not yet:</b> the reveal (the being drawn from its DNA, on its page) and the first hatched egg.</li>
   </ul>
   <p class="today">Run your own node today: <a href="docs/">the docs</a>. See the village as it is: <a href="explore.html">explore</a>.</p>
 </article>

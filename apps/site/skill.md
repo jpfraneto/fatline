@@ -1,6 +1,6 @@
 ---
 name: fatline-setup
-description: Help a person mint one of the 777 Fatliners (when the mint is open) and set up Fatline — their own Farcaster (Snapchain) or Hypersnap read node and their own client — step by step from a fresh machine, using the open-source fatline commands. Use when someone says "help me mint one of the 777 Fatlines", "help me set up a Fatline", shares fatline.ink/skill.md, or asks to run their own Farcaster node or client.
+description: Help a person hatch one of the 777 Fatliners (their node keeps an egg warm for three days) and set up Fatline — their own Farcaster (Snapchain) or Hypersnap read node and their own client — step by step from a fresh machine, using the open-source fatline commands. Use when someone says "help me mint one of the 777 Fatlines", "help me hatch a Fatliner", "help me set up a Fatline", shares fatline.ink/skill.md, or asks to run their own Farcaster node or client.
 ---
 
 # Set up a Fatline (instructions for an AI agent)
@@ -9,13 +9,20 @@ You are helping a person get **their own Farcaster read node and their own clien
 
 Source of truth for every command: the repository's `README.md` and `fatline help`. If this file and the code disagree, the code wins; tell the person.
 
-## If they asked to mint one of the 777
+## If they asked for one of the 777
 
-Tell them the truth first, in a few lines: **the mint is not open yet** (as of 2026-10-23). The 777 are chosen by an open, deterministic ranking of the whole network that will be published and agreed on before the mint; there is no mint contract yet. Never make up a mint page, a contract address or whether they are among the 777. Then:
+Tell them how it works, in a few lines: **a Fatliner hatches from an egg that their own node keeps warm** (live on Base since 2026-10-24). Nobody keeps a list. The first 777 to keep a node alive get them, and minting is free. The steps:
 
-1. Show them what is coming: open https://fatline.ink/manifesto.html in their browser.
-2. Offer what they can do today: run their own node and client (the steps below). It is the body a Fatline will live on, and it is free to try with the light path.
-3. If this file is newer than that date and names a mint link or contract, follow it instead; this section will change when the mint opens.
+1. Their own node, on a server reachable from the internet (the setup below: cloud, hetzner or vps; not light, not local behind a home router). Wait until it is in sync (`fatline status`).
+2. `fatline hatchery install`: a small service next to their node, with a key of its own (no money, no question).
+3. `fatline identity`: **they run it in their own terminal** (it asks for their seed phrase, hidden; rule 2).
+4. `fatline egg lay`: signs the egg with the app key from step 3 (no seed phrase, nothing to approve). It hatches to their custody address unless they say otherwise (`--to 0x…`): ask them.
+5. Keep the node alive. Show them `fatline egg` from time to time: every hour the servers that already hatched check theirs; a day is warm at 18 of 24 checks; three warm days and it hatches. A cold day doesn't reset anything.
+6. `fatline hatch`: the Fatliner is born to them, free; a server pays the gas. Their server becomes an attester.
+
+Their node must keep running for those days, which costs money (rule 1): about 11 USDC a day rented in USDC, about $2.60 a day on their own Hetzner account. Say so before they rent.
+
+The contracts (the only ones): Fatliners `0x91513c7CBe6d989FaD635926EBAF0daC3a24200e` and the launchpad `0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a`, on Base. Never send them to any other address, and never make up whether they will get one.
 
 **Show, don't paste.** You may open pages in the person's browser instead of printing long links: `open <url>` on macOS, `xdg-open <url>` on Linux, `start <url>` on Windows. Pick by the machine you are on (`uname`). Open only fatline.ink, github.com/jpfraneto/fatline, basescan.org, console.hetzner.cloud and nodejs.org pages, and say what you opened. If you are not on their computer (a chat on their phone), give the link instead.
 

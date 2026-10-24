@@ -2,6 +2,8 @@
 
 Foundry project. No upgradability, no protocol owner, no protocol fee.
 
+**On Base (chain 8453), deployed 2026-10-24:** AppFactory [`0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a`](https://basescan.org/address/0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a) and Fatliners [`0x91513c7CBe6d989FaD635926EBAF0daC3a24200e`](https://basescan.org/address/0x91513c7CBe6d989FaD635926EBAF0daC3a24200e), linked (`setFatliners`). Aster (#18350) was born in the constructor. Addresses, transactions, block and Aster's DNA: [`deployments/base.json`](deployments/base.json). How it was deployed: `FATLINERS=true VOICES=false GENESIS=… GENESIS_URL=… GENESIS_FID=18350 GENESIS_TO=… GENESIS_DNA=… GENESIS_LAID_AT=… forge script script/Deploy.s.sol --broadcast`, from the genesis server.
+
 | Contract | What it does |
 | --- | --- |
 | [`AppFactory`](src/AppFactory.sol) | Gives birth to apps. One transaction creates the app's vault, optionally launches its coin on Clanker paired with USDC, and funds the vault (`launchAppWithPermit` needs no separate approval). After launching it reads Clanker's records and reverts unless 100% of fees go to the vault, in USDC, with the vault as the only fee admin. |

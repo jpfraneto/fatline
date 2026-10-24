@@ -3,12 +3,13 @@
 > Your own Farcaster (Snapchain) or Hypersnap read node and your own client, in a few commands; and a launchpad where each node gets a coin whose trading fees pay for it. Open source, MIT.
 
 ## Set up
-- [Agent skill: "Help me mint one of the 777 Fatlines" (the mint is not open yet) and set up a Fatline step by step](https://fatline.ink/skill.md): rules (money needs the person's yes, never handle seed phrases or tokens) and every command.
+- [Agent skill: set up a Fatline step by step, and hatch one of the 777 Fatliners (your node keeps an egg warm three days)](https://fatline.ink/skill.md): rules (money needs the person's yes, never handle seed phrases or tokens) and every command.
 - [Installer](https://fatline.ink/install.sh): `curl -fsSL https://fatline.ink/install.sh | sh` downloads Fatline and starts the guided `fatline setup`.
-- [Docs](https://fatline.ink/docs/index.md): one Markdown file: the story, minting, running a node.
+- [Docs](https://fatline.ink/docs/index.md): one Markdown file: running a node, hatching a Fatliner, the contracts on Base, the story.
 - [Tutorial](https://fatline.ink/docs/tutorial.html): every step, English, Spanish, Chinese.
 
-- [Manifesto](https://fatline.ink/manifesto.html): the 777, how they are born, and what is true today.
+- [Manifesto](https://fatline.ink/manifesto.html): the 777, how they hatch, the circle, and what is true today.
+- [Contracts on Base](https://github.com/jpfraneto/fatline/blob/main/smart-contracts/deployments/base.json): Fatliners 0x91513c7CBe6d989FaD635926EBAF0daC3a24200e, launchpad 0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a.
 
 ## Source
 - [Repository](https://github.com/jpfraneto/fatline): README has what is tested and what is not.

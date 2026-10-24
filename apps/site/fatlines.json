@@ -1,56 +1,66 @@
 {
-  "note": "Real Fatlines only. Each one is an owner's FID, its coin on Base (once launched) and the nodes that keep it alive. status.mjs checks them; the home page shows what it found. A coin's page is /base/<its contract address>.",
-  "fatlines": [
+ "note": "Real Fatlines only. Each one is an owner's FID, its coin on Base (once launched) and the nodes that keep it alive. status.mjs checks them; the home page shows what it found. A coin's page is /base/<its contract address>.",
+ "fatlines": [
+  {
+   "ticker": "FATLINE",
+   "name": "Aster",
+   "image": "img/world/aster.jpg",
+   "ownerFid": 18350,
+   "coin": {
+    "chain": "base",
+    "address": null,
+    "note": "Not launched yet. It launches through the launchpad, paired with USDC, 100% of its fees to Aster's vault; its page will be /base/<address>."
+   },
+   "nodes": [
     {
-      "ticker": "FATLINE",
-      "name": "Aster",
-      "image": "img/world/aster.jpg",
-      "ownerFid": 18350,
-      "coin": {
-        "chain": "base",
-        "address": null,
-        "note": "Not launched yet. When it is, its page lives at /base/<address>."
-      },
-      "nodes": [
-        {
-          "network": "snapchain",
-          "label": "Fatline master (Hetzner, Nuremberg)",
-          "url": "http://46.225.208.199:3381",
-          "since": "2026-10-22T06:42:00Z"
-        },
-        {
-          "network": "hypersnap",
-          "label": "Fatline master (Hetzner, Nuremberg)",
-          "url": "http://46.225.208.199:4381",
-          "since": "2026-10-22T10:21:00Z"
-        }
-      ],
-      "page": "/f/FATLINE",
-      "server": {
-        "provider": "Hetzner Cloud",
-        "type": "cax31",
-        "location": "Nuremberg (nbg1)",
-        "cpu": "8 Arm cores (Ampere Altra)",
-        "ramGb": 16,
-        "monthUsd": 24.99,
-        "disks": {
-          "snapchain": "Snapchain data (volume)",
-          "hypersnap": "Hypersnap data (volume)",
-          "local": "Local disk (included)"
-        },
-        "volumes": {
-          "snapchain": 700,
-          "hypersnap": 685
-        },
-        "stats": "http://46.225.208.199:8099/stats.json",
-        "note": "Both networks run on this one server since 2026-10-23 03:01 UTC."
-      }
+     "network": "snapchain",
+     "label": "Fatline master (Hetzner, Nuremberg)",
+     "url": "http://46.225.208.199:3381",
+     "since": "2026-10-22T06:42:00Z"
+    },
+    {
+     "network": "hypersnap",
+     "label": "Fatline master (Hetzner, Nuremberg)",
+     "url": "http://46.225.208.199:4381",
+     "since": "2026-10-22T10:21:00Z"
     }
-  ],
-  "prices": {
-    "source": "Hetzner Cloud API /v1/pricing, nbg1, USD incl. VAT",
-    "asOf": "2026-10-23",
-    "volumePerGbMonth": 0.0767,
-    "ipv4Month": 0.6
+   ],
+   "page": "/f/FATLINE",
+   "server": {
+    "provider": "Hetzner Cloud",
+    "type": "cax31",
+    "location": "Nuremberg (nbg1)",
+    "cpu": "8 Arm cores (Ampere Altra)",
+    "ramGb": 16,
+    "monthUsd": 24.99,
+    "disks": {
+     "snapchain": "Snapchain data (volume)",
+     "hypersnap": "Hypersnap data (volume)",
+     "local": "Local disk (included)"
+    },
+    "volumes": {
+     "snapchain": 700,
+     "hypersnap": 685
+    },
+    "stats": "http://46.225.208.199:8099/stats.json",
+    "note": "Both networks run on this one server since 2026-10-23 03:01 UTC."
+   },
+   "fatliner": {
+    "id": 18350,
+    "contract": "0x91513c7CBe6d989FaD635926EBAF0daC3a24200e",
+    "born": "2026-10-24T03:33Z",
+    "bornTx": "0xe8d5f9ccf7eb6e88c76546cfae5b7da55067fe383a6d25e100beb04afe6aae76",
+    "dna": "0xde5d5dfabe29f7e02bb28a37b3579b078c616c95b255a1b86b63008e246bb904",
+    "vault": "0xa00D8b3a9D00bd8e34e9Fae3b77aAF79fd054492",
+    "genesis": true,
+    "note": "Born when the contract was made. Every resale of any Fatliner pays 8% into its vault."
+   }
   }
+ ],
+ "prices": {
+  "source": "Hetzner Cloud API /v1/pricing, nbg1, USD incl. VAT",
+  "asOf": "2026-10-23",
+  "volumePerGbMonth": 0.0767,
+  "ipv4Month": 0.6
+ }
 }
