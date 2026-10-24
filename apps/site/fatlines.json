@@ -47,11 +47,11 @@
    },
    "fatliner": {
     "id": 18350,
-    "contract": "0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49",
-    "born": "2026-10-24T11:21Z",
-    "bornTx": "0x9dcb2e84795743954423d19c5e31d33bd59e380c2f39dfee7c6d25b767c4b231",
+    "contract": "0xB229De24F337028715f2e5326833d3C251741e07",
+    "born": null,
+    "bornTx": "0x8b51b6b8949a2b2ea9504996f371d4e900b9335330425208257455d46e38c72a",
     "dna": "0xde5d5dfabe29f7e02bb28a37b3579b078c616c95b255a1b86b63008e246bb904",
-    "vault": "0x0Ce1917Fe7779B3933226CCbd1285E11a990b0Ff",
+    "vault": "0xE458BECf1D889bf5a800d1D7ad6AB6CbfCE32cC8",
     "genesis": true,
     "note": "Born when the contract was made. Its surname, FATLINE, is its coin's ticker, and its coin is the first the launchpad will launch. Every resale of any Fatliner pays 8% into its vault.",
     "surname": "FATLINE"

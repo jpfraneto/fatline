@@ -1,23 +1,23 @@
 {
- "note": "The one Fatline contract on Base: Fatliners, which is also the launchpad (eggs, the 777, and at most 777 coins). Every Fatline server, client and hatchery reads it unless its config says otherwise. 'AppFactory' below is the same contract, kept under that name for older readers.",
+ "note": "The one Fatline contract on Base: Fatliners, which is also the launchpad (eggs, the 777, at most 777 coins, sales in USDC). Every Fatline server, client and hatchery reads it unless its config says otherwise. 'AppFactory' below is the same contract, kept under that name for older readers.",
  "chainId": 8453,
- "deployedAt": "2026-10-24T11:21Z",
+ "deployedAt": "2026-10-24T13:00Z",
  "deployer": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
- "fromBlock": 53025768,
+ "fromBlock": 53028743,
  "AppFactory": {
-  "address": "0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49",
-  "tx": "0x9dcb2e84795743954423d19c5e31d33bd59e380c2f39dfee7c6d25b767c4b231",
-  "rules": "The launchpad is the Fatliners contract. At most 777 coins, ever: one per egg or Fatliner, launched by its holder. $FATLINE first. The coin's symbol must be the surname (set when the egg goes onchain). 100% of fees to its vault, in USDC. The vault's owner sets the rent to the server's real cost (setRate, no cap); distribute() sends everything above one billing period of rent to the holder.",
+  "address": "0xB229De24F337028715f2e5326833d3C251741e07",
+  "tx": "0x8b51b6b8949a2b2ea9504996f371d4e900b9335330425208257455d46e38c72a",
+  "rules": "The launchpad is the Fatliners contract. At most 777 coins, ever: one per egg or Fatliner, launched by its holder; $FATLINE (Aster) first. The coin's symbol is the surname, unique, set when the egg goes onchain. 100% of fees to its vault, in USDC: the node's fuel. Anyone can pay the server its rent (payCompute); the holder can take all of it, and then the node dies.",
   "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "clanker": "0xE85A59c628F7d27878ACeB4bf3b35733630083a9",
   "locker": "0xffA37784D619F228D8B379d287a4D7282e500762",
   "feeLocker": "0xF3622742b1E446D92e45E22923Ef11C2fcD55D68",
-  "vaultImplementation": "0xAd477E00051600Bfb6aCb0FdaEF90a4a66924c02"
+  "vaultImplementation": "0xbEc6833aE1Ef99F420BEF4Cc18eD6d0dDeB080D4"
  },
  "Fatliners": {
-  "address": "0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49",
-  "tx": "0x9dcb2e84795743954423d19c5e31d33bd59e380c2f39dfee7c6d25b767c4b231",
-  "rules": "Eggs: unlimited, one per FID, can't be moved (takeEgg); each carries its surname from the day it is onchain. Fatliners: hatched from an egg (hatch), at most 777, transferable. Attesters: servers that hatched; 3 signatures (or all, while fewer).",
+  "address": "0xB229De24F337028715f2e5326833d3C251741e07",
+  "tx": "0x8b51b6b8949a2b2ea9504996f371d4e900b9335330425208257455d46e38c72a",
+  "rules": "777 slots (live eggs + Fatliners). Eggs: one per FID, each with a unique surname and a stone; while the ranking's root is published, whose turn it is follows it (day 1: 1-777, day 2: 1-7,777, day 3: 1-77,777, then everyone ranked). An egg whose node stops dies (attesters sign Death) and its FID hibernates 7 days. Three warm days hatch it. Tokens move only by sale in USDC (list/buy): 8% to royaltyTo (jpfraneto.eth), and the token falls asleep until its new holder wakes it with their own Farcaster account (attesters sign Awaken). One app contract per token (appOf).",
   "genesis": {
    "fid": 18350,
    "name": "Aster",
@@ -25,15 +25,24 @@
    "dna": "0xde5d5dfabe29f7e02bb28a37b3579b078c616c95b255a1b86b63008e246bb904",
    "laidAt": 1792810800,
    "dnaNote": "History commitment of FID 18350 up to 2026-10-24T03:00Z: 640 messages (320 Snapchain, 320 Hypersnap). Computed on the master's nodes and again from crackle + haatz: identical.",
-   "vault": "0x0Ce1917Fe7779B3933226CCbd1285E11a990b0Ff",
+   "vault": "0xE458BECf1D889bf5a800d1D7ad6AB6CbfCE32cC8",
    "server": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
    "hatchery": "http://46.225.208.199:8791",
    "surname": "FATLINE",
-   "ticker": "FATLINE"
+   "ticker": "FATLINE",
+   "stage": "egg (hatches after three warm days)",
+   "stone": "gold (5)",
+   "app": "0x532CFBF63CCd4FcD34445E0473C798F2e310F896"
   },
-  "royalty": "8% of every resale, to the genesis Fatliner's vault"
+  "royalty": "8% of every resale, to the genesis Fatliner's vault",
+  "royaltyTo": "0xed21735DC192dC4eeAFd71b4Dc023bC53fE4DF15"
  },
  "superseded": [
+  {
+   "note": "Fourth deployment (2026-10-24 11:21Z): one contract, Aster born at deploy, coins uncapped by surnames, fees could go to the holder. Replaced at 13:00Z; nothing was launched or hatched on it (only Aster existed).",
+   "AppFactory": "0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49",
+   "Fatliners": "0x3423Dc1fDD8F4b5a5E06D73Ef8D0E93AdC86fC49"
+  },
   {
    "note": "Third deployment (2026-10-24 11:08Z): launchpad and Fatliners as two contracts, coins uncapped for eggs. Replaced at 11:21Z by one contract; nothing was launched or hatched on it (only Aster existed).",
    "AppFactory": "0x341AE48f22cc4F7428C969a559cb832912A1119F",
@@ -49,5 +58,10 @@
    "AppFactory": "0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a",
    "Fatliners": "0x91513c7CBe6d989FaD635926EBAF0daC3a24200e"
   }
- ]
+ ],
+ "Voices": {
+  "address": "0x532CFBF63CCd4FcD34445E0473C798F2e310F896",
+  "tx": "0x11cde94dc7df99eee80af464decc4da67d61ac7cf5fafb2c12daec3e948e7643",
+  "note": "Aster's app: the contract its client runs on (appOf(18350)). Long posts."
+ }
 }
