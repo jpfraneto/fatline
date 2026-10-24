@@ -54,7 +54,7 @@ export function story(d) {
     const eta = catching.etaMinutes != null ? ` About ${hours(catching.etaMinutes).replace(/^about /, "")} left at this pace.` : ' Measuring its pace…';
     return { mood: 'sync', title: 'Your node is catching up.', line: `${NET[catching.network] ?? catching.label} is ${lag(catching.blocksBehind)} behind the network.${eta} When it's in sync, you can lay your egg.`, next: null };
   }
-  return { mood: 'idle', title: 'Your node is not answering yet.', line: 'If it is still downloading its snapshot, that is normal: it starts answering once the download is unpacked. Check it with fatline status.', next: 'fatline status' };
+  return { mood: 'idle', title: 'Your node is being born.', line: 'It is downloading its own copy of Farcaster: a snapshot of the whole network, a few hundred gigabytes. That takes one to three hours; then it unpacks it, wakes up, and catches up with the newest messages. Your egg waits for it. Meanwhile you can already talk by the fire below.', next: 'fatline status' };
 }
 
 function art(d) {
@@ -78,7 +78,7 @@ function days(h) {
 
 function nodeRow(x) {
   const state = x.synced ? 'on' : x.answering ? 'sync' : 'off';
-  const what = x.synced ? `in sync · ${lag(x.blocksBehind)} behind` : x.answering ? `catching up · ${lag(x.blocksBehind)} behind${x.etaMinutes != null ? ` · ${hours(x.etaMinutes)} left` : ''}` : 'not answering';
+  const what = x.synced ? `in sync · ${lag(x.blocksBehind)} behind` : x.answering ? `catching up · ${lag(x.blocksBehind)} behind${x.etaMinutes != null ? ` · ${hours(x.etaMinutes)} left` : ''}` : 'not answering yet: downloading or starting up';
   return el('li', {}, el('i', { class: `ck-dot ${state} ${x.network}` }),
     el('span', {}, el('b', {}, NET[x.network] ?? x.label), ' ', el('small', {}, x.url.replace(/^https?:\/\//, ''))),
     el('small', { class: 'ck-what' }, what, x.messages ? ` · ${n(x.messages)} messages` : ''));
@@ -90,10 +90,10 @@ function casting(d) {
   const own = nodes.filter((x) => x.own);
   const ready = own.find((x) => x.synced);
   const behind = own.filter((x) => x.answering && !x.synced).sort((a, b) => a.blocksBehind - b.blocksBehind)[0];
-  if (!d.me.canWrite) return { ok: false, text: 'This window has no key to speak with yet. Run fatline identity, or tap Cast and sign once with your wallet.' };
+  if (!d.me.canWrite) return null; // the cast box itself says how to get a key
   if (ready) return { ok: true, text: `Your casts leave through your own node (${NET[ready.network] ?? ready.label}), signed here by you.` };
   if (behind) return { ok: false, text: `Your node is still catching up (${lag(behind.blocksBehind)} behind the network), so it can't check new casts yet. Until it can, your casts are still signed here, by you, and go out through Fatline's master node, which is not yours. You'll see which node carried each one.` };
-  return { ok: false, text: "Your node isn't answering yet. Your casts are signed here and go out through Fatline's master node, which is not yours, until yours is in sync." };
+  return { ok: false, text: "Your node is still being born, so it can't carry casts yet. Until it can, your casts are signed here, by you, and go out through Fatline's master node, which is not yours. Each one says which node carried it." };
 }
 
 function hero(d) {
@@ -112,7 +112,9 @@ function hero(d) {
 function lower(d) {
   const tk = d.token ?? {};
   const slots = tk.slots && tk.slots.fatliners != null ? (tk.slots.eggs != null ? `${tk.slots.eggs + tk.slots.fatliners} of ${tk.slots.max} taken (${tk.slots.eggs} eggs, ${tk.slots.fatliners} Fatliners)` : `${tk.slots.fatliners} of ${tk.slots.max} hatched`) : null;
-  const nodes = Array.isArray(d.nodes) ? d.nodes : [];
+  const all = Array.isArray(d.nodes) ? d.nodes : [];
+  const local = (x) => /^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])/.test(x.url);
+  const nodes = all.some((x) => !local(x)) ? all.filter((x) => !local(x) || x.answering) : all;
   const scan = (x) => el('a', { href: `https://basescan.org/address/${x}`, target: '_blank', rel: 'noopener' }, `${x.slice(0, 6)}…${x.slice(-4)}`);
   const app = tk.app
     ? el('p', { class: 'ck-app' }, 'This window runs its own smart contract: ', scan(tk.app), '.')
@@ -139,7 +141,7 @@ function fire(fids, onCast) {
       const page = await api('/api/feed', { network: state.network, fids: fids.join(','), limit: 8 });
       list.replaceChildren(...(page.items.length ? page.items.map((i) => card(i, page.users)) : [el('p', { class: 'muted' }, 'Quiet for now. Say something, or add your people in My people.')]));
     } catch (err) {
-      list.replaceChildren(el('p', { class: 'muted' }, /No reachable|synced/i.test(err.message) ? "Your people's casts appear here once a node in sync can read them." : err.message));
+      list.replaceChildren(el('p', { class: 'muted' }, /not answering|No reachable|synced|fetch failed|behind/i.test(err.message) ? "Your people's casts appear here once your node can read them: it is still being born. You can already cast; it goes out through another node, labeled." : err.message));
     }
   };
   load();
@@ -161,17 +163,17 @@ export async function cockpitPage() {
   const fig = el('figure', { class: 'ck-art' }, img);
   const stage = el('div', { class: 'ck-fire ck-stage' }, fig);
   const readout = el('p', { class: 'ck-lf-words', role: 'status' });
-  const setArt = (x) => { const a = art(x); if (img.getAttribute('src') !== a.src) img.src = a.src; img.alt = a.alt; fig.classList.toggle('dim', Boolean(a.dim)); };
+  const setArt = (x) => { const a = art(x); if (img.getAttribute('src') !== a.src) img.src = a.src; img.alt = a.alt; fig.classList.toggle('dim', Boolean(a.dim)); stage.dataset.egg = a.dim ? '0' : '1'; };
   setArt(d);
   stopLife?.();
   stopLife = lifeForce(stage, readout);
   const top = el('div', {}, hero(d));
   const way = el('p', { class: 'ck-way' });
-  const showWay = (x) => { const c = casting(x); way.className = `ck-way ${c.ok ? 'ok' : 'via'}`; way.textContent = c.text; };
+  const showWay = (x) => { const c = casting(x); way.hidden = !c; if (c) { way.className = `ck-way ${c.ok ? 'ok' : 'via'}`; way.textContent = c.text; } };
   showWay(d);
   const fids = [...new Set([...(state.people ?? []).map((p) => p.fid), ...(d.me.fid ? [d.me.fid] : [])])];
   const around = fire(fids);
-  const bottom = el('div', {}, ...lower(d));
+  const bottom = el('div', {}, ...lower(d).filter(Boolean));
   main.replaceChildren(el('section', { class: 'ck' }, el('div', { class: 'ck-hero' }, stage, readout), top,
     el('section', { class: 'ck-circle', 'aria-labelledby': 'ck-fire-h' },
       el('h2', { class: 'ck-h', id: 'ck-fire-h' }, 'By the fire'),
@@ -183,7 +185,7 @@ export async function cockpitPage() {
   const tick = async () => {
     if (!document.body.contains(top) || !/^\/?$/.test(location.hash.slice(1))) { stopLife?.(); stopLife = null; return; }
     if (!document.hidden) {
-      try { const x = await api('/api/cockpit'); setArt(x); top.replaceChildren(hero(x)); showWay(x); bottom.replaceChildren(...lower(x)); } catch { /* keep the last view; the next check retries */ }
+      try { const x = await api('/api/cockpit'); setArt(x); top.replaceChildren(hero(x)); showWay(x); bottom.replaceChildren(...lower(x).filter(Boolean)); } catch { /* keep the last view; the next check retries */ }
     }
     timer = setTimeout(tick, POLL_MS);
   };

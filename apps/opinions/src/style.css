@@ -398,4 +398,5 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
 .ck-stage.dark .ck-art { filter: grayscale(.9) brightness(.45); box-shadow: 0 0 0 1px var(--line); }
 .ck-lf { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .ck-lf-words { margin: 6px auto 0; max-width: 34em; text-align: center; font: 13px/1.45 var(--mono); color: var(--signal); min-height: 2.9em; }
-.ck-stage.dark + .ck-lf-words { color: var(--warn); }
+.ck-stage.dark + .ck-lf-words { color: var(--muted); }
+.ck-stage.dark[data-egg="1"] + .ck-lf-words { color: var(--warn); }

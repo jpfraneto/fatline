@@ -102,7 +102,9 @@ export function lifeForce(stage, readout) {
 
   const words = (x) => {
     if (!x) return 'Listening for your node…';
-    if (!x.alive) return `No life force: ${x.label ?? 'your node'} isn't answering${x.error ? ` (${x.error})` : ''}. If it stops for long, the egg dies.`;
+    if (!x.alive) return stage.dataset.egg === '1'
+      ? `No life force: ${x.label ?? 'your node'} isn't answering. If it stays down, the egg dies.`
+      : 'No life force yet: your node is still being born. When it wakes up, its current flows here.';
     const beat = `${(x.blocksPerSecond ?? 0).toFixed(1)} blocks a second`;
     const net = x.network === 'hypersnap' ? 'Hypersnap' : 'Snapchain';
     if ((x.behindSeconds ?? 0) > 200) {
