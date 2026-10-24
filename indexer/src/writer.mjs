@@ -65,8 +65,12 @@ export class Writer {
    * @param network  a Network from hub.mjs (the reader's chosen network and node)
    * @param key      the app key record
    */
-  constructor({ network, key, fetchImpl = fetch, confirmMs = 20_000, pollMs = 1_000 }) {
+  constructor({ network, key, fetchImpl = fetch, confirmMs = 20_000, pollMs = 1_000, confirmVia = null, fallback = null }) {
     this.network = network;
+    // While your node catches up: confirm on a node in sync (yours can't show it yet), and if yours refuses the
+    // message, send it through that node instead.
+    this.confirmVia = confirmVia;
+    this.fallback = fallback;
     this.key = key;
     this.fid = Number(key.fid);
     this.signer = new NobleEd25519Signer(bytes(key.privateKey));
@@ -118,17 +122,27 @@ export class Writer {
   /** Submits once, then reads back until the node shows it (or stops showing it, for removals). */
   async #publish(action, message, readBack, shouldExist) {
     const hash = hex(message.hash);
-    const node = await this.network.node();
-    await sendMessage(node, message, '/v1/submitMessage', this.fetch);
+    let node = await this.network.node();
+    let refused = null;
+    try {
+      await sendMessage(node, message, '/v1/submitMessage', this.fetch);
+    } catch (err) {
+      if (!this.fallback) throw err;
+      refused = String(err.message ?? err).slice(0, 200);
+      node = await this.fallback.node();
+      await sendMessage(node, message, '/v1/submitMessage', this.fetch);
+    }
+    const reader = this.confirmVia ? await this.confirmVia.node() : node;
+    const extra = { ...(refused ? { refused } : {}), ...(reader.url !== node.url ? { confirmedOn: reader.url } : {}) };
     const [path, params] = readBack(hash);
     const deadline = Date.now() + this.confirmMs;
     while (Date.now() < deadline) {
-      const found = await this.#exists(node, path, params, shouldExist ? hash : null);
-      if (found === shouldExist) return { action, hash, state: 'confirmed', node: node.url };
+      const found = await this.#exists(reader, path, params, shouldExist ? hash : null);
+      if (found === shouldExist) return { action, hash, state: 'confirmed', node: node.url, ...extra };
       await new Promise((r) => setTimeout(r, this.pollMs));
     }
     // Accepted by the node but not yet in a block. The same signed message can be resent safely.
-    return { action, hash, state: 'pending', node: node.url, message: Buffer.from(Message.encode(message).finish()).toString('base64') };
+    return { action, hash, state: 'pending', node: node.url, ...extra, message: Buffer.from(Message.encode(message).finish()).toString('base64') };
   }
 
   async #exists(node, path, params, hash) {

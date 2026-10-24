@@ -104,7 +104,7 @@ async function main() {
   const { choosePayer } = await import('../../infra/payer.mjs');
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
   const rl = createInterface({ input: process.stdin, output: process.stdout });
-  const account = await choosePayer({ root, state: config.dataDir, how: opts.pay, ask: (q) => rl.question(q), page: { title: `Launch $${p.ticker}`, detail: `Scan with the wallet that holds #${p.fid} (${p.holder.slice(0, 6)}…${p.holder.slice(-4)}), then approve one transaction: $${p.ticker}, paired with USDC on Clanker. 100% of its fees go to its vault.` } }).finally(() => rl.close());
+  const account = await choosePayer({ root, state: config.dataDir, how: opts.pay, ask: (q) => rl.question(q), page: { tx: { fn: `launchFatline(${p.fid}, …)`, contract: p.factory, name: 'Fatliners' }, title: `Launch $${p.ticker}`, detail: `Scan with the wallet that holds #${p.fid} (${p.holder.slice(0, 6)}…${p.holder.slice(-4)}), then approve one transaction: $${p.ticker}, paired with USDC on Clanker. 100% of its fees go to its vault.` } }).finally(() => rl.close());
   try {
     if (!account.sendTransaction) throw new Error('Launch from your own wallet: --pay phone (QR code) or --pay browser.');
     if (account.address.toLowerCase() !== p.holder.toLowerCase()) {

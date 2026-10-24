@@ -9,7 +9,7 @@ const FATLINERS = ['pfp/fid-3.jpg', 'pfp/fid-18350.jpg', 'pfp/fid-299673.jpg', '
   .map((p) => `https://fatline.ink/img/${p}`);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
-export function walletPageHtml({ uri, title, detail }) {
+export function walletPageHtml({ uri, title, detail, tx }) {
   const ring = FATLINERS.map((src, i) => `<img class="f f${i}" src="${src}" alt="">`).join('');
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fatline · ${esc(title)}</title>
@@ -36,11 +36,14 @@ h1{font:800 34px/1.05 Fraunces,Georgia,serif;font-variation-settings:'opsz' 144,
 p{margin:12px 0 0;color:#5b4630}
 .status{margin-top:14px;font:500 14px 'JetBrains Mono',monospace;color:#2b1d10;background:#efe2c6;border-radius:999px;padding:8px 14px;display:inline-block}
 .status.done{background:#cfe9d4}
+.tx{margin-top:12px;text-align:left;background:#efe2c6;border-radius:14px;padding:10px 14px;font-size:14px;color:#2b1d10}
+.tx code{font:600 14px 'JetBrains Mono',monospace}.tx a{color:#7a3fbf}.txl{font:500 11px 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8a6b44}.txn{font-size:12px;color:#8a6b44;margin-top:2px}
 .uri{margin-top:12px;font:12px 'JetBrains Mono',monospace;color:#8a6b44;word-break:break-all;max-height:3.2em;overflow:hidden}
 </style></head><body><div class="stage">${ring}
 <main class="card"><div class="mark">FATLINE</div><h1>${esc(title)}</h1><div class="line"></div>
 <div class="qr">${qrSvg(uri)}</div>
 <p>${esc(detail)}</p>
+${tx ? `<div class="tx"><div class="txl">The transaction</div><code>${esc(tx.fn)}</code> on <a href="https://basescan.org/address/${esc(tx.contract)}#code" target="_blank" rel="noopener">${esc(tx.contract.slice(0, 8))}…${esc(tx.contract.slice(-6))}</a>${tx.name ? ` (${esc(tx.name)})` : ''}<div class="txn">Base · read its code on Basescan before you approve</div></div>` : ''}
 <div class="status" id="status">Waiting for your wallet…</div>
 <div class="uri">${esc(uri)}</div></main></div>
 <script>
@@ -50,9 +53,9 @@ const s=document.getElementById('status');
 }
 
 /** Serves the page and opens it. Returns { url, status(text, done), close }. */
-export async function openWalletPage({ uri, title = 'Scan with your wallet', detail = 'Open your wallet app (Rainbow, MetaMask, Coinbase Wallet, Trust…), scan this, and approve. Nothing moves until you do.', open = true }) {
+export async function openWalletPage({ uri, title = 'Scan with your wallet', detail = 'Open your wallet app (Rainbow, MetaMask, Coinbase Wallet, Trust…), scan this, and approve. Nothing moves until you do.', tx = null, open = true }) {
   let state = { text: 'Waiting for your wallet…', done: false, closed: false };
-  const html = walletPageHtml({ uri, title, detail });
+  const html = walletPageHtml({ uri, title, detail, tx });
   const server = createServer((req, res) => {
     if (req.url === '/status') { res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); return res.end(JSON.stringify(state)); }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }); res.end(html);

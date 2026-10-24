@@ -190,6 +190,18 @@ cmd_coin() {
   cd "$ROOT/indexer" && node --experimental-sqlite --no-warnings=ExperimentalWarning src/launch-fatline.mjs "$@"
 }
 
+cmd_genesis() {
+  need_node
+  install indexer
+  cd "$ROOT/indexer" && node --experimental-sqlite --no-warnings=ExperimentalWarning src/onchain.mjs genesis "$@"
+}
+
+cmd_app() {
+  need_node
+  install indexer
+  cd "$ROOT/indexer" && node --experimental-sqlite --no-warnings=ExperimentalWarning src/onchain.mjs app "$@"
+}
+
 cmd_hatchery() {
   need_node
   install indexer
@@ -360,6 +372,6 @@ cmd_contracts() {
 command="${1:-help}"; shift || true
 case "$command" in
   help|-h|--help) cmd_help ;;
-  doctor|update|init|node|up|client|connect|dashboard|worker|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup|egg|hatch|hatchery|coin) "cmd_$command" "$@" ;;
+  doctor|update|init|node|up|client|connect|dashboard|worker|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup|egg|hatch|hatchery|coin|genesis|app) "cmd_$command" "$@" ;;
   *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
 esac

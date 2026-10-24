@@ -58,11 +58,11 @@ test('behind a proxy, the write token lets the owner post', async () => {
   } finally { server.close(); }
 });
 
-test("while your node catches up, a cast goes through a node in sync, and the reply says so", async () => {
+for (const ownRefuses of [false, true]) test(`while your node catches up: ${ownRefuses ? 'it refuses, so the cast goes through a node in sync' : 'the cast goes through it, confirmed on a node in sync'}`, async () => {
   const { Network } = await import('../src/hub.mjs');
   const { Message } = await import('@farcaster/core');
   const info = (behind) => ({ shardInfos: [{ shardId: 1, maxHeight: 100, blockDelay: behind }, { shardId: 2, maxHeight: 100, blockDelay: behind }], dbStats: {} });
-  const seen = { 'http://own.test': [], 'http://public.test': [] };
+  const seen = { 'http://own.test': 0, 'http://public.test': 0 };
   const stored = new Set();
   const fake = async (input, init = {}) => {
     const u = new URL(String(input));
@@ -70,12 +70,13 @@ test("while your node catches up, a cast goes through a node in sync, and the re
     const json = (b, status = 200) => new Response(JSON.stringify(b), { status });
     if (u.pathname === '/v1/info') return json(info(base === 'http://own.test' ? 5000 : 0));
     if (u.pathname === '/v1/submitMessage') {
-      seen[base].push(1);
+      seen[base]++;
+      if (base === 'http://own.test' && ownRefuses) return json({ errCode: 'bad_request.validation_failure', details: 'invalid signer' }, 400);
       const m = Message.decode(new Uint8Array(init.body));
       stored.add(`0x${Buffer.from(m.hash).toString('hex')}`);
       return json({ hash: `0x${Buffer.from(m.hash).toString('hex')}` });
     }
-    if (u.pathname === '/v1/castById') return stored.has(u.searchParams.get('hash')) ? json({ data: {}, hash: u.searchParams.get('hash') }) : json({ error: 'nf' }, 400);
+    if (u.pathname === '/v1/castById') return base === 'http://public.test' && stored.has(u.searchParams.get('hash')) ? json({ data: {}, hash: u.searchParams.get('hash') }) : json({ error: 'nf', error_detail: 'NotFound' }, 400);
     return json({}, 404);
   };
   const realFetch = globalThis.__realFetch ?? globalThis.fetch;
@@ -92,10 +93,16 @@ test("while your node catches up, a cast goes through a node in sync, and the re
     const out = await res.json();
     assert.equal(res.status, 200, JSON.stringify(out));
     assert.equal(out.state, 'confirmed');
-    assert.equal(out.via.node, 'http://public.test');
-    assert.match(out.via.because, /5000 blocks behind/);
-    assert.equal(seen['http://own.test'].length, 0);
-    assert.equal(seen['http://public.test'].length, 1);
+    assert.equal(seen['http://own.test'], 1, 'your node gets it first');
+    if (ownRefuses) {
+      assert.equal(out.node, 'http://public.test');
+      assert.match(out.via.because, /5000 blocks behind and refused it/);
+      assert.equal(seen['http://public.test'], 1);
+    } else {
+      assert.equal(out.node, 'http://own.test');
+      assert.equal(out.syncing.confirmedOn, 'http://public.test');
+      assert.equal(seen['http://public.test'], 0);
+    }
   } finally {
     server.close();
     globalThis.fetch = realFetch;
