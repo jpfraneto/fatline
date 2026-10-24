@@ -7,14 +7,15 @@
 // A check passes when the egg's node:
 //   1. answers /v1/info quickly,
 //   2. is in sync: every user shard within MAX_LAG_BLOCKS of the attester's node,
-//   3. holds real data: returns two messages the attester picked at random from its own node, by hash.
-// This cannot prove the node isn't forwarding to someone else's node, but one node can warm only one egg,
-// and the attesters' own nodes and the well-known public ones are refused.
+//   3. holds real data: returns two messages the attester picked at random from its own node, by hash,
+//   4. runs a hatchery that answers with the key the egg names (that server becomes an attester at hatching).
+// This cannot prove the node isn't forwarding to someone else's node, but one machine can warm only one
+// egg, and machines that already host an attester, and the well-known public nodes, are refused.
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { privateKeyToAccount } from 'viem/accounts';
 import {
-  CHECK_EVERY_MS, CLAIM_SKEW_MS, DAY_MS, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, verifyClaim, warmth,
+  CHECK_EVERY_MS, CLAIM_SKEW_MS, DAY_MS, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, normalizeUrl, sameHost, verifyClaim, warmth,
 } from './egg.mjs';
 
 export const MAX_LAG_BLOCKS = 600; // ~10 minutes of blocks
@@ -31,8 +32,9 @@ export class Hatchery {
    * @param contract    { chainId, address } of Fatliners (address may be null until it is deployed)
    * @param reference   { farcaster: url, hypersnap: url }: the attester's own nodes, the truth it checks against
    * @param computeDna  async (fid, snapshotAtMs) => '0x' + 64 hex: the history commitment
+   * @param listAttesters async () => [{ address, url }]: every attester, from the contract
    */
-  constructor({ config, privateKey, contract, reference, dataDir, computeDna, fetchImpl = fetch, now = () => Date.now(),
+  constructor({ config, privateKey, contract, reference, dataDir, computeDna, listAttesters = async () => [], fetchImpl = fetch, now = () => Date.now(),
     dayMs = DAY_MS, checkEveryMs = CHECK_EVERY_MS, random = Math.random, log = console.log }) {
     this.config = config;
     this.account = privateKeyToAccount(privateKey);
@@ -40,6 +42,7 @@ export class Hatchery {
     this.reference = reference;
     this.file = join(dataDir, 'hatchery.json');
     this.computeDna = computeDna;
+    this.listAttesters = listAttesters;
     this.fetch = fetchImpl;
     this.now = now;
     this.dayMs = dayMs;
@@ -64,12 +67,15 @@ export class Hatchery {
     return { status: res.status, ok: res.ok, body, ms: Date.now() - t0 };
   }
 
-  /** Nodes that can't warm an egg: the attester's own, and every node named in its config (public ones). */
-  refused() {
-    const out = new Set(Object.values(this.reference).filter(Boolean).map(normalizeNode));
-    for (const net of Object.values(this.config.networks ?? {})) for (const n of net.nodes ?? []) if (!isLocal(n.url)) out.add(normalizeNode(n.url));
-    for (const n of this.config.masterNodes ?? []) out.add(normalizeNode(n.url));
-    return out;
+  /** Machines that can't warm an egg: this attester's own nodes, the public nodes in its config, and every
+   * machine that already hosts an attester. Compared by host name: another port is the same machine. */
+  async refused(node) {
+    const urls = [...Object.values(this.reference).filter(Boolean)];
+    for (const net of Object.values(this.config.networks ?? {})) for (const n of net.nodes ?? []) if (!isLocal(n.url)) urls.push(n.url);
+    for (const n of this.config.masterNodes ?? []) urls.push(n.url);
+    const attesters = await this.listAttesters();
+    for (const a of attesters) if (a.url) urls.push(a.url);
+    return { hit: urls.some((u) => { try { return sameHost(u, node); } catch { return false; } }), attesters };
   }
 
   // ------------------------------------------------------------------ laying
@@ -86,9 +92,15 @@ export class Hatchery {
     if (!ref) throw fail(`This attester has no node on ${c.network}.`);
     const node = normalizeNode(c.node);
     if (isLocal(node)) throw fail('The node must be reachable from the internet, not localhost.');
-    if (this.refused().has(node)) throw fail('That node is a public or attester node. Your egg needs your own node.');
-    const other = Object.values(this.state.eggs).find((e) => normalizeNode(e.claim.node) === node && e.claim.fid !== fid);
-    if (other) throw fail('That node already keeps another egg warm. One node, one egg.');
+    if (!/^0x[0-9a-f]{40}$/.test(c.server ?? '')) throw fail('The claim needs the server\'s hatchery key.');
+    let hatcheryUrl;
+    try { hatcheryUrl = normalizeUrl(c.hatchery); } catch { throw fail('The claim needs the server\'s hatchery URL.'); }
+    if (!sameHost(hatcheryUrl, node)) throw fail('The hatchery must run on the same machine as the node.');
+    const { hit, attesters } = await this.refused(node);
+    if (hit) throw fail('That machine is a public node or already hosts an attester. Your egg needs your own server.');
+    if (attesters.some((a) => a.address.toLowerCase() === c.server)) throw fail('That hatchery key is already an attester. One server, one egg.');
+    const other = Object.values(this.state.eggs).find((e) => e.claim.fid !== fid && (sameHost(e.claim.node, node) || e.claim.server === c.server));
+    if (other) throw fail('That server already keeps another egg warm. One server, one egg.');
 
     // The key must be an active app key of this FID, on the attester's own node.
     const signers = await this.json(`${ref}/v1/signersByFid?fid=${fid}`, 15_000).catch(() => null);
@@ -101,19 +113,19 @@ export class Hatchery {
     if (existing?.hatch) throw fail('This egg has already hatched.', 409);
     if (existing && existing.claim.to !== c.to) throw fail('This egg already names another address to hatch to.', 409);
 
-    // The node must be alive when the egg is laid.
-    const first = await this.check(c.network, node);
+    // The server must be alive when the egg is laid.
+    const first = await this.check({ ...c, node, hatchery: hatcheryUrl });
     if (!first.ok) throw fail(`Your node did not pass its first check: ${first.reason}`);
 
     if (existing) {
       // Moving the egg to another node keeps its warmth and its DNA.
-      existing.claim = { ...existing.claim, node, network: c.network };
+      existing.claim = { ...existing.claim, node, network: c.network, server: c.server, hatchery: hatcheryUrl };
       existing.publicKey = signed.publicKey;
       existing.signature = signed.signature;
       existing.checks.push(first);
       this.log(`FID ${fid}: egg moved to ${node}`);
     } else {
-      this.state.eggs[fid] = { claim: { ...c, node }, publicKey: signed.publicKey, signature: signed.signature, laidAt: laidAtOf(c.at), dna: null, checks: [first], hatch: null };
+      this.state.eggs[fid] = { claim: { ...c, node, hatchery: hatcheryUrl }, publicKey: signed.publicKey, signature: signed.signature, laidAt: laidAtOf(c.at), dna: null, checks: [first], hatch: null };
       this.log(`FID ${fid}: egg laid, kept warm by ${node}`);
     }
     this.save();
@@ -154,8 +166,8 @@ export class Hatchery {
     return null;
   }
 
-  /** One check of one node. Returns { at, ok, reason?, ms? }. `null` reason means the attester could not judge. */
-  async check(network, node) {
+  /** One check of one egg's server. Returns { at, ok, reason?, ms? }. ok: null means the attester could not judge. */
+  async check({ network, node, server, hatchery }) {
     const at = this.now();
     const ref = this.reference[network];
     const [mine, theirs] = await Promise.all([
@@ -176,6 +188,9 @@ export class Hatchery {
       const r = await this.json(`${node}/v1/castById?fid=${m.fid}&hash=${m.hash}`, 5_000).catch(() => null);
       if (!r?.ok || r.body?.hash !== m.hash) return { at, ok: false, reason: `it did not return message ${m.hash.slice(0, 10)}… (FID ${m.fid}) within 5 s` };
     }
+    const h = await this.json(`${hatchery}/`).catch(() => null);
+    if (!h?.ok) return { at, ok: false, reason: `its hatchery did not answer at ${hatchery}` };
+    if (String(h.body?.attester).toLowerCase() !== server) return { at, ok: false, reason: `its hatchery answers with key ${h.body?.attester}, not ${server}` };
     return { at, ok: true, ms: theirs.ms };
   }
 
@@ -189,7 +204,7 @@ export class Hatchery {
       if (this.busy.has(`check:${fid}`)) continue;
       this.busy.add(`check:${fid}`);
       try {
-        const r = await this.check(egg.claim.network, egg.claim.node);
+        const r = await this.check(egg.claim);
         if (r.ok !== null) egg.checks.push(r); // hours the attester could not judge are left out
         else this.log(`FID ${fid}: ${r.reason}`);
         if (!egg.dna) this.fillDna(fid);
@@ -222,7 +237,7 @@ export class Hatchery {
     const w = this.warmth(egg);
     const recent = egg.checks.slice(-6).map(({ at, ok, reason }) => ({ at, ok, ...(reason ? { reason } : {}) }));
     return {
-      fid: egg.claim.fid, network: egg.claim.network, node: egg.claim.node, to: egg.claim.to,
+      fid: egg.claim.fid, network: egg.claim.network, node: egg.claim.node, to: egg.claim.to, server: egg.claim.server, hatchery: egg.claim.hatchery,
       laidAt: egg.laidAt, layingAt: egg.claim.at, dna: egg.dna, dnaError: egg.dna ? undefined : egg.dnaError,
       warmDays: w.warmDays, needed: w.needed, days: w.days.map(({ day, checks, passed, need, warm, done }) => ({ day, checks, passed, need, warm, done })),
       recent, hatched: Boolean(egg.hatch), hatch: egg.hatch, attester: this.address,

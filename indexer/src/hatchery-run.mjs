@@ -1,5 +1,6 @@
 // fatline hatchery: run an attester.
 //
+//   fatline hatchery install  put the hatchery on your rented server, next to its node (over SSH)
 //   fatline hatchery init     make this attester's key (.fatline/attester.key, mode 600) and show its address
 //   fatline hatchery          serve eggs on :8791 and check them every hour
 //
@@ -21,7 +22,8 @@ import { hatchDomain, hatchTypes } from './egg.mjs';
 import { Hatchery } from './hatchery.mjs';
 
 export const fatlinersAbi = parseAbi([
-  'function hatch((uint256 fid, address to, bytes32 dna, uint64 laidAt, uint256 deadline) h, bytes[] signatures)',
+  'function hatch((uint256 fid, address to, bytes32 dna, uint64 laidAt, uint256 deadline, address server, string url) h, bytes[] signatures)',
+  'function hatcheries() view returns (address[] who, string[] urls)',
   'function attesters() view returns (address[])',
   'function threshold() view returns (uint256)',
   'function ownerOf(uint256) view returns (address)',
@@ -74,7 +76,21 @@ export async function orderSignatures(message, contract, sigs, attesters) {
   return [...seen.entries()].sort(([a], [b]) => (BigInt(a) < BigInt(b) ? -1 : 1));
 }
 
-const toMessage = (m) => ({ fid: BigInt(m.fid), to: m.to, dna: m.dna, laidAt: BigInt(m.laidAt), deadline: BigInt(m.deadline) });
+const toMessage = (m) => ({ fid: BigInt(m.fid), to: m.to, dna: m.dna, laidAt: BigInt(m.laidAt), deadline: BigInt(m.deadline), server: m.server, url: m.url });
+
+/** Every attester and its hatchery URL, from the one Fatliners contract. Without a contract: the config's list. */
+export function attesterList(hc) {
+  if (!hc.contract) return async () => hc.attesters.map((a) => (typeof a === 'string' ? { address: '', url: a } : { address: a.address ?? '', url: a.url }));
+  const reader = createPublicClient({ chain: chainOf(hc.chainId), transport: http(hc.rpc) });
+  let cache = null, at = 0;
+  return async () => {
+    if (cache && Date.now() - at < 60_000) return cache;
+    const [who, urls] = await reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'hatcheries' });
+    cache = who.map((address, i) => ({ address, url: urls[i] }));
+    at = Date.now();
+    return cache;
+  };
+}
 
 async function serve() {
   const config = loadConfig();
@@ -82,7 +98,7 @@ async function serve() {
   const privateKey = loadKey(config.dataDir);
   const contract = { chainId: hc.chainId, address: hc.contract };
   const hatchery = new Hatchery({ config, privateKey, contract, reference: hc.reference, dataDir: config.dataDir,
-    computeDna: dnaFrom(config, hc.reference), dayMs: hc.dayMs, checkEveryMs: hc.checkEveryMs });
+    computeDna: dnaFrom(config, hc.reference), listAttesters: attesterList(hc), dayMs: hc.dayMs, checkEveryMs: hc.checkEveryMs });
   const chain = chainOf(hc.chainId);
   const reader = createPublicClient({ chain, transport: http(hc.rpc) });
   const wallet = createWalletClient({ account: privateKeyToAccount(privateKey), chain, transport: http(hc.rpc) });
@@ -159,5 +175,11 @@ async function init() {
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const cmd = process.argv[2];
-  (cmd === 'init' ? init() : serve()).catch((err) => { console.error(err.message); process.exit(1); });
+  const install = async () => {
+    const { installHatchery } = await import('../../infra/hatchery-remote.mjs');
+    const i = process.argv.indexOf('--ip');
+    const hc = hatcheryConfig(loadConfig());
+    installHatchery({ ip: i > 0 ? process.argv[i + 1] : undefined, env: { FATLINERS_ADDRESS: hc.contract, FATLINERS_CHAIN_ID: hc.chainId, FATLINERS_RPC: hc.rpc } });
+  };
+  (cmd === 'init' ? init() : cmd === 'install' ? install() : serve()).catch((err) => { console.error(err.message); process.exit(1); });
 }

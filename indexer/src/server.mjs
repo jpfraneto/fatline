@@ -9,7 +9,7 @@ import { VoicesIndex } from './voices.mjs';
 import { Launchpad } from './launchpad.mjs';
 import { Keeper } from './keeper.mjs';
 import { Writer, loadAppKey } from './writer.mjs';
-import { hatcheryConfig } from './hatchery-run.mjs';
+import { attesterList, hatcheryConfig } from './hatchery-run.mjs';
 import { NodeMonitor } from './nodes.mjs';
 import { Coins } from './coin.mjs';
 import { Archive, TYPES as ARCHIVE_TYPES } from './archive.mjs';
@@ -102,13 +102,13 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/egg$/, async () => {
       const key = loadAppKey(config.dataDir);
       if (!key) return { fid: null, attesters: [] };
-      const attesters = (hatcheryConfig(config).attesters ?? []).map((a) => (typeof a === 'string' ? { url: a } : a));
+      const attesters = await attesterList(hatcheryConfig(config))().catch(() => []);
       const seen = await Promise.all(attesters.map(async (a) => {
         try {
           const res = await fetch(`${a.url.replace(/\/$/, '')}/eggs/${key.fid}`, { signal: AbortSignal.timeout(8_000) });
-          return { label: a.label ?? a.url, egg: res.ok ? await res.json() : null, error: res.ok || res.status === 404 ? null : `HTTP ${res.status}` };
+          return { label: a.url, egg: res.ok ? await res.json() : null, error: res.ok || res.status === 404 ? null : `HTTP ${res.status}` };
         } catch (err) {
-          return { label: a.label ?? a.url, egg: null, error: err.message };
+          return { label: a.url, egg: null, error: err.message };
         }
       }));
       return { fid: key.fid, attesters: seen };

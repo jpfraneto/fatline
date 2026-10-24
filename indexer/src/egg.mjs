@@ -1,7 +1,7 @@
 // The egg: what a node keeps warm until a Fatliner hatches from it.
 //
 // To lay one, the account signs a claim with its app key (the Ed25519 key `fatline identity` made):
-// "this node keeps my egg warm; hatch me to this address". Attesters check that node every hour. After
+// "this server keeps my egg warm (its node, and its hatchery with this key); hatch me to this address". Attesters check that node every hour. After
 // WARM_DAYS warm days each attester signs the same EIP-712 Hatch, and the Fatliners contract mints when
 // more than half of the attesters signed it. Everything an attester signs is computed from the claim and
 // the account's history, so honest attesters sign identical Hatches.
@@ -26,6 +26,16 @@ export function normalizeNode(url) {
   return `${u.protocol}//${u.hostname.toLowerCase()}:${port}`;
 }
 
+/** A hatchery's URL as it is stored onchain: scheme://host[:port], no trailing slash. */
+export function normalizeUrl(url) {
+  const u = new URL(url);
+  if (!/^https?:$/.test(u.protocol)) throw new Error('The hatchery must be an http(s) URL.');
+  return `${u.protocol}//${u.host.toLowerCase()}`;
+}
+
+/** Two URLs on the same machine (same host name, any port). */
+export const sameHost = (a, b) => new URL(a).hostname.toLowerCase() === new URL(b).hostname.toLowerCase();
+
 /** The text the app key signs. Plain words, so anyone can read what they sign. */
 export function claimText(c) {
   return [
@@ -34,13 +44,16 @@ export function claimText(c) {
     `network: ${c.network}`,
     `node: ${normalizeNode(c.node)}`,
     `to: ${lower(c.to)}`,
+    `server: ${lower(c.server)}`,
+    `hatchery: ${normalizeUrl(c.hatchery)}`,
     `at: ${Number(c.at)}`,
   ].join('\n');
 }
 
 /** Signs a claim with the app key record ({ fid, privateKey, publicKey }) from .fatline/appkey.json. */
 export function signClaim(appKey, claim) {
-  const c = { fid: Number(claim.fid), network: claim.network, node: normalizeNode(claim.node), to: lower(claim.to), at: Number(claim.at) };
+  const c = { fid: Number(claim.fid), network: claim.network, node: normalizeNode(claim.node), to: lower(claim.to),
+    server: lower(claim.server), hatchery: normalizeUrl(claim.hatchery), at: Number(claim.at) };
   if (Number(appKey.fid) !== c.fid) throw new Error(`The app key belongs to FID ${appKey.fid}, not ${c.fid}.`);
   const key = createPrivateKey({ format: 'jwk', key: { kty: 'OKP', crv: 'Ed25519', d: b64url(raw(appKey.privateKey).subarray(0, 32)), x: b64url(raw(appKey.publicKey)) } });
   return { claim: c, publicKey: lower(appKey.publicKey), signature: `0x${edSign(null, Buffer.from(claimText(c)), key).toString('hex')}` };
@@ -69,6 +82,8 @@ export const hatchTypes = {
     { name: 'dna', type: 'bytes32' },
     { name: 'laidAt', type: 'uint64' },
     { name: 'deadline', type: 'uint256' },
+    { name: 'server', type: 'address' },
+    { name: 'url', type: 'string' },
   ],
 };
 export const hatchDomain = ({ chainId, address }) => ({ name: 'Fatliners', version: '1', chainId: Number(chainId), verifyingContract: address });
@@ -76,7 +91,8 @@ export const hatchDomain = ({ chainId, address }) => ({ name: 'Fatliners', versi
 /** The Hatch for an egg. Every field comes from the claim and the DNA, so attesters agree on it. */
 export function hatchOf(egg) {
   const laidAt = laidAtOf(egg.claim.at);
-  return { fid: BigInt(egg.claim.fid), to: egg.claim.to, dna: egg.dna, laidAt: BigInt(laidAt), deadline: BigInt(laidAt + HATCH_VALID_S) };
+  return { fid: BigInt(egg.claim.fid), to: egg.claim.to, dna: egg.dna, laidAt: BigInt(laidAt), deadline: BigInt(laidAt + HATCH_VALID_S),
+    server: egg.claim.server, url: egg.claim.hatchery };
 }
 
 /**

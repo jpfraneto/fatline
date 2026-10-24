@@ -74,7 +74,8 @@ Your egg (a Fatliner hatches after your node keeps it warm for 3 days):
                                      --node URL (default: the server fatline compute rented), --to 0x…
   fatline egg                   How warm it is: each day's checks, at every attester
   fatline hatch                 Collect the attesters' signatures; the Fatliner is minted to you (no gas)
-  fatline hatchery [init]       Run an attester: check eggs, sign the ones that hatch
+  fatline hatchery install      Put the hatchery on your server, next to its node: it checks eggs and signs,
+                                     by itself; your server becomes an attester when your egg hatches
 
 Fatliners (PFPs from any FID's history, reference-conditioned):
   fatline fatliners prompt --fid 18350          Read our nodes, write traits + prompt + request (no image call)

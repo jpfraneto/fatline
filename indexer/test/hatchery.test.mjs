@@ -15,6 +15,8 @@ const REF = 'http://ref.test:3381';
 const GOOD = 'http://egg.test:3381';
 const STALE = 'http://stale.test:3381';
 const LIAR = 'http://liar.test:3381';
+const SERVER = '0x00000000000000000000000000000000000000aa'; // the egg server's hatchery key
+const HATCH = 'http://egg.test:8791';
 const FC_EPOCH_S = 1_609_459_200;
 
 function appKey(fid = 18350) {
@@ -35,6 +37,7 @@ function fakeNet({ signers, now }) {
     const node = `${u.protocol}//${u.host}`;
     const q = Object.fromEntries(u.searchParams);
     if (node === 'http://down.test:3381') throw new Error('fetch failed');
+    if (u.port === '8791' && u.pathname === '/') return node === 'http://wrongkey.test:8791' ? ok({ attester: '0x00000000000000000000000000000000000000bb' }) : ok({ attester: SERVER });
     if (u.pathname === '/v1/info') return ok(info(node === STALE ? 5000 : 0));
     if (u.pathname === '/v1/signersByFid') return ok({ signers: (signers[q.fid] ?? []).map((key) => ({ key })) });
     if (u.pathname === '/v1/castsByFid' && node === REF) return ok({ messages: [cast(Number(q.fid))] });
@@ -46,7 +49,7 @@ function fakeNet({ signers, now }) {
   };
 }
 
-function setup({ dayMs = DAY, checkEveryMs = HOUR } = {}) {
+function setup({ dayMs = DAY, checkEveryMs = HOUR, attesters = [] } = {}) {
   let clock = T0;
   const now = () => clock;
   const key = appKey();
@@ -55,16 +58,22 @@ function setup({ dayMs = DAY, checkEveryMs = HOUR } = {}) {
     config: { networks: { farcaster: { nodes: [{ url: 'https://crackle.farcaster.xyz:3381' }] } } },
     privateKey: `0x${'42'.repeat(32)}`, contract: { chainId: 8453, address: '0x5FbDB2315678afecb367f032d93F642f64180aa3' },
     reference: { farcaster: REF }, dataDir: mkdtempSync(join(tmpdir(), 'hatchery-')),
-    computeDna: async () => `0x${'ab'.repeat(32)}`, fetchImpl: fakeNet({ signers, now }), now, dayMs, checkEveryMs, log: () => {},
+    computeDna: async () => `0x${'ab'.repeat(32)}`, listAttesters: async () => attesters, fetchImpl: fakeNet({ signers, now }), now, dayMs, checkEveryMs, log: () => {},
   });
-  const claim = (over = {}) => signClaim(key, { fid: 18350, network: 'farcaster', node: GOOD, to: '0x3ae59405ea68e9ce61442cadf74c335abfbc6b60', at: clock, ...over });
+  const claim = (over = {}) => {
+    const node = over.node ?? GOOD;
+    let hatchery = HATCH;
+    try { hatchery = `http://${new URL(node).hostname}:8791`; } catch {}
+    return signClaim(key, { fid: 18350, network: 'farcaster', node, to: '0x3ae59405ea68e9ce61442cadf74c335abfbc6b60', server: SERVER, hatchery, at: clock, ...over });
+  };
   return { h, key, signers, claim, tick: async (ms) => { clock += ms; await h.tick(); }, now };
 }
 
 test('a claim is plain text, signed by the app key, and any change breaks it', () => {
   const key = appKey();
-  const s = signClaim(key, { fid: 18350, network: 'farcaster', node: 'http://1.2.3.4:3381/', to: '0xABCDEF0000000000000000000000000000000001', at: T0 });
-  assert.match(claimText(s.claim), /^fatline egg v1\nfid: 18350\nnetwork: farcaster\nnode: http:\/\/1\.2\.3\.4:3381\nto: 0xabcdef/);
+  const s = signClaim(key, { fid: 18350, network: 'farcaster', node: 'http://1.2.3.4:3381/', to: '0xABCDEF0000000000000000000000000000000001', server: SERVER, hatchery: 'http://1.2.3.4:8791/', at: T0 });
+  assert.match(claimText(s.claim), /^fatline egg v1\nfid: 18350\nnetwork: farcaster\nnode: http:\/\/1\.2\.3\.4:3381\nto: 0xabcdef0+1\nserver: 0x0+aa\nhatchery: http:\/\/1\.2\.3\.4:8791\nat: /);
+  assert.ok(!verifyClaim({ ...s, claim: { ...s.claim, server: '0x00000000000000000000000000000000000000bb' } }));
   assert.ok(verifyClaim(s));
   assert.ok(!verifyClaim({ ...s, claim: { ...s.claim, to: '0x0000000000000000000000000000000000000002' } }));
   assert.ok(!verifyClaim({ ...s, publicKey: appKey().publicKey }));
@@ -84,8 +93,8 @@ test('laying: only the FID\'s own key, a fresh claim, your own live node', async
   await assert.rejects(h.lay({ ...claim(), signature: claim({ to: '0x0000000000000000000000000000000000000009' }).signature }), /not signed by that key/);
   await assert.rejects(h.lay(claim({ at: T0 - 20 * 60_000 })), /too old/);
   await assert.rejects(h.lay(claim({ node: 'http://127.0.0.1:3381' })), /reachable from the internet/);
-  await assert.rejects(h.lay(claim({ node: REF })), /public or attester node/);
-  await assert.rejects(h.lay(claim({ node: 'https://crackle.farcaster.xyz:3381' })), /public or attester node/);
+  await assert.rejects(h.lay(claim({ node: REF })), /public node or already hosts an attester/);
+  await assert.rejects(h.lay(claim({ node: 'https://crackle.farcaster.xyz:3381' })), /public node or already hosts an attester/);
   await assert.rejects(h.lay(claim({ node: 'http://down.test:3381' })), /first check: no answer/);
   await assert.rejects(h.lay(claim({ node: STALE })), /blocks behind/);
   await assert.rejects(h.lay(claim({ node: LIAR })), /did not return message/);
@@ -96,7 +105,19 @@ test('laying: only the FID\'s own key, a fresh claim, your own live node', async
   // One node, one egg.
   const other = appKey(3);
   signers[3] = [other.publicKey];
-  await assert.rejects(h.lay(signClaim(other, { fid: 3, network: 'farcaster', node: GOOD, to: '0x0000000000000000000000000000000000000003', at: T0 })), /another egg/);
+  await assert.rejects(h.lay(signClaim(other, { fid: 3, network: 'farcaster', node: 'http://egg.test:3999', to: '0x0000000000000000000000000000000000000003', server: '0x00000000000000000000000000000000000000cc', hatchery: 'http://egg.test:8791', at: T0 })), /another egg/);
+});
+
+test('the egg names its server\'s hatchery: same machine, the key it claims, not already an attester', async () => {
+  const { h, claim } = setup({ attesters: [{ address: '0x00000000000000000000000000000000000000dd', url: 'http://genesis.test:8791' }] });
+  await assert.rejects(h.lay(claim({ hatchery: 'http://elsewhere.test:8791' })), /same machine/);
+  await assert.rejects(h.lay(claim({ node: 'http://wrongkey.test:3381' })), /answers with key 0x0+bb/);
+  await assert.rejects(h.lay(claim({ node: 'http://genesis.test:3381' })), /already hosts an attester/);
+  const taken = setup({ attesters: [{ address: SERVER, url: 'http://old.test:8791' }] });
+  await assert.rejects(taken.h.lay(taken.claim()), /already an attester/);
+  const egg = await h.lay(claim());
+  assert.equal(egg.server, SERVER);
+  assert.equal(egg.hatchery, HATCH);
 });
 
 test('three warm days hatch it; the Hatch is signed for the contract and recovers to the attester', async () => {
@@ -114,6 +135,8 @@ test('three warm days hatch it; the Hatch is signed for the contract and recover
   const message = hatchOf(h.state.eggs[18350]);
   assert.equal(s.hatch.message.dna, `0x${'ab'.repeat(32)}`);
   assert.equal(s.hatch.message.deadline, String(message.deadline));
+  assert.equal(s.hatch.message.server, SERVER);
+  assert.equal(s.hatch.message.url, HATCH);
   const signer = await recoverTypedDataAddress({ domain: hatchDomain(h.contract), types: hatchTypes, primaryType: 'Hatch', message, signature: s.hatch.signature });
   assert.equal(signer, h.address);
   const checks = h.state.eggs[18350].checks.length;

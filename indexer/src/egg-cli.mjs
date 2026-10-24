@@ -12,7 +12,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from './config.mjs';
 import { laidAtOf, normalizeNode, signClaim } from './egg.mjs';
-import { hatcheryConfig } from './hatchery-run.mjs';
+import { attesterList, hatcheryConfig } from './hatchery-run.mjs';
 import { Network } from './hub.mjs';
 import { loadAppKey } from './writer.mjs';
 
@@ -21,7 +21,7 @@ const PORTS = { farcaster: 3381, hypersnap: 4381 };
 function args() {
   const a = process.argv.slice(2);
   const get = (n) => { const i = a.indexOf(`--${n}`); return i >= 0 ? a[i + 1] : undefined; };
-  return { cmd: a[0] && !a[0].startsWith('--') ? a[0] : 'status', node: get('node'), network: get('network'), to: get('to') };
+  return { cmd: a[0] && !a[0].startsWith('--') ? a[0] : 'status', node: get('node'), network: get('network'), to: get('to'), hatchery: get('hatchery') };
 }
 
 const say = (s = '') => console.log(s);
@@ -34,10 +34,12 @@ async function json(url, init) {
   return body;
 }
 
-function attestersOf(config) {
-  const list = hatcheryConfig(config).attesters;
-  if (!list.length) throw new Error('No attesters in fatline.config.json (hatchery.attesters). Nobody can warm an egg yet.');
-  return list.map((a) => (typeof a === 'string' ? { url: a } : a)).map((a) => ({ ...a, url: a.url.replace(/\/$/, '') }));
+/** The attesters, from the Fatliners contract (every Fatline server reads the same one). */
+async function attestersOf(config) {
+  const hc = hatcheryConfig(config);
+  const list = await attesterList(hc)();
+  if (!list.length) throw new Error(hc.contract ? 'The contract has no attesters.' : 'No Fatliners contract and no attesters in fatline.config.json (hatchery).');
+  return list.map((a, i) => ({ url: a.url.replace(/\/$/, ''), label: a.address ? `attester ${i + 1} (${a.url})` : a.url }));
 }
 
 function defaultNode(config, network) {
@@ -62,17 +64,22 @@ async function lay(config, opts) {
   const network = opts.network ?? key.network ?? config.defaultNetwork;
   const node = opts.node ?? defaultNode(config, network);
   if (!node) throw new Error('Which node keeps the egg warm? Pass --node http://<your server>:3381 (it must be reachable from the internet).');
+  // The server's own hatchery: it becomes an attester when the egg hatches.
+  const hatchery = (opts.hatchery ?? `http://${new URL(node).hostname}:8791`).replace(/\/$/, '');
+  const server = (await json(`${hatchery}/`, { timeoutMs: 10_000 }).catch(() => null))?.attester?.toLowerCase();
+  if (!server) throw new Error(`No hatchery answers at ${hatchery}. Your server runs one next to its node: fatline hatchery init, then fatline hatchery.`);
   const to = (opts.to ?? await custodyOf(config, network, key.fid))?.toLowerCase();
   if (!/^0x[0-9a-f]{40}$/.test(to ?? '')) throw new Error('Could not find your custody address. Pass --to 0x…');
-  const signed = signClaim(key, { fid: key.fid, network, node, to, at: Date.now() });
+  const signed = signClaim(key, { fid: key.fid, network, node, to, server, hatchery, at: Date.now() });
 
   say(`\nLaying an egg for FID ${key.fid}.`);
   say(`  kept warm by  ${normalizeNode(node)} (${network})`);
   say(`  hatches to    ${to}`);
+  say(`  its hatchery  ${hatchery} (key ${server.slice(0, 10)}…), an attester once it hatches`);
   say(`  DNA from      the account's history up to ${new Date(laidAtOf(signed.claim.at) * 1000).toISOString()}`);
   say('  signed with   this client\'s app key (no seed phrase, no wallet)\n');
   let ok = 0;
-  for (const a of attestersOf(config)) {
+  for (const a of await attestersOf(config)) {
     try {
       await json(`${a.url}/eggs`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(signed) });
       ok++;
@@ -90,7 +97,7 @@ async function status(config) {
   if (!key) throw new Error('This client has no app key. Run fatline identity, then fatline egg lay.');
   say(`\nFID ${key.fid}'s egg:`);
   let any = false;
-  for (const a of attestersOf(config)) {
+  for (const a of await attestersOf(config)) {
     try {
       const s = await json(`${a.url}/eggs/${key.fid}`, { timeoutMs: 15_000 });
       any = true;
@@ -112,7 +119,7 @@ async function hatch(config) {
   if (!key) throw new Error('This client has no app key.');
   const sigs = [];
   const relays = [];
-  for (const a of attestersOf(config)) {
+  for (const a of await attestersOf(config)) {
     try {
       const s = await json(`${a.url}/eggs/${key.fid}`, { timeoutMs: 15_000 });
       if (s.hatch) { sigs.push({ signer: s.hatch.signer, signature: s.hatch.signature, message: s.hatch.message, url: a.url }); relays.push(a); }

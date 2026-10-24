@@ -45,14 +45,18 @@ contract FatlinersTest is Test {
             attesters.push(a);
             keys.push(k);
         }
-        nft = new Fatliners(777, attesters, IFatlineVaults(address(factory)), "https://fatline.ink/fatliners/");
+        nft = new Fatliners(777, attesters[0], "http://genesis:8791", IFatlineVaults(address(factory)), "https://fatline.ink/fatliners/");
         factory.setFatliners(address(nft));
     }
 
     // ------------------------------------------------------------ hatching
+    // attesters[0] is the genesis server; attesters[1..4] are servers that join by hatching an egg.
 
-    function egg(uint256 fid, address to, bytes32 dna) internal view returns (Fatliners.Hatch memory) {
-        return Fatliners.Hatch({fid: fid, to: to, dna: dna, laidAt: laidAt, deadline: block.timestamp + 30 days});
+    function egg(uint256 fid, address to, bytes32 dna, address server) internal view returns (Fatliners.Hatch memory) {
+        return Fatliners.Hatch({
+            fid: fid, to: to, dna: dna, laidAt: laidAt, deadline: block.timestamp + 30 days,
+            server: server, url: string.concat("http://server-", vm.toString(fid), ":8791")
+        });
     }
 
     function sign(Fatliners c, Fatliners.Hatch memory h, uint256 key) internal view returns (bytes memory) {
@@ -84,60 +88,95 @@ contract FatlinersTest is Test {
         for (uint256 i; i < n; i++) w[i] = i;
     }
 
+    /// Servers 1..n-1 hatch eggs (FIDs 1001..) one by one, each signed by everyone already in.
+    function grow(Fatliners c, uint256 n) internal {
+        for (uint256 i = 1; i < n; i++) {
+            Fatliners.Hatch memory h = egg(1000 + i, makeAddr(string.concat("holder", vm.toString(i))), keccak256(abi.encode(i)), attesters[i]);
+            uint256 t = c.threshold();
+            c.hatch(h, sigs(c, h, firstN(t)));
+        }
+    }
+
     function hatchAnky() internal {
-        Fatliners.Hatch memory h = egg(18350, anky, DNA);
-        nft.hatch(h, sigs(nft, h, firstN(3))); // 3 of 5: more than half
+        Fatliners.Hatch memory h = egg(18350, anky, DNA, attesters[1]); // anky's server joins as attester 1
+        nft.hatch(h, sigs(nft, h, firstN(nft.threshold())));
     }
 
     // ------------------------------------------------------------ birth
 
-    function test_Hatch_TokenIdIsTheFid_AnyoneCanSubmit() public {
-        Fatliners.Hatch memory h = egg(18350, anky, DNA);
-        bytes[] memory s = sigs(nft, h, firstN(3));
+    function test_TheGenesisServerHatchesTheFirstEgg_AndThatServerJoins() public {
+        assertEq(nft.threshold(), 1); // one attester: the genesis server
+        address server = makeAddr("anky's server");
+        Fatliners.Hatch memory h = egg(18350, anky, DNA, server);
+        bytes[] memory s = sigs(nft, h, firstN(1));
         vm.prank(buyer); // a relayer pays the gas; the being still goes to anky
         nft.hatch(h, s);
         assertEq(nft.ownerOf(18350), anky);
         assertEq(nft.dnaOf(18350), DNA);
         assertEq(nft.laidAtOf(18350), laidAt);
+        assertEq(nft.serverOf(18350), server);
         assertEq(nft.totalSupply(), 1);
         assertEq(nft.tokenURI(18350), "https://fatline.ink/fatliners/18350");
+        assertTrue(nft.isAttester(server)); // the server that kept the egg warm is now an attester
+        assertEq(nft.fidOfAttester(server), 18350);
+        assertEq(nft.urlOf(server), "http://server-18350:8791");
+        assertEq(nft.threshold(), 2);
+        (address[] memory who, string[] memory urls) = nft.hatcheries();
+        assertEq(who.length, 2);
+        assertEq(urls[0], "http://genesis:8791");
         assertEq(nft.WARM_DAYS(), 3);
     }
 
+    function test_ThresholdGrowsToThreeAndStays() public {
+        grow(nft, 5);
+        assertEq(nft.attesters().length, 5);
+        assertEq(nft.threshold(), 3);
+        Fatliners.Hatch memory h = egg(18350, anky, DNA, makeAddr("anky's server"));
+        bytes[] memory two = sigs(nft, h, firstN(2));
+        vm.expectRevert(Fatliners.NotEnoughAttesters.selector);
+        nft.hatch(h, two);
+        uint256[] memory three = new uint256[](3);
+        (three[0], three[1], three[2]) = (2, 3, 4); // any three: the genesis server is not needed any more
+        nft.hatch(h, sigs(nft, h, three));
+        assertEq(nft.ownerOf(18350), anky);
+    }
+
+    function test_OneServerOneEgg() public {
+        grow(nft, 2);
+        Fatliners.Hatch memory h = egg(18350, anky, DNA, attesters[1]); // a server that already hatched one
+        bytes[] memory s = sigs(nft, h, firstN(2));
+        vm.expectRevert(Fatliners.AlreadyAttester.selector);
+        nft.hatch(h, s);
+    }
+
     function test_SignaturesCoverEveryField() public {
-        Fatliners.Hatch memory h = egg(18350, anky, DNA);
+        grow(nft, 3);
+        Fatliners.Hatch memory h = egg(18350, anky, DNA, makeAddr("anky's server"));
         bytes[] memory s = sigs(nft, h, firstN(3));
-        Fatliners.Hatch memory stolen = egg(18350, buyer, DNA); // someone copies the signatures to take it
+        Fatliners.Hatch memory stolen = egg(18350, buyer, DNA, makeAddr("anky's server"));
         vm.expectRevert(); // recovers to strangers
         nft.hatch(stolen, s);
-        Fatliners.Hatch memory otherHistory = egg(18350, anky, keccak256("another history"));
+        Fatliners.Hatch memory otherHistory = egg(18350, anky, keccak256("another history"), makeAddr("anky's server"));
         vm.expectRevert();
         nft.hatch(otherHistory, s);
+        Fatliners.Hatch memory otherServer = egg(18350, anky, DNA, buyer);
+        vm.expectRevert();
+        nft.hatch(otherServer, s);
         nft.hatch(h, s);
         assertEq(nft.ownerOf(18350), anky);
     }
 
     function test_EachFidIsBornOnce() public {
         hatchAnky();
-        Fatliners.Hatch memory again = egg(18350, buyer, DNA);
-        bytes[] memory s = sigs(nft, again, firstN(5));
+        Fatliners.Hatch memory again = egg(18350, buyer, DNA, makeAddr("another server"));
+        bytes[] memory s = sigs(nft, again, firstN(2)); // genesis and anky's server
         vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InvalidSender.selector, address(0)));
         nft.hatch(again, s);
     }
 
-    function test_MoreThanHalfOfTheAttesters() public {
-        assertEq(nft.threshold(), 3); // 5 attesters
-        address[] memory four = new address[](4);
-        for (uint256 i; i < 4; i++) four[i] = attesters[i];
-        assertEq(new Fatliners(777, four, IFatlineVaults(address(factory)), "").threshold(), 3); // not 2: no ties
-        Fatliners.Hatch memory h = egg(18350, anky, DNA);
-        bytes[] memory two = sigs(nft, h, firstN(2));
-        vm.expectRevert(Fatliners.NotEnoughAttesters.selector);
-        nft.hatch(h, two);
-    }
-
     function test_EachAttesterCountsOnce() public {
-        Fatliners.Hatch memory h = egg(18350, anky, DNA);
+        grow(nft, 3);
+        Fatliners.Hatch memory h = egg(18350, anky, DNA, makeAddr("anky's server"));
         bytes[] memory s = new bytes[](3);
         s[0] = sign(nft, h, keys[0]);
         s[1] = s[0];
@@ -147,24 +186,26 @@ contract FatlinersTest is Test {
     }
 
     function test_StrangersCannotSign() public {
-        Fatliners.Hatch memory h = egg(18350, anky, DNA);
-        bytes[] memory s = sigs(nft, h, firstN(2));
+        Fatliners.Hatch memory h = egg(18350, anky, DNA, makeAddr("anky's server"));
         (address stranger, uint256 sk) = makeAddrAndKey("stranger");
-        bytes[] memory three = new bytes[](3);
-        // put the stranger's signature where its address sorts
-        bytes memory st = sign(nft, h, sk);
-        address a0 = ECDSA.recover(nft.hatchDigest(h), s[0]);
-        address a1 = ECDSA.recover(nft.hatchDigest(h), s[1]);
-        if (stranger < a0) (three[0], three[1], three[2]) = (st, s[0], s[1]);
-        else if (stranger < a1) (three[0], three[1], three[2]) = (s[0], st, s[1]);
-        else (three[0], three[1], three[2]) = (s[0], s[1], st);
+        bytes[] memory one = new bytes[](1);
+        one[0] = sign(nft, h, sk);
         vm.expectRevert(abi.encodeWithSelector(Fatliners.NotAttester.selector, stranger));
-        nft.hatch(h, three);
+        nft.hatch(h, one);
+    }
+
+    function test_OnlyAnAttesterMovesItsUrl() public {
+        vm.prank(attesters[0]);
+        nft.setUrl("https://genesis.fatline.ink");
+        assertEq(nft.urlOf(attesters[0]), "https://genesis.fatline.ink");
+        vm.prank(buyer);
+        vm.expectRevert(abi.encodeWithSelector(Fatliners.NotAttester.selector, buyer));
+        nft.setUrl("http://evil");
     }
 
     function test_AHatchExpires() public {
-        Fatliners.Hatch memory h = egg(18350, anky, DNA);
-        bytes[] memory s = sigs(nft, h, firstN(3));
+        Fatliners.Hatch memory h = egg(18350, anky, DNA, makeAddr("anky's server"));
+        bytes[] memory s = sigs(nft, h, firstN(1));
         vm.warp(h.deadline + 1);
         vm.expectRevert(Fatliners.Expired.selector);
         nft.hatch(h, s);
@@ -186,11 +227,11 @@ contract FatlinersTest is Test {
     }
 
     function test_NoMoreThanMaxSupply() public {
-        Fatliners small = new Fatliners(1, attesters, IFatlineVaults(address(factory)), "");
-        Fatliners.Hatch memory a = egg(18350, anky, DNA);
-        small.hatch(a, sigs(small, a, firstN(3)));
-        Fatliners.Hatch memory b = egg(3, dwr, keccak256("dwr"));
-        bytes[] memory s = sigs(small, b, firstN(3));
+        Fatliners small = new Fatliners(1, attesters[0], "", IFatlineVaults(address(factory)), "");
+        Fatliners.Hatch memory a = egg(18350, anky, DNA, attesters[1]);
+        small.hatch(a, sigs(small, a, firstN(1)));
+        Fatliners.Hatch memory b = egg(3, dwr, keccak256("dwr"), attesters[2]);
+        bytes[] memory s = sigs(small, b, firstN(2));
         vm.expectRevert(Fatliners.SoldOut.selector);
         small.hatch(b, s);
     }
