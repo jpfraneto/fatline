@@ -55,9 +55,9 @@ Every step in detail: **[the full tutorial](tutorial.html)** · [Español](tutor
 | **Not yet** | the 777 contract, the mint, the reveal, the vault as the being's own wallet, the coins |
 
 ## The story so far
-<video class="demo" controls playsinline preload="metadata" poster="media/fatliners-demo.jpg" src="media/fatliners-demo.mp4"></video>
+<video class="demo" controls playsinline preload="metadata" poster="media/fatline-clip.jpg" src="media/fatline-clip.mp4"></video>
 
-*The first demo: Hyperion, the tribes of Farcaster, and the 777. ([Transcript](media/fatliners-demo.srt))*
+*Fatline in 100 seconds: Hyperion, the 777, and who keeps the network alive. [The full 4-minute version](media/fatliners-demo.mp4) · [transcript](media/fatliners-demo.srt)*
 
 ## Workers
 
