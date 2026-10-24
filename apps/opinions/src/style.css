@@ -391,3 +391,11 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
 .ck-around { margin-top: 10px; }
 .ck-app { margin: 26px 0 0; font-size: 14px; color: var(--muted); text-align: center; }
 @media (prefers-reduced-motion: reduce) { .ck-fire::before { animation: none; } }
+/* The life force: electricity from your own node flowing into the egg (lifeforce.js draws it). */
+.ck-stage { position: relative; width: min(460px, 100%); aspect-ratio: 1; margin: 0 auto; display: grid; place-items: center; --lf: .4; }
+.ck-stage .ck-art { position: relative; z-index: 1; width: 66%; transition: box-shadow .25s, filter .6s;
+  box-shadow: 0 0 0 1px rgba(255, 190, 120, .25), 0 0 calc(30px + 70px * var(--lf)) rgba(140, 180, 255, calc(.15 + .45 * var(--lf))), 0 0 calc(60px + 120px * var(--lf)) rgba(255, 95, 168, calc(.08 + .3 * var(--lf))); }
+.ck-stage.dark .ck-art { filter: grayscale(.9) brightness(.45); box-shadow: 0 0 0 1px var(--line); }
+.ck-lf { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.ck-lf-words { margin: 6px auto 0; max-width: 34em; text-align: center; font: 13px/1.45 var(--mono); color: var(--signal); min-height: 2.9em; }
+.ck-stage.dark + .ck-lf-words { color: var(--warn); }

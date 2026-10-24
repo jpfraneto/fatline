@@ -3,6 +3,7 @@
 import { $, api, el, state } from './lib.js';
 import { card } from './feed.js';
 import { castComposer } from './post.js';
+import { lifeForce } from './lifeforce.js';
 
 const POLL_MS = 15_000;
 // Each stone's egg, alive under the arch (the same art the token's metadata shows; on Arweave).
@@ -46,9 +47,9 @@ export function story(d) {
       : `${w} of ${need} warm days.${today && !today.done ? ` Today: ${today.passed} of ${today.need} hourly checks passed (of ${today.checks} so far).` : ''} Keep the node running: if it stops, the egg dies.`;
     return { mood: 'warm', title: 'Your egg is warming.', line, next: w >= need ? 'fatline hatch' : null };
   }
-  if (tk?.genesis && stage === 'none') return { mood: 'ready', title: 'Aster is waiting for its keeper.', line: `The first egg is reserved for ${tk.genesis.to ? `${tk.genesis.to.slice(0, 6)}…${tk.genesis.to.slice(-4)}` : 'its keeper'}. Claim it with that wallet (a QR code to sign) and its three days begin.`, next: 'fatline genesis claim' };
+  if (tk?.genesis && stage === 'none') return { mood: 'ready', title: 'Aster is waiting for its keeper.', line: `The first egg is reserved for ${tk.genesis.to ? `${tk.genesis.to.slice(0, 6)}…${tk.genesis.to.slice(-4)}` : 'its keeper'}. Mint it with that wallet (a QR code to sign) and its three days begin.`, next: 'fatline egg' };
   if (hib) return { mood: 'idle', title: 'Your Fatline is hibernating.', line: `An egg died here. You can take another on ${new Date(hib).toLocaleString()}.`, next: null };
-  if (synced) return { mood: 'ready', title: 'Your node is in sync.', line: 'It holds its own copy of Farcaster. Now lay your egg: your node keeps it warm for three days, and it hatches into one of the 777.', next: 'fatline egg lay' };
+  if (synced) return { mood: 'ready', title: 'Your node is in sync.', line: 'It holds its own copy of Farcaster. Now lay your egg: your node keeps it warm for three days, and it hatches into one of the 777.', next: 'fatline egg' };
   if (catching) {
     const eta = catching.etaMinutes != null ? ` About ${hours(catching.etaMinutes).replace(/^about /, "")} left at this pace.` : ' Measuring its pace…';
     return { mood: 'sync', title: 'Your node is catching up.', line: `${NET[catching.network] ?? catching.label} is ${lag(catching.blocksBehind)} behind the network.${eta} When it's in sync, you can lay your egg.`, next: null };
@@ -97,11 +98,9 @@ function casting(d) {
 
 function hero(d) {
   const s = story(d);
-  const a = art(d);
   const tk = d.token ?? {};
   const name = d.me.username ? `@${d.me.username}` : d.me.fid ? `FID ${d.me.fid}` : 'Your Fatline';
   return el('div', { class: `ck-hero ck-${s.mood}` },
-    el('div', { class: 'ck-fire' }, el('figure', { class: `ck-art${a.dim ? ' dim' : ''}` }, el('img', { src: a.src, alt: a.alt, width: 320, height: 320 }))),
     el('p', { class: 'ck-who' }, d.me.pfp ? el('img', { src: d.me.pfp, alt: '' }) : null, name, d.me.fid ? el('small', {}, ` · FID ${d.me.fid}`) : null,
       tk.surname && tk.stage !== 'none' ? el('small', {}, ` · ${tk.surname}`) : null, tk.stone ? el('small', {}, ` · ${tk.stone}`) : null),
     el('h1', { class: 'ck-title' }, s.title),
@@ -148,6 +147,7 @@ function fire(fids, onCast) {
 }
 
 let timer = null;
+let stopLife = null;
 export async function cockpitPage() {
   clearTimeout(timer);
   const main = $('#main');
@@ -156,6 +156,15 @@ export async function cockpitPage() {
   try { d = await api('/api/cockpit'); }
   catch (err) { main.replaceChildren(el('p', { class: 'warn' }, `Can't reach this Fatline's server: ${err.message}`)); return; }
   // The parts that change with the node are redrawn on each check; the fire (what you type, what was said) stays.
+  // The egg and the current flowing into it: built once, so the animation never restarts.
+  const img = el('img', { width: 320, height: 320 });
+  const fig = el('figure', { class: 'ck-art' }, img);
+  const stage = el('div', { class: 'ck-fire ck-stage' }, fig);
+  const readout = el('p', { class: 'ck-lf-words', role: 'status' });
+  const setArt = (x) => { const a = art(x); if (img.getAttribute('src') !== a.src) img.src = a.src; img.alt = a.alt; fig.classList.toggle('dim', Boolean(a.dim)); };
+  setArt(d);
+  stopLife?.();
+  stopLife = lifeForce(stage, readout);
   const top = el('div', {}, hero(d));
   const way = el('p', { class: 'ck-way' });
   const showWay = (x) => { const c = casting(x); way.className = `ck-way ${c.ok ? 'ok' : 'via'}`; way.textContent = c.text; };
@@ -163,7 +172,7 @@ export async function cockpitPage() {
   const fids = [...new Set([...(state.people ?? []).map((p) => p.fid), ...(d.me.fid ? [d.me.fid] : [])])];
   const around = fire(fids);
   const bottom = el('div', {}, ...lower(d));
-  main.replaceChildren(el('section', { class: 'ck' }, top,
+  main.replaceChildren(el('section', { class: 'ck' }, el('div', { class: 'ck-hero' }, stage, readout), top,
     el('section', { class: 'ck-circle', 'aria-labelledby': 'ck-fire-h' },
       el('h2', { class: 'ck-h', id: 'ck-fire-h' }, 'By the fire'),
       el('p', { class: 'ck-sub' }, 'Your Fatliner, you, and your people. Talk about life.'),
@@ -172,12 +181,12 @@ export async function cockpitPage() {
       around.list),
     bottom));
   const tick = async () => {
-    if (!document.body.contains(top) || !/^\/?$/.test(location.hash.slice(1))) return;
+    if (!document.body.contains(top) || !/^\/?$/.test(location.hash.slice(1))) { stopLife?.(); stopLife = null; return; }
     if (!document.hidden) {
-      try { const x = await api('/api/cockpit'); top.replaceChildren(hero(x)); showWay(x); bottom.replaceChildren(...lower(x)); } catch { /* keep the last view; the next check retries */ }
+      try { const x = await api('/api/cockpit'); setArt(x); top.replaceChildren(hero(x)); showWay(x); bottom.replaceChildren(...lower(x)); } catch { /* keep the last view; the next check retries */ }
     }
     timer = setTimeout(tick, POLL_MS);
   };
   timer = setTimeout(tick, POLL_MS);
 }
-export function leaveCockpit() { clearTimeout(timer); }
+export function leaveCockpit() { clearTimeout(timer); stopLife?.(); stopLife = null; }
