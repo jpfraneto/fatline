@@ -1,7 +1,7 @@
 {
  "note": "The one Fatline launchpad and the one Fatliners contract, on Base. Every Fatline server, client and hatchery reads these unless its config says otherwise.",
  "chainId": 8453,
- "deployedAt": "2026-10-24T11:45Z",
+ "deployedAt": "2026-10-24T11:08Z",
  "deployer": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
  "fromBlock": 53025373,
  "AppFactory": {
@@ -35,7 +35,7 @@
  },
  "superseded": [
   {
-   "note": "Second deployment (2026-10-24 04:20Z): coins only for hatched Fatliners, rent capped by tiers, Aster held by 0x3ae5…6b60. Replaced at 11:4xZ by the pair above; nothing was launched or hatched on it (only Aster existed).",
+   "note": "Second deployment (2026-10-24 04:20Z): coins only for hatched Fatliners, rent capped by tiers, Aster held by 0x3ae5…6b60. Replaced at 11:08Z by the pair above; nothing was launched or hatched on it (only Aster existed).",
    "AppFactory": "0x8695DB518B2fFa5b87b1A956a1302206c18BfF37",
    "Fatliners": "0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb"
   },
