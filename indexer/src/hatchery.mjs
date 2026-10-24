@@ -34,7 +34,7 @@ export class Hatchery {
    * @param computeDna  async (fid, snapshotAtMs) => '0x' + 64 hex: the history commitment
    * @param listAttesters async () => [{ address, url }]: every attester, from the contract
    */
-  constructor({ config, privateKey, contract, reference, dataDir, computeDna, listAttesters = async () => [], fetchImpl = fetch, now = () => Date.now(),
+  constructor({ config, privateKey, contract, reference, dataDir, computeDna, listAttesters = async () => [], isBorn = async () => false, fetchImpl = fetch, now = () => Date.now(),
     dayMs = DAY_MS, checkEveryMs = CHECK_EVERY_MS, random = Math.random, log = console.log }) {
     this.config = config;
     this.account = privateKeyToAccount(privateKey);
@@ -43,6 +43,7 @@ export class Hatchery {
     this.file = join(dataDir, 'hatchery.json');
     this.computeDna = computeDna;
     this.listAttesters = listAttesters;
+    this.isBorn = isBorn;
     this.fetch = fetchImpl;
     this.now = now;
     this.dayMs = dayMs;
@@ -109,6 +110,7 @@ export class Hatchery {
       throw fail(`That key is not an active app key of FID ${fid}. Run fatline identity first.`);
     }
 
+    if (await this.isBorn(fid)) throw fail(`Fatliner #${fid} is already born.`, 409);
     const existing = this.state.eggs[fid];
     if (existing?.hatch) throw fail('This egg has already hatched.', 409);
     if (existing && existing.claim.to !== c.to) throw fail('This egg already names another address to hatch to.', 409);

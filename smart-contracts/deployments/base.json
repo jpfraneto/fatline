@@ -1,0 +1,33 @@
+{
+ "note": "The one Fatline launchpad and the one Fatliners contract, on Base. Every Fatline server, client and hatchery reads these unless its config says otherwise.",
+ "chainId": 8453,
+ "deployedAt": "2026-10-24T03:33Z",
+ "deployer": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
+ "fromBlock": 53011430,
+ "AppFactory": {
+  "address": "0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a",
+  "tx": "0x272ca252a761724ccef018a51c437055273dbe001462245e23850c0c9309f200",
+  "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  "clanker": "0xE85A59c628F7d27878ACeB4bf3b35733630083a9",
+  "locker": "0xffA37784D619F228D8B379d287a4D7282e500762",
+  "feeLocker": "0xF3622742b1E446D92e45E22923Ef11C2fcD55D68"
+ },
+ "Fatliners": {
+  "address": "0x91513c7CBe6d989FaD635926EBAF0daC3a24200e",
+  "tx": "0xe8d5f9ccf7eb6e88c76546cfae5b7da55067fe383a6d25e100beb04afe6aae76",
+  "linkTx": "0xfc11aeaf0dc34860b8aa5e8752f2e38dcf5e00b70687fdd4005fbe103e226652",
+  "genesis": {
+   "fid": 18350,
+   "name": "Aster",
+   "ticker": "FATLINE",
+   "bornTo": "0x3ae59405ea68e9ce61442cadf74c335abfbc6b60",
+   "dna": "0xde5d5dfabe29f7e02bb28a37b3579b078c616c95b255a1b86b63008e246bb904",
+   "laidAt": 1792810800,
+   "dnaNote": "History commitment of FID 18350 up to 2026-10-24T03:00Z: 640 messages (320 Snapchain, 320 Hypersnap). Computed on the master's nodes and again from crackle + haatz: identical.",
+   "vault": "0xa00D8b3a9D00bd8e34e9Fae3b77aAF79fd054492",
+   "server": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
+   "hatchery": "http://46.225.208.199:8791"
+  },
+  "royalty": "8% of every resale, to the genesis Fatliner's vault"
+ }
+}

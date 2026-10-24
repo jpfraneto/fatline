@@ -171,3 +171,9 @@ test('no hatch without DNA', async () => {
   assert.equal(s.hatched, false);
   assert.match(s.dnaError, /node down/);
 });
+
+test('a FID whose Fatliner is already born cannot lay an egg', async () => {
+  const { h, claim } = setup();
+  h.isBorn = async (fid) => fid === 18350;
+  await assert.rejects(h.lay(claim()), /already born/);
+});

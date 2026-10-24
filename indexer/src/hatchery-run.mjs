@@ -76,6 +76,13 @@ export async function orderSignatures(message, contract, sigs, attesters) {
   return [...seen.entries()].sort(([a], [b]) => (BigInt(a) < BigInt(b) ? -1 : 1));
 }
 
+/** Is this FID's Fatliner already born? (No contract: never.) */
+export function bornCheck(hc) {
+  if (!hc.contract) return async () => false;
+  const reader = createPublicClient({ chain: chainOf(hc.chainId), transport: http(hc.rpc) });
+  return (fid) => reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'ownerOf', args: [BigInt(fid)] }).then(() => true, () => false);
+}
+
 const toMessage = (m) => ({ fid: BigInt(m.fid), to: m.to, dna: m.dna, laidAt: BigInt(m.laidAt), deadline: BigInt(m.deadline), server: m.server, url: m.url });
 
 /** Every attester and its hatchery URL, from the one Fatliners contract. Without a contract: the config's list. */
@@ -98,7 +105,7 @@ async function serve() {
   const privateKey = loadKey(config.dataDir);
   const contract = { chainId: hc.chainId, address: hc.contract };
   const hatchery = new Hatchery({ config, privateKey, contract, reference: hc.reference, dataDir: config.dataDir,
-    computeDna: dnaFrom(config, hc.reference), listAttesters: attesterList(hc), dayMs: hc.dayMs, checkEveryMs: hc.checkEveryMs });
+    computeDna: dnaFrom(config, hc.reference), listAttesters: attesterList(hc), isBorn: bornCheck(hc), dayMs: hc.dayMs, checkEveryMs: hc.checkEveryMs });
   const chain = chainOf(hc.chainId);
   const reader = createPublicClient({ chain, transport: http(hc.rpc) });
   const wallet = createWalletClient({ account: privateKeyToAccount(privateKey), chain, transport: http(hc.rpc) });

@@ -10,7 +10,8 @@
 #      (127.0.0.1:3381, and 4381 for Hypersnap) and signs the ones that hatch. It restarts by itself.
 #   5. Port 8791 open, so other servers and clients can reach it.
 #
-# Env (optional): FATLINERS_ADDRESS, FATLINERS_CHAIN_ID (8453), FATLINERS_RPC, FATLINE_REPO, FATLINE_BRANCH.
+# Env (optional): FATLINERS_ADDRESS (default: the one in smart-contracts/deployments/base.json), FATLINERS_CHAIN_ID,
+# FATLINERS_RPC, HATCHERY_RELAY=1 (submit mints for people, paying gas from this server's key), FATLINE_REPO, FATLINE_BRANCH.
 set -euo pipefail
 say() { printf '\n== %s\n' "$*"; }
 
@@ -50,6 +51,7 @@ Environment=FATLINE_DATA=$DATA
 Environment=FATLINERS_ADDRESS=${FATLINERS_ADDRESS:-}
 Environment=FATLINERS_CHAIN_ID=${FATLINERS_CHAIN_ID:-8453}
 Environment=FATLINERS_RPC=${FATLINERS_RPC:-https://mainnet.base.org}
+Environment=HATCHERY_RELAY=${HATCHERY_RELAY:-0}
 ExecStart=$(command -v node) --experimental-sqlite --no-warnings=ExperimentalWarning src/hatchery-run.mjs
 Restart=always
 RestartSec=10

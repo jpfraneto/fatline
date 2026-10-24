@@ -74,6 +74,8 @@ Your egg (a Fatliner hatches after your node keeps it warm for 3 days):
                                      --node URL (default: the server fatline compute rented), --to 0x…
   fatline egg                   How warm it is: each day's checks, at every attester
   fatline hatch                 Collect the attesters' signatures; the Fatliner is minted to you (no gas)
+  fatline coin launch           A Fatliner's coin through the launchpad: USDC pair on Clanker, 100% of fees to its
+                                     vault. Simulates first; --go --seed-file F to send (the holder signs)
   fatline hatchery install      Put the hatchery on your server, next to its node: it checks eggs and signs,
                                      by itself; your server becomes an attester when your egg hatches
 
@@ -158,6 +160,13 @@ cmd_egg() {
 }
 
 cmd_hatch() { cmd_egg hatch "$@"; }
+
+cmd_coin() {
+  need_node
+  install indexer
+  [ "${1:-}" = launch ] && shift
+  cd "$ROOT/indexer" && node --experimental-sqlite --no-warnings=ExperimentalWarning src/launch-fatline.mjs "$@"
+}
 
 cmd_hatchery() {
   need_node
@@ -329,6 +338,6 @@ cmd_contracts() {
 command="${1:-help}"; shift || true
 case "$command" in
   help|-h|--help) cmd_help ;;
-  doctor|init|node|up|client|connect|dashboard|worker|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup|egg|hatch|hatchery) "cmd_$command" "$@" ;;
+  doctor|init|node|up|client|connect|dashboard|worker|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup|egg|hatch|hatchery|coin) "cmd_$command" "$@" ;;
   *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
 esac
