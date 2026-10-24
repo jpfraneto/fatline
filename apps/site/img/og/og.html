@@ -1,0 +1,45 @@
+<!doctype html>
+<!-- Source of og.jpg (the link preview). Render: see build.sh next to this file. -->
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=JetBrains+Mono:wght@500&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    position: relative; font-family: Fraunces, serif; color: #f6ecd7;
+    background: radial-gradient(900px 500px at 50% 0%, #4a3018 0%, #24170c 55%, #140d07 100%);
+  }
+  .title {
+    position: absolute; top: 26px; left: 0; right: 0; text-align: center;
+    font-weight: 800; font-size: 150px; line-height: 1; letter-spacing: -.02em;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1;
+    text-shadow: 0 4px 0 rgba(0,0,0,.35), 0 0 60px rgba(255,170,80,.35);
+  }
+  .line {
+    position: absolute; top: 190px; left: 300px; right: 300px; height: 5px; border-radius: 5px;
+    background: linear-gradient(90deg, transparent, #3d8bff 18%, #fff 50%, #ff5fa8 82%, transparent);
+    box-shadow: 0 0 18px #ff5fa8, 0 0 30px rgba(61,139,255,.6);
+  }
+  .sub {
+    position: absolute; top: 210px; left: 0; right: 0; text-align: center;
+    font: 500 19px 'JetBrains Mono', monospace; letter-spacing: .28em; text-transform: uppercase; color: #e6cfa4;
+  }
+  .row { position: absolute; left: 40px; right: 40px; bottom: 0; height: 350px; display: flex; gap: 16px; align-items: flex-end; }
+  .row div {
+    flex: 1; border-radius: 90px 90px 0 0; overflow: hidden;
+    box-shadow: 0 0 0 3px rgba(246,236,215,.18), 0 -10px 40px rgba(255,170,80,.25);
+  }
+  .row div:nth-child(odd) { height: 330px; }
+  .row div:nth-child(even) { height: 300px; }
+  .row img { width: 100%; height: 100%; object-fit: cover; display: block; }
+</style>
+<div class="title">FATLINE</div>
+<div class="line"></div>
+<div class="sub">your own Farcaster node · alive</div>
+<div class="row">
+  <div><img src="../pfp/fid-3.jpg"></div>
+  <div><img src="../pfp/fid-18350.jpg"></div>
+  <div><img src="../pfp/fid-299673.jpg"></div>
+  <div><img src="../pfp/fid-509202.jpg"></div>
+  <div><img src="../pfp/fid-1721477.jpg"></div>
+  <div><img src="../world/aster.jpg"></div>
+</div>

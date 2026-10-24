@@ -7,7 +7,7 @@ import {
 } from '@farcaster/core';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { SCOPES } from '../src/identity.mjs';
-import { Writer } from '../src/writer.mjs';
+import { Writer, linkEmbeds } from '../src/writer.mjs';
 
 const hex = (b) => `0x${Buffer.from(b).toString('hex')}`;
 
@@ -59,6 +59,15 @@ test('a cast is signed, submitted once, and confirmed by reading it back', async
   assert.equal(node.submitted.length, 1);
   assert.equal(node.submitted[0].data.castAddBody.text, 'hello from my own node');
   assert.equal(node.submitted[0].data.fid, 18350);
+});
+
+test('https links in a cast become embeds, so apps show a preview card', async () => {
+  assert.deepEqual(linkEmbeds('read https://fatline.ink/docs. then https://fatline.ink/docs, and https://a.b/c) http://no.pe'), [{ url: 'https://fatline.ink/docs' }, { url: 'https://a.b/c' }]);
+  assert.deepEqual(linkEmbeds('no links, fatline.ink/docs'), []);
+  const node = fakeNode();
+  const writer = new Writer({ network: node.network, key: appKey(), fetchImpl: node.fetchImpl, pollMs: 1 });
+  await writer.cast({ text: 'come build it https://fatline.ink/docs' });
+  assert.deepEqual(node.submitted[0].data.castAddBody.embeds.map((e) => e.url), ['https://fatline.ink/docs']);
 });
 
 test('replies point at their parent', async () => {
