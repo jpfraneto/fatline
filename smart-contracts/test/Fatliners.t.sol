@@ -247,6 +247,8 @@ contract FatlinersTest is Test {
         vm.expectRevert(Fatliners.NotOrderAdmin.selector);
         nft.setOrder(root, uint64(block.timestamp));
         nft.setOrder(root, uint64(block.timestamp)); // this test contract deployed it
+        vm.expectRevert(Fatliners.OrderIsSet.selector);
+        nft.setOrder(bytes32(uint256(1)), uint64(block.timestamp)); // once, and forever
         bytes32[] memory p1 = new bytes32[](1);
         p1[0] = l2;
         bytes32[] memory p2 = new bytes32[](1);

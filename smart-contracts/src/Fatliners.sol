@@ -148,7 +148,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     mapping(uint256 fid => uint256) public hibernatingUntil; // after its egg died, no new egg before this
     bytes32 public orderRoot; // the ranking: leaves keccak256(abi.encode(fid, position)); 0 = open to everyone
     uint64 public orderStart; // day 1 of the ranking's window
-    address public immutable orderAdmin; // who publishes the ranking's root (the deployer)
+    address public immutable orderAdmin; // who publishes the ranking's root, once (the deployer)
     address public immutable royaltyTo; // 8% of every sale
     mapping(uint256 fid => Stage) public stageOf;
     mapping(uint256 fid => bytes32) public dnaOf; // the history it hatches from
@@ -195,6 +195,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     error NoSlot();
     error Asleep();
     error NotOrderAdmin();
+    error OrderIsSet();
     error StillAnEgg();
     error BadSurname();
     error SurnameTaken();
@@ -485,9 +486,11 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         return stageOf[fid] != Stage.None && linkedFidOf[fid] == 0;
     }
 
-    /// @notice Publishes the ranking (its Merkle root) and when its window opens. 0 opens eggs to everyone.
+    /// @notice Publishes the ranking, once and forever: the Merkle root of one snapshot of Farcaster, and when its
+    /// window opens. Until then, eggs are open to everyone.
     function setOrder(bytes32 root, uint64 start) external {
         if (msg.sender != orderAdmin) revert NotOrderAdmin();
+        if (orderRoot != bytes32(0) || root == bytes32(0)) revert OrderIsSet();
         orderRoot = root;
         orderStart = start;
         emit Order(root, start);
