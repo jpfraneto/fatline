@@ -222,6 +222,25 @@ contract AppVaultTest is Test {
         assertEq(vault.payCompute(), reserve); // the server is paid a full period at its real rate
     }
 
+    /// Anyone can settle: fees in, the server's rent out (only to the keeper), the rest to the holder.
+    function test_AnyoneSettles_MoneyOnlyGoesWhereItBelongs() public {
+        (AppVault vault,) = launch(); // 300 USDC, 30-day period, SEED rate
+        vm.startPrank(trader);
+        usdc.approve(address(feeLocker), type(uint256).max);
+        feeLocker.store(address(usdc), address(vault), 1_000e6);
+        vm.stopPrank();
+        vm.prank(fan);
+        (uint256 paid, uint256 out) = vault.settle();
+        assertEq(paid, SEED * 30 days);
+        assertEq(usdc.balanceOf(keeper), paid);
+        assertEq(out, 1_300e6 - paid - SEED * 30 days);
+        assertEq(usdc.balanceOf(owner), out);
+        assertEq(usdc.balanceOf(fan), 10_000e6);
+        vm.prank(trader);
+        (paid, out) = vault.settle(); // nothing due, nothing above the reserve
+        assertEq(paid + out, 0);
+    }
+
     function test_OwnerHasAgencyButCannotTakeWhatIsPaid() public {
         (AppVault vault,) = launch();
         vm.prank(keeper);

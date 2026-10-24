@@ -53,7 +53,7 @@ contract FatlinersTest is Test {
         AppVault.Tier[] memory t = new AppVault.Tier[](1);
         t[0] = AppVault.Tier(30, 0); // ~2.59 USDC a day: one node's fuel
         return new Fatliners(
-            max, Fatliners.Genesis(attesters[0], "http://genesis:8791", ASTER, aster, "FATLINE", keccak256("aster"), laidAt, 5),
+            max, Fatliners.Genesis(attesters[0], "http://genesis:8791", ASTER, aster, "FATLINE", keccak256("aster"), laidAt, 5, address(0)),
             "https://fatline.ink/fatliners/",
             FatlineLaunchpad.Clanker(address(usdc), address(clanker), address(locker), address(feeLocker)), t
         );

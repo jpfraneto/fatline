@@ -169,6 +169,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         bytes32 dna; // its history commitment, up to laidAt
         uint64 laidAt;
         uint8 stone; // its stone, read from that history (Aster's: 5, gold)
+        address app; // the smart contract its client runs on (Aster's: Voices), or 0
     }
 
     constructor(
@@ -193,6 +194,10 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         fidOfSurname[keccak256(bytes(g.surname))] = g.fid; // FATLINE is Aster's
         stoneOf[g.fid] = g.stone;
         emit Stone(g.fid, g.stone);
+        if (g.app != address(0)) {
+            appOf[g.fid] = g.app;
+            emit AppSet(g.fid, g.app);
+        }
         _mint(g.to, g.fid);
         _born(g.fid, g.to, g.surname, 0);
     }

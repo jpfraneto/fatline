@@ -219,10 +219,10 @@ contract AppVault {
 
     // ------------------------------------------------------------------ money out
 
-    /// @notice The server pays itself for compute up to one billing period ahead.
+    /// @notice Pays the server (the keeper) for compute, up to one billing period ahead. Anyone can trigger it
+    /// (the server itself, a bot watching its balance, a fan); the money only ever goes to the keeper.
     /// If the app was dead, time restarts now: nobody pays for the time it was dead.
-    function payCompute() external returns (uint256 amount) {
-        if (msg.sender != keeper) revert NotKeeper();
+    function payCompute() public returns (uint256 amount) {
         harvest();
         uint256 newPaidThrough;
         (amount, newPaidThrough) = computeDue();
@@ -234,7 +234,7 @@ contract AppVault {
 
     /// @notice Anyone can call it: collects the coin's fees, keeps one billing period of rent for the server,
     /// and sends the rest to the owner (a Fatliner's or an egg's holder). The coin earns; the holder gets it.
-    function distribute() external returns (uint256 amount) {
+    function distribute() public returns (uint256 amount) {
         harvest();
         uint256 reserve = ratePerSecond() * billingPeriod;
         uint256 have = balance();
@@ -244,6 +244,14 @@ contract AppVault {
         amount = have - reserve;
         usdc.safeTransfer(to, amount);
         emit Distributed(to, amount);
+    }
+
+    /// @notice Everything in one call, for anyone: collect the coin's fees, pay the server what is due, and send
+    /// what is left above one period of rent to the holder.
+    function settle() external returns (uint256 paid, uint256 distributed) {
+        (paid,) = computeDue();
+        if (paid != 0) payCompute();
+        distributed = distribute();
     }
 
     /// @notice The owner moves USDC (to buy other coins, pay people, anything). Less money is less life.

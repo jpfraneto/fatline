@@ -30,15 +30,19 @@ contract Deploy is Script {
     /// Compute tiers in USDC units per second. 1 unit/s = 2.592 USDC per 30 days.
     function defaultTiers() public pure returns (AppVault.Tier[] memory t) {
         t = new AppVault.Tier[](3);
-        t[0] = AppVault.Tier({ratePerSecond: 6, minDau: 0}); // Seed: ~15.55 USDC / 30 days, small server
-        t[1] = AppVault.Tier({ratePerSecond: 18, minDau: 100}); // Grow: ~46.66 USDC / 30 days, bigger server
-        t[2] = AppVault.Tier({ratePerSecond: 58, minDau: 1_000}); // Node: ~150.34 USDC / 30 days, own full node
+        t[0] = AppVault.Tier({ratePerSecond: 50, minDau: 0}); // Node: ~4.32 USDC a day, what Aster's server costs
+        t[1] = AppVault.Tier({ratePerSecond: 130, minDau: 100}); // ~11.23 USDC a day: a rented node (AgentMetal medium + disk)
+        t[2] = AppVault.Tier({ratePerSecond: 300, minDau: 1_000}); // ~25.92 USDC a day: both networks, room to grow
     }
 
     function run() external {
         vm.startBroadcast();
 
-        if (vm.envOr("VOICES", true)) console.log("Voices", address(new Voices()));
+        address voices;
+        if (vm.envOr("VOICES", true)) {
+            voices = address(new Voices());
+            console.log("Voices", voices);
+        }
 
         if (vm.envOr("FATLINERS", false)) {
             Fatliners.Genesis memory g = Fatliners.Genesis({
@@ -49,7 +53,8 @@ contract Deploy is Script {
                 surname: vm.envOr("GENESIS_SURNAME", string("FATLINE")),
                 dna: vm.envBytes32("GENESIS_DNA"),
                 laidAt: uint64(vm.envUint("GENESIS_LAID_AT")),
-                stone: uint8(vm.envOr("GENESIS_STONE", uint256(0)))
+                stone: uint8(vm.envOr("GENESIS_STONE", uint256(0))),
+                app: voices // the genesis client's contract: Voices, its long posts
             });
             Fatliners f = new Fatliners(
                 777, g, "https://fatline.ink/fatliners/", FatlineLaunchpad.Clanker(USDC, CLANKER, LOCKER, FEE_LOCKER), defaultTiers()
