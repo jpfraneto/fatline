@@ -45,18 +45,40 @@ function askHidden(question) {
   });
 }
 
-async function get(node, path, params) {
+async function get(node, path, params, timeoutMs = 15_000) {
   const url = new URL(node.url + path);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+  let res;
+  try {
+    res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+  } catch (err) {
+    if (err.name === 'TimeoutError' || err.name === 'AbortError') throw new Error(`${node.url} did not answer ${url.pathname} within ${Math.round(timeoutMs / 1000)} seconds.`);
+    throw new Error(`${node.url} is not reachable (${err.cause?.code ?? err.message}).`);
+  }
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`${url.pathname} -> HTTP ${res.status}`);
   return res.json();
 }
 
-/** The FID whose current owner is this address, according to the node. */
-export async function fidOfCustody(node, address) {
-  const event = await get(node, '/v1/onChainIdRegistryEventByAddress', { address: address.toLowerCase() });
+/** The address that owns this FID now (its last register or transfer), according to the node. One fast query. */
+export async function custodyOfFid(node, fid) {
+  const res = await get(node, '/v1/onChainEventsByFid', { fid, event_type: 'EVENT_TYPE_ID_REGISTER' });
+  const moves = (res?.events ?? []).filter((e) => /^(register|transfer)$/i.test(e.idRegisterEventBody?.eventType ?? ''))
+    .sort((a, b) => (a.blockNumber - b.blockNumber) || (a.logIndex - b.logIndex));
+  return moves.at(-1)?.idRegisterEventBody?.to?.toLowerCase() ?? null;
+}
+
+/**
+ * The FID whose current owner is this address, according to the node. With `fid` (the one the person claims), it
+ * first asks who owns that FID, which is fast; the lookup by address can take 20-30 seconds on a node when the
+ * address owns nothing, so it is only the fallback, with a long wait.
+ */
+export async function fidOfCustody(node, address, fid) {
+  if (fid) {
+    const owner = await custodyOfFid(node, fid).catch(() => null);
+    if (owner === address.toLowerCase()) return Number(fid);
+  }
+  const event = await get(node, '/v1/onChainIdRegistryEventByAddress', { address: address.toLowerCase() }, 60_000);
   if (!event?.fid) return null;
   const owner = event.idRegisterEventBody?.to?.toLowerCase();
   return owner === address.toLowerCase() ? Number(event.fid) : null;
@@ -123,7 +145,11 @@ async function add(opts, config) {
     const page = await openWalletPage({ uri: s.url, title: 'Sign in with Farcaster', detail: 'Scan with your phone\'s camera: it opens the Farcaster app. Approve, and this client gets its own key: it can cast, like and follow, never move your account. The Farcaster app pays; no recovery phrase, no other wallet.' }).catch(() => null);
     console.log(`\nSign in with Farcaster: scan this with your phone (it opens the Farcaster app)${page ? `, or use the page in your browser (${page.url})` : ''}:\n`);
     await showQr(s.url);
-    console.log(`\n  Or open this link on your phone: ${s.url}\n  Waiting for your approval in the Farcaster app…`);
+    const token = /[?&]token=([^&]+)/.exec(s.url)?.[1];
+    console.log(`\n  Or open this link on your phone: ${token ? `https://client.warpcast.com/deeplinks/signed-key-request?token=${token}` : s.url}`);
+    console.log('  (An app key is a second key for YOUR account, not a new account: it can cast, like and follow, never move the account.)');
+    console.log('  If the Farcaster app says "unavailable", that is their service: try again in a minute, or press Cast in your client and use a browser wallet.');
+    console.log('  Waiting for your approval in the Farcaster app…');
     const record = await s.wait({ onState: (st) => page?.status(st === 'approved' ? 'Approved. Adding the key onchain…' : 'Waiting for your approval in the Farcaster app…') });
     page?.status(`Done: this client can post as FID ${record.fid}.`, true); page?.close();
     console.log(`\nDone. This client can now post as FID ${record.fid}. The key is in ${appKeyPath(config.dataDir)} (mode 600).`);
@@ -153,7 +179,7 @@ async function add(opts, config) {
   }
   console.log(`Custody address (derivation m/44'/60'/0'/0/0): ${custody.address}`);
 
-  const fid = await fidOfCustody(node, custody.address);
+  const fid = await fidOfCustody(node, custody.address, opts.fid);
   if (!fid) throw new Error(`${custody.address} does not own a Farcaster account on this network. Check the phrase. Nothing was sent.`);
   if (opts.fid && Number(opts.fid) !== fid) throw new Error(`This phrase owns FID ${fid}, not ${opts.fid}. Nothing was sent.`);
   console.log(`It owns FID ${fid}${(await username(node, fid)) ? ` (@${await username(node, fid)})` : ''}.`);

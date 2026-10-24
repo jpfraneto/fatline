@@ -13,7 +13,7 @@ Source of truth for every command: the repository's `README.md` and `fatline hel
 
 What the person is doing is a discovery, not a checklist. Reveal it in beats, one at a time, in plain words, and let each beat land before the next. Don't dump the rules up front; each beat brings its own.
 
-1. **You are your FID.** Their Farcaster account is a number, and everything they ever said is signed history. Ask for it. **Give their client its key now, first**, before renting anything: it works before their node exists (Fatline goes through a public node, labelled, until theirs is in sync). If their account's owner wallet (custody) is in a wallet app, the client's Cast button QR does it with one signature; if it lives in the Farcaster app (most accounts), they run `fatline identity` **in their own terminal** with their recovery phrase in its hidden prompt (never in a chat).
+1. **You are your FID.** Their Farcaster account is a number, and everything they ever said is signed history. Ask for it. **Give their client its key now, first**, before renting anything: it works before their node exists (Fatline goes through a public node, labelled, until theirs is in sync). The client's **Cast** button does it: a QR code (and the same link, to open on this device) approved in the Farcaster app, or one signature from a browser wallet that owns the account (custody). An app key is a second key for **their** account, not a new account. Last resort: `fatline identity --phrase` **in their own terminal**, recovery phrase in a hidden prompt (never in a chat).
 2. **A node of your own wakes up.** They rent a server (setup below), and a full copy of Farcaster streams into it. Open their client (`fatline up`, then http://localhost:8787): its home is the fire, and it shows how far behind the node is and how long it has left to live. **Don't wait for sync** to go on: they can cast while it catches up (their node passes casts on; the client says so).
 3. **An egg.** `fatline egg`, in their own terminal. It shows where they stand, then four rules before anything is signed, then a QR code: they scan it with the wallet tied to their Farcaster account (its custody address, or a verified one; a node checks it and says so), and the egg is minted to that wallet: token #<their FID>. The rules it shows, which you can repeat:
    - it is an NFT in their wallet, an egg, with a surname and a stone read from their own history (the client shows its stone);
@@ -127,12 +127,12 @@ Always pass `--node`: on a fresh copy the first node listed is "your own node on
 ### 8. Start the client
 ```sh
 fatline init --network farcaster    # skip if already done
-fatline up                           # serves http://localhost:8787; it keeps running
+fatline client                       # serves http://localhost:8787 and opens it; it keeps running
 ```
 Tell them to open http://localhost:8787. The source line in the app says which node it reads from.
 
 ### 9. Optional, by the person: post as themselves
-The easiest way: the **Cast** button at the bottom right of their client (http://localhost:8787). It shows a QR code; they scan it with the wallet that owns their account (its custody address), approve one signature, and the client gets its own key, sent to their own node. No seed phrase, no gas, no Farcaster app in between. The other way: they run, **in their own terminal**, `fatline identity --fid <their FID> --dry-run`, then without `--dry-run`. It registers an app key without gas, limited to casts, reactions, follows and profile. Their seed phrase goes into a hidden prompt and is never saved.
+The easiest way: the **Cast** button at the bottom right of their client (http://localhost:8787). It shows a QR code to scan with their phone (it opens the Farcaster app; they approve), plus *Open the Farcaster app on this device* and *Copy the link*. Or *Use a browser wallet instead*: one signature (no gas) from a wallet extension that holds their custody address; the wallet asks to switch to Ethereum for it, nothing is sent onchain. Either way the client gets its own key for their account (not a new account): casts, reactions, follows and profile only. `fatline identity` in a terminal does the same (QR and link). Last resort: `fatline identity --phrase`, **in their own terminal**, recovery phrase in a hidden prompt, never saved. If the Farcaster app says "Sign in with Farcaster is unavailable", that is Farcaster's service: wait a minute and retry, or use the wallet. Their node does not need to be in sync to cast. `fatline connect` is optional (it only shows who they are).
 
 ## When you finish, tell the person
 - What runs where (server IP and network, or "light, reading from <node>").

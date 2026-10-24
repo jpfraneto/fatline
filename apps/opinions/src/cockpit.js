@@ -37,7 +37,7 @@ export function story(d) {
   const stage = tk?.stage ?? 'none';
   const hib = tk?.hibernatingUntil && tk.hibernatingUntil * 1000 > Date.now() ? tk.hibernatingUntil * 1000 : null;
 
-  if (!me.fid) return { mood: 'idle', title: 'Who are you?', line: 'Connect your Farcaster account to this Fatline. You are your FID.', next: 'fatline connect' };
+  if (!me.fid) return { mood: 'idle', title: 'Who are you?', line: 'Press Cast (bottom right) to sign in and cast, even while your node catches up. Or only show who you are, in a terminal:', next: 'fatline connect' };
   if (stage === 'fatliner') return { mood: 'alive', title: `${tk.surname ?? ''} is alive.`, line: tk.asleep ? 'It changed hands and is asleep: link your own Farcaster account to it to wake it.' : `One of the 777. Its surname is the ticker of its coin, $${tk.surname}.`, next: null };
   if (stage === 'egg') {
     const w = hatch?.warmDays ?? 0, need = hatch?.needed ?? 3;

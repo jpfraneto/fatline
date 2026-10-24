@@ -1,21 +1,24 @@
-// The Cast button, bottom right, on every page. With an app key: write and cast. Without one: log in with your
-// wallet right here (a QR code to scan with the wallet that owns your Farcaster account, one signature), with no
-// Farcaster app in between. The key it makes stays on the machine running this client.
+// The Cast button, bottom right, on every page. With an app key: write and cast. Without one, two ways to give this
+// client its own key (it can cast, like and follow, never move your account; the key stays on this machine):
+//   - the Farcaster app: a QR code to scan with your phone, or the same link to open on this device;
+//   - a browser wallet that owns your account (its custody address): one signature, no transaction, no gas.
 import { api, el, state, store } from './lib.js';
 import { castComposer, loadMe } from './post.js';
 
 const STEPS = {
-  starting: 'Opening a connection…',
+  starting: 'Asking Farcaster for a sign-in link…',
   waiting: 'Scan this with your phone: it opens the Farcaster app. Approve there, and this client gets its own key.',
   connected: 'Connected. Looking for your Farcaster account…',
-  signing: 'Approve the signature in your wallet. It gives this client a key that can cast, like and follow — never move your account.',
-  submitting: 'Approved in the Farcaster app. It is adding your key onchain…',
+  finding: 'Asking your node which Farcaster account this wallet owns (up to a minute)…',
+  signing: 'Approve the signature in your wallet. It gives this client a key that can cast, like and follow — never move your account. No transaction, no gas.',
+  submitting: 'Approved. Adding your key to the network…',
 };
 
-async function loginCall(method) {
+async function loginCall(method, path = '/api/login', body) {
   const token = store.get('writeToken', '');
-  const res = await fetch(new URL('/api/login', location.origin), {
-    method, headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: method === 'POST' ? '{}' : undefined,
+  const res = await fetch(new URL(path, location.origin), {
+    method, headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+    body: method === 'POST' ? JSON.stringify(body ?? {}) : undefined,
   });
   const out = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(out.error ?? `HTTP ${res.status}`);
@@ -39,26 +42,75 @@ export function castButton() {
     box?.focus();
   };
 
+  // Polls the login until it is done or fails; the message line says where it is.
+  let run = 0; // only the newest login is followed
+  const follow = async (s, { msg, qr, link, retry }) => {
+    const mine = ++run;
+    polling = true;
+    while (polling && mine === run) {
+      if (s.step === 'done') { await loadMe(); return showComposer(); }
+      if (s.step === 'error') { msg.textContent = s.error; msg.classList.add('warn'); retry.hidden = false; return; }
+      if (s.qr && !qr.firstChild) qr.innerHTML = s.qr; // our own server's SVG
+      if (s.uri && link) { link.hidden = false; link.querySelector('a').href = s.uri; link.dataset.web = s.web ?? ''; }
+      if (s.step !== 'waiting') { qr.replaceChildren(); if (link) link.hidden = true; }
+      msg.textContent = STEPS[s.step] ?? s.step;
+      await new Promise((r) => setTimeout(r, 1500));
+      if (mine !== run) return;
+      s = await loginCall('GET');
+    }
+  };
+
+  const withWallet = async (ui) => {
+    const { msg, qr, link, retry } = ui;
+    run++;
+    qr.replaceChildren(); link.hidden = true; retry.hidden = true; msg.classList.remove('warn');
+    const eth = window.ethereum;
+    if (!eth) { msg.textContent = 'No browser wallet here. Install one (MetaMask, Rabby, Coinbase Wallet…) with the account that owns your FID, or use the QR code.'; msg.classList.add('warn'); retry.hidden = false; return; }
+    try {
+      msg.textContent = 'Connect your wallet…';
+      const [address] = await eth.request({ method: 'eth_requestAccounts' });
+      msg.textContent = STEPS.finding;
+      let s = await loginCall('POST', '/api/login/wallet', { address });
+      if (s.typedData) {
+        msg.textContent = `FID ${s.fid} (asked ${s.node}). Your wallet will ask to use Ethereum for these signatures (Farcaster's key format says so); nothing is sent onchain.`;
+        await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1' }] }).catch(() => {});
+      }
+      // Two signatures: the key request, then the key itself. Each is shown in the wallet.
+      while (s.step === 'signing' && s.typedData) {
+        msg.textContent = `${STEPS.signing} (${s.n} of ${s.of})`;
+        const signature = await eth.request({ method: 'eth_signTypedData_v4', params: [address, JSON.stringify(s.typedData)] })
+          .catch(async (err) => { await loginCall('POST', '/api/login/wallet/sign', { signature: null }).catch(() => {}); throw err; });
+        s = await loginCall('POST', '/api/login/wallet/sign', { signature });
+      }
+      return follow(s, ui);
+    } catch (err) {
+      msg.textContent = err?.code === 4001 ? 'You declined in the wallet. Nothing was added.' : (err.message ?? String(err));
+      msg.classList.add('warn');
+      retry.hidden = false;
+    }
+  };
+
   const showLogin = async () => {
     const qr = el('div', { class: 'castpanel-qr' });
     const msg = el('p', { class: 'muted' }, STEPS.starting);
-    panel.replaceChildren(head('Sign in with Farcaster'), qr, msg,
-      el('p', { class: 'muted small' }, 'No recovery phrase, no other wallet: the Farcaster app shows what you approve and pays for it. The key can cast, like and follow, never move your account.'));
+    const copy = el('button', { type: 'button', class: 'link' }, 'Copy the link');
+    const link = el('p', { class: 'small castpanel-link', hidden: true },
+      el('a', { href: '#', target: '_blank', rel: 'noopener' }, 'Open the Farcaster app on this device'), ' · ', copy);
+    copy.addEventListener('click', async () => { await navigator.clipboard?.writeText(link.dataset.web || link.querySelector('a').href).catch(() => {}); copy.textContent = 'Copied: paste it on your phone'; });
+    const retry = el('button', { type: 'button', class: 'quiet', hidden: true, onclick: () => showLogin() }, 'Try again');
+    const ui = { msg, qr, link, retry };
+    const wallet = el('button', { type: 'button', class: 'quiet', onclick: () => withWallet(ui) }, 'Use a browser wallet instead');
+    panel.replaceChildren(head('Sign in with Farcaster'), qr, link, msg, retry,
+      el('p', { class: 'muted small' }, 'No recovery phrase here. The Farcaster app shows what you approve and pays for it. The key can cast, like and follow, never move your account.'),
+      el('div', { class: 'castpanel-alt' }, wallet,
+        el('p', { class: 'muted small' }, 'Only if a wallet in this browser owns your Farcaster account (its custody address). Two signatures, no transaction, no gas.')),
+      el('p', { class: 'muted small' }, 'Farcaster says "unavailable"? That is their sign-in service: wait a minute and try again, or use the wallet. Or in a terminal: fatline identity --phrase.'));
     try {
-      let s = await loginCall('POST');
-      polling = true;
-      while (polling) {
-        if (s.step === 'done') { await loadMe(); return showComposer(); }
-        if (s.step === 'error') { msg.textContent = s.error; msg.classList.add('warn'); return; }
-        if (s.qr && !qr.firstChild) qr.innerHTML = s.qr; // our own server's SVG
-        if (s.step !== 'waiting') qr.replaceChildren();
-        msg.textContent = STEPS[s.step] ?? s.step;
-        await new Promise((r) => setTimeout(r, 1500));
-        s = await loginCall('GET');
-      }
+      await follow(await loginCall('POST'), ui);
     } catch (err) {
       msg.textContent = err.message;
       msg.classList.add('warn');
+      retry.hidden = false;
     }
   };
 

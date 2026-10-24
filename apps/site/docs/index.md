@@ -20,6 +20,8 @@ That's it. The agent reads [the skill](../skill.md) and walks you through it, as
 4. **Who you are.** A QR code with the Farcaster arch in the middle. Sign in with your phone; your own node checks which account that is. You are your FID.
 5. **Your client** opens at `localhost:8787`, and **your egg** is laid as soon as your node is in sync.
 
+**To cast**, press **Cast** in your client. The first time it gives the client its own key for your account (not a new account): approve in the Farcaster app (QR code or link), or sign once with a browser wallet that owns your account. Your node doesn't have to be in sync; until it is, casts go out through Fatline's master node, and the client says so. [How it works](tutorial.html#post).
+
 ## Your window
 
 Your client opens on your Fatline: your egg in the middle, glowing over a fire.
@@ -85,7 +87,7 @@ If you'd rather type the commands yourself, it is four of them, and [the tutoria
 curl -fsSL https://fatline.ink/install.sh | sh
 ```
 
-or, step by step: `git clone https://github.com/jpfraneto/fatline`, then `cd fatline && npm install -g .`, then `fatline compute` (where your node lives) and `fatline node snapchain` (or `hypersnap`). When it is in sync: `fatline connect`, `fatline client`, and `fatline egg lay`. `fatline egg` shows your three days; `fatline hatch` when they're warm. No room for a node: `fatline setup` and choose *light*.
+or, step by step: `git clone https://github.com/jpfraneto/fatline`, then `cd fatline && npm install -g .`, then `fatline compute` (where your node lives) and `fatline node snapchain` (or `hypersnap`). Then `fatline client` (it opens `localhost:8787`; press **Cast** to post, even while your node catches up), `fatline connect` if you want the client to show who you are, and `fatline egg lay` once your node is in sync. `fatline egg` shows your three days; `fatline hatch` when they're warm. No room for a node: `fatline setup` and choose *light*.
 
 ## More
 

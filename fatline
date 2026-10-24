@@ -44,19 +44,23 @@ Setup (in this order on a new machine):
                                      answers, and use it. --local installs on this machine instead (16 GB RAM, Docker)
   fatline compute status        The rented machine, its disk and node sync. compute down: how it stops costing
   fatline dashboard             Your servers and nodes on http://localhost:8790, every 15 s (add <host> to watch more)
-  fatline up                    Install, build and start the indexer + apps on http://localhost:8787
-  fatline client                The same, but first asks you to connect (below) if you haven't
+  fatline client                Start your client and open http://localhost:8787 (asks you to connect first, once)
+  fatline up                    The same without asking (the client and the indexer that feeds it are one program)
 
 You are your FID (no seed phrase):
-  fatline connect [--node URL]  A QR code: scan it with your phone, sign in with Farcaster; your node confirms (it may still be syncing)
-                                     the FID. --open opens the link on this device. connect show | connect forget
+  fatline connect [--node URL]  Optional: shows who you are. A QR code: scan it with your phone, sign in with Farcaster; a node
+                                     confirms the FID. --open opens the link on this device. connect show | connect forget
+                                     Casting does not need it: it needs an app key (below).
 
 No FID? Be a worker (as many as you like):
   fatline worker new            A wallet made here (recovery phrase shown once); it pays for a node in USDC (x402)
   fatline worker                Where it stands: wallet, USDC, node, client, coin. worker restore brings one back
 
-Posting (your client's own app key, no gas):
-  fatline identity              Type your seed phrase (hidden, never saved); registers an app key for your FID
+Posting (your client's own app key, no gas). An app key is a second key for YOUR account, not a new account: it
+can cast, like, follow and edit your profile, never move the account or add keys. It stays on this machine.
+  fatline identity              Add one: a QR code for the Farcaster app (or its link). Same as the Cast button in the client,
+                                     which also offers a browser wallet that owns your account.
+                                     --phrase: type your recovery phrase in a hidden prompt instead (never saved)
   fatline identity show         Is the key active?
   fatline identity revoke       Remove the key from the network and from this machine
 
@@ -232,8 +236,10 @@ cmd_client() { # your client; on first run, prove who you are (you are your FID)
   if [ ! -f "$ROOT/.fatline/identity.json" ] && [ -t 0 ] && [ -t 1 ]; then
     printf 'Connect your Farcaster account first (scan a QR code with your phone)? [Y/n] '
     read -r ok
-    case "$ok" in n|N) ;; *) (cmd_connect) || echo "Not connected; starting the client anyway. Later: fatline connect" ;; esac
+    case "$ok" in n|N) ;; *) (cmd_connect) || { echo; echo "Not connected; starting the client anyway. That's fine: connect only shows who you are."; echo "To cast, press Cast in the client (Farcaster app QR, its link, or a browser wallet). Later: fatline connect"; echo; } ;; esac
   fi
+  # Open the client in the browser once it is up (not on a server without a screen).
+  if [ -t 1 ] && { [ "$(uname)" = Darwin ] || [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; }; then export FATLINE_OPEN=1; fi
   cmd_up "$@"
 }
 
@@ -249,7 +255,7 @@ cmd_up() {
   install apps/opinions
   bold "Building the app"
   (cd "$ROOT/apps/opinions" && npm run build --silent)
-  bold "Starting"
+  bold "Starting: your client will be at http://localhost:$(node -e 'try{console.log(require(process.argv[1]).port||8787)}catch{console.log(8787)}' "$ROOT/fatline.config.json")"
   cd "$ROOT/indexer" && exec npm start --silent
 }
 
@@ -268,7 +274,7 @@ cmd_status() {
   # Every node of yours, wherever it runs, in plain words: in sync, catching up, being born (with progress), or a
   # problem (with a report file and a prompt for your agent).
   node "$ROOT/infra/node-status.mjs"
-  bold "Indexer"
+  bold "Your client (and its indexer)"
   if curl -fsS -m 3 "http://127.0.0.1:$port/api/networks" > "$STATE/status.json" 2>/dev/null; then
     node -e '
       for (const n of require(process.argv[1])) {
@@ -276,7 +282,8 @@ cmd_status() {
       }' "$STATE/status.json"
     curl -fsS "http://127.0.0.1:$port/api/health"; echo
   else
-    echo "  not running on port $port. Start it with fatline up"
+    echo "  Your client is not running (it is what the indexer is part of). Start it with: fatline client"
+    echo "  then open http://localhost:$port"
   fi
 }
 
@@ -298,7 +305,7 @@ cmd_compute() {
 cmd_test() {
   need_node
   bold "Contracts"; (cd "$ROOT/smart-contracts" && forge test)
-  bold "Indexer"; install indexer; (cd "$ROOT/indexer" && npm test --silent)
+  bold "Your client (and its indexer)"; install indexer; (cd "$ROOT/indexer" && npm test --silent)
   bold "Infra"; install infra; (cd "$ROOT/infra" && npm test --silent)
 }
 

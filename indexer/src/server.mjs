@@ -108,6 +108,10 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/lifeforce$/, () => lifeforce?.status() ?? null],
     ['GET', /^\/api\/login$/, owner(() => login.status())],
     ['POST', /^\/api\/login$/, owner(() => login.start())],
+    ['POST', /^\/api\/login\/wallet$/, (q, m, body, req) => owner(() => login.walletStart(body))(q, m, body, req)],
+    ['POST', /^\/api\/login\/wallet\/sign$/, (q, m, body, req) => owner(() => login.walletSign(body))(q, m, body, req)],
+    ['POST', /^\/api\/login\/wallet$/, (q, m, body, req) => owner(() => login.walletStart(body))(q, m, body, req)],
+    ['POST', /^\/api\/login\/wallet\/sign$/, (q, m, body, req) => owner(() => login.walletSign(body))(q, m, body, req)],
     ['GET', /^\/api\/health$/, () => ({ ok: true, voices: voices.status(), launchpad: launchpad.status(), keeper: keeper?.status() ?? null })],
     ['GET', /^\/api\/apps$/, () => launchpad.list()],
     ['GET', /^\/api\/apps\/(0x[0-9a-fA-F]{40})$/, async (q, [, address]) => {
@@ -246,8 +250,15 @@ export async function start(config = loadConfig()) {
   const lifeforce = new LifeForce(networks[config.defaultNetwork]);
   lifeforce.start();
   const server = buildServer({ config, networks, voices, launchpad, keeper, nodes, archive, lifeforce });
-  server.listen(config.port, () => {
-    console.log(`Fatline indexer on http://localhost:${config.port}`);
+  server.listen(config.port, async () => {
+    const url = `http://localhost:${config.port}`;
+    console.log(`\n  \x1b[1mYour Fatline client is running. Open ${url} in your browser.\x1b[0m`);
+    console.log(`  \x1b[2m(It is one program: the client you open, and the indexer behind it that reads your node. Stop it with Ctrl+C.)\x1b[0m\n`);
+    if (process.env.FATLINE_OPEN === '1') {
+      const { spawn } = await import('node:child_process');
+      const cmd = process.platform === 'darwin' ? 'open' : process.platform === 'win32' ? 'explorer' : 'xdg-open';
+      spawn(cmd, [url], { stdio: 'ignore', detached: true }).on('error', () => {}).unref();
+    }
     console.log(`  config:   ${config.path}`);
     console.log(`  fatline:  #${fatline.fid}${fatline.app ? `, runs on ${fatline.app} (appOf)` : ', no contract tied yet'}`);
     console.log(`  networks: ${Object.keys(networks).join(', ')} (default: ${config.defaultNetwork})`);

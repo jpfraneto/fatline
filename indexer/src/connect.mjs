@@ -45,7 +45,7 @@ export async function verify({ message, signature, fid, nonce, node, now = new D
   if (!claimed || Number(claimed) !== Number(fid)) throw new Error('The message does not name the FID it claims.');
   const signer = await recoverMessageAddress({ message, signature });
   if (signer.toLowerCase() !== m.address.toLowerCase()) throw new Error('The signature was not made by the address in the message.');
-  const owned = await fidOf(node, signer);
+  const owned = await fidOf(node, signer, Number(fid));
   if (owned !== Number(fid)) {
     throw new Error(`Your node (${node.url}) says ${signer} ${owned ? `owns FID ${owned}` : 'owns no FID'}, not ${fid}. Nothing was saved.${owned ? '' : ' If your node is still catching up, it may not have read that registration yet: try again once it is further along (fatline status), or pick another node with --node <url>.'}`);
   }
@@ -53,13 +53,18 @@ export async function verify({ message, signature, fid, nonce, node, now = new D
 }
 
 async function relay(path, { body, token } = {}) {
-  const res = await fetch(RELAY + path, {
-    method: body ? 'POST' : 'GET',
-    headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!res.ok) throw new Error(`The Farcaster relay answered HTTP ${res.status} on ${path}.`);
+  let res;
+  try {
+    res = await fetch(RELAY + path, {
+      method: body ? 'POST' : 'GET',
+      headers: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch (err) {
+    throw new Error(`Farcaster's sign-in relay (${RELAY}) did not answer (${err.name === 'TimeoutError' ? 'timeout' : err.message}). It is Farcaster's service, not your node: try again in a minute.`);
+  }
+  if (!res.ok) throw new Error(`Farcaster's sign-in relay answered HTTP ${res.status} on ${path}. It is Farcaster's service, not your node: try again in a minute.`);
   return res.json();
 }
 
@@ -101,6 +106,7 @@ async function connect(opts, config) {
   if (tty) await showQr(channel.url);
   console.log(`\n  On this device instead: ${channel.url}`);
   console.log(`  \x1b[2mRelay: ${RELAY} (Farcaster's; it carries the request, it decides nothing). Checked by: ${node.url}${node.own ? ' (your node)' : ` (${node.label ?? 'not yours'})`}\x1b[0m\n`);
+  console.log('  \x1b[2mIf the Farcaster app says "Sign in with Farcaster is unavailable", that is on Farcaster\'s side: wait a minute and run fatline connect again.\n  You do not need this to cast. Casting needs only the Cast button in your client (or fatline identity).\x1b[0m\n');
   if (opts.open || !tty) openInBrowser(channel.url);
 
   const deadline = Date.now() + WAIT_MS;
@@ -112,7 +118,7 @@ async function connect(opts, config) {
     await new Promise((r) => setTimeout(r, 1500));
   }
 
-  process.stdout.write('  Signed. Checking it here, and asking your node… ');
+  process.stdout.write(`  Signed. Checking it here, and asking ${node.own ? 'your node' : node.label ?? node.url}… `);
   const who = await verify({ message: s.message, signature: s.signature, fid: s.fid, nonce, node });
   console.log('yes.\n');
   const identity = {

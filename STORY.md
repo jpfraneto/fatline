@@ -153,6 +153,12 @@ More decisions that day:
 - **The world:** nine scenes in the figurine look (the Weaving, You Are Your FID, Two Currents, the Vault, the Sleeper, the Archive, the Hall of 777, A Node Is Born, a map) and Aster, the being of $FATLINE. Each scene stands for a real part of Fatline. Made through the Bankr LLM gateway with `gpt-image-2.5-sunburst`. The gateway has no image-edit route, so the style reference couldn't be attached; the look is described in words, and it held.
 - **The first outside contribution:** a friend (jvaleskadevs) sent PR #1: `follow --followers --depth` and `fatline feed`. Reviewed, three bugs fixed (an empty page when replies were hidden, the wrong label for the network, an older username winning), merged.
 
+## 10. A friend runs it for real (Oct 24)
+
+- A friend rented a server and installed Snapchain by hand, from the docs. Both shards downloaded in about an hour and a half; then it started catching up (shard 1 ten hours behind, shard 2 two days).
+- Every place he got stuck was wording or a timeout, not the node: "indexer" sounded like another program, the client didn't say its address, `connect` gave up after 15 seconds on a lookup that takes 20-30, and the Farcaster app said its sign-in was unavailable. He also asked the right question: is an app key a new account? (No: a second key for yours.)
+- Fixed the same day: a fast ownership check, plain messages, the client opens itself, and the Cast button gained the link and a browser-wallet way in.
+
 ## Start from scratch
 
 1. Read the bounty post, then [MASTER-PROMPT.md](MASTER-PROMPT.md), then this file.

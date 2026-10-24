@@ -408,3 +408,7 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
 .ck-speak-btn { width: 100%; padding: 12px; border: 0; border-radius: var(--radius); background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer; }
 .ck-speak .ck-cmd { margin: 0; width: 100%; }
 @media (max-width: 560px) { .ck-speak-ways { grid-template-columns: 1fr; } }
+.castpanel-link a { color: var(--accent); }
+.castpanel-alt { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 10px; }
+.castpanel [hidden] { display: none !important; }
+.castpanel { grid-auto-rows: max-content; }

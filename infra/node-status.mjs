@@ -76,8 +76,10 @@ the code, and say what you changed. Never print or move private keys.
 export async function describe(net, url) {
   const info = await fetch(`${url}/v1/info`, { signal: AbortSignal.timeout(6000) }).then((r) => r.json()).catch(() => null);
   if (info) {
-    const worst = Math.max(0, ...(info.shardInfos ?? []).filter((x) => x.shardId !== 0).map((x) => Number(x.blockDelay ?? 0)));
-    return { state: worst <= 50 ? 'in sync' : 'catching up', say: worst <= 50 ? `in sync (${LABEL[net]} ${info.version})` : `catching up: ${ago(worst)} behind the network (${LABEL[net]} ${info.version})` };
+    const shards = (info.shardInfos ?? []).filter((x) => x.shardId !== 0);
+    const worst = Math.max(0, ...shards.map((x) => Number(x.blockDelay ?? 0)));
+    const each = shards.length > 1 ? ` (${shards.map((x) => `shard ${x.shardId}: ${Number(x.blockDelay ?? 0) <= 50 ? 'in sync' : ago(Number(x.blockDelay))}`).join(', ')})` : '';
+    return { state: worst <= 50 ? 'in sync' : 'catching up', say: worst <= 50 ? `in sync (${LABEL[net]} ${info.version})` : `catching up: ${ago(worst)} behind the network${each}, ${LABEL[net]} ${info.version}.\n    It catches up by itself; nothing to do. Ask again later: fatline status. Meanwhile your client works: it reads and casts through Fatline's master node, and says so.` };
   }
   if (/127\.0\.0\.1|localhost/.test(url)) return { state: 'off', say: 'not running on this machine' };
   const s = server(net);

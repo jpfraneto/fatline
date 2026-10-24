@@ -269,26 +269,36 @@ fatline feed --limit 20                                              <span class
 
 <!-- ============================================================ POSTING -->
 <section id="post" lang="en">
-  <h2>Posting: your client's own app key</h2>
-  <pre><code>fatline identity --fid &lt;your FID&gt; --dry-run   <span class="c"># checks everything, registers nothing</span>
-fatline identity --fid &lt;your FID&gt;             <span class="c"># registers this client's key</span></code></pre>
-  <p>Run it in your own terminal. It asks for your seed phrase in a hidden prompt, derives your custody address the standard way, and stops if that address does not own the FID you gave. It creates a new app key for this client and registers it with a message your custody address signs. No transaction, no gas. The key can post, react, follow and edit your profile, nothing else. The seed phrase is forgotten as soon as the key is registered, and never saved.</p>
-  <p>Then you can cast, reply, like, recast, follow and delete. Each action shows <em>sending</em>, then <em>confirmed</em> only once your node returns it when asked.</p>
+  <h2>Casting: your client's own app key</h2>
+  <p><strong>The short way:</strong> run <code>fatline client</code>, open <code>http://localhost:8787</code>, press <strong>Cast</strong> (bottom right). The first time, it gives this client its own <em>app key</em>, in one of three ways:</p>
+  <ul>
+    <li><strong>The Farcaster app.</strong> Scan the QR code with your phone, or use <em>Open the Farcaster app on this device</em> / <em>Copy the link</em>. Approve in the app; it adds the key and pays for it.</li>
+    <li><strong>A browser wallet</strong> (MetaMask, Rabby, Coinbase Wallet…), only if it holds the address that owns your FID (your custody address, the one from your Farcaster recovery phrase). One signature, no transaction, no gas. The wallet asks to switch to Ethereum for it: that is the format of Farcaster's key message, nothing is sent onchain.</li>
+    <li><strong>Your recovery phrase, in a terminal:</strong> <code>fatline identity --phrase</code>. A hidden prompt, used once, never saved.</li>
+  </ul>
+  <p>An app key is <strong>not a new account</strong>. It is a second key for <em>your</em> account, like the ones Warpcast or Firefly hold. It can cast, react, follow and edit your profile; it can never move the account or add keys. It stays on this machine (<code>.fatline/appkey.json</code>). <code>fatline identity</code> in a terminal does the same as the Cast button (QR code and link).</p>
+  <p><strong>Your node does not have to be in sync.</strong> While it catches up it can't check new casts yet, so they go out through Fatline's master node, and the client says so. Once it is in sync, they leave through yours.</p>
+  <p><code>fatline connect</code> is optional: it only proves who you are (it shows your FID in the client). If the Farcaster app says <em>"Sign in with Farcaster is unavailable"</em>, that is Farcaster's sign-in service: wait a minute and try again, or use a browser wallet.</p>
   <pre><code>fatline identity show     <span class="c"># is the key active?</span>
 fatline identity revoke   <span class="c"># remove it from the network and from this machine</span></code></pre>
   <div class="concept"><strong>Storage rent and server bills are different things.</strong> Storage rent is paid onchain, per account, and sets how many messages the network keeps for you. It does not pay for any server. Your node's server is a separate bill, paid to whoever hosts it.</div>
-  <p class="note"><span class="tag ok">tested</span> with a real account on 2026-10-24 (@anky, FID 16098): key registered, then a cast, a reply, a like, a recast and a follow, each confirmed on our node and seen on crackle, then all undone.</p>
+  <p class="note"><span class="tag ok">tested</span> with a real account on 2026-10-24 (@anky, FID 16098), recovery-phrase way: key registered, then a cast, a reply, a like, a recast and a follow, each confirmed on our node and seen on crackle, then all undone. <span class="tag">untested</span> the browser-wallet way, with a real account.</p>
 </section>
 <section id="post" lang="es">
-  <h2>Publicar: la llave propia de tu cliente</h2>
-  <pre><code>fatline identity --fid &lt;tu FID&gt; --dry-run   <span class="c"># revisa todo, no registra nada</span>
-fatline identity --fid &lt;tu FID&gt;             <span class="c"># registra la llave de este cliente</span></code></pre>
-  <p>Córrelo en tu propia terminal. Te pide tu frase semilla en un campo oculto, deriva tu dirección custodia de la forma estándar, y se detiene si esa dirección no es dueña del FID que diste. Crea una llave nueva para este cliente y la registra con un mensaje que firma tu dirección custodia. Sin transacción, sin gas. La llave puede publicar, reaccionar, seguir y editar tu perfil, nada más. La frase semilla se olvida apenas se registra la llave, y nunca se guarda.</p>
-  <p>Después puedes hacer casts, responder, dar like, recastear, seguir y borrar. Cada acción muestra <em>enviando</em>, y <em>confirmado</em> solo cuando tu nodo la devuelve al preguntarle.</p>
+  <h2>Castear: la llave propia de tu cliente</h2>
+  <p><strong>Lo corto:</strong> corre <code>fatline client</code>, abre <code>http://localhost:8787</code> y aprieta <strong>Cast</strong> (abajo a la derecha). La primera vez le da a este cliente su propia <em>llave de app</em>, de una de tres formas:</p>
+  <ul>
+    <li><strong>La app de Farcaster.</strong> Escanea el QR con tu teléfono, o usa <em>Open the Farcaster app on this device</em> / <em>Copy the link</em>. Apruebas en la app; ella agrega la llave y la paga.</li>
+    <li><strong>Una wallet del navegador</strong> (MetaMask, Rabby, Coinbase Wallet…), solo si tiene la dirección dueña de tu FID (tu dirección custodia, la de tu frase de recuperación de Farcaster). Una firma, sin transacción, sin gas. La wallet pide cambiar a Ethereum para firmar: es el formato del mensaje de llaves de Farcaster, no se envía nada onchain.</li>
+    <li><strong>Tu frase de recuperación, en una terminal:</strong> <code>fatline identity --phrase</code>. Un campo oculto, se usa una vez, nunca se guarda.</li>
+  </ul>
+  <p>Una llave de app <strong>no es una cuenta nueva</strong>. Es una segunda llave de <em>tu</em> cuenta, como las que tienen Warpcast o Firefly. Puede castear, reaccionar, seguir y editar tu perfil; nunca puede mover la cuenta ni agregar llaves. Se queda en esta máquina (<code>.fatline/appkey.json</code>). <code>fatline identity</code> en una terminal hace lo mismo que el botón Cast (QR y link).</p>
+  <p><strong>Tu nodo no necesita estar sincronizado.</strong> Mientras se pone al día no puede revisar casts nuevos, así que salen por el nodo maestro de Fatline, y el cliente lo dice. Cuando está al día, salen por el tuyo.</p>
+  <p><code>fatline connect</code> es opcional: solo prueba quién eres (muestra tu FID en el cliente). Si la app de Farcaster dice <em>"Sign in with Farcaster is unavailable"</em>, es el servicio de Farcaster: espera un minuto y prueba de nuevo, o usa una wallet del navegador.</p>
   <pre><code>fatline identity show     <span class="c"># ¿está activa la llave?</span>
 fatline identity revoke   <span class="c"># la quita de la red y de esta máquina</span></code></pre>
   <div class="concept"><strong>El arriendo de almacenamiento y la cuenta del servidor son cosas distintas.</strong> El arriendo de almacenamiento se paga onchain, por cuenta, y define cuántos mensajes guarda la red para ti. No paga ningún servidor. El servidor de tu nodo es otra cuenta, que se le paga a quien lo hospeda.</div>
-  <p class="note"><span class="tag ok">probado</span> con una cuenta real el 2026-10-24 (@anky, FID 16098): llave registrada, luego un cast, una respuesta, un like, un recast y un follow, cada uno confirmado en nuestro nodo y visto en crackle, y después todo deshecho.</p>
+  <p class="note"><span class="tag ok">probado</span> con una cuenta real el 2026-10-24 (@anky, FID 16098), con la frase de recuperación: llave registrada, luego un cast, una respuesta, un like, un recast y un follow, cada uno confirmado en nuestro nodo y visto en crackle, y después todo deshecho. <span class="tag">sin probar</span> la forma con wallet del navegador, con una cuenta real.</p>
 </section>
 
 <!-- ============================================================ FILTER -->
