@@ -93,17 +93,22 @@ export async function phoneAccount({ root, say = console.log, page: pageText = {
   const peer = session.peer?.metadata?.name ?? 'your wallet';
   say(`  Connected: ${address} (${peer})`);
   page.status(`Connected: ${address.slice(0, 6)}…${address.slice(-4)} (${peer})`, true);
+  let stepNow = null;
   const close = async () => { page.status('Done. You can close this page.', true); page.close(); await client.disconnect({ topic: session.topic, reason: { code: 6000, message: 'done' } }).catch(() => {}); await client.core.relayer.transportClose().catch(() => {}); };
   return {
     ...checkedAccount(address, async (args) => {
       say(`  Approve the payment on your phone (${peer})…`);
       page.status(`Approve the payment in ${peer}…`);
+      if (stepNow != null) page.step(stepNow, 'now');
       // Ask on the chain the signature names (Farcaster's KeyAdd says Ethereum, x402 says Base) when the wallet has it.
       const want = `eip155:${Number(args.domain?.chainId ?? BASE)}`;
       const chains = session.namespaces.eip155?.chains ?? session.namespaces.eip155?.accounts?.map((a) => a.split(':').slice(0, 2).join(':')) ?? [];
       return client.request({ topic: session.topic, chainId: chains.includes(want) ? want : `eip155:${BASE}`, request: { method: 'eth_signTypedData_v4', params: [address, typedDataJson(args)] } });
     }, close),
     from: peer,
+    /** Which payment is next (the page shows it as "approve now"), and marking it paid. */
+    payment(i) { stepNow = i; },
+    paid(i, ok = true) { page.step(i, ok ? 'paid' : 'failed'); stepNow = null; },
     /** Sends a transaction from the connected wallet, on Base. Returns its hash once the person approves. */
     async sendTransaction({ to, data, value = 0n }) {
       say(`  Approve the transaction on your phone (${peer})…`);

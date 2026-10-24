@@ -78,7 +78,7 @@ const usdcBalance = (address) => createPublicClient({ chain: base, transport: ht
   .readContract({ address: USDC_BASE, abi: erc20, functionName: 'balanceOf', args: [address] });
 
 /** The wallet that pays: your phone wallet (QR), a browser wallet on this computer, or one made here. Never a pasted key. */
-const payingAccount = (opts) => choosePayer({ root: ROOT, state: STATE, how: opts.pay, ask, page: { title: 'Pay for your node', detail: 'Scan with the wallet that holds your USDC on Base, then approve each payment (server, then disk). Each shows its amount. No ETH needed.' } });
+const payingAccount = (opts, steps = null) => choosePayer({ root: ROOT, state: STATE, how: opts.pay, ask, page: { title: 'Pay for your node', detail: `Scan with the wallet that holds your USDC on Base${steps ? `, then approve ${steps.length === 1 ? 'one payment' : `${steps.length} payments, one by one`}` : ''}. Each shows its amount in your wallet. USDC on Base, no ETH needed.`, steps } });
 
 /** Says how paying works, and the balance of this machine's wallet if there is one. */
 async function showPayer() {
@@ -119,13 +119,14 @@ async function wallet(opts = {}) {
 }
 
 /** One x402 purchase: ask for the price, check it, sign it, send it. Returns the parsed response. */
-async function buy({ url, body, account, provider, label }) {
+async function buy({ url, body, account, provider, label, step = null }) {
   const p = provider;
   const send = (headers = {}) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
   const first = await send();
   if (first.status !== 402) throw new Error(`${label}: expected a 402 price quote, got HTTP ${first.status}: ${await first.text()}`);
   const quote = await readQuote(first);
   const option = chooseOption(quote, [8453]);
+  if (step != null) { account.payment?.(step); console.log(`  Payment ${step + 1}: ${formatUsdc(option.amount)} USDC for ${label}. Approve it in your wallet…`); }
   const header = await signPayment({ account, quote, option });
   const headers = { [header.name]: header.value, 'Idempotency-Key': randomUUID() };
   if (provider.paymentHeader) headers[provider.paymentHeader] = header.value;
@@ -140,6 +141,7 @@ async function buy({ url, body, account, provider, label }) {
     }
     throw new Error(`${label}: the provider refused the payment (HTTP ${paid.status}), nothing was paid: ${why.message ?? text}`);
   }
+  if (step != null) account.paid?.(step);
   console.log(`  paid ${formatUsdc(option.amount)} USDC for ${label}`);
   return { result: JSON.parse(text), amount: option.amount, receipt: readReceipt(paid) };
 }
@@ -184,7 +186,10 @@ async function rentDaily(opts, p) {
   if (total > opts.maxUsdc) throw new Error(`~${total} USDC is above --max-usdc ${opts.maxUsdc}. Nothing was paid.`);
   if (!opts.yes && (await ask('Type "pay" to continue: ')) !== 'pay') return console.log('Stopped. Nothing was signed.');
 
-  const account = await payingAccount(opts);
+  const steps = [{ label: `The server: ${plan}, ${spec.vcpu} vCPU · ${spec.ramGb} GB RAM, ${days} day${days === 1 ? '' : 's'}`, amount: serverUsdc.toFixed(2) }];
+  if (disk) steps.push({ label: `The disk: ${disk} GB, ${days} day${days === 1 ? '' : 's'}`, amount: diskUsdc.toFixed(2) });
+  steps.forEach((s, i) => console.log(`  Payment ${i + 1} of ${steps.length}: ${s.amount} USDC · ${s.label}`));
+  const account = await payingAccount(opts, steps);
   try {
     const balance = Number(formatUsdc(await usdcBalance(account.address)));
     if (balance < total) throw new Error(`${account.address} has ${balance} USDC on Base; this needs ~${total}. Send USDC on Base to it and run fatline compute again. Nothing was paid.`);
@@ -199,7 +204,7 @@ async function rentDaily(opts, p) {
 }
 
 async function rentDailyPaid({ opts, p, plan, days, disk, account }) {
-  const { result: server, receipt } = await buy({ url: `${p.api}/v1/servers`, body: { plan, days, ssh_key: sshKey() }, account, provider: p, label: `the server (${days} days)` });
+  const { result: server, receipt } = await buy({ url: `${p.api}/v1/servers`, body: { plan, days, ssh_key: sshKey() }, account, provider: p, label: `the server (${days} days)`, step: 0 });
   const id = server.id;
   mkdirSync(STATE, { recursive: true });
   writeFileSync(SECRET_FILE, JSON.stringify({ provider: opts.provider, rental_id: id, ...server }, null, 2), { mode: 0o600 });
@@ -218,7 +223,7 @@ async function rentDailyPaid({ opts, p, plan, days, disk, account }) {
       if (s.status === 'running' || s.status === 'active' || s.ipv4) break;
       await sleep(15_000);
     }
-    await buy({ url: `${p.api}/v1/servers/${id}/storage`, body: { gb: disk }, account, provider: p, label: `${disk} GB of disk` });
+    await buy({ url: `${p.api}/v1/servers/${id}/storage`, body: { gb: disk }, account, provider: p, label: `${disk} GB of disk`, step: 1 });
   }
 }
 
