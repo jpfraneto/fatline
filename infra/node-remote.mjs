@@ -90,6 +90,12 @@ async function main() {
       const line = lines.filter((l) => l !== '__stopped__').pop() ?? '';
       if (line && line !== last) { console.log(`  ${line.replace(/\x1b\[[0-9;]*m/g, '')}`); last = line; }
       if (stopped && !(await info(url))) {
+        // Answering on the server but not from here: a firewall in between, not a broken node.
+        const inside = ssh(ip, `curl -s -m 5 -o /dev/null -w '%{http_code}' localhost:${net.port}/v1/info`).stdout.trim();
+        if (inside === '200') {
+          throw new Error(`Your node runs and answers on the server, but port ${net.port} is closed from outside: a firewall at your provider blocks it.
+Open TCP ${net.port}, UDP ${net.port + 1} and TCP ${net.port + 2} for inbound traffic in its firewall (AgentMetal: the setup does this itself; Hetzner/others: the cloud console's firewall), then run this command again.`);
+        }
         const tail = ssh(ip, `grep -a -v '^perl\\|locale\\|LANG\\|LC_\\|supported' ${log} | tail -n 15`).stdout.replace(/\x1b\[[0-9;]*m/g, '').trimEnd();
         const why = tail.split('\n').find((l) => l.startsWith('FATLINE_ERROR:'));
         throw new Error(`The setup stopped before the node answered.${why ? `\n${why.slice(15).trim()}` : ''}\nLast lines of ${log} on ${ip}:\n${tail.replace(/^/gm, '  ')}\nFix that and run this command again: finished steps are skipped.`);

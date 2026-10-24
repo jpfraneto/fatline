@@ -110,7 +110,24 @@ if [ "$RAM_GB" -lt 15 ] && [ "$SHARED" = no ] && ! swapon --show | grep -q .; th
 fi
 
 # 3. Tools.
+# Sellers that put the server behind their own firewall (AgentMetal: only SSH open at boot) would hide the node
+# from everyone, peers included. If the server can manage its own firewall (AgentMetal's /v1/self), open the node's ports.
+open_seller_firewall() {
+  local self id
+  self=$(curl -fsS -m 10 https://api.agentmetal.dev/v1/self 2>/dev/null) || return 0
+  id=$(echo "$self" | jq -r '.server_id // empty'); [ -n "$id" ] || return 0
+  [ "$(echo "$self" | jq -r '.firewall.managed // false')" = true ] || return 0
+  for rule in "$@"; do
+    set -- $rule
+    if echo "$self" | jq -e --arg p "$1" --arg port "$2" '.firewall.rules[]? | select(.protocol == $p and .port == $port)' >/dev/null; then continue; fi
+    curl -fsS -m 15 -X POST "https://api.agentmetal.dev/v1/servers/$id/firewall/rules" -H 'content-type: application/json' \
+      -d "{\"protocol\":\"$1\",\"port\":\"$2\",\"description\":\"Fatline node\"}" >/dev/null \
+      && echo "Opened $1/$2 in the seller's firewall" || echo "FATLINE_WARNING: could not open $1/$2 in the seller's firewall; the node is unreachable from outside until it is open"
+  done
+}
+
 command -v jq >/dev/null || { apt-get update -qq && apt-get install -y -qq jq >/dev/null; }
+open_seller_firewall "tcp 4381" "udp 4382" "tcp 4383"
 if ! command -v docker >/dev/null; then
   say "Installing Docker"
   curl -fsSL https://get.docker.com | sh >/dev/null
