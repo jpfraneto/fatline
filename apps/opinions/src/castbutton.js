@@ -30,7 +30,13 @@ export function castButton() {
 
   const showComposer = () => {
     panel.replaceChildren(head(`Cast as FID ${state.me.fid}`), castComposer({ onDone: () => setTimeout(close, 1200) }));
-    panel.querySelector('textarea')?.focus();
+    const box = panel.querySelector('textarea');
+    // The vouch: what this Fatline is, and the link that tells anyone how to run theirs. Theirs to edit or replace.
+    if (box && !box.value) {
+      box.value = `this is the fatline im running to secure the farcaster network\n\nrun yours here:\n\nhttps://fatline.ink/${state.me.fid}`;
+      box.dispatchEvent(new Event('input'));
+    }
+    box?.focus();
   };
 
   const showLogin = async () => {
