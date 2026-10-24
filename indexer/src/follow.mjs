@@ -1,3 +1,4 @@
+const ago = (s) => { s = Number(s); return s < 120 ? `${s} s` : s < 7200 ? `${Math.round(s / 60)} min` : s < 172800 ? `${Math.round(s / 3600)} hours` : `${Math.round(s / 86400)} days`; }; // Snapchain's blockDelay is in seconds
 // fatline follow: keep a local archive of only the accounts you choose, read from one node.
 //
 //   fatline follow <fid|@name>... [--network farcaster|hypersnap] [--node URL|name] [--following] [--followers] [--depth N] [--once]
@@ -76,8 +77,8 @@ let info;
 try { info = await adapter.get('/v1/info'); } catch (err) { die(`\n${err.message}\nNothing was changed. Start that node, or choose another with --node.`); }
 const behind = Math.max(0, ...(info.shardInfos ?? []).filter((s) => s.shardId !== 0).map((s) => Number(s.blockDelay ?? 0)));
 console.log(behind > 200
-  ? `Warning: this node is ${behind.toLocaleString('en')} blocks behind the network, so its newest messages are old.`
-  : `The node is in sync (at most ${behind} blocks behind).`);
+  ? `Warning: this node is ${ago(behind)} behind the network, so its newest messages are old.`
+  : `The node is in sync (at most ${ago(behind)} behind).`);
 
 // Names to FIDs, through the same node.
 const fids = [];

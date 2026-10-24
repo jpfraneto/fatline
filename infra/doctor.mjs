@@ -1,3 +1,4 @@
+const ago = (s) => { s = Number(s); return s < 120 ? `${s} s` : s < 7200 ? `${Math.round(s / 60)} min` : s < 172800 ? `${Math.round(s / 3600)} hours` : `${Math.round(s / 86400)} days`; }; // Snapchain's blockDelay is in seconds
 // fatline doctor
 // Looks at this machine and at the networks, then says which way of running Fatline fits:
 //   1. full  — run your own Farcaster or Hypersnap node here, plus the indexer and apps
@@ -101,7 +102,7 @@ export async function main() {
     for (const node of n.nodes) {
       const p = await probe(node.url);
       const tag = node.own ? 'yours' : 'public';
-      const detail = p.ok ? green(`in sync (${p.delay} blocks behind, v${p.version}, ${p.ms} ms)`) : dim(`not reachable (${p.error ?? `${p.delay} blocks behind`})`);
+      const detail = p.ok ? green(`in sync (${ago(p.delay)} behind, v${p.version}, ${p.ms} ms)`) : dim(`not reachable (${p.error ?? `${p.delay} blocks behind`})`);
       console.log(`  ${mark(p.ok)} ${n.label.padEnd(10)} ${tag.padEnd(6)} ${node.url}  ${detail}`);
       if (p.ok && !reachable[name]) reachable[name] = { ...node };
     }

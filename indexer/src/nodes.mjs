@@ -1,3 +1,4 @@
+const ago = (s) => { s = Number(s); return s < 120 ? `${s} s` : s < 7200 ? `${Math.round(s / 60)} min` : s < 172800 ? `${Math.round(s / 3600)} hours` : `${Math.round(s / 86400)} days`; }; // Snapchain's blockDelay is in seconds
 // Master nodes: the read nodes an app runs on, watched from this server.
 //
 // The server asks each configured node for Snapchain's own /v1/info on a timer, decides what state
@@ -64,11 +65,11 @@ export function classify(p, last = {}, { maxDelay = MAX_HEALTHY_DELAY, stallMs =
   if (!p.shards.length) return { state: 'degraded', reason: 'It answers, but reports no shards.', sync: 'no shard data' };
   const worst = Math.max(...p.shards.map((s) => s.blockDelay ?? Infinity));
   if (!Number.isFinite(worst)) return { state: 'degraded', reason: 'It answers, but does not say how far behind it is.', sync: 'unknown' };
-  if (worst > maxDelay) return { state: 'degraded', reason: `Catching up: ${worst.toLocaleString('en')} blocks behind the network.`, sync: 'catching up', blocksBehind: worst };
+  if (worst > maxDelay) return { state: 'degraded', reason: `Catching up: ${ago(worst)} behind the network.`, sync: 'catching up', blocksBehind: worst };
   const moved = movedHeights(last.heights, p.shards);
   const lastMoveAt = moved || last.lastMoveAt == null ? p.at : last.lastMoveAt;
   if (p.at - lastMoveAt >= stallMs) return { state: 'degraded', reason: `Block heights have not moved for ${Math.round((p.at - lastMoveAt) / 60_000)} minutes.`, sync: 'stalled', blocksBehind: worst };
-  return { state: 'online', reason: `In sync: at most ${worst} blocks behind.`, sync: 'synced', blocksBehind: worst };
+  return { state: 'online', reason: `In sync: at most ${ago(worst)} behind.`, sync: 'synced', blocksBehind: worst };
 }
 
 function movedHeights(before, shards) {

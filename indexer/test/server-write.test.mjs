@@ -96,7 +96,7 @@ for (const ownRefuses of [false, true]) test(`while your node catches up: ${ownR
     assert.equal(seen['http://own.test'], 1, 'your node gets it first');
     if (ownRefuses) {
       assert.equal(out.node, 'http://public.test');
-      assert.match(out.via.because, /5000 blocks behind and refused it/);
+      assert.match(out.via.because, /83 min behind and refused it/);
       assert.equal(seen['http://public.test'], 1);
     } else {
       assert.equal(out.node, 'http://own.test');

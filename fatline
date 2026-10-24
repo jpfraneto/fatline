@@ -281,7 +281,7 @@ cmd_status() {
         if (!i) { if (!url.includes("127.0.0.1")) console.log(`  ${net} ${url}: not answering`); continue; }
         any = true;
         const worst = Math.max(...i.shardInfos.filter((x) => x.shardId !== 0).map((x) => Number(x.blockDelay ?? 0)));
-        console.log(`  ${net === "farcaster" ? "Snapchain" : "Hypersnap"} ${i.version} at ${url}: ${worst <= 50 ? "in sync" : `catching up, ${worst} blocks behind`}`);
+        console.log(`  ${net === "farcaster" ? "Snapchain" : "Hypersnap"} ${i.version} at ${url}: ${worst <= 50 ? "in sync" : `catching up, ${worst} s behind`}`);
       }
       if (!any) console.log("  no node of yours is answering (fine in light mode; rent one with fatline compute)");
     })();' "$ROOT/fatline.config.json"

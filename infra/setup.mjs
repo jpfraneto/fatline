@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const ago = (s) => { s = Number(s); return s < 120 ? `${s} s` : s < 7200 ? `${Math.round(s / 60)} min` : s < 172800 ? `${Math.round(s / 3600)} hours` : `${Math.round(s / 86400)} days`; }; // Snapchain's blockDelay is in seconds
 // fatline setup: the whole path, one step at a time. Before each step it says what the step does, what it
 // costs and how long it takes, then asks: Enter to go, s to skip, q to stop. Run it again and it picks up
 // where you stopped (.fatline/setup.json). It only calls the normal fatline commands, so every step can
@@ -193,7 +194,7 @@ function steps(s) {
   const nodePaths = {
     sync: {
       title: 'Wait until your node is in sync',
-      what: 'Checks your node every minute until every shard is a few blocks behind or less. Our last run: 3.5 hours from paying to in sync. Your client already works meanwhile, and your egg is already warming. You can stop and come back: run fatline setup again.',
+      what: 'Checks your node every minute until every shard is a few seconds behind or less. Our last run: 3.5 hours from paying to in sync. Your client already works meanwhile, and your egg is already warming. You can stop and come back: run fatline setup again.',
       cost: 'time only',
       cmd: 'fatline status',
       run: async () => {
@@ -202,7 +203,7 @@ function steps(s) {
         for (;;) {
           const i = await nodeInfo(url);
           const behind = i?.shardInfos?.length ? Math.max(...i.shardInfos.map((x) => Number(x.blockDelay ?? Infinity))) : null;
-          console.log(`  ${new Date().toISOString().slice(11, 16)} UTC  ${i ? `${behind} blocks behind (worst shard)` : 'not answering yet'}`);
+          console.log(`  ${new Date().toISOString().slice(11, 16)} UTC  ${i ? `${ago(behind)} behind (worst shard)` : 'not answering yet'}`);
           if (behind !== null && behind <= 50) return true;
           await new Promise((r) => setTimeout(r, 60_000));
         }

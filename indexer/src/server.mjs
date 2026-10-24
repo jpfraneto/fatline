@@ -1,3 +1,4 @@
+const ago = (s) => { s = Number(s); return s < 120 ? `${s} s` : s < 7200 ? `${Math.round(s / 60)} min` : s < 172800 ? `${Math.round(s / 3600)} hours` : `${Math.round(s / 86400)} days`; }; // Snapchain's blockDelay is in seconds
 import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
@@ -74,7 +75,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
       if (other && other.url !== chosen.url) {
         const via = otherNet.pinned(other.url);
         return { w: new Writer({ network: net.pinned(chosen.url), key, confirmVia: via, fallback: via }), chosen, other,
-          behind: `${chosen.label ?? chosen.url} is ${chosen.status.blockDelay} blocks behind` };
+          behind: `${chosen.label ?? chosen.url} is ${ago(chosen.status.blockDelay)} behind` };
       }
     }
     return { w: new Writer({ network: net.pinned(node), key }) };

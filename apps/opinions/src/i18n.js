@@ -1,3 +1,4 @@
+const ago = (s) => { s = Number(s); return s < 120 ? `${s} s` : s < 7200 ? `${Math.round(s / 60)} min` : s < 172800 ? `${Math.round(s / 3600)} hours` : `${Math.round(s / 86400)} days`; }; // Snapchain's blockDelay is in seconds
 export const strings = {
   es: {
     castPlaceholder: 'Escribe un cast (hasta 320 bytes). Lo firma la llave de esta app.',
@@ -147,7 +148,7 @@ export const strings = {
     launch: 'Launch an app',
     settings: 'Settings',
     reading: (node, own, chosen) => `${own ? `Reading from your own node (${node})` : `Reading from ${node}, a public node that is not yours`}${chosen ? ', the one you chose.' : ', picked automatically.'}`,
-    behind: (n) => `It is ${Number(n).toLocaleString('en')} blocks behind the network.`,
+    behind: (n) => `It is ${ago(n)} behind the network.`,
     switched: (before) => `Switched from ${before}, which stopped answering.`,
     automatic: 'the first one that answers, in this order. It always says which one it uses.',
     nodeChoice: 'Read and post only through the node you choose. If it goes down, the app tells you and does not switch to another without asking.',

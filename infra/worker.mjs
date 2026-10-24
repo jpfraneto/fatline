@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+const ago = (s) => { s = Number(s); return s < 120 ? `${s} s` : s < 7200 ? `${Math.round(s / 60)} min` : s < 172800 ? `${Math.round(s / 3600)} hours` : `${Math.round(s / 86400)} days`; }; // Snapchain's blockDelay is in seconds
 // fatline worker           where your worker stands: wallet, node, client, coin
 // fatline worker new       make a worker wallet on this machine (a recovery phrase, shown once)
 // fatline worker restore   bring a worker wallet back from its phrase (hidden prompt)
@@ -93,7 +94,7 @@ async function status() {
     const mark = s.ok ? '\x1b[32m✓\x1b[0m' : s.waiting ? '\x1b[33m…\x1b[0m' : ' ';
     let extra = '';
     if (s.id === 'funds' && usdc != null) extra = ` (${usdc.toFixed(2)} USDC)`;
-    if (s.id === 'node' && node) extra = ` (${node.url}: ${node.state}${node.behind != null ? `, ${node.behind} blocks behind` : ''})`;
+    if (s.id === 'node' && node) extra = ` (${node.url}: ${node.state}${node.behind != null ? `, ${ago(node.behind)} behind` : ''})`;
     console.log(`  ${mark} ${s.label}${extra}${s.ok ? '' : `\n      ${s.hint}`}`);
   }
   console.log('');

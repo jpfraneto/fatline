@@ -1,3 +1,4 @@
+const ago = (s) => { s = Number(s); return s < 120 ? `${s} s` : s < 7200 ? `${Math.round(s / 60)} min` : s < 172800 ? `${Math.round(s / 3600)} hours` : `${Math.round(s / 86400)} days`; }; // Snapchain's blockDelay is in seconds
 // fatline node <farcaster|hypersnap>, when fatline compute rented a server:
 // installs that network's read node on the rented server, follows the setup until the node answers,
 // then makes it this client's own node for that network.
@@ -107,8 +108,8 @@ Open TCP ${net.port}, UDP ${net.port + 1} and TCP ${net.port + 2} for inbound tr
   const i = await info(url);
   spawnSync('node', [join(ROOT, 'infra/config-tool.mjs'), 'own-node', network, url], { stdio: 'inherit' });
   console.log(`\n${net.label} ${i.version} answers at ${url}.`);
-  for (const s of i.shardInfos ?? []) console.log(`  shard ${s.shardId}: height ${s.maxHeight}, ${s.blockDelay} blocks behind`);
-  console.log('It is healthy when every shard is only a few blocks behind. Check again with: fatline status');
+  for (const s of i.shardInfos ?? []) console.log(`  shard ${s.shardId}: height ${s.maxHeight}, ${ago(s.blockDelay)} behind`);
+  console.log('It is healthy when every shard is only a few seconds behind. Check again with: fatline status');
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
