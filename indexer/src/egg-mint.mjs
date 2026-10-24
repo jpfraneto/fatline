@@ -6,7 +6,8 @@
 //   4. a node checks that tie: the wallet is your account's custody address, or one of its verified addresses
 //   5. the mint: Aster (the genesis egg) with claimGenesis() from the wallet it is reserved for; any other egg is
 //      laid on your server and minted to that wallet (the attesters sign it; anyone can submit it)
-import { dirname, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
 import { createPublicClient, encodeFunctionData, getAddress, http, parseAbi } from 'viem';
@@ -45,9 +46,11 @@ export async function mintEgg(config, opts = {}) {
   // 1. Where you are.
   const networkName = config.defaultNetwork;
   const network = new Network(networkName, config.networks[networkName]);
-  const node = await network.node().catch(() => null);
+  // Any node in sync will do for the checks (yours may still be downloading): yours, then the public ones.
+  const node = (await network.node().catch(() => null)) ?? { url: 'https://crackle.farcaster.xyz:3381', label: 'crackle.farcaster.xyz (not yours: yours is still being born)', own: false };
   const key = loadAppKey(config.dataDir);
-  const fid = Number(opts.fid ?? key?.fid ?? 0) || null;
+  let known = null; try { known = JSON.parse(readFileSync(join(config.dataDir, 'identity.json'), 'utf8')).fid; } catch {}
+  const fid = Number(opts.fid ?? key?.fid ?? known ?? 0) || null;
   say('\nYour egg');
   say(node ? `  node     ${node.label ?? node.url}${node.own ? ' (yours)' : ' (not yours: yours is still catching up)'}` : '  node     none answering yet (run fatline status)');
   say(`  account  ${fid ? `FID ${fid}` : 'not known yet (fatline identity, or the wallet will tell)'}`);
