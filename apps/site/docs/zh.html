@@ -5,75 +5,24 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fatline：你自己的 Farcaster 节点和客户端</title>
 <meta name="description" content="几条命令，拥有你自己的 Farcaster 或 Hypersnap 读取节点和客户端。边做边讲解协议。">
-<meta name="theme-color" content="#111820">
-<style>
-  :root {
-    --bg: #111820; --surface: #151e27; --text: #F3F0E8; --muted: #9aabb4; --slate: #667D89;
-    --line: rgba(102,125,137,.3); --signal: #A6D8C2; --amber: #d9c38c; --warn: #e59a88;
-    --serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
-    --sans: ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-    --mono: ui-monospace,SFMono-Regular,Menlo,monospace;
-    color-scheme: dark;
-  }
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-      --bg: #F3F0E8; --surface: #fbf9f4; --text: #111820; --muted: #4d5f69; --slate: #667D89;
-      --line: rgba(17,24,32,.14); --signal: #2f7a5c; --amber: #8a6a12; --warn: #a3412c; color-scheme: light;
-    }
-  }
-  * { box-sizing: border-box; }
-  html[data-lang="en"] [lang="es"], html[data-lang="es"] [lang="en"] { display: none !important; }
-  body { margin: 0 auto; max-width: 760px; padding: 20px 16px 96px; background: var(--bg); color: var(--text); font: 17px/1.6 var(--sans); -webkit-text-size-adjust: 100%; }
-  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--slate); }
-  header.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .brand { font: 600 22px var(--serif); text-decoration: none; }
-  .langs { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
-  .langs button { border: 0; background: none; color: var(--muted); padding: 5px 12px; border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer; }
-  .langs button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
-  h1 { font: 500 clamp(30px, 7vw, 46px)/1.1 var(--serif); letter-spacing: -.015em; margin: 36px 0 12px; }
-  h2 { font: 500 26px/1.2 var(--serif); margin: 56px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); }
-  h3 { font: 600 17px var(--sans); margin: 28px 0 6px; }
-  p, li { color: var(--text); }
-  .lede { color: var(--muted); font-size: 19px; margin: 0 0 22px; }
-  .muted { color: var(--muted); }
-  .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--slate); margin: 0; }
-  pre { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; overflow-x: auto; font: 14px/1.6 var(--mono); margin: 12px 0; }
-  code { font-family: var(--mono); font-size: .9em; overflow-wrap: anywhere; }
-  pre code { overflow-wrap: normal; }
-  .c { color: var(--slate); }
-  .quick { border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 8px; background: var(--surface); }
-  .quick pre { background: var(--bg); }
-  .tag { display: inline-block; font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin-left: 6px; vertical-align: 2px; color: var(--muted); }
-  .tag.ok { color: var(--signal); border-color: currentColor; }
-  .tag.no { color: var(--amber); border-color: currentColor; }
-  .note { border-left: 2px solid var(--amber); padding: 2px 0 2px 14px; color: var(--muted); }
-  .concept { border-left: 2px solid var(--signal); padding: 4px 0 4px 14px; margin: 16px 0; }
-  .concept strong:first-child { color: var(--signal); font-weight: 600; }
-  table { border-collapse: collapse; width: 100%; font-size: 15px; margin: 12px 0; }
-  th, td { text-align: left; padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--slate); font-weight: 500; font-size: 13px; }
-  .scroll { overflow-x: auto; }
-  nav.toc ol { padding-left: 20px; margin: 8px 0; }
-  nav.toc a { text-decoration: none; }
-  .line { display: block; width: 100%; height: 40px; margin: 8px 0 0; }
-  .line path { fill: none; stroke: var(--slate); stroke-opacity: .5; stroke-width: 1; }
-  .line .pulse { stroke: var(--signal); stroke-opacity: 1; stroke-width: 1.6; stroke-dasharray: 70 530; animation: flow 3.2s linear infinite; }
-  @keyframes flow { from { stroke-dashoffset: 600; } to { stroke-dashoffset: -70; } }
-  @media (prefers-reduced-motion: reduce) { .line .pulse { animation: none; stroke-dasharray: none; } }
-  footer { margin-top: 64px; font-size: 14px; color: var(--muted); }
-</style>
-<style>body { font-family: ui-sans-serif, system-ui, -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; }</style>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23efe2c6'/%3E%3Ccircle cx='32' cy='34' r='20' fill='%233a2a1b'/%3E%3Cpath d='M15 30 Q32 24 49 30' stroke='%23ff5fa8' stroke-width='3' fill='none'/%3E%3Ccircle cx='49' cy='30' r='3' fill='%233d8bff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tutorial.css">
+<style>body { font-family: Fraunces, "Noto Serif SC", "Songti SC", "STSong", serif; }</style>
 </head>
 <body>
-<header class="top">
-  <a class="brand" href="../">Fatline</a>
-  <nav class="also" style="display:flex;gap:18px;font-size:14px"><a href="../explore.html">Explore the village</a><a href="../manifesto.html">Manifesto</a><a href="../f/FATLINE">$FATLINE</a></nav>
-  <div class="langs" role="group" aria-label="语言">
+<nav class="main" aria-label="Main">
+  <a href="./" aria-current="page">DOCS</a>
+  <a href="../manifesto.html">MANIFESTO</a>
+  <a href="../f/FATLINE">$FATLINE</a>
+</nav>
+<div class="langs" role="group" aria-label="语言">
     <a href="tutorial.html?lang=en"><button type="button" aria-pressed="false">English</button></a>
     <a href="tutorial.html?lang=es"><button type="button" aria-pressed="false">Español</button></a>
     <button type="button" aria-pressed="true">中文</button>
   </div>
-</header>
 <p class="muted">本页是英文版教程的简明中文版，内容与英文版一致（2026-10-22）。完整内容见 <a href="tutorial.html?lang=en">English</a>。</p>
 
 <h1>你自己的 Farcaster 节点，你自己的客户端。</h1>
@@ -88,7 +37,7 @@
     <li>新的 Hetzner 账户有额度限制（我们的是：卷总共 1,385 GB，14 个 vCPU）。一个节点需要 700 GB 的卷，所以一个新账户大约每个卷只够<strong>一个</strong>完整节点。我们在一台服务器（8 个 Arm 核心，16 GB）上用两个卷同时运行两个网络，正好在这个额度上：Hypersnap 最小的分片（44 GB）放在服务器自带的磁盘上。两个网络合计每月 131.82 美元。</li>
     <li>发帖需要你 Farcaster 账户的助记词，只在你自己的终端里输入。</li>
   </ul>
-  <p><strong>最简单的方式：</strong><code>curl -fsSL https://fatline.ink/install.sh | sh</code> 会把 Fatline 下载到 <code>~/fatline</code> 并启动 <code>fatline setup</code>：逐步引导，每一步之前说明它做什么、花多少钱、要多久，然后问你：继续、跳过或停止。再运行一次就从停下的地方继续。<br><strong>用 AI 助手：</strong>把这句话发给 Claude Code、Codex 或任何能运行命令的助手：<code>Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md</code>。它会先给你看价格并等你同意，绝不碰你的助记词或令牌。</p>
+  <p><strong>最简单的方式：</strong><code>curl -fsSL https://fatline.ink/install.sh | sh</code> 会把 Fatline 下载到 <code>~/fatline</code> 并启动 <code>fatline setup</code>：逐步引导，每一步之前说明它做什么、花多少钱、要多久，然后问你：继续、跳过或停止。再运行一次就从停下的地方继续。<br><strong>用 AI 助手：</strong>把这句话发给 Claude Code、Codex 或任何能运行命令的助手：<code>Help me run my own Fatline. Follow https://fatline.ink/skill.md</code>。它会先给你看价格并等你同意，绝不碰你的助记词或令牌。</p>
 <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 npm install -g .             <span class="c"># the fatline command, from anywhere</span>
 

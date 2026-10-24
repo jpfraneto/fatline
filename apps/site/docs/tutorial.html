@@ -3,84 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Fatline · Tutorial</title>
+<title>Fatline Tutorial</title>
 <meta name="description" content="Fatline: your own Farcaster or Hypersnap read node and your own client, in a few commands. A tutorial that explains the protocol as you go. Formerly Infinicaster.">
-<meta name="theme-color" content="#111820">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23111820'/%3E%3Cpath d='M8 34 H24 C28 34 29 24 32 24 C35 24 36 40 40 40 C43 40 44 34 47 34 H56' fill='none' stroke='%23A6D8C2' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
-<style>
-  :root {
-    --bg: #111820; --surface: #151e27; --text: #F3F0E8; --muted: #9aabb4; --slate: #667D89;
-    --line: rgba(102,125,137,.3); --signal: #A6D8C2; --amber: #d9c38c; --warn: #e59a88;
-    --serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
-    --sans: ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-    --mono: ui-monospace,SFMono-Regular,Menlo,monospace;
-    color-scheme: dark;
-  }
-  @media (prefers-color-scheme: light) {
-    :root:not([data-theme="dark"]) {
-      --bg: #F3F0E8; --surface: #fbf9f4; --text: #111820; --muted: #4d5f69; --slate: #667D89;
-      --line: rgba(17,24,32,.14); --signal: #2f7a5c; --amber: #8a6a12; --warn: #a3412c; color-scheme: light;
-    }
-  }
-  * { box-sizing: border-box; }
-  html[data-lang="en"] [lang="es"], html[data-lang="es"] [lang="en"] { display: none !important; }
-  body { margin: 0 auto; max-width: 760px; padding: 20px 16px 96px; background: var(--bg); color: var(--text); font: 17px/1.6 var(--sans); -webkit-text-size-adjust: 100%; }
-  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--slate); }
-  header.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .brand { font: 600 22px var(--serif); text-decoration: none; }
-  .langs { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
-  .langs button { border: 0; background: none; color: var(--muted); padding: 5px 12px; border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer; }
-  .langs button[aria-pressed="true"] { background: var(--text); color: var(--bg); }
-  h1 { font: 500 clamp(30px, 7vw, 46px)/1.1 var(--serif); letter-spacing: -.015em; margin: 36px 0 12px; }
-  h2 { font: 500 26px/1.2 var(--serif); margin: 56px 0 10px; padding-top: 18px; border-top: 1px solid var(--line); }
-  h3 { font: 600 17px var(--sans); margin: 28px 0 6px; }
-  p, li { color: var(--text); }
-  .lede { color: var(--muted); font-size: 19px; margin: 0 0 22px; }
-  .muted { color: var(--muted); }
-  .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--slate); margin: 0; }
-  pre { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; overflow-x: auto; font: 14px/1.6 var(--mono); margin: 12px 0; }
-  code { font-family: var(--mono); font-size: .9em; overflow-wrap: anywhere; }
-  pre code { overflow-wrap: normal; }
-  .c { color: var(--slate); }
-  .quick { border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 8px; background: var(--surface); }
-  .quick pre { background: var(--bg); }
-  .tag { display: inline-block; font-size: 12px; border: 1px solid var(--line); border-radius: 999px; padding: 0 8px; margin-left: 6px; vertical-align: 2px; color: var(--muted); }
-  .tag.ok { color: var(--signal); border-color: currentColor; }
-  .tag.no { color: var(--amber); border-color: currentColor; }
-  .note { border-left: 2px solid var(--amber); padding: 2px 0 2px 14px; color: var(--muted); }
-  .concept { border-left: 2px solid var(--signal); padding: 4px 0 4px 14px; margin: 16px 0; }
-  .concept strong:first-child { color: var(--signal); font-weight: 600; }
-  table { border-collapse: collapse; width: 100%; font-size: 15px; margin: 12px 0; }
-  th, td { text-align: left; padding: 8px 8px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--slate); font-weight: 500; font-size: 13px; }
-  .scroll { overflow-x: auto; }
-  nav.toc ol { padding-left: 20px; margin: 8px 0; }
-  nav.toc a { text-decoration: none; }
-  .line { display: block; width: 100%; height: 40px; margin: 8px 0 0; }
-  .line path { fill: none; stroke: var(--slate); stroke-opacity: .5; stroke-width: 1; }
-  .line .pulse { stroke: var(--signal); stroke-opacity: 1; stroke-width: 1.6; stroke-dasharray: 70 530; animation: flow 3.2s linear infinite; }
-  @keyframes flow { from { stroke-dashoffset: 600; } to { stroke-dashoffset: -70; } }
-  @media (prefers-reduced-motion: reduce) { .line .pulse { animation: none; stroke-dasharray: none; } }
-  footer { margin-top: 64px; font-size: 14px; color: var(--muted); }
-  pre { position: relative; }
-  pre .copy { position: absolute; top: 8px; right: 8px; font: 600 12px Inter, system-ui, sans-serif; border: 0; border-radius: 7px; padding: 5px 10px; cursor: pointer; background: #f6ecd7; color: #2b1f14; }
-</style>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23efe2c6'/%3E%3Ccircle cx='32' cy='34' r='20' fill='%233a2a1b'/%3E%3Cpath d='M15 30 Q32 24 49 30' stroke='%23ff5fa8' stroke-width='3' fill='none'/%3E%3Ccircle cx='49' cy='30' r='3' fill='%233d8bff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tutorial.css">
 </head>
 <body>
-<header class="top">
-  <a class="brand" href="../">Fatline</a>
-  <nav class="also" style="display:flex;gap:18px;font-size:14px"><a href="../explore.html">Explore the village</a><a href="../manifesto.html">Manifesto</a><a href="../f/FATLINE">$FATLINE</a></nav>
-  <div class="langs" role="group" aria-label="Language">
+<nav class="main" aria-label="Main">
+  <a href="./" aria-current="page">DOCS</a>
+  <a href="../manifesto.html">MANIFESTO</a>
+  <a href="../f/FATLINE">$FATLINE</a>
+</nav>
+<div class="langs" role="group" aria-label="Language">
     <button type="button" data-set="en" aria-pressed="true">English</button>
     <button type="button" data-set="es" aria-pressed="false">Español</button>
     <a href="zh.html"><button type="button" aria-pressed="false" tabindex="-1">中文</button></a>
   </div>
-</header>
 
-<svg class="line" viewBox="0 0 600 40" preserveAspectRatio="none" aria-hidden="true">
-  <path d="M0 20 H210 C240 20 250 8 270 8 C290 8 290 32 310 32 C330 32 340 20 370 20 H600" pathLength="600"/>
-  <path class="pulse" d="M0 20 H210 C240 20 250 8 270 8 C290 8 290 32 310 32 C330 32 340 20 370 20 H600" pathLength="600"/>
-</svg>
 
 <!-- ============================================================ QUICKSTART -->
 <section lang="en">
@@ -107,7 +49,7 @@
     <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># downloads Fatline into ~/fatline and starts fatline setup</span></code></pre>
     <p><code>fatline setup</code> takes you through every step below, one at a time. Before each one it says what it does, what it costs and how long it takes, then asks: go, skip or stop. Run it again and it continues where you stopped. <a href="../install.sh">Read the script first</a>; it is short.</p>
     <p class="eyebrow">With an agent</p>
-    <pre><code>Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md</code></pre>
+    <pre><code>Help me run my own Fatline. Follow https://fatline.ink/skill.md</code></pre>
     <p>Paste it into Claude Code, Codex or any agent that can run commands. <a href="../skill.md">The skill</a> tells the agent to show you prices and wait for your yes, and never to touch your seed phrase or tokens. Claude Code users can also install it: copy <code>skills/fatline-setup</code> from the repository into <code>~/.claude/skills/</code>.</p>
     <p class="eyebrow">By hand</p>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
@@ -131,7 +73,7 @@ fatline client             <span class="c"># (2) your client, reading from your 
     <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># descarga Fatline en ~/fatline y empieza fatline setup</span></code></pre>
     <p><code>fatline setup</code> te lleva por cada paso de abajo, uno a la vez. Antes de cada uno dice qué hace, cuánto cuesta y cuánto demora, y pregunta: seguir, saltar o parar. Córrelo de nuevo y sigue donde quedaste. <a href="../install.sh">Lee el script primero</a>; es corto.</p>
     <p class="eyebrow">Con un agente</p>
-    <pre><code>Ayúdame a mintear uno de los 777 Fatlines. Sigue https://fatline.ink/skill.md</code></pre>
+    <pre><code>Ayúdame a correr mi propio Fatline. Sigue https://fatline.ink/skill.md</code></pre>
     <p>Pégalo en Claude Code, Codex o cualquier agente que pueda correr comandos. <a href="../skill.md">La skill</a> le dice al agente que te muestre los precios y espere tu sí, y que nunca toque tu frase semilla ni tus tokens.</p>
     <p class="eyebrow">A mano</p>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
