@@ -46,7 +46,7 @@ contract FatlinersTest is Test {
             attesters.push(a);
             keys.push(k);
         }
-        nft = genesis(777);
+        nft = deployed(777);
         factory = nft;
     }
 
@@ -54,10 +54,17 @@ contract FatlinersTest is Test {
         AppVault.Tier[] memory t = new AppVault.Tier[](1);
         t[0] = AppVault.Tier(30, 0); // ~2.59 USDC a day: one node's fuel
         return new Fatliners(
-            max, Fatliners.Genesis(attesters[0], "http://genesis:8791", ASTER, aster, "FATLINE", keccak256("aster"), laidAt, 5, address(0), royalty),
+            max, Fatliners.Genesis(attesters[0], "http://genesis:8791", ASTER, aster, "FATLINE", keccak256("aster"), laidAt, 5, royalty),
             "https://fatline.ink/fatliners/",
             FatlineLaunchpad.Clanker(address(usdc), address(clanker), address(locker), address(feeLocker)), t
         );
+    }
+
+    /// Deployed, and Aster claimed by its keeper (its own transaction).
+    function deployed(uint256 max) internal returns (Fatliners c) {
+        c = genesis(max);
+        vm.prank(aster);
+        c.claimGenesis();
     }
 
     // ------------------------------------------------------------ signing
@@ -158,7 +165,7 @@ contract FatlinersTest is Test {
     // ------------------------------------------------------------ eggs
 
     function test_777Slots_EggsAndFatlinersTogether() public {
-        Fatliners small = genesis(3); // Aster's egg + two more
+        Fatliners small = deployed(3); // Aster's egg + two more
         for (uint256 i = 1; i <= 2; i++) {
             Fatliners.Egg memory e = anEgg(i, makeAddr(vm.toString(i)), keccak256(abi.encode(i)), makeAddr(string.concat("s", vm.toString(i))));
             small.takeEgg(e, sigs(small.eggDigest(e), firstN(1)), 0, new bytes32[](0));
@@ -398,7 +405,7 @@ contract FatlinersTest is Test {
     }
 
     function test_Only777EverHatch() public {
-        Fatliners small = genesis(2);
+        Fatliners small = deployed(2);
         Fatliners.Egg memory a = anEgg(18350, anky, DNA, attesters[1]);
         small.takeEgg(a, sigs(small.eggDigest(a), firstN(1)), 0, new bytes32[](0));
         Fatliners.Hatch memory ha = aHatch(18350, "PEBBLE");
@@ -621,7 +628,7 @@ contract FatlinersTest is Test {
         nft.takeEgg(bad, b, 0, new bytes32[](0));
     }
 
-    function test_OneFatlineOneContract() public {
+    function test_OneFatlineOneContract_SetOnceWhileAnEgg() public {
         takeEgg(nft, anEgg(18350, anky, DNA, attesters[1]));
         vm.prank(buyer);
         vm.expectRevert(Fatliners.NotHolder.selector);
@@ -630,13 +637,33 @@ contract FatlinersTest is Test {
         vm.expectRevert(Fatliners.NotAContract.selector);
         nft.setApp(18350, buyer);
         vm.prank(anky);
-        nft.setApp(18350, address(usdc)); // the egg's holder ties one contract to it
+        nft.setApp(18350, address(usdc)); // during its hatching days: an app, or the holder's own coin
         assertEq(nft.appOf(18350), address(usdc));
         vm.prank(anky);
-        nft.setApp(18350, address(clanker)); // another replaces it: still one
-        assertEq(nft.appOf(18350), address(clanker));
+        vm.expectRevert(Fatliners.AppIsSet.selector); // final
+        nft.setApp(18350, address(clanker));
+        takeEgg(nft, anEgg(3, dwr, keccak256("dwr"), attesters[2]));
+        hatch(nft, 3, "DWR"); // hatched without one: none, forever
+        vm.prank(dwr);
         vm.expectRevert(Fatliners.NoEgg.selector);
-        nft.setApp(424242, address(usdc));
+        nft.setApp(3, address(usdc));
+    }
+
+    function test_AsterIsReserved_ItsKeeperClaimsIt() public {
+        Fatliners fresh = genesis(777);
+        assertEq(uint256(fresh.stageOf(ASTER)), 0); // not minted at deploy
+        assertEq(fresh.genesisTo(), aster);
+        vm.prank(buyer);
+        vm.expectRevert(Fatliners.NotHolder.selector);
+        fresh.claimGenesis();
+        vm.prank(aster);
+        fresh.claimGenesis(); // its keeper's own transaction
+        assertEq(fresh.ownerOf(ASTER), aster);
+        assertEq(uint256(fresh.stageOf(ASTER)), 1);
+        assertEq(fresh.liveEggs(), 1);
+        vm.prank(aster);
+        vm.expectRevert(Fatliners.NotHolder.selector); // once
+        fresh.claimGenesis();
     }
 
     /// The holder lists, the buyer pays in USDC: the only way a token changes hands.

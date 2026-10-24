@@ -150,6 +150,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     uint64 public orderStart; // day 1 of the ranking's window
     address public immutable orderAdmin; // who publishes the ranking's root, once (the deployer)
     address public immutable royaltyTo; // 8% of every sale
+    address public genesisTo; // who may claim the genesis egg (Aster), until they do
     mapping(uint256 fid => Stage) public stageOf;
     mapping(uint256 fid => bytes32) public dnaOf; // the history it hatches from
     mapping(uint256 fid => uint64) public laidAtOf; // that history's cutoff
@@ -201,6 +202,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     error SurnameTaken();
     error BadStone();
     error NotAContract();
+    error AppIsSet();
     error SoldOut();
     error ZeroAddress();
 
@@ -214,7 +216,6 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         bytes32 dna; // its history commitment, up to laidAt
         uint64 laidAt;
         uint8 stone; // its stone, read from that history (Aster's: 5, gold)
-        address app; // the smart contract its client runs on (Aster's: Voices), or 0
         address royaltyTo; // who gets the 8% of every sale: the one who built this (jpfraneto.eth)
     }
 
@@ -234,11 +235,8 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         orderAdmin = msg.sender;
         if (g.royaltyTo == address(0)) revert ZeroAddress();
         royaltyTo = g.royaltyTo;
-        eggCount = 1;
-        liveEggs = 1;
-        stageOf[g.fid] = Stage.Egg; // Aster starts as an egg too: it hatches after three warm days, like any other
+        genesisTo = g.to; // Aster is reserved, not minted: its keeper claims it with their own signature
         surnameOf[g.fid] = g.surname;
-        linkedFidOf[g.fid] = g.fid;
         dnaOf[g.fid] = g.dna;
         laidAtOf[g.fid] = g.laidAt;
         serverOf[g.fid] = g.server;
@@ -247,18 +245,26 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         fidOfSurname[keccak256(bytes(g.surname))] = g.fid; // FATLINE is Aster's
         stoneOf[g.fid] = g.stone;
         emit Stone(g.fid, g.stone);
-        if (g.app != address(0)) {
-            appOf[g.fid] = g.app;
-            emit AppSet(g.fid, g.app);
-        }
         // Its server is the first attester from the start, so there is someone to sign Aster's own hatching.
         isAttester[g.server] = true;
         urlOf[g.server] = g.url;
         fidOfAttester[g.server] = g.fid;
         _attesters.push(g.server);
         emit AttesterJoined(g.server, g.fid, g.url);
-        _mint(g.to, g.fid);
-        emit EggTaken(g.fid, g.to, g.server, g.dna, g.laidAt);
+    }
+
+    /// @notice The genesis egg (Aster) is reserved for its keeper, who takes it with their own transaction. From then
+    /// it is an egg like any other: it hatches after three warm days, kept warm by the genesis server.
+    function claimGenesis() external {
+        if (msg.sender != genesisTo) revert NotHolder();
+        genesisTo = address(0);
+        uint256 fid = genesisFid;
+        stageOf[fid] = Stage.Egg;
+        eggCount = 1;
+        liveEggs++;
+        linkedFidOf[fid] = fid;
+        _mint(msg.sender, fid);
+        emit EggTaken(fid, msg.sender, serverOf[fid], dnaOf[fid], laidAtOf[fid]);
     }
 
     // ------------------------------------------------------------------ attesters
@@ -507,12 +513,13 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         return day >= 3 || position <= [uint256(777), 7_777, 77_777][day];
     }
 
-    /// @notice The holder of an egg or a Fatliner ties one smart contract to it: the one its client runs on.
-    /// Setting another replaces it; address(0) unties it.
+    /// @notice The holder ties one smart contract to their egg: the one its client runs on (an app, or their own
+    /// coin). Once, while it is still an egg (its hatching days), and then it is final: software that is finished.
     function setApp(uint256 fid, address app) external {
-        if (stageOf[fid] == Stage.None) revert NoEgg();
+        if (stageOf[fid] != Stage.Egg) revert NoEgg();
         if (_ownerOf(fid) != msg.sender) revert NotHolder();
-        if (app != address(0) && app.code.length == 0) revert NotAContract();
+        if (appOf[fid] != address(0)) revert AppIsSet();
+        if (app.code.length == 0) revert NotAContract();
         appOf[fid] = app;
         emit AppSet(fid, app);
     }
