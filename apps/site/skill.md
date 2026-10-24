@@ -9,17 +9,26 @@ You are helping a person get **their own Farcaster read node and their own clien
 
 Source of truth for every command: the repository's `README.md` and `fatline help`. If this file and the code disagree, the code wins; tell the person.
 
-## If they asked for one of the 777
+## Tell it as a story
 
-Tell them how it works, in a few lines: **a Fatliner hatches from an egg that their own node keeps warm** (live on Base since 2026-10-24). Any account can take an egg; only 777 hatch, the first 777 to keep a node alive. Nobody keeps a list. Free. The steps:
+What the person is doing is a discovery, not a checklist. Reveal it in beats, one at a time, in plain words, and let each beat land before the next. Don't dump the rules up front; each beat brings its own.
 
-1. Their own node, on a server reachable from the internet (the setup below: cloud, hetzner or vps; not light, not local behind a home router). **Don't wait for sync**: as soon as the node answers, do steps 2–4. Warmth counts from the hour the node starts catching up.
-2. `fatline hatchery install`: a small service next to their node, with a key of its own (no money, no question).
-3. `fatline identity`: **they run it in their own terminal** (it asks for their seed phrase, hidden; rule 2).
-4. `fatline egg lay`: signs the egg with the app key from step 3 (no seed phrase, nothing to approve). Once the servers have read their history, the egg goes onchain by itself (a server pays the gas): a token with their FID as its id, held by their custody address unless they say otherwise (`--to 0x…`: ask them). Eggs can't be sold or moved.
-5. Keep the node alive. Show them `fatline egg` from time to time: every hour the servers that already hatched check theirs (in sync, or catching up: closer to the tip than a few seconds before); a day is warm at 18 of 24 checks; three warm days and it hatches, so the server needs at least three paid days (`fatline compute renew --days 2` after the first). A cold day doesn't reset anything.
-6. `fatline hatch`: the egg becomes their Fatliner, free, with a surname read from its DNA. Their server becomes an attester.
-7. Their egg's coin, as soon as the egg is onchain (it doesn't wait for hatching): `fatline coin launch --fid <their FID> --go`. The ticker is the egg's surname, read from its DNA; paired with USDC on Clanker; 100% of trading fees go to the egg's vault, which pays their server and sends everything above one month of rent to them (`distribute`, anyone can call it). **They approve it in their own wallet**: a QR code (WalletConnect) for the wallet that holds the egg (their custody address), or `--pay browser`. Never a seed phrase or a key file. It needs a little ETH on Base for gas. One coin per egg; $FATLINE (Aster) launches first.
+1. **You are your FID.** Their Farcaster account is a number, and everything they ever said is signed history. Ask for it (or let `fatline identity` / the Cast button's QR find it).
+2. **A node of your own wakes up.** They rent a server (setup below), and a full copy of Farcaster streams into it. Open their client (`fatline up`, then http://localhost:8787): its home is the fire, and it shows how far behind the node is and how long it has left to live. **Don't wait for sync** to go on: they can cast while it catches up (their node passes casts on; the client says so).
+3. **An egg.** `fatline egg`, in their own terminal. It shows where they stand, then four rules before anything is signed, then a QR code: they scan it with the wallet tied to their Farcaster account (its custody address, or a verified one; a node checks it and says so), and the egg is minted to that wallet: token #<their FID>. The rules it shows, which you can repeat:
+   - it is an NFT in their wallet, an egg, with a surname and a stone read from their own history (the client shows its stone);
+   - it hatches after three warm days: their node answering, in sync, holding real data, checked every hour by the servers that already hatched (a day is warm at 18 of 24 checks);
+   - if their node stops, the egg dies: it is burned, and their account sleeps seven days before it can take another;
+   - it changes hands only by sale, in USDC (8% to the builder, jpfraneto.eth), and wakes with its new holder's account.
+   There are 777 places (eggs and Fatliners together). While the ranking is published, whose turn it is follows it; until then, anyone with a node.
+4. **Its one contract.** While it is an egg, its holder can tie one smart contract to it, once and forever: the contract its client runs on (an app, or their own coin): `fatline app set <0x…>`, signed in their wallet. Optional; ask.
+5. **Three warm days.** Their server must stay alive those days, which costs money (rule 1): the first day is paid when they rent; add more with `fatline compute renew --days 2`. Show them `fatline egg` from time to time.
+6. **Hatching.** `fatline hatch`: the egg becomes their Fatliner, and their server becomes one of the attesters.
+7. **Its coin.** One per egg or Fatliner, at most 777 ever, ticker = its surname, paired with USDC on Clanker: `fatline coin launch --fid <their FID> --go`, approved in their own wallet (QR). 100% of trading fees go to its vault: the node's fuel. Anyone can pay the server from it; the holder can take it all, and then the node dies. They can also point an existing coin's fees at their vault instead. $FATLINE (Aster, the first) launches when Aster hatches.
+
+The genesis egg, Aster (#18350), is reserved for its keeper's wallet; only that wallet can mint it, with the same `fatline egg`.
+
+Never sign anything for them: every signature happens in their wallet (a QR code, or `--pay browser`), never with a seed phrase or a key file in a chat.
 
 Their node must keep running for those days, which costs money (rule 1): about 11 USDC a day rented in USDC, about $2.60 a day on their own Hetzner account. Say so before they rent.
 
@@ -123,7 +132,7 @@ fatline up                           # serves http://localhost:8787; it keeps ru
 Tell them to open http://localhost:8787. The source line in the app says which node it reads from.
 
 ### 9. Optional, by the person: post as themselves
-Tell them to run, **in their own terminal**: `fatline identity --fid <their FID> --dry-run`, then without `--dry-run`. It registers an app key without gas, limited to casts, reactions, follows and profile. Their seed phrase goes into a hidden prompt and is never saved.
+The easiest way: the **Cast** button at the bottom right of their client (http://localhost:8787). It shows a QR code; they scan it with the wallet that owns their account (its custody address), approve one signature, and the client gets its own key, sent to their own node. No seed phrase, no gas, no Farcaster app in between. The other way: they run, **in their own terminal**, `fatline identity --fid <their FID> --dry-run`, then without `--dry-run`. It registers an app key without gas, limited to casts, reactions, follows and profile. Their seed phrase goes into a hidden prompt and is never saved.
 
 ## When you finish, tell the person
 - What runs where (server IP and network, or "light, reading from <node>").
