@@ -8,6 +8,7 @@ import { openDb } from './db.mjs';
 import { Network } from './hub.mjs';
 import { VoicesIndex } from './voices.mjs';
 import { useFatlineApp } from './fatline-app.mjs';
+import { LifeForce } from './lifeforce.mjs';
 import { WalletLogin } from './login.mjs';
 import { Launchpad } from './launchpad.mjs';
 import { Keeper } from './keeper.mjs';
@@ -27,7 +28,7 @@ const TYPES = {
   '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
 };
 
-export function buildServer({ config, networks, voices, launchpad, keeper = null, nodes = null, coins = null, archive = null }) {
+export function buildServer({ config, networks, voices, launchpad, keeper = null, nodes = null, coins = null, archive = null, lifeforce = null }) {
   const api = new Api({ config, networks, voices, launchpad });
   coins ??= nodes ? new Coins({ launchpad, nodes, networks, config, keeper }) : null;
   const needCoins = () => { if (!coins) throw Object.assign(new Error('Node monitoring is not set up on this server.'), { status: 503 }); return coins; };
@@ -104,6 +105,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     // The cockpit: you, your nodes, your egg or Fatliner, and its hatching, in one answer (the client's home).
     ['GET', /^\/api\/cockpit$/, () => cockpit()],
     ['GET', /^\/api\/fatline$/, () => config.fatlineApp ?? null],
+    ['GET', /^\/api\/lifeforce$/, () => lifeforce?.status() ?? null],
     ['GET', /^\/api\/login$/, owner(() => login.status())],
     ['POST', /^\/api\/login$/, owner(() => login.start())],
     ['GET', /^\/api\/health$/, () => ({ ok: true, voices: voices.status(), launchpad: launchpad.status(), keeper: keeper?.status() ?? null })],
@@ -241,7 +243,9 @@ export async function start(config = loadConfig()) {
   const archive = new Archive(db);
   const ownKey = loadAppKey(config.dataDir);
   if (ownKey?.fid) archive.track(ownKey.fid); // the owner decided: only this client's own FID, for now
-  const server = buildServer({ config, networks, voices, launchpad, keeper, nodes, archive });
+  const lifeforce = new LifeForce(networks[config.defaultNetwork]);
+  lifeforce.start();
+  const server = buildServer({ config, networks, voices, launchpad, keeper, nodes, archive, lifeforce });
   server.listen(config.port, () => {
     console.log(`Fatline indexer on http://localhost:${config.port}`);
     console.log(`  config:   ${config.path}`);
