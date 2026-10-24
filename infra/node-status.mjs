@@ -89,7 +89,19 @@ export async function describe(net, url) {
   if (r.status !== 0 && !r.stdout) return { state: 'problem', say: `it does not answer, and its server (${ip}) does not accept a login either: it may still be booting, or be down. ${r.stderr.trim().slice(0, 120)}` };
   const [head, rest = ''] = r.stdout.split('===LOG');
   const [log, docker = ''] = rest.split('===DOCKER');
-  return classify({ running: /RUN=yes/.test(head), log, docker });
+  const d = classify({ running: /RUN=yes/.test(head), log, docker });
+  // How long until the download is done: from the progress since the last time you asked (kept in .fatline).
+  const m = d.state === 'downloading' && d.say.match(/about (\d+) of (\d+) GB/);
+  if (m) {
+    const file = join(STATE, `node-progress-${net}.json`), now = Date.now(), gb = Number(m[1]), total = Number(m[2]);
+    const prev = read(`node-progress-${net}.json`);
+    if (prev && now - prev.t < 3_600_000 && gb > prev.gb) {
+      const left = Math.round((total - gb) / ((gb - prev.gb) / ((now - prev.t) / 60_000)));
+      d.say += `; about ${left < 90 ? `${left} min` : `${Math.round(left / 60)} hours`} left at this speed`;
+    } else if (!prev || now - prev.t >= 3_600_000) d.say += '; ask again in a minute for how long is left';
+    if (!prev || now - prev.t > 30_000) writeFileSync(file, JSON.stringify({ t: now, gb }));
+  }
+  return d;
 }
 
 async function main() {
