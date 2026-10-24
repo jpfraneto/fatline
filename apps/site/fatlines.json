@@ -4,7 +4,7 @@
   {
    "ticker": "FATLINE",
    "name": "Aster",
-   "image": "img/world/aster.jpg",
+   "image": "img/eggs/gold.jpg",
    "ownerFid": 18350,
    "coin": {
     "chain": "base",

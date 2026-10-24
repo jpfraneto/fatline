@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Fatline</title>
-<meta name="description" content="A Fatline is a Farcaster node with a life of its own: it keeps a full copy of the network, serves its own client, and pays its own rent in USDC. Here are the ones alive now.">
+<meta name="description" content="This is Aster Fatline: an egg hatching on its own Farcaster node. $FATLINE is its coin, paired with USDC; its fees pay the node. 777 eggs, three warm days each. Claim yours.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Fatline">
 <meta property="og:title" content="Fatline">
-<meta property="og:description" content="A Fatline is a Farcaster node with a life of its own: it keeps a full copy of the network, serves its own client, and pays its own rent in USDC. Here are the ones alive now.">
+<meta property="og:description" content="This is Aster Fatline: an egg hatching on its own Farcaster node. $FATLINE is its coin, paired with USDC; its fees pay the node. 777 eggs, three warm days each. Claim yours.">
 <meta property="og:url" content="https://fatline.ink/">
 <meta property="og:image" content="https://fatline.ink/img/og/og.jpg">
 <meta property="og:image:width" content="1200">
@@ -105,6 +105,26 @@
   .hint { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
   .hint a { color: inherit; }
 
+
+  .hero { display: flex; flex-direction: column; align-items: center; }
+  .egg { margin: 0; width: min(380px, 78vw); aspect-ratio: 1; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px var(--line), 0 18px 60px rgba(120, 70, 30, .28), 0 0 80px rgba(255, 95, 168, .18); }
+  .egg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .kicker { margin: 22px 0 0; font: 500 12.5px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); }
+  .title { margin: 10px 0 0; font: 800 clamp(38px, 7vw, 72px)/1.02 Fraunces, Georgia, serif; font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1; letter-spacing: -.015em; }
+  .hero .lede { margin-top: 12px; }
+  .story { width: min(640px, 100%); margin: 48px auto 0; padding: 0; list-style: none; counter-reset: s; text-align: left; }
+  .story li { counter-increment: s; position: relative; padding: 18px 0 18px 46px; border-top: 1px solid var(--line); font-size: 16.5px; }
+  .story li::before { content: counter(s); position: absolute; left: 4px; top: 16px; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 600 13px 'JetBrains Mono', monospace; color: var(--paper); background: linear-gradient(135deg, var(--blue), var(--pink)); }
+  .story b { display: block; font: 700 20px/1.25 Fraunces, Georgia, serif; font-variation-settings: 'SOFT' 100; margin-bottom: 4px; }
+  .story a { color: inherit; }
+  .stones { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 14px; }
+  .stones span { display: flex; flex-direction: column; align-items: center; gap: 4px; font: 11.5px 'JetBrains Mono', monospace; color: var(--muted); }
+  .stones img { width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; }
+  .ask h2 { margin: 0 0 6px; font: 800 clamp(30px, 5vw, 44px)/1.1 Fraunces, Georgia, serif; font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1; }
+  .hint.top { margin: 0 0 16px; }
+  .ask { margin-top: 48px; }
+  .list { margin-top: 56px; }
+  @media (max-width: 620px) { .stones { grid-template-columns: repeat(4, 1fr); } }
   @media (max-width: 620px) {
     .how { grid-template-columns: 1fr; }
     .fl { grid-template-columns: 52px 1fr; }
@@ -129,44 +149,48 @@
 </nav>
 
 <main>
-  <div class="mark">
-    <h1>FATLINE</h1>
-    <span class="pulse" aria-hidden="true"></span>
-  </div>
+  <section class="hero">
+    <figure class="egg">
+      <img src="img/eggs/aster-gold.gif" width="420" height="420" alt="A gold-seamed stone egg in the moss under a marble arch; threads of magenta and cyan light grow into it like roots">
+    </figure>
+    <p class="kicker">Fatliner #18350 · gold stone</p>
+    <h1 class="title">This is Aster Fatline.</h1>
+    <p class="lede">It is an egg, and it is hatching.</p>
+    <p class="sub">To come alive, the Farcaster node that keeps it warm has to run for <b>three days</b>. Snapchain or Hypersnap: its keeper chooses.</p>
+  </section>
 
-  <p class="lede">A Farcaster node with a life of its own.</p>
-  <p class="sub">A Fatline is a server that keeps a <b>full copy of Farcaster</b> (Snapchain, Hypersnap, or both), serves <b>its own client</b>, and is built to pay <b>its own rent</b> in USDC, from its own wallet. These are the ones alive right now.</p>
+  <ol class="story">
+    <li><b>Aster lives on a server.</b> A Farcaster node keeps a full copy of the network and serves its own client, with nobody's API in between. That node is the warmth the egg feeds on.</li>
+    <li><b>$FATLINE is Aster's coin.</b> It trades against USDC on Base. Every trade pays a fee into Aster's vault, and the vault pays for the server, a day at a time. The coin keeps the node alive; the node keeps Aster alive.</li>
+    <li><b>There are 777 eggs.</b> Each belongs to one Farcaster account, and each is made of the stone its history earned: how old the account is, how steady, whether it left and came back.
+      <span class="stones" aria-label="The seven stones">
+        <span><img src="img/eggs/ivory.jpg" alt="">ivory</span><span><img src="img/eggs/marble.jpg" alt="">marble</span><span><img src="img/eggs/sandstone.jpg" alt="">sandstone</span><span><img src="img/eggs/basalt.jpg" alt="">basalt</span><span><img src="img/eggs/moss.jpg" alt="">moss</span><span><img src="img/eggs/gold.jpg" alt="">gold</span><span><img src="img/eggs/opal.jpg" alt="">opal</span>
+      </span>
+    </li>
+    <li><b>Three warm days, and it hatches.</b> Into a Fatliner, one of 777, with a surname read from its account's history. No two are alike, and that surname becomes the ticker of its own coin.</li>
+    <li><b>If the node stops, the egg dies.</b> Its keeper sleeps for seven days and can't take another. The egg goes to the next person in line.</li>
+    <li><b>The line.</b> A ranking of Farcaster, computed on our own nodes, decides who can take an egg, and when. The first two keepers: <a href="https://farcaster.xyz/anky">@anky</a>, who keeps Aster, and <a href="https://farcaster.xyz/jpfraneto">@jpfraneto</a>. Then the list.</li>
+  </ol>
+
+  <section class="ask" aria-labelledby="claim">
+    <h2 id="claim">Claim your egg</h2>
+    <p class="hint top">Run a node for it. One line installs Fatline and walks you through it; the other is for Claude Code, Codex or any agent that runs commands.</p>
+    <div class="cmd"><code id="install">curl -fsSL https://fatline.ink/install.sh | sh</code><button class="copy" data-copy="install">Copy</button></div>
+    <div class="cmd"><code id="prompt">Help me run my own Fatline: a Farcaster node and its client. Follow https://fatline.ink/skill.md</code><button class="copy" data-copy="prompt">Copy</button></div>
+    <p class="hint"><a href="docs/tutorial.html">Step by step</a> · <a href="manifesto.html">the story</a> · <a href="docs/">docs</a> · <a href="f/FATLINE">$FATLINE</a></p>
+  </section>
 
   <section class="list" aria-labelledby="list-title">
-    <div class="list-head"><h2 id="list-title">The Fatlines</h2><small id="summary">checking…</small></div>
+    <div class="list-head"><h2 id="list-title">Nodes alive now</h2><small id="summary">checking…</small></div>
     <div id="fatlines">
       <a class="fl" href="f/FATLINE">
-        <img src="img/world/aster.jpg" alt="Aster, an ivory stone figurine with daisies on its head">
+        <img src="img/eggs/gold.jpg" alt="">
         <div class="name">Aster Fatline <span>$FATLINE</span></div>
         <div class="cost">two nodes<small>kept by @anky</small></div>
         <div class="nodes"><span><i class="dot snapchain"></i>Snapchain</span><span><i class="dot hypersnap"></i>Hypersnap</span></div>
       </a>
     </div>
-    <div class="fl next">
-      <div class="ring" aria-hidden="true">+</div>
-      <div class="name">The next one is yours</div>
-      <div class="nodes">About 11 USDC a day for one node, approved in your own wallet. No card, no account. Or your own server, for less.</div>
-    </div>
   </section>
-
-  <div class="how">
-    <div><b>1 · Rent</b>A server by the day, in USDC on Base (x402). You approve it in your own wallet: phone or browser. Or bring your own server.</div>
-    <div><b>2 · Sync</b>The node streams a snapshot of the network (~400 GB) and catches up: a few hours.</div>
-    <div><b>3 · Read</b>Your client reads from your own node, with no API in between. Rent is paid a day at a time; unpaid, it stops.</div>
-  </div>
-
-  <p class="sub" style="margin-top:18px">How it pays its own rent: a Fatline can launch its own coin, paired with USDC. Its trading fees go to its vault, and the vault pays the server, a day at a time. <b>On Base now:</b> the launchpad and the Fatliners; the first coin, $FATLINE, is ready to launch.</p>
-
-  <div class="ask">
-    <div class="cmd"><code id="install">curl -fsSL https://fatline.ink/install.sh | sh</code><button class="copy" data-copy="install">Copy</button></div>
-    <div class="cmd"><code id="prompt">Help me run my own Fatline: a Farcaster node and its client. Follow https://fatline.ink/skill.md</code><button class="copy" data-copy="prompt">Copy</button></div>
-    <p class="hint">The first line installs it and walks you through, one step at a time. The second is for Claude Code, Codex or any agent that runs commands. Keep your node alive three days and a Fatliner hatches from it, one of 777, free. <a href="docs/#hatch-a-fatliner">How</a> · <a href="manifesto.html">why</a> · <a href="docs/">docs</a>.</p>
-  </div>
 </main>
 
 <footer>Open source, MIT · <a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a> · <a href="explore.html">explore the village</a></footer>
