@@ -3,588 +3,254 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fatline · Explore</title>
-<meta name="description" content="A USDC-paired launchpad on Base where every Fatline is a coin and its trading fees keep its Farcaster or Hypersnap node alive. Home of the 777 Fatliners, the beings whose lives keep the network. Run your own node in three commands.">
+<title>The Fatliners' World</title>
+<meta name="description" content="The world of the Fatliners: 777 beings that hatch from eggs kept warm by Farcaster nodes. Their stones, their lives, their world.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Fatline">
-<meta property="og:title" content="Fatline · Explore">
-<meta property="og:description" content="A USDC-paired launchpad on Base where every Fatline is a coin and its trading fees keep its Farcaster or Hypersnap node alive. Home of the 777 Fatliners, the beings whose lives keep the network. Run your own node in three commands.">
-<meta property="og:url" content="https://fatline.ink/explore">
+<meta property="og:title" content="The world of the Fatliners">
+<meta property="og:description" content="777 beings that hatch from eggs kept warm by Farcaster nodes. Their stones, their lives, their world.">
+<meta property="og:url" content="https://fatline.ink/explore.html">
 <meta property="og:image" content="https://fatline.ink/img/og/og.jpg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="FATLINE, over six Fatliner figurines at golden hour">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://fatline.ink/img/og/og.jpg">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23efe2c6'/%3E%3Cpath d='M32 8C52 8 58 22 57 34C56 46 46 54 32 54C18 54 8 46 7 34C6 22 12 8 32 8Z' fill='%23dccaa4' stroke='%233a2a1b' stroke-width='2'/%3E%3Cpath d='M7 30C18 22 30 30 46 21' fill='none' stroke='%233d8bff' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='47' cy='21' r='5' fill='%23fff' stroke='%23ff5fa8' stroke-width='2'/%3E%3Cellipse cx='23' cy='38' rx='6' ry='4' fill='%231c1410' transform='rotate(20 23 38)'/%3E%3Cellipse cx='41' cy='38' rx='6' ry='4' fill='%231c1410' transform='rotate(-20 41 38)'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23efe2c6'/%3E%3Ccircle cx='32' cy='34' r='20' fill='%233a2a1b'/%3E%3Cpath d='M15 30 Q32 24 49 30' stroke='%23ff5fa8' stroke-width='3' fill='none'/%3E%3Ccircle cx='49' cy='30' r='3' fill='%233d8bff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Cinzel:wght@500;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --paper: #efe2c6; --paper2: #f6ecd7; --paper3: #e6d5b2; --ink: #3a2a1b; --ink2: #5a4632; --muted: #806a4b;
-    --line: rgba(90, 66, 40, .26); --line2: rgba(90, 66, 40, .5);
-    --blue: #3d8bff; --pink: #ff5fa8; --gold: #b8862b; --warn: #a8521a;
-    --radius: 14px;
+    --paper: #efe2c6; --paper2: #f6ecd7; --ink: #3a2a1b; --muted: #806a4b; --line: rgba(90, 66, 40, .26);
+    --blue: #3d8bff; --pink: #ff5fa8;
   }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --paper: #17120d; --paper2: #221a12; --ink: #f1e4c8; --muted: #a8916c; --line: rgba(241, 228, 200, .18); }
+  }
+  :root[data-theme="dark"] { --paper: #17120d; --paper2: #221a12; --ink: #f1e4c8; --muted: #a8916c; --line: rgba(241, 228, 200, .18); }
   * { box-sizing: border-box; }
-  html { background: var(--paper); }
-  body {
-    margin: 0; color: var(--ink); font: 16px/1.55 Inter, system-ui, sans-serif; min-height: 100vh; overflow-x: hidden;
-    background:
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .24 0 0 0 0 .1 0 0 0 .1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-      radial-gradient(1400px 900px at 50% 20%, transparent 55%, rgba(120, 82, 36, .22)),
-      var(--paper);
-  }
-  body::before { /* faint construction grid, like the blueprint */
-    content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .5;
-    background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
-    background-size: 160px 160px; mask-image: radial-gradient(closest-side, #000, transparent);
-  }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 16.5px/1.6 Inter, system-ui, sans-serif; }
   a { color: inherit; }
-  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; position: relative; }
-  header { display: flex; align-items: center; gap: 28px; padding: 18px 0; border-bottom: 1px solid var(--line); }
-  .brand { font: 700 28px/1 Cinzel, serif; letter-spacing: .14em; text-decoration: none; color: #4a2f17; }
-  nav { display: flex; gap: 22px; font-size: 15px; color: var(--muted); flex-wrap: wrap; }
-  nav a { text-decoration: none; padding: 4px 0; }
-  nav a[aria-current] { color: var(--ink); border-bottom: 2px solid var(--ink); }
-  .owner { margin-left: auto; display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px;
-    border: 1px solid var(--line2); border-radius: 999px; background: var(--paper2); text-decoration: none; font-size: 13px; line-height: 1.25; }
-  .owner img, .avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex: none;
-    background: linear-gradient(135deg, var(--blue), var(--pink)); }
-  .owner small, .muted { color: var(--muted); }
-  .hand { font: 500 21px/1.15 Caveat, cursive; color: var(--ink2); }
+  nav.main { display: flex; justify-content: center; gap: clamp(18px, 5vw, 48px); padding: 28px 16px 0; flex-wrap: wrap; }
+  nav.main a { text-decoration: none; font: 500 13px/1 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .18em; opacity: .75; }
+  nav.main a:hover, nav.main a[aria-current] { opacity: 1; }
+  nav.main a[aria-current] { border-bottom: 1px solid currentColor; padding-bottom: 4px; }
+  .wrap { width: min(1080px, 100%); margin: 0 auto; padding: 0 16px; }
+  .serif { font-family: Fraunces, Georgia, serif; font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1; }
+  .eyebrow { font: 500 12.5px/1.2 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  h1, h2 { font-family: Fraunces, Georgia, serif; font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1; margin: 0; letter-spacing: -.01em; }
+  h1 { font-weight: 800; font-size: clamp(40px, 7vw, 84px); line-height: 1; }
+  h2 { font-weight: 750; font-size: clamp(28px, 4.5vw, 44px); line-height: 1.08; }
+  .lede { font: 500 clamp(19px, 2.4vw, 23px)/1.45 Fraunces, Georgia, serif; font-variation-settings: 'SOFT' 100; max-width: 34em; margin: 16px 0 0; }
+  section.block { padding: clamp(56px, 9vw, 104px) 0 0; }
+  .intro { max-width: 40em; color: var(--muted); margin: 12px 0 0; }
 
-  .hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 36px; align-items: center; padding: 28px 0 8px; }
-  h1 { font: 700 clamp(30px, 4.6vw, 52px)/1.1 Cinzel, serif; margin: 0 0 12px; letter-spacing: .01em; color: #3a2412; }
-  .base { display: inline-block; width: .78em; height: .78em; background: #0052ff; border-radius: .14em; vertical-align: -.06em; margin: 0 .12em;
-    box-shadow: inset 0 0 0 .2em #0052ff, inset 0 0 0 .32em #fff; }
-  .sub { font-size: clamp(17px, 2vw, 20px); color: var(--ink2); margin: 0 0 12px; }
-  .tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line2); color: var(--muted); white-space: nowrap; }
-  .tag.warn { color: var(--warn); border-color: rgba(168, 82, 26, .45); white-space: normal; background: rgba(168, 82, 26, .06); }
-  .tag.real { color: #1d5fbf; border-color: rgba(61, 139, 255, .6); background: rgba(61, 139, 255, .1); letter-spacing: .06em; text-transform: uppercase; font-weight: 700; }
-  .tag.ex { color: var(--muted); border-color: var(--line2); letter-spacing: .06em; text-transform: uppercase; font-weight: 600; }
-  .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex: none; }
-  .dot.snapchain { background: var(--blue); box-shadow: 0 0 7px var(--blue); }
-  .dot.hypersnap { background: var(--pink); box-shadow: 0 0 7px var(--pink); }
-  .dot.off { background: #9a8a72; box-shadow: none; }
-  .dot.body { background: var(--gold); box-shadow: 0 0 7px var(--gold); }
+  /* The map, full width. */
+  .map { margin: 34px 0 0; position: relative; border-radius: 22px; overflow: hidden; box-shadow: 0 20px 60px rgba(60, 35, 10, .25); }
+  .map img { display: block; width: 100%; height: auto; }
+  .map figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 22px 18px; color: #f6ecd7; background: linear-gradient(transparent, rgba(20, 12, 4, .75)); font-size: 15px; }
 
-  .plate { position: relative; margin: 0; padding: 10px; border: 1px solid var(--line2); background: var(--paper2); box-shadow: 0 1px 0 #fff8 inset, 0 10px 30px rgba(90, 60, 20, .14); }
-  .plate img { display: block; width: 100%; height: auto; }
-  .plate figcaption { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 8px 4px 0; font: 500 12px/1.3 Cinzel, serif; letter-spacing: .16em; color: var(--ink2); }
-  .legend { display: inline-flex; gap: 14px; letter-spacing: .08em; }
-  .legend span { display: inline-flex; gap: 6px; align-items: center; }
+  /* A life, in five steps. */
+  .life { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin: 30px 0 0; padding: 0; list-style: none; counter-reset: s; }
+  .life li { counter-increment: s; }
+  .life figure { margin: 0; aspect-ratio: 1; border-radius: 50%; overflow: hidden; box-shadow: 0 0 0 1px var(--line), 0 10px 30px rgba(60, 35, 10, .18); }
+  .life img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .life b { display: block; margin: 14px 0 4px; font: 700 19px/1.2 Fraunces, Georgia, serif; font-variation-settings: 'SOFT' 100; }
+  .life b::before { content: counter(s) " · "; font: 500 12px 'JetBrains Mono', monospace; color: var(--muted); vertical-align: 2px; }
+  .life p { margin: 0; font-size: 14.5px; color: var(--muted); }
+  .life li.warm figure { box-shadow: 0 0 0 1px var(--line), 0 0 40px rgba(255, 140, 60, .35), 0 0 70px rgba(255, 95, 168, .18); }
 
-  .quick { margin: 22px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; align-items: center;
-    padding: 14px 18px; border: 1px solid var(--line2); border-radius: var(--radius); background: rgba(58, 42, 27, .06); }
-  .quick b { font-size: 14px; }
-  .quick pre { min-width: 0; margin: 0; overflow-x: auto; font: 13.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); }
-  .quick pre i { color: var(--muted); font-style: normal; }
-  .start { margin: 22px 0 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-  .startbox { padding: 16px 18px; border: 1px solid var(--line2); border-radius: var(--radius); background: var(--paper2); min-width: 0; }
-  .startbox p { margin: 8px 0 0; font-size: 14px; color: var(--ink2); }
-  .cmd { display: flex; gap: 8px; align-items: center; margin-top: 8px; padding: 8px 8px 8px 12px; border-radius: 10px; background: #2b1f14; color: #f6ecd7; min-width: 0; }
-  .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; font: 13.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
-  .copy { flex: none; font: 600 12px Inter, sans-serif; color: #2b1f14; background: #f6ecd7; border: 0; border-radius: 7px; padding: 6px 10px; cursor: pointer; }
-  .byhand { grid-column: 1 / -1; font-size: 14px; color: var(--muted); }
-  .steps { list-style: none; counter-reset: step; margin: 6px 0 10px; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 14px 20px; }
-  .steps li { counter-increment: step; min-width: 0; }
-  .steps li::before { content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: var(--paper2); font: 700 12px Inter, sans-serif; }
-  .steps p { margin: 6px 0 0; font-size: 13.5px; }
-  .steps p code { font: 12.5px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 20px; border-radius: 10px; font-weight: 600; font-size: 15px;
-    border: 1px solid var(--ink); background: transparent; color: var(--ink); text-decoration: none; white-space: nowrap; }
-  .btn.primary { background: var(--ink); color: var(--paper2); box-shadow: 0 4px 14px rgba(58, 42, 27, .25); }
-  .btn[aria-disabled="true"] { opacity: .4; cursor: not-allowed; }
+  /* The seven stones. */
+  .stones { display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; margin: 28px 0 0; }
+  .stones figure { margin: 0; text-align: center; }
+  .stones img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 50%; box-shadow: 0 0 0 1px var(--line); }
+  .stones b { display: block; margin-top: 8px; font: 700 16px Fraunces, Georgia, serif; }
+  .stones small { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.35; margin-top: 2px; }
 
-  .mine { margin: 30px 0 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 26px; align-items: center; padding: 20px 26px;
-    border: 1px solid var(--line2); border-radius: 20px; background: var(--paper2); box-shadow: 0 10px 30px rgba(90, 60, 20, .12); }
-  .mine .kicker, .kicker { font: 500 12px/1.3 Cinzel, serif; letter-spacing: .18em; color: var(--muted); text-transform: uppercase; }
-  .mine h2 { font: 700 30px/1.1 Cinzel, serif; margin: 2px 0 6px; }
-  .mine h2 small { font: 600 16px Inter, sans-serif; color: var(--muted); letter-spacing: 0; }
-  .mine .nets { display: grid; gap: 4px; font-size: 14px; }
-  .mine .nets div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .mine .actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: flex-end; }
-  .mine .who { display: flex; align-items: center; gap: 8px; font-size: 13px; margin-top: 8px; color: var(--muted); }
-  .who img, .who .avatar { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex: none; }
+  /* The species. */
+  .species { display: grid; grid-template-columns: 1.35fr 1fr; gap: 28px; align-items: center; margin: 28px 0 0; }
+  .species img { width: 100%; border-radius: 16px; box-shadow: 0 0 0 1px var(--line), 0 14px 40px rgba(60, 35, 10, .2); display: block; }
+  .dims { margin: 0; padding: 0; list-style: none; }
+  .dims li { padding: 12px 0; border-top: 1px solid var(--line); font-size: 15px; }
+  .dims b { font: 700 18px Fraunces, Georgia, serif; margin-right: 6px; }
+  .dims span { color: var(--muted); }
+  .strip { margin: 22px 0 0; }
+  .strip img { width: 100%; border-radius: 14px; box-shadow: 0 0 0 1px var(--line); display: block; }
 
-  .gridhead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 46px 0 18px; }
-  .gridhead h2, .section h2 { font: 700 26px/1.15 Cinzel, serif; margin: 0 8px 0 0; letter-spacing: .04em; }
-  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
-  .chip { font: 500 14px Inter, sans-serif; color: var(--ink); background: transparent; border: 1px solid var(--line2); border-radius: 999px; padding: 6px 18px; cursor: pointer; }
-  .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper2); border-color: var(--ink); }
-  .gridhead .right { margin-left: auto; display: flex; gap: 14px; align-items: center; color: var(--muted); font-size: 14px; flex-wrap: wrap; }
-  select { background: var(--paper2); color: var(--ink); border: 1px solid var(--line2); border-radius: 8px; padding: 6px 10px; font: inherit; }
+  /* The world, scene by scene. */
+  .scenes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; margin: 30px 0 0; }
+  .scenes figure { margin: 0; }
+  .scenes img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 16px; display: block; box-shadow: 0 10px 30px rgba(60, 35, 10, .18); }
+  .scenes figcaption { padding: 12px 2px 0; }
+  .scenes b { display: block; font: 700 20px/1.2 Fraunces, Georgia, serif; font-variation-settings: 'SOFT' 100; }
+  .scenes span { color: var(--muted); font-size: 15px; }
+  .scenes figure.wide { grid-column: 1 / -1; }
+  .scenes figure.wide img { aspect-ratio: 21 / 9; }
 
-  .field { position: relative; }
-  .field svg.links { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
-  .field svg.links path { fill: none; stroke: var(--ink2); stroke-width: 1; stroke-dasharray: 3 5; opacity: .35; }
-  .grid { position: relative; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 34px 22px; }
-  .card { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; align-items: center; }
-  .card[hidden] { display: none; }
-  .card .info { font-size: 14px; color: var(--ink2); min-width: 0; }
-  .card .name { font: 700 19px/1.1 Cinzel, serif; color: var(--ink); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; letter-spacing: .03em; }
-  .card .ticker { font-weight: 700; font-size: 13px; color: var(--muted); margin-top: 2px; }
-  .card .nets { display: inline-flex; gap: 7px; align-items: center; margin: 6px 0; padding: 2px 9px; border-radius: 999px;
-    border: 1px solid var(--line2); font-size: 11.5px; background: var(--paper2); white-space: nowrap; }
-  .card .nets span { display: inline-flex; gap: 5px; align-items: center; }
-  .card .open { font-weight: 600; display: inline-block; margin-top: 2px; }
-  .card .who { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 4px; }
-  .card .who .avatar, .card .who img { width: 18px; height: 18px; }
-  .being { position: relative; width: 112px; aspect-ratio: 1; }
-  .being .rank { position: absolute; left: -4px; top: -4px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--ink2); display: grid; place-items: center;
-    font: 700 12px Cinzel, serif; background: var(--paper2); z-index: 2; }
-  .being svg { width: 100%; height: 100%; display: block; }
-  .card.example .being { opacity: .9; }
-  .signal { animation: breathe 5s ease-in-out infinite; }
-  @keyframes breathe { 50% { opacity: .62; } }
-  @media (prefers-reduced-motion: reduce) { .signal { animation: none; } }
+  /* The 777. */
+  .hall { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: center; margin: 28px 0 0; }
+  .count { font: 800 clamp(64px, 12vw, 132px)/.9 Fraunces, Georgia, serif; font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1; }
+  .count small { display: block; font: 500 13px 'JetBrains Mono', monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-top: 10px; }
+  .first { display: flex; gap: 14px; align-items: center; margin-top: 22px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, var(--paper2) 60%, transparent); text-decoration: none; }
+  .first img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
+  .first b { display: block; font: 700 20px Fraunces, Georgia, serif; }
+  .first span { font-size: 14px; color: var(--muted); }
+  .hall .art img { width: 100%; border-radius: 18px; display: block; box-shadow: 0 14px 40px rgba(60, 35, 10, .22); }
 
-  .section { margin: 64px 0 0; }
-  .section > header { border: 0; padding: 0; display: block; margin-bottom: 18px; }
-  .fl { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; align-items: start; }
-  .fl p { margin: 0 0 12px; color: var(--ink2); }
-  .motto { font: 700 clamp(22px, 3vw, 30px)/1.2 Cinzel, serif; letter-spacing: .1em; color: #3a2412; margin: 4px 0 14px; }
-  .tiers { list-style: none; padding: 0; margin: 14px 0; display: grid; gap: 8px; }
-  .tiers li { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 12px; align-items: baseline; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper2); }
-  .tiers b { font: 700 15px Cinzel, serif; }
-  .dims { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
-  .dims div { font-size: 13px; color: var(--ink2); }
-  .dims b { display: block; font: 700 13px Cinzel, serif; letter-spacing: .14em; color: var(--ink); margin-bottom: 2px; }
+  /* The book it comes from, and the door in. */
+  .book { max-width: 40em; margin: 0 auto; text-align: center; }
+  .book p { font: 400 19px/1.6 Fraunces, Georgia, serif; font-variation-settings: 'SOFT' 100; }
+  .door { margin: 28px auto 0; width: min(640px, 100%); text-align: left; }
+  .cmd { display: flex; gap: 10px; align-items: center; padding: 12px 12px 12px 18px; border-radius: 16px; background: #2b1f14; color: #f6ecd7; box-shadow: 0 10px 30px rgba(60, 40, 20, .18); }
+  .cmd code { flex: 1; min-width: 0; font: 14.5px/1.5 'JetBrains Mono', ui-monospace, monospace; overflow-wrap: anywhere; }
+  .copy { flex: none; font: 600 13px Inter, sans-serif; color: #2b1f14; background: #f6ecd7; border: 0; border-radius: 9px; padding: 8px 13px; cursor: pointer; }
+  .hint { margin: 12px 0 0; font-size: 14px; color: var(--muted); text-align: center; }
+  footer { padding: 72px 16px 28px; text-align: center; font-size: 12.5px; color: var(--muted); }
+  .note { font-size: 13px; color: var(--muted); margin-top: 14px; }
 
-  .portraits { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin: 0; }
-  .portraits figure { margin: 0; }
-  .portraits img { width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; display: block; border-radius: 12px; border: 1px solid var(--line2); }
-  .portraits figcaption { font-size: 12px; color: var(--muted); margin-top: 4px; text-align: center; }
-  .scenes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin-top: 18px; }
-  .scene { margin: 0; }
-  .scene img { width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; display: block; border-radius: 12px; border: 1px solid var(--line2); box-shadow: 0 10px 30px rgba(90, 60, 20, .14); }
-  .scene figcaption { padding: 8px 2px 0; font-size: 14.5px; color: var(--ink2); }
-  .scene figcaption b { font: 700 15px Cinzel, serif; letter-spacing: .06em; color: var(--ink); }
-  .scene figcaption small { display: block; color: var(--muted); font-size: 12.5px; margin-top: 2px; }
-  .scene.wide { grid-column: 1 / -1; }
-  .lead { max-width: 760px; color: var(--ink2); margin: 0; }
-  .aster { width: 132px; aspect-ratio: 1; border-radius: 50%; object-fit: cover; display: block; border: 1px solid var(--line2); box-shadow: 0 0 0 4px var(--paper2), 0 0 0 5px var(--line2); }
-  .being img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; border: 1px solid var(--ink2); }
-  section.about { margin: 64px 0 0; display: grid; grid-template-columns: 1.2fr 1fr; gap: 28px; }
-  section.about > div { padding: 22px 24px; border: 1px solid var(--line2); border-radius: var(--radius); background: var(--paper2); }
-  section.about h2 { margin: 0 0 8px; font: 700 21px Cinzel, serif; letter-spacing: .04em; }
-  section.about p { margin: 0 0 10px; color: var(--ink2); }
-  section.about ol { margin: 0; padding-left: 20px; color: var(--ink2); }
-  footer { margin: 48px 0 28px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; display: flex; gap: 16px; flex-wrap: wrap; justify-content: space-between; }
-
-  @media (max-width: 1040px) {
-    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .mine { grid-template-columns: auto minmax(0, 1fr); } .mine .actions { grid-column: 1 / -1; justify-content: flex-start; }
-    .dims { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  @media (max-width: 860px) {
+    .life { grid-template-columns: repeat(3, 1fr); }
+    .species, .hall { grid-template-columns: 1fr; }
+    .stones { grid-template-columns: repeat(4, 1fr); }
   }
-  @media (max-width: 820px) { .hero, .fl { grid-template-columns: minmax(0, 1fr); } }
-  @media (max-width: 720px) {
-    header { flex-wrap: wrap; gap: 14px; } .owner { margin-left: 0; order: 3; }
-    .quick { grid-template-columns: minmax(0, 1fr); } .start { grid-template-columns: minmax(0, 1fr); } .grid { grid-template-columns: minmax(0, 1fr); gap: 26px; }
-    .mine { grid-template-columns: minmax(0, 1fr); padding: 18px; }
-    .mine .btn { padding: 10px 14px; }
-    section.about { grid-template-columns: 1fr; } .gridhead .right { margin-left: 0; }
-    .dims { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .portraits { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .scenes { grid-template-columns: minmax(0, 1fr); }
-    .field svg.links { display: none; }
+  @media (max-width: 560px) {
+    .life { grid-template-columns: repeat(2, 1fr); }
+    .scenes { grid-template-columns: 1fr; }
+    .scenes figure.wide img { aspect-ratio: 3 / 2; }
   }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <a class="brand" href="./">FATLINE</a>
-    <nav>
-      <a href="explore.html" aria-current="page">Explore</a>
-      <a href="#fatliners">Fatliners</a>
-      <a href="#world">World</a>
-      <a href="#about">About</a>
-      <a href="#start">Start</a>
-      <a href="docs/">Docs</a>
-      <a href="manifesto.html">Manifesto</a>
-    </nav>
-    <a class="owner" id="owner" href="https://farcaster.xyz/anky" title="The person who runs the first Fatline">
-      <span class="avatar"></span><span>First Fatline · <b>@anky</b><br><small>FID 18350</small></span>
-    </a>
-  </header>
+<nav class="main" aria-label="Main">
+  <a href="./">HOME</a>
+  <a href="explore.html" aria-current="page">EXPLORE</a>
+  <a href="docs/">DOCS</a>
+  <a href="manifesto.html">MANIFESTO</a>
+  <a href="f/FATLINE">$FATLINE</a>
+</nav>
 
-  <div class="hero">
-    <div>
-      <div class="kicker">Every Fatline is a coin · its fees keep its node alive</div>
-      <h1>$USDC paired launchpad on <span class="base" role="img" aria-label="Base"></span> Base</h1>
-      <p class="sub">Run a Farcaster node on Snapchain, Hypersnap or both. Launch its coin. The trading fees pay for its server, day by day. Every node that lives is one more copy of the network kept by someone who isn't a company.</p>
-      <span class="tag warn">Launch contracts tested on a Base fork only. Not deployed yet, so no coin trades today.</span>
-    </div>
-    <figure class="plate">
-      <a href="#world"><img src="img/world/the-weaving.jpg" width="1400" height="933" alt="Dusk over floating stone ruins. Dozens of tiny stone Fatliner figurines sit on terraces and aqueducts, reading, painting, talking. From each one's forehead a thread of light rises, some white, some blue, some pink, and high above they weave into one glowing net across the sky."></a>
-      <figcaption><span>THE WEAVING · EACH LIFE SPINS A THREAD</span><span class="legend"><span><span class="dot snapchain"></span>SNAPCHAIN</span><span><span class="dot hypersnap"></span>HYPERSNAP</span></span></figcaption>
-    </figure>
-  </div>
-  <div class="start" id="start">
-    <div class="startbox">
-      <div class="kicker">Set up one of the 777 Fatlines · one line</div>
-      <div class="cmd"><code id="c-install">curl -fsSL https://fatline.ink/install.sh | sh</code><button class="copy" data-copy="c-install">Copy</button></div>
-      <p>Downloads Fatline and walks you through it: check your machine, pick rent / local / light, your node, your client. It asks before every step; stop anywhere, run it again to continue. <a href="install.sh">Read the script</a>.</p>
-    </div>
-    <div class="startbox">
-      <div class="kicker">Or ask your agent</div>
-      <div class="cmd"><code id="c-agent" style="white-space:normal">Help me mint one of the 777 Fatlines. Follow https://fatline.ink/skill.md</code><button class="copy" data-copy="c-agent">Copy</button></div>
-      <p>Paste it into Claude Code, Codex, or any agent that can run commands. <a href="skill.md">The skill</a> keeps you in charge: it shows prices and waits for your yes, and never touches your seed phrase or tokens.</p>
-    </div>
-    <div class="byhand">
-      <div class="kicker">Or by hand · four commands</div>
-      <ol class="steps">
-        <li><div class="cmd"><code id="c-h1">git clone https://github.com/jpfraneto/fatline</code><button class="copy" data-copy="c-h1">Copy</button></div><p>Downloads the code. All of it is open source (MIT): read it first.</p></li>
-        <li><div class="cmd"><code id="c-h2">cd fatline &amp;&amp; npm install -g .</code><button class="copy" data-copy="c-h2">Copy</button></div><p>Puts the <code>fatline</code> command on your machine, so you can run it from anywhere.</p></li>
-        <li><div class="cmd"><code id="c-h3">fatline compute</code><button class="copy" data-copy="c-h3">Copy</button></div><p>Rents the server that will hold your node, paid in USDC on Base from a wallet (about 11 USDC a day, no card, no account). It shows the price and pays nothing until you type <b>pay</b>. It stops by itself when its paid days end. You approve it in your own wallet: a QR code for your phone, or your browser wallet.</p></li>
-        <li><div class="cmd"><code id="c-h4">fatline node snapchain</code><button class="copy" data-copy="c-h4">Copy</button></div><p>Installs your own read node on it (or <code>hypersnap</code>), 1–3 hours plus catching up. When it answers, <code>fatline up</code> opens your client at localhost:8787.</p></li>
-      </ol>
-      <a href="docs/">Full tutorial ↗</a>
-    </div>
-  </div>
-
-  <div class="mine">
-    <div id="mine-being" style="width:132px"></div>
-    <div>
-      <div class="kicker">The first Fatline · its keeper is Aster</div>
-      <h2>Aster <small>$FATLINE</small></h2>
-      <div class="nets" id="mine-nets"><div class="muted">Checking its nodes…</div></div>
-      <div class="who" id="mine-who"></div>
-    </div>
-    <div class="actions">
-      <a class="btn primary" href="f/FATLINE">Open Fatline ↗</a>
-      <a class="btn" aria-disabled="true" title="The coin is not launched yet">Trade · soon</a>
-      <a class="btn" href="https://github.com/jpfraneto/fatline">Source ↗</a>
-    </div>
-  </div>
-
-  <div class="gridhead">
-    <h2>Top 8 Fatlines</h2>
-    <div class="chips" role="group" aria-label="Filter by network">
-      <button class="chip" data-f="all" aria-pressed="true">All</button>
-      <button class="chip" data-f="snapchain" aria-pressed="false">Snapchain</button>
-      <button class="chip" data-f="hypersnap" aria-pressed="false">Hypersnap</button>
-      <button class="chip" data-f="both" aria-pressed="false">Both</button>
-    </div>
-    <div class="right">
-      <span id="checked"></span>
-      <label>Sort <select id="sort"><option value="rank">Rank</option><option value="age">Running longest</option></select></label>
-    </div>
-  </div>
-  <div class="field">
-    <svg class="links" id="links" aria-hidden="true"></svg>
-    <div class="grid" id="grid"></div>
-  </div>
-  <p class="muted" style="font-size:13px;margin-top:18px">Only #1 is real: our two nodes, checked every 15 minutes. Cards marked <span class="tag ex">Example</span> show how the board will look once more Fatlines launch. Their names and numbers are made up. The beings on the example cards are sketches of the species; real Fatliners are drawn from their account's history.</p>
-
-  <section class="section" id="fatliners">
-    <header>
-      <div class="kicker">The keepers of the Fatline</div>
-      <h2>777 Fatliners</h2>
-    </header>
-    <div class="fl">
-      <div>
-        <p class="motto">YOU ARE YOUR FID</p>
-        <p>A Fatliner is a small mineral being born from one Farcaster account. Its body is drawn from that account's history: how long it has been around, who it talks with, how it speaks, the rhythm of its activity, what it keeps coming back to. Same history, same being.</p>
-        <p>The line of light across its forehead is its signal. Blue paths are Snapchain, pink paths are Hypersnap. A Fatliner can hold both without mixing them up.</p>
-        <p>Each one can wake up as a living node of the Fatline. Hold one and it can run its own server, fed by its own coin. Its threads are its messages; a node that keeps them is how the network goes on.</p>
-        <ul class="tiers" aria-label="Who can mint, and when">
-          <li><b>Day 1</b><span>The top 777 accounts</span></li>
-          <li><b>Day 2</b><span>The top 7,777</span></li>
-          <li><b>Day 3</b><span>The top 77,777</span></li>
-          <li><b>Day 4</b><span>Everyone</span></li>
-        </ul>
-        <p class="muted" style="font-size:14px"><b>The ranking is done:</b> 593,815 accounts scored on our own Snapchain and Hypersnap nodes with the rules behind Hypersnap's $SNAP retro, each account's share averaged across both networks. Deterministic, nobody edited by hand: anyone with a node can recompute it (<a href="https://github.com/jpfraneto/fatline/tree/main/ranking">how</a>). A big following buys a place in line, not a better-looking being. <b>Minting is not open yet:</b> the contract is written and tested, not deployed.</p>
-      </div>
-      <figure class="plate">
-        <div class="portraits">
-          <figure><img src="img/pfp/fid-18350.jpg" alt="Tero, a gold-mended stone figurine reading a book" loading="lazy"><figcaption>Tero · 18350</figcaption></figure>
-          <figure><img src="img/pfp/fid-3.jpg" alt="Kirim, a basalt figurine with a book" loading="lazy"><figcaption>Kirim · 3</figcaption></figure>
-          <figure><img src="img/pfp/fid-299673.jpg" alt="Shouvi, a mossy stone figurine" loading="lazy"><figcaption>Shouvi · 299673</figcaption></figure>
-          <figure><img src="img/pfp/fid-509202.jpg" alt="Edis, a mossy figurine with a paintbrush" loading="lazy"><figcaption>Edis · 509202</figcaption></figure>
-          <figure><img src="img/pfp/fid-1721477.jpg" alt="Somaeben, a marble figurine with a laptop" loading="lazy"><figcaption>Somaeben · 1721477</figcaption></figure>
-        </div>
-        <figcaption><span>DRAWN FROM REAL HISTORIES · READ FROM OUR NODES</span><a href="https://github.com/jpfraneto/fatline/blob/main/fatliners/docs/PFP.md">how ↗</a></figcaption>
-        <p class="muted" style="font-size:13px;margin:8px 4px 0">Five test portraits. The stone is Roots (age, comebacks), the thing it holds is Voice, the forehead line is Pulse, what grows on its head is Bloom. The 777 aren't rendered yet. <a href="img/blueprint.jpg">Species blueprint ↗</a></p>
-      </figure>
-    </div>
-    <figure class="plate" style="margin-top:26px">
-      <img src="img/dimensions.jpg" width="1534" height="290" alt="The five dimensions: Roots (ivory stone, basalt, mossed, gold repair, opal), Orbit (signal branches), Voice (eye shapes), Pulse (signal paths over the body), Bloom (moss, flowers, crystals).">
-      <div class="dims">
-        <div><b>ROOTS</b>Time. Sets the stone it is made of.</div>
-        <div><b>ORBIT</b>Its conversations. Shapes the branches of its signal.</div>
-        <div><b>VOICE</b>How it speaks. Shows in its eyes and grain.</div>
-        <div><b>PULSE</b>The rhythm of its activity. The wave on its forehead.</div>
-        <div><b>BLOOM</b>What it cultivates. Small growth, often none.</div>
-      </div>
+<main class="wrap">
+  <section class="block" style="padding-top:48px">
+    <p class="eyebrow">Explore</p>
+    <h1>The world of the Fatliners</h1>
+    <p class="lede">Old stone ruins floating over a sea of clouds. Nobody runs the place. Every Fatliner, just by living, spins a thread of light, and where the threads meet there is a network.</p>
+    <figure class="map">
+      <img src="img/world/map-of-the-fatline.jpg" width="1536" height="1024" alt="A hand-drawn map of the Fatline: floating ruins, aqueducts and threads of light over the clouds">
+      <figcaption>The map of the Fatline, as its keepers drew it. Blue threads are Snapchain, pink are Hypersnap: Farcaster's two networks, equals.</figcaption>
     </figure>
   </section>
 
-  <section class="section" id="world">
-    <header>
-      <div class="kicker">Where they live · the spaces between transmissions</div>
-      <h2>The world of the Fatliners</h2>
-    </header>
-    <p class="lead">Old stone ruins floating above a sea of clouds. Nobody runs the place. Every Fatliner, just by living, spins a thread of light, and where the threads meet there is a network. Blue threads are Snapchain, pink are Hypersnap; they glow where a Fatliner is working for that network. Each picture below is a real part of Fatline.</p>
+  <section class="block" aria-labelledby="life">
+    <p class="eyebrow">A life</p>
+    <h2 id="life">From an egg to one of the 777</h2>
+    <p class="intro">Every Fatliner starts as an egg that belongs to one Farcaster account. A Farcaster node keeps it warm. That's the whole game.</p>
+    <ol class="life">
+      <li><figure><img src="img/eggs/basalt.jpg" alt="A basalt egg in the moss" loading="lazy"></figure><b>An egg</b><p>Laid when your node is in sync. It holds your account's history, its DNA, up to that hour.</p></li>
+      <li class="warm"><figure><img src="img/eggs/aster-gold.gif" alt="A gold egg coming alive, threads of light growing into it" loading="lazy"></figure><b>Three warm days</b><p>Every hour, the servers that hatched before check your node. 18 good hours make a warm day.</p></li>
+      <li><figure><img src="img/world/aster.jpg" alt="Aster, an ivory figurine with daisies on its head, holding a small light" loading="lazy"></figure><b>It hatches</b><p>Into a Fatliner, with a surname read from its history. No two alike.</p></li>
+      <li><figure><img src="img/world/the-vault.jpg" alt="A stone vault glowing with light" loading="lazy"></figure><b>Its coin</b><p>Its surname is the ticker. Trading fees, in USDC, fill its vault, and the vault pays for its node.</p></li>
+      <li><figure><img src="img/world/the-sleeper.jpg" alt="A Fatliner asleep among the stones" loading="lazy"></figure><b>If the node stops</b><p>The egg dies. Its keeper sleeps seven days, and the place goes to the next in line.</p></li>
+    </ol>
+  </section>
+
+  <section class="block" aria-labelledby="stones">
+    <p class="eyebrow">Roots</p>
+    <h2 id="stones">Seven stones</h2>
+    <p class="intro">Your egg is made of the stone your history earned: how old your account is, how steady, and whether it left and came back. Nobody picks it, not even you.</p>
+    <div class="stones">
+      <figure><img src="img/eggs/opal.jpg" alt="" loading="lazy"><b>Opal</b><small>brand new</small></figure>
+      <figure><img src="img/eggs/marble.jpg" alt="" loading="lazy"><b>Marble</b><small>young</small></figure>
+      <figure><img src="img/eggs/ivory.jpg" alt="" loading="lazy"><b>Ivory</b><small>quiet, in between</small></figure>
+      <figure><img src="img/eggs/sandstone.jpg" alt="" loading="lazy"><b>Sandstone</b><small>old, on and off</small></figure>
+      <figure><img src="img/eggs/basalt.jpg" alt="" loading="lazy"><b>Basalt</b><small>old and steady</small></figure>
+      <figure><img src="img/eggs/moss.jpg" alt="" loading="lazy"><b>Moss</b><small>long silences</small></figure>
+      <figure><img src="img/eggs/gold.jpg" alt="" loading="lazy"><b>Gold</b><small>left, and came back</small></figure>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="species">
+    <p class="eyebrow">The species</p>
+    <h2 id="species">A life on Farcaster, given a body</h2>
+    <div class="species">
+      <img src="img/blueprint.jpg" width="1400" height="933" alt="The Fatliners master species blueprint: front, profile and back, with luminous paths under mineral skin" loading="lazy">
+      <ul class="dims">
+        <li><b>Roots</b><span>the stone: time, and how you lived it.</span></li>
+        <li><b>Orbit</b><span>the paths on its head: the people you talk with, and how they branch.</span></li>
+        <li><b>Voice</b><span>its eyes and grain: how you speak in public.</span></li>
+        <li><b>Pulse</b><span>the wave across its forehead: your rhythm, day after day. The most personal mark of all.</span></li>
+        <li><b>Bloom</b><span>moss, flowers, crystals: what you make and share.</span></li>
+      </ul>
+    </div>
+    <figure class="strip"><img src="img/dimensions.jpg" width="1534" height="290" alt="The five dimensions drawn as studies: Roots, Orbit, Voice, Pulse, Bloom" loading="lazy"></figure>
+    <p class="note">The algorithm is public and deterministic: the same history always gives the same being. To get a different Fatliner, you'd have to have lived a different life on Farcaster.</p>
+  </section>
+
+  <section class="block" aria-labelledby="world">
+    <p class="eyebrow">Where they live</p>
+    <h2 id="world">Scenes from the Fatline</h2>
+    <p class="intro">Each picture is a real part of the system, drawn as a place.</p>
     <div class="scenes">
-      <figure class="scene"><img src="img/world/you-are-your-fid.jpg" alt="A small ivory figurine writes on a stone tablet at a desk by a window; a thread of light leaves its forehead and joins a glowing net in the sky." loading="lazy"><figcaption><b>You are your FID</b> One cast, one more stitch. <small>Each being is drawn from its account's own messages, read from our nodes.</small></figcaption></figure>
-      <figure class="scene"><img src="img/world/two-currents.jpg" alt="Figurines on a stone bridge lower lanterns into two separate rivers of light, one blue, one pink; one dark figurine in the middle raises arms glowing blue and pink." loading="lazy"><figcaption><b>Two currents</b> Snapchain runs blue, Hypersnap runs pink, never mixed. <small>Both networks are equals; the archive keeps what each one says, side by side.</small></figcaption></figure>
-      <figure class="scene"><img src="img/world/the-vault.jpg" alt="Figurines line up to drop golden tokens into a stone fountain; channels carry the glowing water to lantern towers that light up." loading="lazy"><figcaption><b>The vault</b> People feed the vault; the vault feeds the node. <small>Coin trading fees, in USDC, pay the node's server.</small></figcaption></figure>
-      <figure class="scene"><img src="img/world/the-sleeper.jpg" alt="At blue hour a marble figurine sleeps curled on moss beside a dark tower; a gold-mended friend sets down a glowing token and a lantern." loading="lazy"><figcaption><b>The sleeper</b> Dormancy is not death. <small>If the vault runs dry the node goes dark, and the board shows it. Any deposit brings it back.</small></figcaption></figure>
-      <figure class="scene"><img src="img/world/the-archive.jpg" alt="A cliff library of glowing stone tablets; figurines on ladders file them, and an opal figurine compares a blue tablet and a pink tablet with a magnifying glass." loading="lazy"><figcaption><b>The archive</b> They keep what was said, and never erase a difference. <small>Every message is stored once per network, with what each network says about it.</small></figcaption></figure>
-      <figure class="scene"><img src="img/world/hall-of-777.jpg" alt="A vast amphitheatre of stone niches above the clouds; the lowest tiers glow as figurines take their seats, and a long line of them walks up the path." loading="lazy"><figcaption><b>The hall of 777</b> Day one, the first 777 take their seats. <small>Then 7,777, then 77,777, then everyone ranked.</small></figcaption></figure>
-      <figure class="scene wide"><img src="img/world/map-of-the-fatline.jpg" alt="An antique parchment map of floating islands: a blue river labelled Snapchain, a pink river labelled Hypersnap, The Vault, The Archive and the Hall of 777." loading="lazy"><figcaption><b>Map of the Fatline</b> The world, as the keepers drew it.</figcaption></figure>
-    </div>
-    <p class="muted" style="font-size:13px;margin-top:14px">Scenes made with gpt-image-2.5 through the Bankr LLM gateway, from the prompts in <a href="https://github.com/jpfraneto/fatline/tree/main/fatliners/world">fatliners/world</a>. Illustrations, not live data.</p>
-  </section>
-
-  <section class="about" id="about">
-    <div>
-      <h2>What Fatline is</h2>
-      <p>An open protocol for being on Farcaster on your own terms. You choose the network, Farcaster (Snapchain) or Hypersnap, as equals. You choose the node: your own, ours or a public one, and the client always says which. And the client can pay for its own life: a USDC vault on Base feeds its server.</p>
-      <p>A fatline, as we use the word, is a line you hold at both ends. Your keys sign at one end; your own node listens at the other. Nobody in between rents you the line and can take it back. Keeping it open costs something, so the line carries its own purse.</p>
-      <p class="muted">The word comes from Dan Simmons' <i>Hyperion</i>; what it means here is ours. Formerly Infinicaster.</p>
-    </div>
-    <div>
-      <h2>How a Fatline lives</h2>
-      <ol>
-        <li>Someone runs a node, on Snapchain, Hypersnap or both. That node is the Fatline's body.</li>
-        <li>They launch its coin, paired with USDC on Base. Its page is <code>fatline.ink/base/&lt;address&gt;</code>.</li>
-        <li>100% of the trading fees flow into its vault, which pays the server. Nobody can redirect them, not even us.</li>
-        <li>It is born when the fees cover its node. Fed, it lives. Empty, it goes dark, and the board shows it.</li>
-        <li>The first Fatline, $FATLINE, is the launchpad itself: its life is giving birth to the others.</li>
-      </ol>
-      <p style="margin-top:12px"><a href="docs/">Read the tutorial ↗</a> · <a href="docs/zh.html">中文</a></p>
+      <figure class="wide"><img src="img/world/the-weaving.jpg" alt="Fatliners on ancient aqueducts at sunset, threads of light rising from them" loading="lazy"><figcaption><b>The weaving</b><span>Each life spins a thread. Where the threads meet, there is a network.</span></figcaption></figure>
+      <figure><img src="img/world/you-are-your-fid.jpg" alt="" loading="lazy"><figcaption><b>You are your FID</b><span>One cast, one more stitch. Each being is drawn from its account's own messages, read from our own nodes.</span></figcaption></figure>
+      <figure><img src="img/world/two-currents.jpg" alt="" loading="lazy"><figcaption><b>Two currents</b><span>Snapchain runs blue, Hypersnap runs pink. Both networks are equals; you choose which one your node keeps.</span></figcaption></figure>
+      <figure><img src="img/world/a-node-is-born.jpg" alt="" loading="lazy"><figcaption><b>A node is born</b><span>A full copy of Farcaster, on a server someone keeps. Every one is one more copy kept by someone who isn't a company.</span></figcaption></figure>
+      <figure><img src="img/world/the-archive.jpg" alt="" loading="lazy"><figcaption><b>The archive</b><span>They keep what was said, and never erase a difference: every message is kept once per network, with what each says about it.</span></figcaption></figure>
+      <figure><img src="img/world/the-vault.jpg" alt="" loading="lazy"><figcaption><b>The vault</b><span>The coin feeds the vault; the vault feeds the node. It is fuel, nothing else.</span></figcaption></figure>
+      <figure><img src="img/world/the-sleeper.jpg" alt="" loading="lazy"><figcaption><b>The sleeper</b><span>When a node stops, its egg dies, and its keeper sleeps for seven days before they can take another.</span></figcaption></figure>
     </div>
   </section>
 
-  <footer>
-    <span>Fatline · fatline.ink · open source, MIT</span>
-    <span class="hand">Did the network create the Fatliners, or did they teach it to connect?</span>
-    <span><a href="https://github.com/jpfraneto/fatline">github.com/jpfraneto/fatline</a></span>
-  </footer>
-</div>
+  <section class="block" aria-labelledby="hall">
+    <p class="eyebrow">The 777</p>
+    <h2 id="hall">Only 777 places</h2>
+    <div class="hall">
+      <div>
+        <p class="intro" style="margin-top:0">Eggs and Fatliners share 777 places. A ranking of Farcaster, computed on our own nodes, decides whose turn it is: day one the first 777, day two the first 7,777, day three the first 77,777, then everyone ranked.</p>
+        <div class="count" id="count">777<small id="count-label">places</small></div>
+        <a class="first" href="f/FATLINE">
+          <img src="img/eggs/gold.jpg" alt="">
+          <div><b>Aster Fatline · #18350</b><span>The first egg, gold, kept by @anky on the first server. $FATLINE launches the moment it hatches. Then @jpfraneto, then the list.</span></div>
+        </a>
+      </div>
+      <figure class="art" style="margin:0"><img src="img/world/hall-of-777.jpg" alt="A great hall with 777 stone seats under the sky" loading="lazy"></figure>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="book">
+    <div class="book">
+      <p class="eyebrow">Where the name comes from</p>
+      <h2 id="book">Farcaster took its name from a book. Fatline takes the other one.</h2>
+      <p>In Dan Simmons' <em>Hyperion</em>, worlds are joined by farcasters, portals one step apart, and news crosses between stars on the fatline. The intelligences that built the web lived inside it and fed on the minds passing through. Here the story turns around: the Fatliners also emerge from the network, but they don't feed on it. They feed it.</p>
+    </div>
+    <div class="door">
+      <div class="cmd"><code id="prompt">Help me run my own Fatline: a Farcaster node and its client. Follow https://fatline.ink/skill.md</code><button class="copy" data-copy="prompt">Copy</button></div>
+      <p class="hint">Paste it into Claude Code, Codex or any agent that runs commands. It does the work; you approve the money in your own wallet. <a href="docs/">Docs</a> · <a href="manifesto.html">manifesto</a></p>
+    </div>
+  </section>
+</main>
+
+<footer>Scenes made with image models from the prompts in <a href="https://github.com/jpfraneto/fatline/tree/main/fatliners/world">fatliners/world</a>; eggs with Seedance. Illustrations, not live data. · Open source, MIT</footer>
 
 <script>
-// The keepers on the board. Aster is the first Fatline's being; the others are example cards (layout only,
-// made up, and labelled "Example" on the page). Their looks follow the five dimensions of the species canon:
-// mat = Roots, orbit = Orbit, eye = Voice, wave = Pulse, bloom = Bloom.
-const ASTER = { name: 'Aster', mat: 'ivory', eye: 'almond', wave: [4, 1.4, 0.2], orbit: 2, bloom: null };
-const EXAMPLES = [
-  { name: 'Luma', ticker: 'LUMA', nets: ['snapchain'], cap: '$280k', left: '24d', mat: 'opal', eye: 'round', wave: [3, 2.6, 1.1], orbit: 1, bloom: null },
-  { name: 'Grove', ticker: 'GROVE', nets: ['hypersnap'], cap: '$190k', left: '18d', mat: 'sand', eye: 'sleepy', wave: [5, 1, 2.2], orbit: 0, bloom: 'sprig' },
-  { name: 'Echo', ticker: 'ECHO', nets: ['snapchain', 'hypersnap'], cap: '$125k', left: '14d', mat: 'marble', eye: 'almond', wave: [6, 3.2, .4], orbit: 3, bloom: null },
-  { name: 'Orbit', ticker: 'ORBIT', nets: ['snapchain'], cap: '$84k', left: '11d', mat: 'basalt', eye: 'round', wave: [2, 1.2, 3], orbit: 4, bloom: 'crystal' },
-  { name: 'Moss', ticker: 'MOSS', nets: ['hypersnap'], cap: '$52k', left: '8d', mat: 'mossed', eye: 'sleepy', wave: [4, 2, 1.7], orbit: 1, bloom: 'flower' },
-  { name: 'Ember', ticker: 'EMBER', nets: ['snapchain', 'hypersnap'], cap: '$31k', left: '3d', mat: 'gold', eye: 'almond', wave: [7, 2.2, 2.6], orbit: 2, bloom: null },
-  { name: 'Tide', ticker: 'TIDE', nets: ['hypersnap'], cap: '$18k', left: '1d', mat: 'slate', eye: 'round', wave: [4, 4, .9], orbit: 2, bloom: null },
-];
-const ASTER_IMG = '<img class="aster" src="img/world/aster.jpg" alt="Aster, an ivory stone figurine with daisies on its head, holding tiny seeds of light">';
-const NAME = { snapchain: 'Snapchain', hypersnap: 'Hypersnap' };
-const COLOR = { snapchain: '#3d8bff', hypersnap: '#ff5fa8' };
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-// Stone colours: light, mid, dark, pores (Roots).
-const MAT = {
-  ivory:  ['#f3e9d4', '#dccaa6', '#a8916a', '#8a7350'],
-  sand:   ['#efd6aa', '#d1b07c', '#9a7a4c', '#7d5f36'],
-  marble: ['#f5f3ee', '#dcd8d0', '#a6a39b', '#8c887f'],
-  basalt: ['#9a9895', '#64615e', '#363330', '#1f1d1b'],
-  mossed: ['#ddd3b9', '#b5aa8a', '#7d7458', '#5f573f'],
-  gold:   ['#f0e6cf', '#d5c4a1', '#9d8862', '#7f6b48'],
-  opal:   ['#fbf9ff', '#dfe6f6', '#b3bfdc', '#a3acc6'],
-  slate:  ['#d9dfe3', '#a9b3ba', '#6d7880', '#535d64'],
-};
-function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
-const P = (n) => n.toFixed(1);
-
-// One Fatliner bust in the blueprint's style: mineral cranium, dark almond eyes, forehead wave ending in a temple node.
-function being(c, nets, key) {
-  const id = 'b' + key, [lt, md, dk, pore] = MAT[c.mat], r = rng(key * 7919 + c.name.length);
-  const cols = nets.length ? nets.map((n) => COLOR[n]) : ['#9a8a72'];
-  const head = 'M60 16C93 16 108 38 106 61C104 81 90 93 76 99C70 102 50 102 44 99C30 93 16 81 14 61C12 38 27 16 60 16Z';
-  // Pulse: the forehead wave, from the left edge of the head up to the temple node.
-  const [amp, freq, ph] = c.wave, nx = 89, ny = 41;
-  let wave = '';
-  for (let i = 0; i <= 40; i++) {
-    const t = i / 40, x = 13 + t * (nx - 13), y = 55 - t * (55 - ny) + amp * Math.sin(freq * 2 * Math.PI * t + ph) * Math.sin(Math.PI * t);
-    wave += (i ? 'L' : 'M') + P(x) + ' ' + P(y);
-  }
-  // Orbit: extra branches with small nodes, fanning back over the cranium.
-  let orbit = '';
-  for (let i = 0; i < c.orbit; i++) {
-    const a = (-150 + i * 34 + r() * 14) * Math.PI / 180, len = 15 + r() * 14;
-    const ex = nx + Math.cos(a) * len, ey = ny + Math.sin(a) * len * .8, mx = nx + Math.cos(a + .5) * len * .5, my = ny + Math.sin(a + .5) * len * .5;
-    orbit += `<path d="M${nx} ${ny}Q${P(mx)} ${P(my)} ${P(ex)} ${P(ey)}" stroke="${cols[i % cols.length]}" stroke-width=".9" fill="none" opacity=".85"/><circle cx="${P(ex)}" cy="${P(ey)}" r="1.5" fill="#fff" stroke="${cols[i % cols.length]}" stroke-width=".7"/>`;
-  }
-  // Subsurface veins on the chest, one colour per network.
-  let veins = '';
-  cols.forEach((col, k) => {
-    const o = (k - (cols.length - 1) / 2) * 3;
-    veins += `<path d="M${60 + o} 101C${58 + o} 108 ${50 + o} 110 ${42 + o} 120M${60 + o} 101C${62 + o} 109 ${70 + o} 111 ${79 + o} 120M${60 + o} 101L${60 + o} 120" stroke="${col}" stroke-width=".8" fill="none" opacity=".75"/>`;
-  });
-  let pores = '';
-  for (let i = 0; i < 30; i++) {
-    const x = 22 + r() * 76, y = 20 + r() * 62;
-    pores += `<circle cx="${P(x)}" cy="${P(y)}" r="${(.35 + r() * .8).toFixed(2)}" fill="${pore}" opacity="${(.35 + r() * .35).toFixed(2)}"/>`;
-  }
-  let surface = '';
-  if (c.mat === 'gold') surface = `<path d="M30 30L40 38L37 48L48 55M70 22L66 33L76 40L74 50M84 60L94 66M24 62L33 66L30 76" stroke="#c99a2e" stroke-width="1.3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-  if (c.mat === 'marble' || c.mat === 'slate') surface = `<path d="M24 34C38 40 44 30 58 38S80 28 96 40M30 72C40 66 52 76 64 68" stroke="${dk}" stroke-width=".5" fill="none" opacity=".55"/>`;
-  if (c.mat === 'opal') surface = `<ellipse cx="44" cy="36" rx="20" ry="12" fill="#ff9fd0" opacity=".22"/><ellipse cx="78" cy="56" rx="18" ry="14" fill="#8fc3ff" opacity=".25"/><ellipse cx="62" cy="80" rx="16" ry="8" fill="#c7b2ff" opacity=".2"/>`;
-  if (c.mat === 'mossed') surface = `<path d="M22 40C26 28 40 18 56 18C46 24 34 30 30 42Z" fill="#7f8f3a" opacity=".75"/><path d="M76 20C88 22 98 30 102 42C94 36 86 30 76 26Z" fill="#94a24a" opacity=".7"/>`;
-  let bloom = '';
-  if (c.bloom === 'sprig' || c.bloom === 'flower') bloom += `<path d="M44 18C46 10 52 8 56 6M58 16C60 8 66 4 70 4M70 18C74 12 80 12 84 10" stroke="#5f7a2c" stroke-width="1.4" fill="none" stroke-linecap="round"/><circle cx="47" cy="15" r="2.4" fill="#8aa13f"/><circle cx="64" cy="10" r="2.6" fill="#7c9437"/><circle cx="78" cy="14" r="2.2" fill="#8aa13f"/>`;
-  if (c.bloom === 'flower') for (const [x, y] of [[56, 6], [70, 4], [84, 10]]) {
-    let petals = '';
-    for (let k = 0; k < 5; k++) { const a = k * 72 * Math.PI / 180; petals += `<circle cx="${P(x + Math.cos(a) * 2.3)}" cy="${P(y + Math.sin(a) * 2.3)}" r="1.9" fill="#f6b5c9" stroke="#d97c9c" stroke-width=".3"/>`; }
-    bloom += petals + `<circle cx="${x}" cy="${y}" r="1.2" fill="#e8b23c"/>`;
-  }
-  if (c.bloom === 'crystal') bloom = `<g stroke="#7e6aa8" stroke-width=".6" stroke-linejoin="round"><path d="M50 19L53 4L57 18Z" fill="#cdbff0" opacity=".9"/><path d="M57 18L62 0L67 17Z" fill="#e3daf7"/><path d="M66 18L72 6L74 19Z" fill="#c4b4ea" opacity=".9"/></g>`;
-  const eye = { almond: [11.5, 7.2, 22], round: [9.8, 8.6, 14], sleepy: [12, 5.4, 18] }[c.eye];
-  const eyes = [[41, 71, 1], [79, 71, -1]].map(([x, y, s]) => `<g transform="rotate(${s * eye[2]} ${x} ${y})"><ellipse cx="${x}" cy="${y}" rx="${eye[0] + 1.6}" ry="${eye[1] + 1.4}" fill="${dk}" opacity=".35"/><ellipse cx="${x}" cy="${y}" rx="${eye[0]}" ry="${eye[1]}" fill="url(#${id}e)"/></g><circle cx="${x - s * 2.6}" cy="${y - 2.2}" r="1.7" fill="#fff" opacity=".9"/><circle cx="${x + s * 2.4}" cy="${y + 2}" r=".8" fill="#fff" opacity=".6"/>`).join('');
-  const glow = cols.length > 1
-    ? `<path d="${wave}" stroke="${cols[0]}" stroke-width="3.2" fill="none" opacity=".55" transform="translate(0 -1)" filter="url(#${id}g)"/><path d="${wave}" stroke="${cols[1]}" stroke-width="3.2" fill="none" opacity=".55" transform="translate(0 1)" filter="url(#${id}g)"/>`
-    : `<path d="${wave}" stroke="${cols[0]}" stroke-width="3.6" fill="none" opacity=".6" filter="url(#${id}g)"/>`;
-  return `<svg viewBox="0 0 120 120" role="img" aria-label="${esc(c.name)}, a Fatliner">
-    <defs>
-      <radialGradient id="${id}h" cx="38%" cy="30%" r="80%"><stop offset="0" stop-color="${lt}"/><stop offset=".55" stop-color="${md}"/><stop offset="1" stop-color="${dk}"/></radialGradient>
-      <radialGradient id="${id}e" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#4a3a2e"/><stop offset=".6" stop-color="#1e1612"/><stop offset="1" stop-color="#0d0907"/></radialGradient>
-      <radialGradient id="${id}p" cx="50%" cy="45%" r="60%"><stop offset="0" stop-color="#fbf4e3"/><stop offset="1" stop-color="#eadcbc"/></radialGradient>
-      <filter id="${id}g" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="1.6"/></filter>
-      <filter id="${id}n"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="${key}"/><feColorMatrix values="0 0 0 0 .2 0 0 0 0 .14 0 0 0 0 .08 0 0 0 .55 -.18"/><feComposite in2="SourceGraphic" operator="in"/></filter>
-      <clipPath id="${id}c"><circle cx="60" cy="60" r="57"/></clipPath>
-    </defs>
-    <circle cx="60" cy="60" r="58" fill="url(#${id}p)" stroke="#5a4632" stroke-width=".8"/>
-    <g stroke="#5a4632" stroke-width=".35" opacity=".35" fill="none"><circle cx="60" cy="60" r="52"/><path d="M60 3V117M3 60H117"/></g>
-    <g clip-path="url(#${id}c)">
-      <path d="M26 122C28 105 42 97 60 97C78 97 92 105 94 122Z" fill="url(#${id}h)" stroke="#4a3524" stroke-width=".7"/>
-      ${veins}
-      <path d="${head}" fill="url(#${id}h)" stroke="#4a3524" stroke-width=".8"/>
-      <path d="${head}" fill="#000" filter="url(#${id}n)"/>
-      ${surface}${pores}
-      ${eyes}
-      <path d="M56 88Q60 89.6 64 88" stroke="#4a3524" stroke-width=".8" fill="none" stroke-linecap="round" opacity=".7"/>
-      <g class="signal">${glow}<path d="${wave}" stroke="#fff" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".95"/>${orbit}
-        <circle cx="${nx}" cy="${ny}" r="7.5" fill="${cols[cols.length - 1]}" opacity=".45" filter="url(#${id}g)"/>
-        <circle cx="${nx}" cy="${ny}" r="3.9" fill="#fff" stroke="${cols[0]}" stroke-width=".9"/></g>
-      ${bloom}
-    </g>
-  </svg>`;
-}
-
-function since(iso) {
-  const ms = Date.now() - Date.parse(iso);
-  const h = Math.floor(ms / 3600e3), d = Math.floor(h / 24);
-  return d >= 1 ? `${d} d ${h % 24} h` : `${h} h ${Math.floor(ms / 60e3) % 60} min`;
-}
-function netLine(n) {
-  const cls = n.state === 'offline' ? 'off' : n.network;
-  const what = n.state === 'alive' ? `alive · running ${since(n.since)}`
-    : n.state === 'catching-up' ? `catching up · ${Number(n.blocksBehind).toLocaleString('en')} blocks behind`
-    : 'offline at the last check';
-  return `<div><span class="dot ${cls}"></span><b>${NAME[n.network]}</b> <span class="muted">${what}</span></div>`;
-}
-function who(o) {
-  if (!o) return '';
-  const pic = o.pfp ? `<img src="${esc(o.pfp)}" alt="" loading="lazy" referrerpolicy="no-referrer">` : '<span class="avatar"></span>';
-  return `${pic}<span>@${esc(o.username ?? '?')} · FID ${esc(o.fid)}</span>`;
-}
-
-// One line on what keeps it alive: the cost and how full each disk is.
-function body(f) {
-  const s = f.server;
-  if (!s) return '';
-  const disks = (s.live?.disks ?? []).filter((d) => d.name !== 'local').map((d) => `${NAME[d.name] ?? d.name} disk ${Math.round(100 * d.usedMb / (d.usedMb + d.freeMb))}%`);
-  return `<div><span class="dot body"></span><b>Body</b> <span class="muted">1 server · $${s.cost.monthUsd.toFixed(2)}/month${disks.length ? ' · ' + disks.join(' · ') : ''} · <a href="${esc(f.page)}">details</a></span></div>`;
-}
-
-let cards = [];
-function render(status) {
-  const real = status?.fatlines ?? [];
-  cards = [];
-  real.forEach((f, i) => cards.push({ ...(i === 0 ? ASTER : { name: f.ticker, mat: 'ivory', eye: 'almond', wave: [4, 2, i], orbit: 1 }),
-    real: true, ticker: f.ticker, nets: f.nodes.map((n) => n.network), f, rank: i + 1,
-    age: Math.min(...f.nodes.map((n) => Date.parse(n.since))) }));
-  EXAMPLES.forEach((e, i) => cards.push({ ...e, real: false, rank: real.length + i + 1, age: Infinity }));
-  draw();
-
-  const f = real[0];
-  document.getElementById('mine-being').innerHTML = ASTER_IMG;
-  if (f) {
-    document.getElementById('mine-nets').innerHTML = f.nodes.map(netLine).join('')
-      + `<div><span class="dot off"></span><b>Coin</b> <span class="muted">not launched yet</span></div>`
-      + body(f);
-    document.getElementById('mine-who').innerHTML = who(f.owner);
-    if (f.owner?.pfp) document.querySelector('#owner .avatar').outerHTML = `<img src="${esc(f.owner.pfp)}" alt="" referrerpolicy="no-referrer">`;
-  }
-  if (status?.checkedAt) {
-    const m = Math.max(0, Math.round((Date.now() - Date.parse(status.checkedAt)) / 60e3));
-    document.getElementById('checked').textContent = `Nodes checked ${m < 1 ? 'just now' : m + ' min ago'}`;
-  }
-}
-
-let filter = 'all';
-function draw() {
-  const sort = document.getElementById('sort').value;
-  const list = [...cards].sort((a, b) => sort === 'age' ? a.age - b.age || a.rank - b.rank : a.rank - b.rank);
-  document.getElementById('grid').innerHTML = list.map((c) => {
-    const both = c.nets.length === 2;
-    const show = filter === 'all' || (filter === 'both' ? both : c.nets.includes(filter));
-    const nets = c.nets.map((n) => `<span><span class="dot ${n}"></span>${NAME[n]}</span>`).join('');
-    const info = c.real
-      ? `<div class="name">${esc(c.name)} <span class="tag real">Real</span></div>
-         <div class="ticker">$${esc(c.ticker)} · coin not launched yet</div>
-         <div class="muted">running ${since(new Date(c.age).toISOString())}</div>
-         <div class="nets">${nets}</div>
-         <div class="who">${who(c.f.owner)}</div>
-         <a class="open" href="${esc(c.f.page ?? (c.f.coin?.address ? `/base/${c.f.coin.address}` : 'docs/'))}">Open ↗</a>`
-      : `<div class="name">${esc(c.name)} <span class="tag ex">Example</span></div>
-         <div class="ticker">$${esc(c.ticker)} · ${c.cap} cap</div><div class="muted">${c.left} left</div>
-         <div class="nets">${nets}</div>
-         <div class="who"><span class="avatar"></span><span>@owner · FID</span></div>`;
-    return `<article class="card ${c.real ? '' : 'example'}" ${show ? '' : 'hidden'}>
-      <div class="being"><span class="rank">${c.rank}</span>${c.real && c.rank === 1 ? ASTER_IMG.replace('class="aster" ', '') : being(c, c.nets, c.rank)}</div>
-      <div class="info">${info}</div></article>`;
-  }).join('');
-  requestAnimationFrame(links);
-}
-
-// Thin dashed construction lines between neighbouring beings (desktop only).
-function links() {
-  const svg = document.getElementById('links'), box = svg.getBoundingClientRect();
-  const pts = [...document.querySelectorAll('#grid .card:not([hidden]) .being')].map((o) => {
-    const r = o.getBoundingClientRect();
-    return [r.left - box.left + r.width / 2, r.top - box.top + r.height / 2];
-  });
-  let d = '';
-  for (let i = 1; i < pts.length; i++) {
-    const [x1, y1] = pts[i - 1], [x2, y2] = pts[i];
-    d += `M${x1},${y1} C${(x1 + x2) / 2},${y1 + 40} ${(x1 + x2) / 2},${y2 - 40} ${x2},${y2} `;
-  }
-  svg.innerHTML = d ? `<path d="${d}"/>` : '';
-}
-
-document.querySelectorAll('.chip').forEach((b) => b.addEventListener('click', () => {
-  filter = b.dataset.f;
-  document.querySelectorAll('.chip').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-  draw();
-}));
-document.getElementById('sort').addEventListener('change', draw);
 document.querySelectorAll('.copy').forEach((b) => b.addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(document.getElementById(b.dataset.copy).textContent); b.textContent = 'Copied'; }
   catch { b.textContent = 'Select it'; }
   setTimeout(() => { b.textContent = 'Copy'; }, 1600);
 }));
-addEventListener('resize', () => requestAnimationFrame(links));
-
-fetch('status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null).then((s) => {
-  if (!s) document.getElementById('mine-nets').innerHTML = '<div class="muted">Node status unavailable right now.</div>';
-  render(s ?? { fatlines: [] });
-});
+// How many of the 777 places are taken, read from the contract on Base (liveEggs + totalSupply).
+(async () => {
+  try {
+    const d = await (await fetch('https://raw.githubusercontent.com/jpfraneto/fatline/main/smart-contracts/deployments/base.json', { cache: 'no-store' })).json();
+    const call = async (data) => {
+      const r = await fetch('https://base-rpc.publicnode.com', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to: d.Fatliners.address, data }, 'latest'] }) });
+      return Number(BigInt((await r.json()).result));
+    };
+    const [eggs, born] = await Promise.all([call('0x608f885e'), call('0x18160ddd')]);
+    if (Number.isFinite(eggs) && Number.isFinite(born)) {
+      const left = 777 - eggs - born;
+      document.getElementById('count').firstChild.textContent = String(left);
+      document.getElementById('count-label').textContent = `of 777 places open · ${eggs} egg${eggs === 1 ? '' : 's'} warming · ${born} hatched`;
+    }
+  } catch { /* the static 777 stays */ }
+})();
 </script>
 </body>
 </html>
