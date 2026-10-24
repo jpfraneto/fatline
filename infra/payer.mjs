@@ -79,7 +79,7 @@ export async function phoneAccount({ root, say = console.log, page: pageText = {
     metadata: { name: 'Fatline', description: 'Pay for your Farcaster node', url: 'https://fatline.ink', icons: ['https://fatline.ink/img/world/aster.jpg'] },
   });
   const { uri, approval } = await client.connect({
-    optionalNamespaces: { eip155: { chains: [`eip155:${BASE}`], methods: ['eth_signTypedData_v4', 'eth_sendTransaction'], events: ['accountsChanged', 'chainChanged'] } },
+    optionalNamespaces: { eip155: { chains: [`eip155:${BASE}`, 'eip155:1'], methods: ['eth_signTypedData_v4', 'eth_sendTransaction'], events: ['accountsChanged', 'chainChanged'] } },
   });
   const { openWalletPage } = await import('./wallet-page.mjs');
   const page = await openWalletPage({ uri, ...pageText });
@@ -98,7 +98,10 @@ export async function phoneAccount({ root, say = console.log, page: pageText = {
     ...checkedAccount(address, async (args) => {
       say(`  Approve the payment on your phone (${peer})…`);
       page.status(`Approve the payment in ${peer}…`);
-      return client.request({ topic: session.topic, chainId: `eip155:${BASE}`, request: { method: 'eth_signTypedData_v4', params: [address, typedDataJson(args)] } });
+      // Ask on the chain the signature names (Farcaster's KeyAdd says Ethereum, x402 says Base) when the wallet has it.
+      const want = `eip155:${Number(args.domain?.chainId ?? BASE)}`;
+      const chains = session.namespaces.eip155?.chains ?? session.namespaces.eip155?.accounts?.map((a) => a.split(':').slice(0, 2).join(':')) ?? [];
+      return client.request({ topic: session.topic, chainId: chains.includes(want) ? want : `eip155:${BASE}`, request: { method: 'eth_signTypedData_v4', params: [address, typedDataJson(args)] } });
     }, close),
     from: peer,
     /** Sends a transaction from the connected wallet, on Base. Returns its hash once the person approves. */

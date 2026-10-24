@@ -4,6 +4,7 @@ import { $, api, el, showSource, state, store, t } from './lib.js';
 import { settingsPage } from './settings.js';
 import { archivePage, coinPage, leaveLive, nodePage } from './fatline.js';
 import { loadMe } from './post.js';
+import { castButton } from './castbutton.js';
 
 function renderChrome() {
   document.documentElement.lang = state.lang;
@@ -46,6 +47,7 @@ async function boot() {
   const saved = store.get('network', null);
   state.network = state.config.networks.some((n) => n.name === saved) ? saved : state.config.defaultNetwork;
   await loadMe();
+  document.body.append(castButton());
   renderChrome();
   window.addEventListener('hashchange', route);
   route();

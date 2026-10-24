@@ -67,7 +67,7 @@ async function username(node, fid) {
   return res?.data?.userDataBody?.value ?? null;
 }
 
-async function waitForKey(node, fid, key, timeoutMs = 90_000) {
+export async function waitForKey(node, fid, key, timeoutMs = 90_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     const res = await get(node, '/v1/signersByFid', { fid }).catch(() => null);
@@ -75,6 +75,31 @@ async function waitForKey(node, fid, key, timeoutMs = 90_000) {
     await new Promise((r) => setTimeout(r, 2_000));
   }
   return false;
+}
+
+/**
+ * A new app key for `fid`, authorized by its custody account: a local account (from a seed phrase) or a wallet
+ * (WalletConnect), anything with { address, signTypedData }. One EIP-712 signature, no transaction, no gas.
+ */
+export async function buildKeyAdd({ node, fid, custody, networkName }) {
+  const signers = await get(node, '/v1/signersByFid', { fid });
+  const nonce = Number(signers?.currentUserNonce ?? 0) + 1;
+  const privateKey = randomBytes(32);
+  const appSigner = new NobleEd25519Signer(privateKey);
+  const key = (await appSigner.getSignerKey())._unsafeUnwrap();
+  const now = getFarcasterTime()._unsafeUnwrap();
+  const local = { address: custody.address, type: 'local', signTypedData: (args) => custody.signTypedData(args) };
+  const body = await makeKeyAddBody(
+    { fid: BigInt(fid), key, scopes: SCOPES, ttl: TTL_SECONDS, nonce, deadline: now + 60 * 60 },
+    new ViemLocalEip712Signer(local),
+  );
+  if (body.isErr()) throw new Error(`Could not build the key authorization: ${body.error.message}`);
+  const message = (await makeKeyAdd(body.value, { fid, network: FarcasterNetwork.MAINNET }, appSigner))._unsafeUnwrap();
+  const record = {
+    fid, publicKey: hex(key), privateKey: hex(privateKey), scopes: SCOPES.map((s) => MessageType[s]),
+    network: networkName, node: node.url, nonce, addedAt: new Date().toISOString(), state: 'submitted',
+  };
+  return { message, record };
 }
 
 async function add(opts, config) {
@@ -116,26 +141,8 @@ async function add(opts, config) {
   if (opts.fid && Number(opts.fid) !== fid) throw new Error(`This phrase owns FID ${fid}, not ${opts.fid}. Nothing was sent.`);
   console.log(`It owns FID ${fid}${(await username(node, fid)) ? ` (@${await username(node, fid)})` : ''}.`);
 
-  const signers = await get(node, '/v1/signersByFid', { fid });
-  const nonce = Number(signers?.currentUserNonce ?? 0) + 1;
-
-  const privateKey = randomBytes(32);
-  const appSigner = new NobleEd25519Signer(privateKey);
-  const key = (await appSigner.getSignerKey())._unsafeUnwrap();
-  const now = getFarcasterTime()._unsafeUnwrap();
-
-  const body = await makeKeyAddBody(
-    { fid: BigInt(fid), key, scopes: SCOPES, ttl: TTL_SECONDS, nonce, deadline: now + 60 * 60 },
-    new ViemLocalEip712Signer(custody),
-  );
+  const { message, record } = await buildKeyAdd({ node, fid, custody, networkName });
   custody = null; // the custody key is not needed past this point
-  if (body.isErr()) throw new Error(`Could not build the key authorization: ${body.error.message}`);
-  const message = (await makeKeyAdd(body.value, { fid, network: FarcasterNetwork.MAINNET }, appSigner))._unsafeUnwrap();
-
-  const record = {
-    fid, publicKey: hex(key), privateKey: hex(privateKey), scopes: SCOPES.map((s) => MessageType[s]),
-    network: networkName, node: node.url, nonce, addedAt: new Date().toISOString(), state: 'submitted',
-  };
 
   if (opts.dryRun) {
     const check = await sendMessage(node, message, '/v1/validateMessage');

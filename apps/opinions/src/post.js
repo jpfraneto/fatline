@@ -3,7 +3,7 @@
 // Every action shows its real state: sending, then confirmed (read back from the node) or pending.
 import { api, chosenNode, el, state, store, t } from './lib.js';
 
-const CAST_MAX_BYTES = 320;
+const CAST_MAX_BYTES = 1024; // over 320 bytes it goes out as a long cast
 
 export async function loadMe() {
   try { state.me = await api('/api/me'); } catch { state.me = { fid: null, canWrite: false }; }

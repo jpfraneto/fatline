@@ -7,6 +7,7 @@ import { openDb } from './db.mjs';
 import { Network } from './hub.mjs';
 import { VoicesIndex } from './voices.mjs';
 import { useFatlineApp } from './fatline-app.mjs';
+import { WalletLogin } from './login.mjs';
 import { Launchpad } from './launchpad.mjs';
 import { Keeper } from './keeper.mjs';
 import { Writer, loadAppKey } from './writer.mjs';
@@ -58,9 +59,18 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     return fn(writer(body?.network ?? q.get('network'), body?.node ?? q.get('node')), body ?? {});
   };
 
+  // Log in with a wallet (the account's custody address): a QR code, one signature, an app key for this client.
+  const login = new WalletLogin({ config, networks, root: ROOT });
+  const owner = (fn) => (q, m, body, req) => {
+    if (!mayWrite(req)) throw Object.assign(new Error('Logging in is only allowed from this machine, or with its write token.'), { status: 401 });
+    return fn();
+  };
+
   const sel = (q) => ({ name: q.get('network'), node: q.get('node') });
   const routes = [
     ['GET', /^\/api\/fatline$/, () => config.fatlineApp ?? null],
+    ['GET', /^\/api\/login$/, owner(() => login.status())],
+    ['POST', /^\/api\/login$/, owner(() => login.start())],
     ['GET', /^\/api\/health$/, () => ({ ok: true, voices: voices.status(), launchpad: launchpad.status(), keeper: keeper?.status() ?? null })],
     ['GET', /^\/api\/apps$/, () => launchpad.list()],
     ['GET', /^\/api\/apps\/(0x[0-9a-fA-F]{40})$/, async (q, [, address]) => {

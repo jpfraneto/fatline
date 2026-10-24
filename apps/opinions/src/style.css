@@ -324,3 +324,15 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
 .chip.app.off { opacity: 0.55; }
 .chip.app.off > .link:first-child { text-decoration: line-through; }
 .check.small { font-size: 13px; color: var(--muted); }
+
+/* The Cast button: bottom right on every page, and its panel (compose, or log in with a wallet). */
+.castbutton-wrap { position: fixed; right: calc(18px + env(safe-area-inset-right, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 50; display: grid; justify-items: end; gap: 10px; }
+.castbutton { width: 64px; height: 64px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: 15px; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.castbutton:focus-visible { outline: 3px solid var(--cast); outline-offset: 3px; }
+.castpanel { width: min(380px, calc(100vw - 36px)); max-height: min(80vh, 640px); overflow: auto; background: var(--surface); color: var(--text); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; box-shadow: 0 20px 60px rgba(0,0,0,.45); display: grid; gap: 10px; }
+.castpanel-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.castpanel-head .ghost { background: none; border: 0; color: var(--muted); font-size: 22px; cursor: pointer; line-height: 1; }
+.castpanel-qr { background: #fbf6ea; border-radius: 12px; overflow: hidden; }
+.castpanel-qr:empty { display: none; }
+.castpanel .warn { color: var(--warn); }
+.castpanel .small { font-size: 12px; }
