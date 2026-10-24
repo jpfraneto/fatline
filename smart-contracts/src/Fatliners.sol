@@ -23,11 +23,13 @@ interface IFatlineVaults {
 /// hatchery answer? A day is warm when most of its checks pass. After three warm days each attester signs
 /// an EIP-712 Hatch, and anyone can bring the signatures here.
 ///
+/// It all starts from one Fatliner: the genesis Fatliner (Aster, $FATLINE), born when this contract is
+/// deployed, and the server that keeps it alive, the genesis attester. Every other Fatliner hatches.
+///
 /// Attesters are Fatline servers that hatched. When an egg hatches, the server that kept it warm becomes
 /// an attester (its hatchery key and address are part of the Hatch). Nobody adds or removes attesters:
-/// the only way in is three days of a real node, checked by the servers already in. The first server
-/// (the genesis attester, set once at deployment) is the only exception, because the first egg needs
-/// someone to check it. A Hatch needs signatures from REQUIRED attesters, or from all of them while
+/// the only way in is three days of a real node, checked by the servers already in. The genesis server
+/// is the only exception, because the first egg needs someone to check it. A Hatch needs signatures from REQUIRED attesters, or from all of them while
 /// there are fewer.
 ///
 /// The Hatch carries the egg's DNA: a hash of the account's history up to the hour the egg was laid
@@ -43,8 +45,8 @@ interface IFatlineVaults {
 /// Minting is free, and whoever submits it pays the gas, not necessarily the one it is born to.
 /// When all 777 exist, no more can be made.
 ///
-/// Resales: 8% royalty (ERC-2981) to the Fatliner's own vault, as fuel for its node. The vault's
-/// address is known before the vault exists, so royalties are never lost. Marketplaces read ERC-2981
+/// Resales: 8% royalty (ERC-2981) on every Fatliner, to the genesis Fatliner's vault: the system feeds
+/// the one it starts from. The vault's address is known before the vault exists, so royalties are never lost. Marketplaces read ERC-2981
 /// and usually pay it; it is not enforced on transfers, so gifts and moves between your own wallets
 /// stay free.
 contract Fatliners is ERC721, IERC2981, EIP712 {
@@ -71,6 +73,7 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
     }
 
     uint256 public immutable maxSupply;
+    uint256 public immutable genesisFid; // the Fatliner it all starts from; every royalty goes to its vault
     address[] internal _attesters;
     mapping(address => bool) public isAttester;
     mapping(address => string) public urlOf; // where each attester's hatchery answers
@@ -98,18 +101,34 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
     error SoldOut();
     error ZeroAddress();
 
+    /// @param genesis      the genesis server's hatchery key: the first attester
+    /// @param genesisUrl   where its hatchery answers
+    /// @param genesisFid_  the genesis Fatliner, born here to `genesisTo` with `genesisDna` (history up to `genesisLaidAt`)
     constructor(
         uint256 maxSupply_,
         address genesis,
         string memory genesisUrl,
+        uint256 genesisFid_,
+        address genesisTo,
+        bytes32 genesisDna,
+        uint64 genesisLaidAt,
         IFatlineVaults vaults_,
         string memory baseUri_
     ) ERC721("Fatliners", "FATLINER") EIP712("Fatliners", "1") {
-        if (genesis == address(0) || address(vaults_) == address(0)) revert ZeroAddress();
-        _join(genesis, 0, genesisUrl);
+        if (genesis == address(0) || genesisTo == address(0) || address(vaults_) == address(0)) revert ZeroAddress();
         maxSupply = maxSupply_;
         vaults = vaults_;
         baseUri = baseUri_;
+        genesisFid = genesisFid_;
+        totalSupply = 1;
+        dnaOf[genesisFid_] = genesisDna;
+        laidAtOf[genesisFid_] = genesisLaidAt;
+        serverOf[genesisFid_] = genesis;
+        _mint(genesisTo, genesisFid_);
+        linkedFidOf[genesisFid_] = genesisFid_;
+        _join(genesis, genesisFid_, genesisUrl);
+        emit Born(genesisFid_, genesisTo, genesisDna, genesisLaidAt, genesis, 0);
+        emit FidLinked(genesisFid_, genesisFid_, genesisTo);
     }
 
     function _join(address a, uint256 fid, string memory url) internal {
@@ -194,8 +213,9 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
         }
     }
 
-    function royaltyInfo(uint256 fid, uint256 salePrice) external view returns (address, uint256) {
-        return (vaults.predictFatlinerVault(fid), (salePrice * ROYALTY_BPS) / 10_000);
+    /// @notice Every resale pays the genesis Fatliner's vault.
+    function royaltyInfo(uint256, uint256 salePrice) external view returns (address, uint256) {
+        return (vaults.predictFatlinerVault(genesisFid), (salePrice * ROYALTY_BPS) / 10_000);
     }
 
     function tokenURI(uint256 fid) public view override returns (string memory) {

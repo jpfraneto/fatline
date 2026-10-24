@@ -28,6 +28,8 @@ contract FatlinersTest is Test {
     address buyer = makeAddr("buyer");
 
     bytes32 constant DNA = keccak256("anky's history");
+    uint256 constant ASTER = 777777; // the genesis Fatliner in these tests (on Base: FID 18350)
+    address aster = makeAddr("aster's keeper");
     uint64 laidAt;
 
     function setUp() public {
@@ -45,7 +47,7 @@ contract FatlinersTest is Test {
             attesters.push(a);
             keys.push(k);
         }
-        nft = new Fatliners(777, attesters[0], "http://genesis:8791", IFatlineVaults(address(factory)), "https://fatline.ink/fatliners/");
+        nft = new Fatliners(777, attesters[0], "http://genesis:8791", ASTER, aster, keccak256("aster"), laidAt, IFatlineVaults(address(factory)), "https://fatline.ink/fatliners/");
         factory.setFatliners(address(nft));
     }
 
@@ -104,6 +106,16 @@ contract FatlinersTest is Test {
 
     // ------------------------------------------------------------ birth
 
+    function test_TheGenesisFatlinerIsBornAtDeployment_KeptByTheGenesisServer() public view {
+        assertEq(nft.genesisFid(), ASTER);
+        assertEq(nft.ownerOf(ASTER), aster);
+        assertEq(nft.dnaOf(ASTER), keccak256("aster"));
+        assertEq(nft.serverOf(ASTER), attesters[0]);
+        assertEq(nft.fidOfAttester(attesters[0]), ASTER);
+        assertEq(nft.linkedFidOf(ASTER), ASTER);
+        assertEq(nft.totalSupply(), 1);
+    }
+
     function test_TheGenesisServerHatchesTheFirstEgg_AndThatServerJoins() public {
         assertEq(nft.threshold(), 1); // one attester: the genesis server
         address server = makeAddr("anky's server");
@@ -115,7 +127,7 @@ contract FatlinersTest is Test {
         assertEq(nft.dnaOf(18350), DNA);
         assertEq(nft.laidAtOf(18350), laidAt);
         assertEq(nft.serverOf(18350), server);
-        assertEq(nft.totalSupply(), 1);
+        assertEq(nft.totalSupply(), 2); // the genesis Fatliner, then anky
         assertEq(nft.tokenURI(18350), "https://fatline.ink/fatliners/18350");
         assertTrue(nft.isAttester(server)); // the server that kept the egg warm is now an attester
         assertEq(nft.fidOfAttester(server), 18350);
@@ -227,7 +239,7 @@ contract FatlinersTest is Test {
     }
 
     function test_NoMoreThanMaxSupply() public {
-        Fatliners small = new Fatliners(1, attesters[0], "", IFatlineVaults(address(factory)), "");
+        Fatliners small = new Fatliners(2, attesters[0], "", ASTER, aster, keccak256("aster"), laidAt, IFatlineVaults(address(factory)), "");
         Fatliners.Hatch memory a = egg(18350, anky, DNA, attesters[1]);
         small.hatch(a, sigs(small, a, firstN(1)));
         Fatliners.Hatch memory b = egg(3, dwr, keccak256("dwr"), attesters[2]);
@@ -238,9 +250,11 @@ contract FatlinersTest is Test {
 
     // ------------------------------------------------------------ royalties
 
-    function test_Royalty8PercentToTheFatlinersOwnVault() public view {
+    function test_EveryRoyaltyGoesToTheGenesisFatlinersVault() public view {
         (address to, uint256 amount) = nft.royaltyInfo(18350, 1 ether);
-        assertEq(to, factory.predictFatlinerVault(18350));
+        assertEq(to, factory.predictFatlinerVault(ASTER));
+        (address to2,) = nft.royaltyInfo(3, 1 ether);
+        assertEq(to2, to); // the same vault for every Fatliner
         assertEq(amount, 0.08 ether);
         assertTrue(nft.supportsInterface(0x2a55205a)); // ERC-2981
         assertTrue(nft.supportsInterface(0x80ac58cd)); // ERC-721
