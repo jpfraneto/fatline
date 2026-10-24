@@ -6,10 +6,10 @@ import { castComposer, loadMe } from './post.js';
 
 const STEPS = {
   starting: 'Opening a connection…',
-  waiting: 'Scan this with the wallet that owns your Farcaster account (Rainbow, MetaMask, Coinbase Wallet…).',
+  waiting: 'Scan this with your phone: it opens the Farcaster app. Approve there, and this client gets its own key.',
   connected: 'Connected. Looking for your Farcaster account…',
   signing: 'Approve the signature in your wallet. It gives this client a key that can cast, like and follow — never move your account.',
-  submitting: 'Signed. Sending your new key through a node in sync (yours can still be catching up)…',
+  submitting: 'Approved in the Farcaster app. It is adding your key onchain…',
 };
 
 async function loginCall(method) {
@@ -36,8 +36,8 @@ export function castButton() {
   const showLogin = async () => {
     const qr = el('div', { class: 'castpanel-qr' });
     const msg = el('p', { class: 'muted' }, STEPS.starting);
-    panel.replaceChildren(head('Log in with your wallet'), qr, msg,
-      el('p', { class: 'muted small' }, 'No Farcaster app, no relay, no gas: the signature goes from your wallet to this client, and the key to a node in sync (yours, once it has caught up).'));
+    panel.replaceChildren(head('Sign in with Farcaster'), qr, msg,
+      el('p', { class: 'muted small' }, 'No recovery phrase, no other wallet: the Farcaster app shows what you approve and pays for it. The key can cast, like and follow, never move your account.'));
     try {
       let s = await loginCall('POST');
       polling = true;

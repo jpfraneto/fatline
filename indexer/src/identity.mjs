@@ -34,7 +34,7 @@ const hex = (b) => `0x${Buffer.from(b).toString('hex')}`;
 function args() {
   const a = process.argv.slice(2);
   const get = (n) => { const i = a.indexOf(`--${n}`); return i >= 0 ? a[i + 1] : undefined; };
-  return { command: a[0] && !a[0].startsWith('--') ? a[0] : 'add', fid: get('fid'), network: get('network'), seedFile: get('seed-file'), dryRun: a.includes('--dry-run') };
+  return { command: a[0] && !a[0].startsWith('--') ? a[0] : 'add', fid: get('fid'), network: get('network'), seedFile: get('seed-file'), dryRun: a.includes('--dry-run'), phrase: a.includes('--phrase') };
 }
 
 function askHidden(question) {
@@ -111,6 +111,23 @@ async function add(opts, config) {
   if (existing && !opts.dryRun) {
     console.log(`This client already has an app key for FID ${existing.fid} (${existing.publicKey.slice(0, 10)}…).`);
     console.log('To replace it, run fatline identity revoke first.');
+    return;
+  }
+
+  // The default: Sign in with Farcaster. A QR code opens the Farcaster app; you approve; the app adds the key.
+  if (!opts.seedFile && !opts.phrase && !opts.dryRun) {
+    const { startSignIn } = await import('./siwf.mjs');
+    const s = await startSignIn(config);
+    const { showQr } = await import('./qr.mjs');
+    const { openWalletPage } = await import('../../infra/wallet-page.mjs');
+    const page = await openWalletPage({ uri: s.url, title: 'Sign in with Farcaster', detail: 'Scan with your phone\'s camera: it opens the Farcaster app. Approve, and this client gets its own key: it can cast, like and follow, never move your account. The Farcaster app pays; no recovery phrase, no other wallet.' }).catch(() => null);
+    console.log(`\nSign in with Farcaster: scan this with your phone (it opens the Farcaster app)${page ? `, or use the page in your browser (${page.url})` : ''}:\n`);
+    await showQr(s.url);
+    console.log(`\n  Or open this link on your phone: ${s.url}\n  Waiting for your approval in the Farcaster app…`);
+    const record = await s.wait({ onState: (st) => page?.status(st === 'approved' ? 'Approved. Adding the key onchain…' : 'Waiting for your approval in the Farcaster app…') });
+    page?.status(`Done: this client can post as FID ${record.fid}.`, true); page?.close();
+    console.log(`\nDone. This client can now post as FID ${record.fid}. The key is in ${appKeyPath(config.dataDir)} (mode 600).`);
+    console.log('(Prefer your recovery phrase in a hidden prompt instead? fatline identity --phrase)');
     return;
   }
 

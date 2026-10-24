@@ -26,45 +26,19 @@ export class WalletLogin {
     this.state = { step: 'starting' };
     let uriSeen;
     const gotUri = new Promise((r) => (uriSeen = r));
-    const say = (t) => {
-      const m = String(t).match(/(wc:\S+)/);
-      if (m) { this.state = { step: 'waiting', uri: m[1], qr: qrSvg(m[1]) }; uriSeen(); }
-    };
+    const say = (t) => { if (/^link: /.test(String(t))) uriSeen(); }; // run() has put the QR in this.state
     this.run(say).catch((err) => { this.state = { step: 'error', error: String(err.message ?? err).slice(0, 300) }; uriSeen(); });
     await gotUri;
     return this.state;
   }
 
   async run(say) {
-    const { phoneAccount } = await import('../../infra/payer.mjs');
-    process.env.FATLINE_NO_BROWSER = '1'; // the client shows the QR itself
-    const wallet = await phoneAccount({ root: this.root, say, page: { open: false } });
-    try {
-      this.state = { step: 'connected', address: wallet.address };
-      const networkName = this.config.defaultNetwork;
-      const network = this.networks[networkName];
-      // Any node in sync will do: a key can be added before your own node has caught up (it is still being born).
-      let node = await network.node().catch(() => null);
-      if (!node) {
-        const { Network } = await import('./hub.mjs');
-        const relays = { farcaster: [['http://46.225.208.199:3381', 'Fatline master node (not yours)'], ['https://crackle.farcaster.xyz:3381', 'crackle.farcaster.xyz (not yours)']],
-          hypersnap: [['http://46.225.208.199:4381', 'Fatline Hypersnap node (not yours)'], ['https://haatz.quilibrium.com', 'haatz.quilibrium.com (not yours)']] }[networkName] ?? [];
-        node = await new Network(networkName, { nodes: relays.map(([url, label]) => ({ url, label })) }).refresh();
-        if (!node) throw new Error('No node in sync answers right now (yours is still being born). Try again in a minute.');
-      }
-      this.state = { ...this.state, node: node.label ?? node.url };
-      const fid = await fidOfCustody(node, wallet.address);
-      if (!fid) throw new Error(`${wallet.address} doesn't own a Farcaster account. Connect the wallet that does (its custody address). For accounts made in the Farcaster app, that is the app's own wallet: its recovery phrase is in Settings → Advanced.`);
-      this.state = { step: 'signing', address: wallet.address, fid };
-      const { message, record } = await buildKeyAdd({ node, fid, custody: wallet, networkName });
-      saveAppKey(this.config.dataDir, record); // before submitting, so the key is never registered without this machine holding it
-      this.state = { step: 'submitting', address: wallet.address, fid };
-      await sendMessage(node, message);
-      const ok = await waitForKey(node, fid, record.publicKey);
-      saveAppKey(this.config.dataDir, { ...record, state: ok ? 'active' : 'submitted', via: 'wallet', confirmedAt: new Date().toISOString() });
-      this.state = { step: 'done', fid };
-    } finally {
-      await wallet.close?.();
-    }
+    // Sign in with Farcaster: the QR opens the Farcaster app; the app shows what is approved and adds the key.
+    const { startSignIn } = await import('./siwf.mjs');
+    const s = await startSignIn(this.config);
+    say(`link: ${s.url}`);
+    this.state = { step: 'waiting', uri: s.url, qr: qrSvg(s.url), farcaster: true };
+    const record = await s.wait({ onState: (st) => { if (st === 'approved') this.state = { step: 'submitting' }; } });
+    this.state = { step: 'done', fid: record.fid };
   }
 }
