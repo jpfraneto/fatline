@@ -69,7 +69,7 @@ export function hereAccount(state) {
 }
 
 /** Phone: WalletConnect v2. Shows a QR code, waits for the wallet to connect, then sends each payment to it. */
-export async function phoneAccount({ root, say = console.log }) {
+export async function phoneAccount({ root, say = console.log, page: pageText = {} }) {
   const id = projectId(root);
   if (!id) throw new Error('Paying from a phone wallet needs a WalletConnect project ID (free at dashboard.reown.com): set WALLETCONNECT_PROJECT_ID or add "walletConnectProjectId" to fatline.config.json. Or pay with --pay browser.');
   const { SignClient } = await import('@walletconnect/sign-client');
@@ -81,7 +81,9 @@ export async function phoneAccount({ root, say = console.log }) {
   const { uri, approval } = await client.connect({
     optionalNamespaces: { eip155: { chains: [`eip155:${BASE}`], methods: ['eth_signTypedData_v4', 'eth_sendTransaction'], events: ['accountsChanged', 'chainChanged'] } },
   });
-  say('\n  Scan this with your wallet app (or its WalletConnect scanner), then approve the connection:\n');
+  const { openWalletPage } = await import('./wallet-page.mjs');
+  const page = await openWalletPage({ uri, ...pageText });
+  say(`\n  A page with the QR code opened in your browser (${page.url}). Or scan this one:\n`);
   await showQr(uri);
   say(`\n  Or paste this into a desktop wallet: ${uri}\n  Waiting for your wallet…`);
   const session = await approval();
@@ -90,16 +92,19 @@ export async function phoneAccount({ root, say = console.log }) {
   const address = account.split(':')[2];
   const peer = session.peer?.metadata?.name ?? 'your wallet';
   say(`  Connected: ${address} (${peer})`);
-  const close = async () => { await client.disconnect({ topic: session.topic, reason: { code: 6000, message: 'done' } }).catch(() => {}); await client.core.relayer.transportClose().catch(() => {}); };
+  page.status(`Connected: ${address.slice(0, 6)}…${address.slice(-4)} (${peer})`, true);
+  const close = async () => { page.status('Done. You can close this page.', true); page.close(); await client.disconnect({ topic: session.topic, reason: { code: 6000, message: 'done' } }).catch(() => {}); await client.core.relayer.transportClose().catch(() => {}); };
   return {
     ...checkedAccount(address, async (args) => {
       say(`  Approve the payment on your phone (${peer})…`);
+      page.status(`Approve the payment in ${peer}…`);
       return client.request({ topic: session.topic, chainId: `eip155:${BASE}`, request: { method: 'eth_signTypedData_v4', params: [address, typedDataJson(args)] } });
     }, close),
     from: peer,
     /** Sends a transaction from the connected wallet, on Base. Returns its hash once the person approves. */
     async sendTransaction({ to, data, value = 0n }) {
       say(`  Approve the transaction on your phone (${peer})…`);
+      page.status(`Approve the transaction in ${peer}…`);
       return client.request({ topic: session.topic, chainId: `eip155:${BASE}`, request: { method: 'eth_sendTransaction', params: [{ from: address, to, data, value: `0x${BigInt(value).toString(16)}` }] } });
     },
   };
@@ -181,7 +186,7 @@ document.getElementById('go').onclick = async () => {
 </script>`;
 
 /** Picks how to pay: --pay phone|browser|here, else asks. */
-export async function choosePayer({ root, state, how, ask, say = console.log }) {
+export async function choosePayer({ root, state, how, ask, say = console.log, page }) {
   const hasHere = Boolean(localWalletKey(state));
   if (!how) {
     if (!process.stdin.isTTY) how = hasHere ? 'here' : 'browser';
@@ -194,7 +199,7 @@ export async function choosePayer({ root, state, how, ask, say = console.log }) 
       how = { '': 'phone', 1: 'phone', 2: 'browser', 3: 'here' }[a] ?? a;
     }
   }
-  if (how === 'phone') return phoneAccount({ root, say });
+  if (how === 'phone') return phoneAccount({ root, say, page });
   if (how === 'browser') return browserAccount({ say });
   if (how === 'here') return hereAccount(state);
   throw new Error(`Unknown way to pay "${how}". Use --pay phone, --pay browser or --pay here.`);

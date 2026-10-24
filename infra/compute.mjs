@@ -78,7 +78,7 @@ const usdcBalance = (address) => createPublicClient({ chain: base, transport: ht
   .readContract({ address: USDC_BASE, abi: erc20, functionName: 'balanceOf', args: [address] });
 
 /** The wallet that pays: your phone wallet (QR), a browser wallet on this computer, or one made here. Never a pasted key. */
-const payingAccount = (opts) => choosePayer({ root: ROOT, state: STATE, how: opts.pay, ask });
+const payingAccount = (opts) => choosePayer({ root: ROOT, state: STATE, how: opts.pay, ask, page: { title: 'Pay for your node', detail: 'Scan with the wallet that holds your USDC on Base, then approve each payment (server, then disk). Each shows its amount. No ETH needed.' } });
 
 /** Says how paying works, and the balance of this machine's wallet if there is one. */
 async function showPayer() {

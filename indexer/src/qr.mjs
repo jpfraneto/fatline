@@ -87,3 +87,12 @@ export async function showQr(text, { out = process.stdout, indent = '  ', animat
     }
   } finally { out.write('\x1b[0m\x1b[?25h'); }
 }
+
+/** The same code as an SVG (the arch in the middle, the coloured corners), for a page. */
+export function qrSvg(text, { cell = 8 } = {}) {
+  const art = qrArt(text);
+  const rgb = ([r, g, b]) => `rgb(${r},${g},${b})`;
+  const rects = art.cells.filter((c) => c.color !== LIGHT).map((c) => `<rect x="${c.x * cell}" y="${c.y * cell}" width="${cell + 0.5}" height="${cell + 0.5}" fill="${rgb(c.color)}"/>`).join('');
+  const s = art.size * cell;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${s} ${s}" width="100%" role="img" aria-label="QR code"><rect width="${s}" height="${s}" fill="${rgb(LIGHT)}"/>${rects}</svg>`;
+}
