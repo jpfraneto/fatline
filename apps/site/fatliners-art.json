@@ -1,9 +1,7 @@
 {
-  "note": "The art each token's metadata points to, on Arweave. The egg: an ivory marble egg coming alive under the Farcaster arch (Seedance 2.5 on Sume, 2026-10-24). A being, once its art is made: beings[fid].",
-  "egg": {
-    "image": "https://arweave.net/s47jaPVFJmH7nvPla-ioIjDGLHN59UefLRCS6Rziv48",
-    "animation_url": "https://arweave.net/ArigyEpScxFVk5oTyRoowrWbQwrSVZiGvtvWnSbc8Bc"
-  },
+  "note": "The art each token's metadata points to, on Arweave. An egg: the egg coming alive in the moss under the Farcaster arch, its life force growing like mycelium (Seedance 2.5 on Sume, 2026-10-24). Once eggs carry their stone, eggs[stone] picks that stone's egg. A being, once its art is made: beings[fid].",
+  "egg": { "image": "https://arweave.net/mSdZFwP24DiFfz5n_CVxBOzrB7NUdj0BpxwBw1Q1Rcw" },
+  "eggs": {},
   "beings": {
     "18350": { "image": "https://arweave.net/9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM" }
   }

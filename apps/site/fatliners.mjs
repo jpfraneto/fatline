@@ -78,7 +78,7 @@ for (const [fid, t] of tokens) {
     meta = {
       name: `Egg #${fid}`,
       description: `The egg of Farcaster account #${fid}. It holds the account's history (its DNA) and cannot be moved. A Fatline server keeps it warm; after three warm days it hatches into one of the 777 Fatliners. https://fatline.ink/manifesto.html`,
-      image: art.egg.image, animation_url: art.egg.animation_url,
+      ...(art.eggs?.[t.stone] ?? art.egg),
       external_url: 'https://fatline.ink/manifesto.html',
       attributes: [{ trait_type: 'Stage', value: 'Egg' }, ...attrs],
     };
