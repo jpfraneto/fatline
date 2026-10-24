@@ -14,7 +14,7 @@ const EGGS = {
   moss: 'tn1sJo8F2BLMkwf1VwAyS1nQ7pHX9ET9lFe8dfrEmag', gold: '3SXU46X5qj_uWYJ5n_R8TATUHDXd9XM9WMLWmX2kC08',
   opal: '8tZep0THiF6aYGlOv8LxxJs9xCbvwl6liWJvkBWApcw',
 };
-const BEINGS = { 18350: '9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM' };
+const BEINGS = { 16098: '9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM' };
 const NET = { farcaster: 'Snapchain', hypersnap: 'Hypersnap' };
 
 const n = (x) => Number(x).toLocaleString('en-US');

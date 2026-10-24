@@ -1,12 +1,13 @@
-// Aster's hatching, for the home page: the site is https and the hatchery speaks plain http, so the site's
+// The genesis egg's hatching (Aster), for the home page: the site is https and the hatchery speaks plain http, so the site's
 // workflow asks it every 15 minutes and writes hatching.json. Usage: node apps/site/hatching.mjs [out-file]
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const out = process.argv[2] ?? join(dirname(fileURLToPath(import.meta.url)), 'hatching.json');
 const HATCHERY = 'http://46.225.208.199:8791';
-const FID = 18350;
+// The genesis egg (Aster), from the one deployment.
+const FID = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../smart-contracts/deployments/base.json'), 'utf8')).Fatliners.genesis.fid;
 try {
   const res = await fetch(`${HATCHERY}/eggs/${FID}`, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
