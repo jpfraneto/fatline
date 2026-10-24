@@ -1,16 +1,20 @@
 {
-  "name": "Aster Fatline",
-  "description": "Aster, the first Fatliner. One of the 777 Fatliners: it hatched from the egg of Farcaster account #18350 after a Fatline node kept it warm for three days. Its surname, FATLINE, was read from that account's history and is the ticker of its coin. https://fatline.ink/f/FATLINE",
-  "image": "https://arweave.net/9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM",
+  "name": "Aster Fatline · egg",
+  "description": "This is Aster Fatline, the first egg. The egg of Farcaster account #18350, made of the stone its history earned (gold). A Fatline node keeps it warm; after three warm days it hatches into one of the 777 Fatliners. If the node stops, the egg dies. https://fatline.ink",
+  "image": "https://arweave.net/3SXU46X5qj_uWYJ5n_R8TATUHDXd9XM9WMLWmX2kC08",
   "external_url": "https://fatline.ink/f/FATLINE",
   "attributes": [
     {
       "trait_type": "Stage",
-      "value": "Fatliner"
+      "value": "Egg"
     },
     {
       "trait_type": "Surname",
       "value": "FATLINE"
+    },
+    {
+      "trait_type": "Stone",
+      "value": "gold"
     },
     {
       "trait_type": "State",
