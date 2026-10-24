@@ -13,6 +13,7 @@ import { Keeper } from './keeper.mjs';
 import { Writer, loadAppKey } from './writer.mjs';
 import { attesterList, hatcheryConfig } from './hatchery-run.mjs';
 import { NodeMonitor } from './nodes.mjs';
+import { makeCockpit } from './cockpit.mjs';
 import { Coins } from './coin.mjs';
 import { Archive, TYPES as ARCHIVE_TYPES } from './archive.mjs';
 import { timingSafeEqual } from 'node:crypto';
@@ -66,8 +67,11 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     return fn();
   };
 
+  const cockpit = makeCockpit({ config, networks, api });
   const sel = (q) => ({ name: q.get('network'), node: q.get('node') });
   const routes = [
+    // The cockpit: you, your nodes, your egg or Fatliner, and its hatching, in one answer (the client's home).
+    ['GET', /^\/api\/cockpit$/, () => cockpit()],
     ['GET', /^\/api\/fatline$/, () => config.fatlineApp ?? null],
     ['GET', /^\/api\/login$/, owner(() => login.status())],
     ['POST', /^\/api\/login$/, owner(() => login.start())],

@@ -1,6 +1,6 @@
 {
-  "name": "Aster FATLINE",
-  "description": "The genesis Fatliner, the one that starts it all: Farcaster account #18350, born when the Fatliners contract was deployed. Every resale of any Fatliner pays its vault. Its surname, FATLINE, was read from its DNA and is the ticker of the first coin. https://fatline.ink/f/FATLINE",
+  "name": "Aster Fatline",
+  "description": "Aster, the first Fatliner. One of the 777 Fatliners: it hatched from the egg of Farcaster account #18350 after a Fatline node kept it warm for three days. Its surname, FATLINE, was read from that account's history and is the ticker of its coin. https://fatline.ink/f/FATLINE",
   "image": "https://arweave.net/9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM",
   "external_url": "https://fatline.ink/f/FATLINE",
   "attributes": [
@@ -11,6 +11,10 @@
     {
       "trait_type": "Surname",
       "value": "FATLINE"
+    },
+    {
+      "trait_type": "State",
+      "value": "Awake"
     },
     {
       "trait_type": "FID",

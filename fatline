@@ -32,6 +32,7 @@ Setup (in this order on a new machine):
   fatline setup                 Guided: every step below, one at a time; stop anywhere, run again to continue
                                      --plan shows where you are and the command for each step
   fatline doctor                Check this machine and the networks; recommends full, light or rent
+  fatline update                Get the latest Fatline (git pull), reinstall and rebuild; then restart your client
   fatline init                  Choose the default network (Farcaster or Hypersnap)
   fatline compute [--quote]     Rent a machine that can hold a node, by the day, in USDC on Base (x402, AgentMetal,
                                      ~11 USDC/day). You approve with your own wallet: phone (QR) or browser.
@@ -90,6 +91,27 @@ Contracts (Foundry):
   fatline contracts deploy      Deploy Voices + AppFactory to Base (asks for the key; set BASE_RPC_URL)
   fatline contracts split <addressA> <addressB>     Deploy a 50/50 PrizeSplit to Base
 EOF
+}
+
+cmd_update() { # the latest Fatline: pull, reinstall what changed, rebuild the client
+  need_node
+  command -v git >/dev/null || fail "git is required to update."
+  [ -d "$ROOT/.git" ] || fail "$ROOT is not a git copy of Fatline. Reinstall: curl -fsSL https://fatline.ink/install.sh | sh"
+  local before; before=$(git -C "$ROOT" rev-parse --short HEAD)
+  bold "Updating Fatline in $ROOT"
+  git -C "$ROOT" pull --ff-only --quiet || fail "Couldn't update: this copy has local changes (git -C $ROOT status). Keep them with git stash, then run fatline update again."
+  local after; after=$(git -C "$ROOT" rev-parse --short HEAD)
+  install indexer
+  install infra
+  install apps/opinions
+  bold "Building the client"
+  (cd "$ROOT/apps/opinions" && npm run build --silent)
+  if [ "$before" = "$after" ]; then echo "Already up to date ($after)."; else echo "Updated $before -> $after:"; git -C "$ROOT" log --oneline --no-decorate "$before..$after" | head -15 | sed 's/^/  /'; fi
+  echo
+  echo "If your client is running, restart it: stop it (Ctrl+C) and run fatline client. Then open http://localhost:8787"
+  if command -v systemctl >/dev/null && systemctl is-active --quiet fatline-hatchery 2>/dev/null; then
+    echo "This machine runs a hatchery: restarting it."; systemctl restart fatline-hatchery || true
+  fi
 }
 
 cmd_doctor() { need_node; install infra; node "$ROOT/infra/doctor.mjs" "$@"; }
@@ -338,6 +360,6 @@ cmd_contracts() {
 command="${1:-help}"; shift || true
 case "$command" in
   help|-h|--help) cmd_help ;;
-  doctor|init|node|up|client|connect|dashboard|worker|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup|egg|hatch|hatchery|coin) "cmd_$command" "$@" ;;
+  doctor|update|init|node|up|client|connect|dashboard|worker|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup|egg|hatch|hatchery|coin) "cmd_$command" "$@" ;;
   *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
 esac

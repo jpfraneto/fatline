@@ -258,5 +258,5 @@ export function launchPage() {
   el('details', {}, el('summary', {}, t('advanced')), field('ownerLabel', f.owner), field('keeperLabel', f.keeper), field('billing', f.billing), field('nodeLabel', f.node)),
   el('p', { class: 'muted small' }, t('oneTx')),
   button, status);
-  main.replaceChildren(el('a', { href: '#/', class: 'back' }, t('back')), el('h1', { class: 'app-title' }, t('launch')), form);
+  main.replaceChildren(el('a', { href: '#/apps', class: 'back' }, t('back')), el('h1', { class: 'app-title' }, t('launch')), form);
 }

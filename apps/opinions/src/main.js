@@ -5,6 +5,7 @@ import { settingsPage } from './settings.js';
 import { archivePage, coinPage, leaveLive, nodePage } from './fatline.js';
 import { loadMe } from './post.js';
 import { castButton } from './castbutton.js';
+import { cockpitPage, leaveCockpit } from './cockpit.js';
 
 function renderChrome() {
   document.documentElement.lang = state.lang;
@@ -16,11 +17,12 @@ const fail = (err) => $('#main').replaceChildren(el('p', { class: 'warn' }, err.
 
 function route() {
   const hash = location.hash.slice(1) || '/';
-  const tab = hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'people' : hash.startsWith('/settings') ? 'settings' : 'apps';
+  const tab = hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'people' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') ? 'apps' : 'home';
   document.querySelectorAll('#tabs a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.tab === tab)));
   if (tab !== 'voices' && tab !== 'people') showSource(null);
   window.scrollTo(0, 0);
   leaveLive();
+  leaveCockpit();
   $('#main').classList.remove('fatline-page');
 
   // The canonical page of a coin (or of a coinless app's vault): #/coin/<chainId>/<address>.
@@ -39,7 +41,8 @@ function route() {
   if (hash.startsWith('/voices')) return feedPage({ route }).catch(fail);
   if (hash.startsWith('/people')) return peoplePage({ route });
   if (hash.startsWith('/settings')) return settingsPage({ onChange: () => { renderChrome(); route(); } }).catch(fail);
-  return appsPage().catch(fail);
+  if (hash.startsWith('/apps')) return appsPage().catch(fail);
+  return cockpitPage().catch(fail);
 }
 
 async function boot() {
