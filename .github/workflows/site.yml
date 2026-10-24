@@ -1,6 +1,7 @@
 # Publishes apps/site to GitHub Pages at https://fatline.ink: the home page (the Fatline board) and the
 # tutorial at /docs. Every 15 minutes it also checks the real Fatlines' nodes into status.json, because the
-# page is https and the nodes speak plain http.
+# page is https and the nodes speak plain http. And it writes each Fatliner's and each egg's token metadata from
+# the contract's events (apps/site/fatliners.mjs).
 name: site
 on:
   push:
@@ -29,6 +30,9 @@ jobs:
           node-version: 22
       - name: Check the nodes
         run: node apps/site/status.mjs apps/site/status.json
+      - name: Token metadata (tokenURI = fatline.ink/fatliners/<fid>)
+        continue-on-error: true # if Base can't be read, the committed files stay
+        run: node apps/site/fatliners.mjs apps/site/fatliners
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

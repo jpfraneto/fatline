@@ -1,0 +1,25 @@
+{
+  "name": "Aster FATLINE",
+  "description": "The genesis Fatliner, the one that starts it all: Farcaster account #18350, born when the Fatliners contract was deployed. Every resale of any Fatliner pays its vault. Its surname, FATLINE, was read from its DNA and is the ticker of the first coin. https://fatline.ink/f/FATLINE",
+  "image": "https://arweave.net/9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM",
+  "external_url": "https://fatline.ink/f/FATLINE",
+  "attributes": [
+    {
+      "trait_type": "Stage",
+      "value": "Fatliner"
+    },
+    {
+      "trait_type": "Surname",
+      "value": "FATLINE"
+    },
+    {
+      "trait_type": "FID",
+      "value": 18350,
+      "display_type": "number"
+    },
+    {
+      "trait_type": "DNA",
+      "value": "0xde5d5dfabe29f7e02bb28a37b3579b078c616c95b255a1b86b63008e246bb904"
+    }
+  ]
+}
