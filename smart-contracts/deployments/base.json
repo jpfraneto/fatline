@@ -74,5 +74,13 @@
   "address": "0x532CFBF63CCd4FcD34445E0473C798F2e310F896",
   "tx": "0x11cde94dc7df99eee80af464decc4da67d61ac7cf5fafb2c12daec3e948e7643",
   "note": "A long-posts contract any Fatline can choose as its app (setApp, once, while its egg hatches)."
+ },
+ "appAccount": {
+  "fid": 3356653,
+  "custody": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
+  "recovery": "0xf2fe4dd9a86ecafe22424bfb6085036bca7835a8",
+  "registeredTx": "0x95a5901b5fc78cf64444987cbd9ff5d9e35abf044c3170f60c82b30f318639e0",
+  "chain": "Optimism",
+  "note": "Fatline's Farcaster app account: it signs Sign in with Farcaster key requests (the genesis server, POST /signer-request)."
  }
 }
