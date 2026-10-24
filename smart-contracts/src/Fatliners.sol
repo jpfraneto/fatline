@@ -25,7 +25,7 @@ pragma solidity ^0.8.28;
 //
 // You are your FID.
 //
-// [ Aster, #18350, the first. Born on Base, 24 October 2026. ]
+// [ Aster, #16098, the first. Born on Base, 24 October 2026. ]
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
