@@ -6,8 +6,11 @@
 //
 // A check passes when the egg's node:
 //   1. answers /v1/info quickly,
-//   2. is in sync: every user shard within MAX_LAG_BLOCKS of the attester's node,
-//   3. holds real data: returns two messages the attester picked at random from its own node, by hash,
+//   2. is in sync (every user shard within MAX_LAG_BLOCKS of the attester's node), or is catching up: read again
+//      SYNC_PROBE_MS later, every lagging shard is closer to the attester's than before. Warmth starts the hour the
+//      node starts syncing, not when it is done.
+//   3. holds real data: returns two messages the attester picked at random from its own node, by hash
+//      (skipped while it catches up: it can't hold the newest messages yet),
 //   4. runs a hatchery that answers with the key the egg names (that server becomes an attester at hatching).
 // This cannot prove the node isn't forwarding to someone else's node, but one machine can warm only one
 // egg, and machines that already host an attester, and the well-known public nodes, are refused.
@@ -19,6 +22,7 @@ import {
 } from './egg.mjs';
 
 export const MAX_LAG_BLOCKS = 600; // ~10 minutes of blocks
+export const SYNC_PROBE_MS = 15_000; // how long to wait before reading a lagging node again
 const FC_EPOCH_S = 1_609_459_200; // Farcaster timestamps count seconds from 2021-01-01
 const SETTLED_S = 30 * 60; // challenge messages are at least this old, so every synced node has them
 
@@ -35,7 +39,7 @@ export class Hatchery {
    * @param listAttesters async () => [{ address, url }]: every attester, from the contract
    */
   constructor({ config, privateKey, contract, reference, dataDir, computeDna, listAttesters = async () => [], isBorn = async () => false, fetchImpl = fetch, now = () => Date.now(),
-    dayMs = DAY_MS, checkEveryMs = CHECK_EVERY_MS, random = Math.random, log = console.log }) {
+    dayMs = DAY_MS, checkEveryMs = CHECK_EVERY_MS, random = Math.random, log = console.log, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
     this.config = config;
     this.account = privateKeyToAccount(privateKey);
     this.contract = contract;
@@ -49,6 +53,7 @@ export class Hatchery {
     this.dayMs = dayMs;
     this.checkEveryMs = checkEveryMs;
     this.random = random;
+    this.sleep = sleep;
     this.log = (m) => log(`[hatchery] ${m}`);
     this.state = existsSync(this.file) ? JSON.parse(readFileSync(this.file, 'utf8')) : { eggs: {} };
     this.busy = new Set();
@@ -182,11 +187,21 @@ export class Hatchery {
     if (!theirs?.ok) return { at, ok: false, reason: `no answer from /v1/info (${theirs?.error ?? `HTTP ${theirs?.status}`})` };
     const heights = (b) => Object.fromEntries((b?.shardInfos ?? []).filter((s) => Number(s.shardId) > 0).map((s) => [s.shardId, Number(s.maxHeight)]));
     const want = heights(mine.body), got = heights(theirs.body);
-    for (const [shard, h] of Object.entries(want)) {
-      if (!(shard in got)) return { at, ok: false, reason: `shard ${shard} is missing` };
-      if (h - got[shard] > MAX_LAG_BLOCKS) return { at, ok: false, reason: `shard ${shard} is ${h - got[shard]} blocks behind` };
+    for (const shard of Object.keys(want)) if (!(shard in got)) return { at, ok: false, reason: `shard ${shard} is missing` };
+    const lagging = Object.keys(want).filter((shard) => want[shard] - got[shard] > MAX_LAG_BLOCKS);
+    let behind = 0;
+    if (lagging.length) {
+      // Behind: it counts if it is catching up. Read both nodes again a little later; every lagging shard must be closer.
+      await this.sleep(SYNC_PROBE_MS);
+      const [mine2, theirs2] = await Promise.all([this.json(`${ref}/v1/info`, 15_000).catch(() => null), this.json(`${node}/v1/info`).catch(() => null)]);
+      const want2 = heights(mine2?.body), got2 = heights(theirs2?.body);
+      for (const shard of lagging) {
+        const before = want[shard] - got[shard], after = want2[shard] - got2[shard];
+        if (!(after < before)) return { at, ok: false, reason: `shard ${shard} is ${before} blocks behind and not catching up` };
+        behind = Math.max(behind, after);
+      }
     }
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < 2 && !behind; i++) {
       const m = await this.pick(ref);
       if (!m) return { at, ok: null, reason: 'the attester could not pick a message to ask for; this hour does not count' };
       const r = await this.json(`${node}/v1/castById?fid=${m.fid}&hash=${m.hash}`, 5_000).catch(() => null);
@@ -195,7 +210,7 @@ export class Hatchery {
     const h = await this.json(`${hatchery}/`).catch(() => null);
     if (!h?.ok) return { at, ok: false, reason: `its hatchery did not answer at ${hatchery}` };
     if (String(h.body?.attester).toLowerCase() !== server) return { at, ok: false, reason: `its hatchery answers with key ${h.body?.attester}, not ${server}` };
-    return { at, ok: true, ms: theirs.ms };
+    return { at, ok: true, ms: theirs.ms, ...(behind ? { syncing: true, behind } : {}) };
   }
 
   /** Checks every egg that is due, then signs the ones that are ready. */

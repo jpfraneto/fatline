@@ -193,7 +193,7 @@ function steps(s) {
   const nodePaths = {
     sync: {
       title: 'Wait until your node is in sync',
-      what: 'Checks your node every minute until every shard is a few blocks behind or less. It can take ~6 hours after the snapshot. You can stop and come back: run fatline setup again.',
+      what: 'Checks your node every minute until every shard is a few blocks behind or less. Our last run: 3.5 hours from paying to in sync. Your client already works meanwhile, and your egg is already warming. You can stop and come back: run fatline setup again.',
       cost: 'time only',
       cmd: 'fatline status',
       run: async () => {
@@ -212,7 +212,7 @@ function steps(s) {
   const egg = {
     egg: {
       title: 'Lay your egg: a Fatliner hatches after three warm days',
-      what: 'Puts a hatchery next to your node (a small service with its own key), gives this client an app key if it has none (fatline identity: your seed phrase in a hidden prompt, here, never saved), then lays your egg, signed with that key. Servers that already hatched check your node every hour; after three warm days your Fatliner is born to you, free, and your server becomes one of them. Skip it if you only want the node.',
+      what: 'Puts a hatchery next to your node (a small service with its own key), gives this client an app key if it has none (fatline identity: your seed phrase in a hidden prompt, here, never saved), then lays your egg, signed with that key. Lay it now, while the node syncs: warmth counts from the hour the node starts catching up. Servers that already hatched check your node every hour; after three warm days your Fatliner is born to you, free, and your server becomes one of them. Skip it if you only want the node.',
       cost: 'free; but your server must keep running those days (that is what you pay for)',
       cmd: 'fatline hatchery install && fatline identity && fatline egg lay',
       run: () => fatline('hatchery', 'install')
@@ -254,7 +254,7 @@ function steps(s) {
   };
   const kind = s.path === 'rent' ? 'cloud' : s.path; // 'rent' was the old name of cloud
   const path = kind === 'local' ? { ...local, ...nodePaths } : kind === 'light' ? light
-    : { ...({ cloud, hetzner, vps }[kind] ?? cloud), ...remote, ...nodePaths, ...egg };
+    : { ...({ cloud, hetzner, vps }[kind] ?? cloud), ...remote, ...egg, ...nodePaths };
   return Object.entries({ ...common, ...path, ...end }).map(([id, x]) => ({ id, ...x }));
 }
 

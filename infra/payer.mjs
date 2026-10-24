@@ -2,7 +2,8 @@
 //
 //   phone    your own wallet app (MetaMask, Rainbow, Coinbase Wallet, Trust, …): scan a QR code (WalletConnect),
 //            approve the connection, then approve each payment on the phone. Needs a WalletConnect project ID
-//            (free, dashboard.reown.com): WALLETCONNECT_PROJECT_ID or "walletConnectProjectId" in fatline.config.json.
+//            Fatline's own project ID is built in; WALLETCONNECT_PROJECT_ID or "walletConnectProjectId" in
+//            fatline.config.json replaces it (free at dashboard.reown.com).
 //   browser  a wallet extension in a browser on this computer (MetaMask, Rabby, Coinbase Wallet, …): a page opens on
 //            localhost, you connect and approve each payment there. No third party at all.
 //   here     a wallet made on this machine (fatline compute wallet, or a worker: fatline worker new). You send it
@@ -18,6 +19,8 @@ import { getAddress, verifyTypedData } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 
 const BASE = 8453;
+/** Fatline's WalletConnect (Reown) project ID. Public by design: it only identifies the app to the relay. */
+export const FATLINE_PROJECT_ID = '5a5650980fe997fdbb17c6242c184713';
 
 export function localWalletKey(state) {
   if (process.env.X402_PRIVATE_KEY) return { from: 'X402_PRIVATE_KEY', key: process.env.X402_PRIVATE_KEY };
@@ -32,7 +35,7 @@ export function projectId(root) {
   for (const f of ['fatline.config.json', 'fatline.config.example.json']) {
     try { const id = JSON.parse(readFileSync(join(root, f), 'utf8')).walletConnectProjectId; if (id) return id; } catch {}
   }
-  return null;
+  return FATLINE_PROJECT_ID;
 }
 
 /** viem's typed-data arguments → the JSON a wallet's eth_signTypedData_v4 expects (with EIP712Domain, no bigints). */
@@ -171,7 +174,7 @@ export async function choosePayer({ root, state, how, ask, say = console.log }) 
     if (!process.stdin.isTTY) how = hasHere ? 'here' : 'browser';
     else {
       say(`\n  How do you want to pay?
-    1  your phone wallet: scan a QR code (WalletConnect)${projectId(root) ? '' : ' — needs a WalletConnect project ID first'}
+    1  your phone wallet: scan a QR code (WalletConnect)
     2  a wallet extension in a browser on this computer
     3  ${hasHere ? `the wallet on this machine (${localWalletKey(state).from})` : 'a wallet made here (fatline compute wallet first, then send it USDC)'}`);
       const a = await ask('  1, 2 or 3 (1): ');

@@ -13,11 +13,11 @@ Source of truth for every command: the repository's `README.md` and `fatline hel
 
 Tell them how it works, in a few lines: **a Fatliner hatches from an egg that their own node keeps warm** (live on Base since 2026-10-24). Any account can take an egg; only 777 hatch, the first 777 to keep a node alive. Nobody keeps a list. Free. The steps:
 
-1. Their own node, on a server reachable from the internet (the setup below: cloud, hetzner or vps; not light, not local behind a home router). Wait until it is in sync (`fatline status`).
+1. Their own node, on a server reachable from the internet (the setup below: cloud, hetzner or vps; not light, not local behind a home router). **Don't wait for sync**: as soon as the node answers, do steps 2–4. Warmth counts from the hour the node starts catching up.
 2. `fatline hatchery install`: a small service next to their node, with a key of its own (no money, no question).
 3. `fatline identity`: **they run it in their own terminal** (it asks for their seed phrase, hidden; rule 2).
 4. `fatline egg lay`: signs the egg with the app key from step 3 (no seed phrase, nothing to approve). Once the servers have read their history, the egg goes onchain by itself (a server pays the gas): a token with their FID as its id, held by their custody address unless they say otherwise (`--to 0x…`: ask them). Eggs can't be sold or moved.
-5. Keep the node alive. Show them `fatline egg` from time to time: every hour the servers that already hatched check theirs; a day is warm at 18 of 24 checks; three warm days and it hatches. A cold day doesn't reset anything.
+5. Keep the node alive. Show them `fatline egg` from time to time: every hour the servers that already hatched check theirs (in sync, or catching up: closer to the tip than a few seconds before); a day is warm at 18 of 24 checks; three warm days and it hatches, so the server needs at least three paid days (`fatline compute renew --days 2` after the first). A cold day doesn't reset anything.
 6. `fatline hatch`: the egg becomes their Fatliner, free, with a surname read from its DNA. Their server becomes an attester.
 7. Later, only if they want: `fatline coin launch` simulates their Fatliner's coin (ticker = its surname, paired with USDC, 100% of fees to its vault). Sending it needs their own signature (`--go --seed-file`, a file they make themselves; never ask for the phrase) and costs a little ETH. One coin per Fatliner; $FATLINE launches first.
 
@@ -76,7 +76,7 @@ A worker is a node keeper with no Farcaster account: `fatline worker new` makes 
 ### 3. (cloud) Their wallet
 They need ~12 USDC **on Base** in a wallet they already use (MetaMask, Rainbow, Rabby, Coinbase Wallet, Trust…). No ETH needed: payments are signatures. **Never ask for a key or a phrase, and never suggest pasting one.** They approve in their own wallet:
 - `--pay browser`: opens a page on localhost in their browser; they connect a wallet extension and approve there. Works from your shell.
-- `--pay phone`: draws a WalletConnect QR code in the terminal; they scan it with their wallet app. Needs a WalletConnect project ID (`WALLETCONNECT_PROJECT_ID` or `walletConnectProjectId` in fatline.config.json). Best when they run the command in their own terminal, where they can see the code.
+- `--pay phone`: draws a WalletConnect QR code in the terminal; they scan it with their wallet app. Works out of the box: Fatline's WalletConnect project ID is built in, so there is nothing to set up or ask for. Best when they run the command in their own terminal, where they can see the code.
 - `--pay here`: a wallet made on this machine (`fatline compute wallet`, or a worker's), funded by them. It signs by itself.
 
 ### 4. (cloud) The price, then their yes, then rent
@@ -94,7 +94,7 @@ Tell them to approve two payments in their wallet (server, then disk). It rents 
 **(vps)** `fatline compute vps root@<ip>`. If the server doesn't know Fatline's SSH key yet, ssh asks for the server's password **in its own prompt**: the person runs that one in their own terminal.
 
 ### 5. Install the node
-- cloud, hetzner, vps: `fatline node snapchain` (or `hypersnap`). It copies the setup to the server and streams the ~400 GB snapshot. It prints progress and waits until the node answers (1–3 hours). If your shell has a time limit, run it in the background and check later; re-running the same command just follows the setup again.
+- cloud, hetzner, vps: `fatline node snapchain` (or `hypersnap`). It copies the setup to the server and streams the ~400 GB snapshot. It prints progress and waits until the node answers (our last run: about 1.5 hours). If your shell has a time limit, run it in the background and check later; re-running the same command just follows the setup again.
 - local: `fatline node snapchain --local`. It downloads the official bootstrap script and asks before running it: show the person the path and the sha256 it prints, and get their yes. It needs Docker running.
 
 Don't put both networks on one rented server unless it has the disk for both (the command refuses by default).
@@ -105,7 +105,7 @@ Healthy means every shard is a few blocks behind or less. For a rented node the 
 curl -s http://<ipv4>:3381/v1/info    # shardInfos[].blockDelay: small numbers = in sync
 fatline status                       # for a node on this machine, and the client
 ```
-Catching up can take ~6 hours. Check every 30–60 minutes, not constantly.
+Catching up took about 2 hours on our last run (3.5 hours from paying to in sync). The client works and the egg warms meanwhile. Check every 30 minutes, not constantly.
 
 ### 7. (light) Instead of 5–6
 ```sh

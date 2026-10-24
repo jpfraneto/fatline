@@ -15,6 +15,7 @@ const REF = 'http://ref.test:3381';
 const GOOD = 'http://egg.test:3381';
 const STALE = 'http://stale.test:3381';
 const LIAR = 'http://liar.test:3381';
+const SYNCING = 'http://syncing.test:3381'; // far behind, but closer every time it is read
 const SERVER = '0x00000000000000000000000000000000000000aa'; // the egg server's hatchery key
 const HATCH = 'http://egg.test:8791';
 const FC_EPOCH_S = 1_609_459_200;
@@ -31,6 +32,7 @@ function fakeNet({ signers, now }) {
   const cast = (fid) => ({ hash: `0x${fid.toString(16).padStart(40, '0')}`, data: { type: 'MESSAGE_TYPE_CAST_ADD', timestamp: Math.floor(now() / 1000) - FC_EPOCH_S - 3600 } });
   const info = (behind = 0) => ({ shardInfos: [{ shardId: 0, maxHeight: 10 }, { shardId: 1, maxHeight: 50_000 - behind }, { shardId: 2, maxHeight: 60_000 - behind }] });
   const ok = (body) => new Response(JSON.stringify(body), { status: 200 });
+  let syncReads = 0;
   const notFound = () => new Response(JSON.stringify({ error_detail: 'NotFound' }), { status: 400 });
   return async (input) => {
     const u = new URL(String(input));
@@ -38,6 +40,7 @@ function fakeNet({ signers, now }) {
     const q = Object.fromEntries(u.searchParams);
     if (node === 'http://down.test:3381') throw new Error('fetch failed');
     if (u.port === '8791' && u.pathname === '/') return node === 'http://wrongkey.test:8791' ? ok({ attester: '0x00000000000000000000000000000000000000bb' }) : ok({ attester: SERVER });
+    if (u.pathname === '/v1/info' && node === SYNCING) return ok(info(Math.max(0, 40_000 - 300 * ++syncReads)));
     if (u.pathname === '/v1/info') return ok(info(node === STALE ? 5000 : 0));
     if (u.pathname === '/v1/signersByFid') return ok({ signers: (signers[q.fid] ?? []).map((key) => ({ key })) });
     if (u.pathname === '/v1/castsByFid' && node === REF) return ok({ messages: [cast(Number(q.fid))] });
@@ -58,7 +61,7 @@ function setup({ dayMs = DAY, checkEveryMs = HOUR, attesters = [] } = {}) {
     config: { networks: { farcaster: { nodes: [{ url: 'https://crackle.farcaster.xyz:3381' }] } } },
     privateKey: `0x${'42'.repeat(32)}`, contract: { chainId: 8453, address: '0x5FbDB2315678afecb367f032d93F642f64180aa3' },
     reference: { farcaster: REF }, dataDir: mkdtempSync(join(tmpdir(), 'hatchery-')),
-    computeDna: async () => `0x${'ab'.repeat(32)}`, listAttesters: async () => attesters, fetchImpl: fakeNet({ signers, now }), now, dayMs, checkEveryMs, log: () => {},
+    computeDna: async () => `0x${'ab'.repeat(32)}`, listAttesters: async () => attesters, fetchImpl: fakeNet({ signers, now }), now, dayMs, checkEveryMs, log: () => {}, sleep: async () => {},
   });
   const claim = (over = {}) => {
     const node = over.node ?? GOOD;
@@ -96,7 +99,7 @@ test('laying: only the FID\'s own key, a fresh claim, your own live node', async
   await assert.rejects(h.lay(claim({ node: REF })), /public node or already hosts an attester/);
   await assert.rejects(h.lay(claim({ node: 'https://crackle.farcaster.xyz:3381' })), /public node or already hosts an attester/);
   await assert.rejects(h.lay(claim({ node: 'http://down.test:3381' })), /first check: no answer/);
-  await assert.rejects(h.lay(claim({ node: STALE })), /blocks behind/);
+  await assert.rejects(h.lay(claim({ node: STALE })), /blocks behind and not catching up/);
   await assert.rejects(h.lay(claim({ node: LIAR })), /did not return message/);
   const egg = await h.lay(claim());
   assert.equal(egg.fid, 18350);
@@ -190,4 +193,16 @@ test('a FID whose Fatliner is already born cannot lay an egg', async () => {
   const { h, claim } = setup();
   h.isBorn = async (fid) => fid === 18350;
   await assert.rejects(h.lay(claim()), /already born/);
+});
+
+test('warmth starts when the node starts syncing: a node that is catching up passes its checks', async () => {
+  const { h, claim, tick } = setup();
+  const egg = await h.lay(claim({ node: SYNCING }));
+  assert.equal(egg.fid, 18350);
+  const first = h.state.eggs[18350].checks[0];
+  assert.equal(first.ok, true);
+  assert.equal(first.syncing, true);
+  assert.ok(first.behind > 600);
+  await tick(HOUR);
+  assert.equal(h.state.eggs[18350].checks.at(-1).ok, true, 'still catching up an hour later: still warm');
 });
