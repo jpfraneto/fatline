@@ -106,7 +106,7 @@ Status, honestly:
 
 | | Status |
 | --- | --- |
-| Machine check, and renting a server for USDC (x402) | Works with mock sellers. New: rent **by the day** from AgentMetal (USDC, x402), add up to 1 TB of disk, and set up a read node unattended (`compute --provider agentmetal --days 1 --disk 700 --node`, ~11 USDC). The keeper then renews one day at a time. Not yet run with real money. |
+| Machine check, and renting a server for USDC (x402) | Works with mock sellers. New: rent **by the day** from AgentMetal (USDC, x402), add up to 1 TB of disk, and set up a read node unattended (`compute --provider agentmetal --days 1 --disk 700 --node`, ~11 USDC). The keeper then renews one day at a time. **Run with real money on 2026-10-24**: our first tester and our own fresh run each rented a day (~11.20 USDC, approved in their own wallets) and their nodes synced. |
 | Read node (on Hetzner, hourly by card: `fatline compute hetzner`) | Works. Keeps 1 day of blocks by default (Snapchain's own `pruning.block_retention`). The starting snapshot (~400 GB compressed, ~600 GB unpacked) is **streamed** straight to disk, so it needs one copy of space instead of Snapchain's ~3. Farcaster: in sync 5 h 43 min after it answered; a reboot took 47 s to answer and 62 s to be in sync again. Hypersnap: stalled for 5 hours on a stale validator list in Hypersnap's repository ([issue #41](https://github.com/farcasterorg/hypersnap/issues/41)); our setup takes the list from Snapchain, and it has been in sync since. Since 2026-10-23 both run on one server, $131.82/month. A disk guard grows a volume before it fills and alerts on Telegram. |
 | Client: reading, both networks | Works. |
 | Client: seed phrase → app key | Built: `fatline identity` registers a **gasless** app key (no transaction, no ETH), scoped to casts, reactions, follows and profile only. The seed phrase goes into a hidden prompt and is never saved. Format checked against a real node; not yet run with a real account. |
@@ -357,7 +357,7 @@ Tested:
 Not tested yet:
 
 - The coin page with a real coin on Base mainnet, and with our own master node *Online*. That state has only been seen against the public crackle node.
-- With real money: a real coin launch (simulated only), the keeper renewing a real rental, the first egg hatched on Base. Deploying to Base is done.
+- With real money: a real coin launch (simulated only), the keeper renewing a real rental, the first egg hatched on Base. Done with real money: deploying to Base, and renting a node for a day in USDC (2026-10-24).
 - `server-setup.sh` on a real server.
 - Launching from a real browser wallet. Both paths are written but have only been exercised from scripts: batched calls for smart wallets, and permit for normal wallets.
 - **Wallets are not people.** A fresh wallet is free, so daily users can be inflated by anyone willing to pay the check-in gas. Requiring coin holders (`setMinCoinToCount`) raises the cost. Proving one person per FID needs Farcaster's ID registry, which lives on Optimism, not Base.
