@@ -46,12 +46,12 @@
     "note": "Both networks run on this one server since 2026-10-23 03:01 UTC."
    },
    "fatliner": {
-    "id": 18350,
-    "contract": "0x26399Aa7D96f7678Bb825b822777683Ecb4169B8",
+    "id": 16098,
+    "contract": "0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016",
     "born": null,
     "bornTx": "0xa30b6a19f4d37c2100c75b25907910d225ca2d814d1b45db21e421d88c6fdc9f",
     "dna": "0xde5d5dfabe29f7e02bb28a37b3579b078c616c95b255a1b86b63008e246bb904",
-    "vault": "0x6AeD7EaCF7d9951A018BeAE74DcE7C72B536912c",
+    "vault": "0x8e1ab53CaEA122C3cd767122E1a52B2833983F84",
     "genesis": true,
     "note": "Born when the contract was made. Its surname, FATLINE, is its coin's ticker, and its coin is the first the launchpad will launch. Every resale of any Fatliner pays 8% into its vault.",
     "surname": "FATLINE"

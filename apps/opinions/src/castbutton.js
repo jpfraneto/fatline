@@ -9,7 +9,7 @@ const STEPS = {
   waiting: 'Scan this with the wallet that owns your Farcaster account (Rainbow, MetaMask, Coinbase Wallet…).',
   connected: 'Connected. Looking for your Farcaster account…',
   signing: 'Approve the signature in your wallet. It gives this client a key that can cast, like and follow — never move your account.',
-  submitting: 'Signed. Sending your new key to your node…',
+  submitting: 'Signed. Sending your new key through a node in sync (yours can still be catching up)…',
 };
 
 async function loginCall(method) {
@@ -37,7 +37,7 @@ export function castButton() {
     const qr = el('div', { class: 'castpanel-qr' });
     const msg = el('p', { class: 'muted' }, STEPS.starting);
     panel.replaceChildren(head('Log in with your wallet'), qr, msg,
-      el('p', { class: 'muted small' }, 'No Farcaster app, no relay: the signature goes from your wallet to this client, and the key to your own node. No gas.'));
+      el('p', { class: 'muted small' }, 'No Farcaster app, no relay, no gas: the signature goes from your wallet to this client, and the key to a node in sync (yours, once it has caught up).'));
     try {
       let s = await loginCall('POST');
       polling = true;

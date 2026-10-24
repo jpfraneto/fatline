@@ -1,36 +1,36 @@
 {
  "note": "The one Fatline contract on Base: Fatliners, which is also the launchpad (eggs, the 777, at most 777 coins, sales in USDC). Every Fatline server, client and hatchery reads it unless its config says otherwise. 'AppFactory' below is the same contract, kept under that name for older readers.",
  "chainId": 8453,
- "deployedAt": "2026-10-24T13:10Z",
+ "deployedAt": "2026-10-24T13:50Z",
  "deployer": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
- "fromBlock": 53029027,
+ "fromBlock": 53030201,
  "AppFactory": {
-  "address": "0x26399Aa7D96f7678Bb825b822777683Ecb4169B8",
-  "tx": "0xa30b6a19f4d37c2100c75b25907910d225ca2d814d1b45db21e421d88c6fdc9f",
+  "address": "0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016",
+  "tx": "0x3665ede01d2caa5fa6f4c40fd55ac49c4c2c218983353cb38d0ba6f3de3a82c0",
   "rules": "The launchpad is the Fatliners contract. At most 777 coins, ever: one per egg or Fatliner, launched by its holder; $FATLINE (Aster) first. The coin's symbol is the surname, unique, set when the egg goes onchain. 100% of fees to its vault, in USDC: the node's fuel. Anyone can pay the server its rent (payCompute); the holder can take all of it, and then the node dies.",
   "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "clanker": "0xE85A59c628F7d27878ACeB4bf3b35733630083a9",
   "locker": "0xffA37784D619F228D8B379d287a4D7282e500762",
   "feeLocker": "0xF3622742b1E446D92e45E22923Ef11C2fcD55D68",
-  "vaultImplementation": "0x7Eb7110e5C85716076bEE3b2793Cb2A7C33238Df"
+  "vaultImplementation": "0x9EcCAA0dB17d863C341dC5a8f34ac85406175D44"
  },
  "Fatliners": {
-  "address": "0x26399Aa7D96f7678Bb825b822777683Ecb4169B8",
-  "tx": "0xa30b6a19f4d37c2100c75b25907910d225ca2d814d1b45db21e421d88c6fdc9f",
+  "address": "0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016",
+  "tx": "0x3665ede01d2caa5fa6f4c40fd55ac49c4c2c218983353cb38d0ba6f3de3a82c0",
   "rules": "777 slots (live eggs + Fatliners). Eggs: one per FID, each with a unique surname and a stone; while the ranking's root is published, whose turn it is follows it (day 1: 1-777, day 2: 1-7,777, day 3: 1-77,777, then everyone ranked). An egg whose node stops dies (attesters sign Death) and its FID hibernates 7 days. Three warm days hatch it. Tokens move only by sale in USDC (list/buy): 8% to royaltyTo (jpfraneto.eth), and the token falls asleep until its new holder wakes it with their own Farcaster account (attesters sign Awaken). One app contract per token (appOf): set once by its holder while it is an egg, then final. Aster (the genesis egg) is reserved for its keeper, who claims it with their own transaction (claimGenesis).",
   "genesis": {
-   "fid": 18350,
+   "fid": 16098,
    "name": "Aster",
    "bornTo": "0xf2fe4dd9a86ecafe22424bfb6085036bca7835a8",
-   "dna": "0xde5d5dfabe29f7e02bb28a37b3579b078c616c95b255a1b86b63008e246bb904",
-   "laidAt": 1792810800,
-   "dnaNote": "History commitment of FID 18350 up to 2026-10-24T03:00Z: 640 messages (320 Snapchain, 320 Hypersnap). Computed on the master's nodes and again from crackle + haatz: identical.",
-   "vault": "0x6AeD7EaCF7d9951A018BeAE74DcE7C72B536912c",
+   "dna": "0xb5a035525eb38c2bb90cebfe6d482d9e19e021154d41a0375429f371d513e606",
+   "laidAt": 1792846800,
+   "dnaNote": "History commitment of FID 16098 (@jpfraneto, Aster's keeper) up to 2026-10-24T13:00Z: 43,013 messages, read from crackle (Snapchain) and haatz (Hypersnap).",
+   "vault": "0x8e1ab53CaEA122C3cd767122E1a52B2833983F84",
    "server": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
    "hatchery": "http://46.225.208.199:8791",
    "surname": "FATLINE",
    "ticker": "FATLINE",
-   "stage": "reserved for 0xf2fe…35a8 until claimGenesis; then an egg that hatches after three warm days",
+   "stage": "reserved for its keeper until claimGenesis; then an egg that hatches after three warm days",
    "stone": "gold (5)",
    "app": null,
    "reservedFor": "0xf2fe4dd9a86ecafe22424bfb6085036bca7835a8"
@@ -39,6 +39,11 @@
   "royaltyTo": "0xed21735DC192dC4eeAFd71b4Dc023bC53fE4DF15"
  },
  "superseded": [
+  {
+   "note": "Sixth deployment (2026-10-24 13:10Z): the genesis egg was #18350 (@anky's history); its keeper claimed it from their own warplet at 13:39Z (tx 0xab4e53ad…2ffa), which showed the egg should be the keeper's own FID. Replaced at ~13:50Z by the same contract with the genesis egg #16098.",
+   "AppFactory": "0x26399Aa7D96f7678Bb825b822777683Ecb4169B8",
+   "Fatliners": "0x26399Aa7D96f7678Bb825b822777683Ecb4169B8"
+  },
   {
    "note": "Fifth deployment (2026-10-24 13:00Z): Aster minted to the keeper at deploy (no signature of theirs), app contract replaceable. Replaced at 13:10Z; nothing was launched, claimed or hatched on it.",
    "AppFactory": "0xB229De24F337028715f2e5326833d3C251741e07",

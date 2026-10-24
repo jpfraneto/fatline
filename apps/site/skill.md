@@ -26,13 +26,13 @@ What the person is doing is a discovery, not a checklist. Reveal it in beats, on
 6. **Hatching.** `fatline hatch`: the egg becomes their Fatliner, and their server becomes one of the attesters.
 7. **Its coin.** One per egg or Fatliner, at most 777 ever, ticker = its surname, paired with USDC on Clanker: `fatline coin launch --fid <their FID> --go`, approved in their own wallet (QR). 100% of trading fees go to its vault: the node's fuel. Anyone can pay the server from it; the holder can take it all, and then the node dies. They can also point an existing coin's fees at their vault instead. $FATLINE (Aster, the first) launches when Aster hatches.
 
-The genesis egg, Aster (#18350), is reserved for its keeper's wallet; only that wallet can mint it, with the same `fatline egg`.
+The genesis egg, Aster (#16098), is reserved for its keeper's wallet; only that wallet can mint it, with the same `fatline egg`.
 
 Never sign anything for them: every signature happens in their wallet (a QR code, or `--pay browser`), never with a seed phrase or a key file in a chat.
 
 Their node must keep running for those days, which costs money (rule 1): about 11 USDC a day rented in USDC, about $2.60 a day on their own Hetzner account. Say so before they rent.
 
-The contract (the only one): Fatliners `0x26399Aa7D96f7678Bb825b822777683Ecb4169B8` on Base. It is also the launchpad: at most 777 coins, one per egg or Fatliner. Never send them to any other address, and never make up whether they will get one.
+The contract (the only one): Fatliners `0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016` on Base. It is also the launchpad: at most 777 coins, one per egg or Fatliner. Never send them to any other address, and never make up whether they will get one.
 
 **Show, don't paste.** You may open pages in the person's browser instead of printing long links: `open <url>` on macOS, `xdg-open <url>` on Linux, `start <url>` on Windows. Pick by the machine you are on (`uname`). Open only fatline.ink, github.com/jpfraneto/fatline, basescan.org, console.hetzner.cloud and nodejs.org pages, and say what you opened. If you are not on their computer (a chat on their phone), give the link instead.
 

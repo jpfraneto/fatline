@@ -43,7 +43,16 @@ export class WalletLogin {
       this.state = { step: 'connected', address: wallet.address };
       const networkName = this.config.defaultNetwork;
       const network = this.networks[networkName];
-      const node = await network.node();
+      // Any node in sync will do: a key can be added before your own node has caught up (it is still being born).
+      let node = await network.node().catch(() => null);
+      if (!node) {
+        const { Network } = await import('./hub.mjs');
+        const relays = { farcaster: [['http://46.225.208.199:3381', 'Fatline master node (not yours)'], ['https://crackle.farcaster.xyz:3381', 'crackle.farcaster.xyz (not yours)']],
+          hypersnap: [['http://46.225.208.199:4381', 'Fatline Hypersnap node (not yours)'], ['https://haatz.quilibrium.com', 'haatz.quilibrium.com (not yours)']] }[networkName] ?? [];
+        node = await new Network(networkName, { nodes: relays.map(([url, label]) => ({ url, label })) }).refresh();
+        if (!node) throw new Error('No node in sync answers right now (yours is still being born). Try again in a minute.');
+      }
+      this.state = { ...this.state, node: node.label ?? node.url };
       const fid = await fidOfCustody(node, wallet.address);
       if (!fid) throw new Error(`${wallet.address} doesn't own a Farcaster account. Connect the wallet that does (its custody address). For accounts made in the Farcaster app, that is the app's own wallet: its recovery phrase is in Settings → Advanced.`);
       this.state = { step: 'signing', address: wallet.address, fid };
