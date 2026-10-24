@@ -1,6 +1,7 @@
 // fatline egg / fatline hatch: your node keeps an egg warm; after three warm days a Fatliner hatches.
 //
-//   fatline egg                         how warm your egg is, at every attester
+//   fatline egg                         no egg yet: mint it (the rules, a QR code, your wallet, checked on a node);
+//                                       an egg: how warm it is, at every attester
 //   fatline egg lay [--node URL] [--network farcaster|hypersnap] [--to 0x…]
 //                                       sign the claim with this client's app key and give it to the attesters
 //   fatline egg take                    put the egg onchain (lay does it; this retries)
@@ -24,7 +25,7 @@ const PORTS = { farcaster: 3381, hypersnap: 4381 };
 function args() {
   const a = process.argv.slice(2);
   const get = (n) => { const i = a.indexOf(`--${n}`); return i >= 0 ? a[i + 1] : undefined; };
-  return { cmd: a[0] && !a[0].startsWith('--') ? a[0] : 'status', node: get('node'), network: get('network'), to: get('to'), hatchery: get('hatchery') };
+  return { cmd: a[0] && !a[0].startsWith('--') ? a[0] : 'status', node: get('node'), network: get('network'), to: get('to'), hatchery: get('hatchery'), fid: get('fid'), pay: get('pay') };
 }
 
 const say = (s = '') => console.log(s);
@@ -189,8 +190,22 @@ async function take(config) {
 if (import.meta.url === `file://${process.argv[1]}`) {
   const opts = args();
   const config = loadConfig();
-  const run = { lay: () => lay(config, opts), status: () => status(config), take: () => take(config), hatch: () => submit(config, 'hatch') }[opts.cmd];
+  // fatline egg with no egg onchain yet: mint one (Aster, while it is reserved, is minted by its keeper's wallet).
+  const eggOrMint = async () => {
+    const { createPublicClient, http, parseAbi } = await import('viem');
+    const c = createPublicClient({ chain: base, transport: http(config.hatchery?.rpc ?? 'https://mainnet.base.org') });
+    const a = parseAbi(['function stageOf(uint256) view returns (uint8)', 'function genesisTo() view returns (address)']);
+    const nft = config.deployments.Fatliners.address;
+    const fid = Number(opts.fid ?? loadAppKey(config.dataDir)?.fid ?? 0);
+    const has = fid ? Number(await c.readContract({ address: nft, abi: a, functionName: 'stageOf', args: [BigInt(fid)] })) : 0;
+    if (has) return status(config);
+    const { mintEgg } = await import('./egg-mint.mjs');
+    const out = await mintEgg(config, opts);
+    if (out?.layTo) return lay(config, { ...opts, to: out.layTo });
+    return out;
+  };
+  const run = { lay: () => lay(config, opts), status: eggOrMint, mint: eggOrMint, take: () => take(config), hatch: () => submit(config, 'hatch') }[opts.cmd];
   if (!run) { console.error(`Unknown: ${opts.cmd}. Try fatline egg, fatline egg lay, fatline egg take, fatline hatch.`); process.exit(1); }
-  run().catch((err) => { console.error(err.message); process.exit(1); });
+  run().then(() => process.exit(process.exitCode ?? 0), (err) => { console.error(err.shortMessage ?? err.message); process.exit(1); });
 }
 

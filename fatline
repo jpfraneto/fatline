@@ -190,11 +190,7 @@ cmd_coin() {
   cd "$ROOT/indexer" && node --experimental-sqlite --no-warnings=ExperimentalWarning src/launch-fatline.mjs "$@"
 }
 
-cmd_genesis() {
-  need_node
-  install indexer
-  cd "$ROOT/indexer" && node --experimental-sqlite --no-warnings=ExperimentalWarning src/onchain.mjs genesis "$@"
-}
+cmd_genesis() { shift 2>/dev/null; cmd_egg mint "$@"; } # fatline genesis claim = fatline egg
 
 cmd_app() {
   need_node
