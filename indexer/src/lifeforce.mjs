@@ -43,7 +43,7 @@ export class LifeForce {
     const dt = last && first && last.t > first.t ? (last.t - first.t) / 1000 : 0;
     const rate = (k) => (dt ? Math.max(0, (last[k] - first[k]) / dt) : 0);
     return {
-      node: this.node.url, own: Boolean(this.node.own), label: this.node.label ?? null,
+      network: this.network.name ?? null, node: this.node.url, own: Boolean(this.node.own), label: this.node.label ?? null,
       alive: Boolean(this.samples.at(-1)?.ok), at: this.samples.at(-1)?.t ?? null,
       messagesPerSecond: Math.round(rate('messages') * 10) / 10,
       blocksPerSecond: Math.round(rate('height') * 10) / 10,
