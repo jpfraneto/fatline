@@ -9,6 +9,7 @@
     "test": "node --experimental-sqlite --test test/*.test.mjs"
   },
   "dependencies": {
+    "@walletconnect/sign-client": "2.25.0",
     "viem": "2.57.7"
   }
 }

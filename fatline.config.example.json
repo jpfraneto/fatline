@@ -79,5 +79,6 @@
       "apps": []
     }
   ],
-  "port": 8787
+  "port": 8787,
+  "walletConnectProjectId": "5a5650980fe997fdbb17c6242c184713"
 }

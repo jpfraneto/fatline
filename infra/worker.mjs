@@ -51,7 +51,7 @@ export function readiness({ wallet, usdc, node, client, factory }) {
   const steps = [
     { id: 'wallet', label: 'Worker wallet', ok: Boolean(wallet), hint: 'fatline worker new' },
     { id: 'funds', label: 'USDC on Base, to pay for a server', ok: usdc != null && usdc > 0, hint: `send USDC on Base to ${wallet ?? 'your worker address'} (no ETH needed)` },
-    { id: 'node', label: 'Your node, in sync', ok: node?.state === 'alive', hint: 'fatline compute --provider vpsagent, then fatline node farcaster' },
+    { id: 'node', label: 'Your node, in sync', ok: node?.state === 'alive', hint: 'fatline compute (pays in USDC from this wallet, ~11 USDC a day), then fatline node snapchain' },
     { id: 'client', label: 'Your client, running', ok: Boolean(client), hint: 'fatline up' },
     { id: 'coin', label: 'Its coin, deployed without gas', ok: false, waiting: !factory, hint: factory ? 'not built yet: the gasless launch comes next' : 'waiting: the Fatline launch contracts are not on Base yet' },
   ];

@@ -1,5 +1,6 @@
-// fatline compute [--quote] [--sku server_small_1mo] [--region EU] [--network farcaster] [--max-usdc 20] [--vault 0x…]
+// fatline compute [--quote]   (default: AgentMetal, 1 day, medium plan + 700 GB disk, paid in USDC; then fatline node snapchain)
 // fatline compute --provider agentmetal --plan medium --days 3 --disk 1000 --node [--quote]
+// fatline compute --provider vpsagent [--sku server_small_1mo] [--region EU] [--max-usdc 20] [--vault 0x…] (client only, too small for a node)
 // fatline compute wallet        (create or show this machine's paying wallet; fund it with USDC on Base)
 // fatline compute disk --disk 700 (buy or retry the extra disk, then set up)
 // fatline compute status        (how the rented server and its node are doing)
@@ -19,6 +20,7 @@ import { createPublicClient, http, parseAbi } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia } from 'viem/chains';
 import { chooseOption, formatUsdc, readQuote, readReceipt, signPayment } from '../indexer/src/x402.mjs';
+import { choosePayer, localWalletKey } from './payer.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const STATE = join(ROOT, '.fatline');
@@ -40,14 +42,19 @@ function args() {
     const i = a.indexOf(`--${name}`);
     return i >= 0 ? a[i + 1] : fallback;
   };
+  // The default is the seller that can hold a full node: AgentMetal, by the day, with a 700 GB disk.
+  const provider = get('provider', 'agentmetal');
   return {
     command: a[0] && !a[0].startsWith('--') ? a[0] : 'rent',
     quoteOnly: a.includes('--quote'),
-    provider: get('provider', 'vpsagent'),
+    pay: get('pay'), // phone | browser | here
+    yes: a.includes('--yes'), // the person already said yes to this price (an agent passes it after asking)
+    provider,
     sku: get('sku'),
     plan: get('plan'),
     days: Number(get('days', '1')),
-    disk: Number(get('disk', '0')),
+    // A node's disk: Snapchain keeps 1 day of blocks (~560 GB today); Hypersnap keeps everything (~730 GB).
+    disk: Number(get('disk', provider !== 'agentmetal' ? '0' : (get('network') ?? defaultNetwork()) === 'hypersnap' ? '900' : '700')),
     node: a.includes('--node'),
     region: get('region', 'EU'),
     network: get('network') ?? defaultNetwork(),
@@ -70,18 +77,29 @@ const erc20 = parseAbi(['function balanceOf(address) view returns (uint256)']);
 const usdcBalance = (address) => createPublicClient({ chain: base, transport: http() })
   .readContract({ address: USDC_BASE, abi: erc20, functionName: 'balanceOf', args: [address] });
 
-/** The wallet that pays for compute: X402_PRIVATE_KEY, else this machine's compute wallet, else a hidden prompt. */
-async function payingAccount() {
-  let key = process.env.X402_PRIVATE_KEY;
-  const workerKey = join(STATE, 'worker.key'); // a worker pays for its own node (fatline worker)
-  if (!key && existsSync(workerKey)) key = readFileSync(workerKey, 'utf8').trim();
-  if (!key && existsSync(WALLET_FILE)) key = readFileSync(WALLET_FILE, 'utf8').trim();
-  if (!key) key = await ask('Private key of the paying wallet (hidden, never saved): ', { hidden: true });
-  return privateKeyToAccount(key.startsWith('0x') ? key : `0x${key}`);
+/** The wallet that pays: your phone wallet (QR), a browser wallet on this computer, or one made here. Never a pasted key. */
+const payingAccount = (opts) => choosePayer({ root: ROOT, state: STATE, how: opts.pay, ask });
+
+/** Says how paying works, and the balance of this machine's wallet if there is one. */
+async function showPayer() {
+  const w = localWalletKey(STATE);
+  console.log(`  Paid by           your own wallet: scan a QR code with your phone wallet, or connect a browser
+                    wallet on this computer. You approve each payment there; no key is ever typed here.`);
+  if (w) {
+    const address = privateKeyToAccount(w.key.startsWith('0x') ? w.key : `0x${w.key}`).address;
+    console.log(`                    Or ${w.from}: ${address}, ${formatUsdc(await usdcBalance(address).catch(() => 0n))} USDC on Base`);
+  }
 }
 
 /** A wallet only for compute, so no personal key is ever typed. Fund it with a little USDC on Base; it needs no ETH. */
-async function wallet() {
+async function wallet(opts = {}) {
+  // fatline compute wallet --pay phone|browser: connect your own wallet and show its USDC. Nothing is signed.
+  if (opts.pay && opts.pay !== 'here') {
+    const account = await payingAccount(opts);
+    try { console.log(`  USDC on Base: ${formatUsdc(await usdcBalance(account.address))} (a node needs ~12 for one day). Nothing was signed.`); }
+    finally { await account.close(); }
+    return;
+  }
   mkdirSync(STATE, { recursive: true });
   if (existsSync(join(STATE, 'worker.key'))) {
     const worker = privateKeyToAccount(readFileSync(join(STATE, 'worker.key'), 'utf8').trim());
@@ -102,6 +120,7 @@ async function wallet() {
 
 /** One x402 purchase: ask for the price, check it, sign it, send it. Returns the parsed response. */
 async function buy({ url, body, account, provider, label }) {
+  const p = provider;
   const send = (headers = {}) => fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) });
   const first = await send();
   if (first.status !== 402) throw new Error(`${label}: expected a 402 price quote, got HTTP ${first.status}: ${await first.text()}`);
@@ -112,7 +131,15 @@ async function buy({ url, body, account, provider, label }) {
   if (provider.paymentHeader) headers[provider.paymentHeader] = header.value;
   const paid = await send(headers);
   const text = await paid.text();
-  if (!paid.ok) throw new Error(`${label}: the provider refused the payment (HTTP ${paid.status}): ${text}`);
+  if (!paid.ok) {
+    let why = {}; try { why = JSON.parse(text); } catch {}
+    if (why.error === 'quota_exceeded') {
+      throw new Error(`${label}: nothing was paid. ${p.label ?? 'The seller'} says: "${why.message}"
+  Its limit is per paying wallet, and it can still count a server that already expired.
+  Pay from another wallet (--pay phone or --pay browser and pick a different account), or register with the seller to raise it (${why.docs ?? 'see its docs'}).`);
+    }
+    throw new Error(`${label}: the provider refused the payment (HTTP ${paid.status}), nothing was paid: ${why.message ?? text}`);
+  }
   console.log(`  paid ${formatUsdc(option.amount)} USDC for ${label}`);
   return { result: JSON.parse(text), amount: option.amount, receipt: readReceipt(paid) };
 }
@@ -149,16 +176,29 @@ async function rentDaily(opts, p) {
   How long          ${days} day${days === 1 ? "" : "s"}. Then it is renewed a day at a time, or it dies (2 h grace).
   Price             ${serverUsdc} USDC server${disk ? ` + ~${diskUsdc} USDC disk` : ''} = ~${total} USDC, prepaid, no refunds
   How               ${disk ? 'two signatures (server, then disk)' : 'one signature'}, USDC on Base, no ETH needed
-  It will run       ${opts.node ? 'a Farcaster read node (Snapchain), keeping 1 day of blocks' : 'the indexer + apps, reading from a node'}
-`);
-  if (opts.quoteOnly) return console.log('Quote only. Nothing was signed or paid.');
+  It will run       ${opts.node ? 'a Farcaster read node (Snapchain), keeping 1 day of blocks' : disk ? 'nothing yet: then fatline node snapchain (or hypersnap) installs your node on it' : 'the indexer + apps, reading from a node'}
+  To stop paying    do nothing: it ends when its days end. Renewing is a day at a time.`);
+  await showPayer();
+  console.log('');
+  if (opts.quoteOnly) return console.log('Quote only. Nothing was signed or paid. Rent it: fatline compute');
   if (total > opts.maxUsdc) throw new Error(`~${total} USDC is above --max-usdc ${opts.maxUsdc}. Nothing was paid.`);
-  if ((await ask('Type "pay" to sign: ')) !== 'pay') return console.log('Stopped. Nothing was signed.');
+  if (!opts.yes && (await ask('Type "pay" to continue: ')) !== 'pay') return console.log('Stopped. Nothing was signed.');
 
-  const account = await payingAccount();
-  const have = Number(formatUsdc(await usdcBalance(account.address)));
-  if (have < total) throw new Error(`${account.address} has ${have} USDC on Base; this needs ~${total}. Nothing was paid.`);
+  const account = await payingAccount(opts);
+  try {
+    const balance = Number(formatUsdc(await usdcBalance(account.address)));
+    if (balance < total) throw new Error(`${account.address} has ${balance} USDC on Base; this needs ~${total}. Send USDC on Base to it and run fatline compute again. Nothing was paid.`);
+    await rentDailyPaid({ opts, p, plan, days, disk, account });
+  } finally { await account.close(); }
+  if (!opts.node && disk) {
+    await waitForIp(p);
+    console.log(`\nYour server is rented. Next, install your node on it: fatline node ${opts.network === 'hypersnap' ? 'hypersnap' : 'snapchain'}`);
+    return;
+  }
+  await deployDaily(opts, p);
+}
 
+async function rentDailyPaid({ opts, p, plan, days, disk, account }) {
   const { result: server, receipt } = await buy({ url: `${p.api}/v1/servers`, body: { plan, days, ssh_key: sshKey() }, account, provider: p, label: `the server (${days} days)` });
   const id = server.id;
   mkdirSync(STATE, { recursive: true });
@@ -180,10 +220,27 @@ async function rentDaily(opts, p) {
     }
     await buy({ url: `${p.api}/v1/servers/${id}/storage`, body: { gb: disk }, account, provider: p, label: `${disk} GB of disk` });
   }
-  await deployDaily(opts, p);
 }
 
-async function deployDaily(opts, p) {
+/** Pays for more days on the rented server (daily sellers). */
+async function renew(opts) {
+  if (!existsSync(SECRET_FILE)) throw new Error('No rented server. Run fatline compute first.');
+  const secret = JSON.parse(readFileSync(SECRET_FILE, 'utf8'));
+  const p = JSON.parse(readFileSync(join(ROOT, 'infra/providers.json'), 'utf8')).providers[secret.provider];
+  if (p?.kind !== 'daily') throw new Error('Only servers rented by the day can be renewed here.');
+  const url = p.renew.url.replace('{rental_id}', secret.rental_id);
+  if (!opts.yes && (await ask(`Pay for ${opts.days} more day${opts.days === 1 ? '' : 's'}? Type "pay": `)) !== 'pay') return console.log('Stopped. Nothing was signed.');
+  const account = await payingAccount(opts);
+  try {
+    const { result } = await buy({ url, body: { days: opts.days }, account, provider: p, label: `${opts.days} more day${opts.days === 1 ? '' : 's'}` });
+    const record = JSON.parse(readFileSync(PUBLIC_FILE, 'utf8'));
+    if (result?.expires_at) { record.paidUntil = new Date(result.expires_at).toISOString(); writeFileSync(PUBLIC_FILE, JSON.stringify(record, null, 2)); }
+    console.log(`Paid until ${record.paidUntil ?? '(the seller did not say)'}.`);
+  } finally { await account.close(); }
+}
+
+/** Waits until a daily seller gives the server an IP, and saves it. */
+async function waitForIp(p) {
   const secret = JSON.parse(readFileSync(SECRET_FILE, 'utf8'));
   const record = JSON.parse(readFileSync(PUBLIC_FILE, 'utf8'));
   let ip = record.ipv4;
@@ -194,6 +251,11 @@ async function deployDaily(opts, p) {
   if (!ip) throw new Error('The server has no IP yet. Try again later: fatline compute deploy');
   record.ipv4 = ip;
   writeFileSync(PUBLIC_FILE, JSON.stringify(record, null, 2));
+  return { ip, record };
+}
+
+async function deployDaily(opts, p) {
+  const { ip, record } = await waitForIp(p);
   const target = `root@${ip}`;
   process.stdout.write(`Waiting for SSH on ${ip}`);
   for (let i = 0; i < 60; i++) {
@@ -220,8 +282,9 @@ async function addDisk(opts) {
   const p = JSON.parse(readFileSync(join(ROOT, 'infra/providers.json'), 'utf8')).providers[secret.provider];
   if (p?.kind !== 'daily') throw new Error('Extra disk is only sold by daily providers.');
   if (!opts.disk) throw new Error('Say how much: compute disk --disk 700');
-  const account = await payingAccount();
-  await buy({ url: `${p.api}/v1/servers/${secret.rental_id}/storage`, body: { gb: opts.disk }, account, provider: p, label: `${opts.disk} GB of disk` });
+  const account = await payingAccount(opts);
+  try { await buy({ url: `${p.api}/v1/servers/${secret.rental_id}/storage`, body: { gb: opts.disk }, account, provider: p, label: `${opts.disk} GB of disk` }); }
+  finally { await account.close(); }
   await deployDaily(opts, p);
 }
 
@@ -266,8 +329,8 @@ async function rent(opts) {
   if (opts.quoteOnly) return console.log('Quote only. Nothing was signed or paid.');
   if (usdc > opts.maxUsdc) throw new Error(`Price ${usdc} USDC is above --max-usdc ${opts.maxUsdc}. Nothing was paid.`);
 
-  if ((await ask('Type "pay" to sign this payment: ')) !== 'pay') return console.log('Stopped. Nothing was signed.');
-  const account = await payingAccount();
+  if ((await ask('Type "pay" to continue: ')) !== 'pay') return console.log('Stopped. Nothing was signed.');
+  const account = await payingAccount(opts);
 
   const chain = CHAINS[option.chainId];
   const balance = await createPublicClient({ chain, transport: http() }).readContract({
@@ -275,7 +338,7 @@ async function rent(opts) {
   });
   if (balance < option.amount) throw new Error(`${account.address} has ${formatUsdc(balance)} USDC on Base; it needs ${formatUsdc(option.amount)}. Nothing was paid.`);
 
-  const header = await signPayment({ account, quote, option });
+  const header = await signPayment({ account, quote, option }).finally(() => account.close());
   console.log(`Signed by ${account.address}. Sending…`);
   const paid = await request({ [header.name]: header.value });
   const text = await paid.text();
@@ -360,6 +423,12 @@ async function deploy(opts) {
 const opts = args();
 const commands = {
   rent,
+  renew,
+  down: async () => {
+    if (!existsSync(PUBLIC_FILE)) return console.log('No server rented with USDC from this machine. Nothing is costing money here.');
+    const r = JSON.parse(readFileSync(PUBLIC_FILE, 'utf8'));
+    console.log(`Server ${r.rentalId} (${r.provider}) is prepaid until ${r.paidUntil}. Nothing more is charged: it stops when that time ends, unless it is renewed.`);
+  },
   wallet,
   disk: addDisk,
   status,
@@ -369,8 +438,9 @@ const commands = {
     return p?.kind === 'daily' ? deployDaily(o, p) : deploy(o);
   },
 };
-if (!commands[opts.command]) { console.error(`Unknown: compute ${opts.command}. Use: compute [--quote], compute wallet, compute status, compute deploy`); process.exit(1); }
-commands[opts.command](opts).catch((err) => {
+if (!commands[opts.command]) { console.error(`Unknown: compute ${opts.command}. Use: compute [--quote], compute renew --days N, compute wallet, compute status, compute deploy, compute down, compute hetzner`); process.exit(1); }
+// Exit when done: a wallet connection (WalletConnect) can leave sockets open.
+commands[opts.command](opts).then(() => process.exit(0), (err) => {
   console.error(`\n${err.message}`);
   process.exit(1);
 });

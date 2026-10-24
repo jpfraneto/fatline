@@ -11,12 +11,15 @@
 //   fatline setup --plan     where you are, and the exact command for each step (for people and agents)
 //   fatline setup --reset    forget the progress (rents and files are untouched)
 //
-// Three paths:
-//   rent   a Hetzner server (card, billed by the hour) runs your own node; your client runs here.
-//   local  your own node on this machine, with Docker (needs ~1 TB free disk and 16 GB RAM).
-//   light  no node: copy only the accounts you choose from a public node, read them here. Free.
+// First it asks where your node will live:
+//   cloud    a server rented by the day in USDC (x402, AgentMetal). No account, no card: you approve with your own
+//            wallet, by QR code on your phone or in a browser wallet. ~11 USDC a day.
+//   hetzner  your own Hetzner Cloud account (API token, card, billed by the hour). ~$2.60 a day per node.
+//   vps      a server you already have, at any provider: Fatline checks it can hold a node.
+//   local    this machine, with Docker (needs ~700 GB free disk and 8–16 GB RAM; fatline doctor checks).
+//   light    no node: copy only the accounts you choose from a public node, read them here. Free.
 import { spawnSync } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import readline from 'node:readline';
@@ -45,17 +48,17 @@ function ask(q) {
     rl.question(q, (a) => { answered = true; rl.close(); r(a.trim()); });
   });
 }
-/** Hidden input, for tokens. Nothing is echoed. */
+/** Hidden input, for the Hetzner token. Nothing is echoed. */
 function askHidden(q) {
   return new Promise((r) => {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-    rl._writeToOutput = (s) => { if (s.includes(q)) rl.output.write(s); };
+    rl._writeToOutput = (t) => { if (t.includes(q)) rl.output.write(t); };
     rl.question(q, (a) => { rl.close(); process.stdout.write('\n'); r(a.trim()); });
   });
 }
 const fatline = (...a) => spawnSync(join(ROOT, 'fatline'), a, { stdio: 'inherit', cwd: ROOT }).status === 0;
-const hetznerRecord = () => existsSync(join(STATE_DIR, 'hetzner.json'));
-const hasToken = () => Boolean(process.env.HETZNER_TOKEN) || existsSync(join(homedir(), '.hetzner-token'));
+const rented = () => ['compute.json', 'hetzner.json', 'vps.json'].some((f) => existsSync(join(STATE_DIR, f)));
+const PATHS = ['cloud', 'hetzner', 'vps', 'local', 'light'];
 
 async function nodeInfo(url) {
   try { const r = await fetch(`${url}/v1/info`, { signal: AbortSignal.timeout(8000) }); return r.ok ? await r.json() : null; } catch { return null; }
@@ -71,13 +74,14 @@ function ownNodeUrl(network) {
 // Each: id, title, what (one or two lines), cost, cmd (what you'd type by hand), run (returns true when done).
 function steps(s) {
   const net = s.network ?? 'farcaster';
+  const nodeName = net === 'farcaster' ? 'snapchain' : net; // both are Farcaster nodes; the command names the software
   const common = {
     check: {
       title: 'Check this machine',
       what: 'Measures CPU, memory, disk, Docker and Node.js, and pings the public nodes of both networks.',
       cost: 'free, a few seconds',
       cmd: 'fatline doctor',
-      run: () => fatline('doctor'),
+      run: () => { fatline('doctor'); return true; }, // it advises; the choice is yours
     },
     connect: {
       title: 'You are your FID',
@@ -87,32 +91,56 @@ function steps(s) {
       run: () => fatline('connect'),
     },
     choose: {
-      title: 'Choose a path',
-      what: 'rent: a server of your own runs your node (Hetzner, card, ~$3–5/day while it runs). local: your node on this machine with Docker (~1 TB disk, 16 GB RAM). light: no node, copy only the accounts you pick from a public node (free).',
+      title: 'Where will your node live?',
+      what: [
+        'A node keeps a full copy of the network: about 600 GB of disk and 8–16 GB of RAM, always on.',
+        '    cloud    rented by the day, paid in USDC from your own wallet (QR code or browser wallet). No account, no card. ~11 USDC/day',
+        '    hetzner  your own Hetzner Cloud account: API token and card, billed by the hour. ~$2.60/day per node',
+        '    vps      a server you already have, at any provider (DigitalOcean, OVH, Contabo, a box at home…)',
+        '    local    this machine, with Docker (the check above says if it fits)',
+        '    light    no node: copy only the accounts you choose from a public node. Free',
+      ].join('\n'),
       cost: 'free',
-      cmd: '(a choice: rent, local or light; and farcaster or hypersnap)',
+      cmd: '(a choice: cloud, hetzner, vps, local or light; and snapchain or hypersnap)',
       run: async () => {
-        const p = (await ask('  Path? [rent / local / light] (rent): ')).toLowerCase() || 'rent';
-        if (!['rent', 'local', 'light'].includes(p)) { console.log('  Choose rent, local or light.'); return false; }
-        const n = (await ask('  Network? [farcaster / hypersnap] (farcaster): ')).toLowerCase() || 'farcaster';
-        if (!['farcaster', 'hypersnap'].includes(n)) { console.log('  Choose farcaster or hypersnap.'); return false; }
+        const p = (await ask('  Where? [cloud / hetzner / vps / local / light] (cloud): ')).toLowerCase() || 'cloud';
+        if (!PATHS.includes(p)) { console.log(`  Choose one of: ${PATHS.join(', ')}.`); return false; }
+        let n = (await ask('  Which node? [snapchain / hypersnap] (snapchain): ')).toLowerCase() || 'snapchain';
+        if (n === 'snapchain') n = 'farcaster'; // the network's name inside the config
+        if (!['farcaster', 'hypersnap'].includes(n)) { console.log('  Choose snapchain or hypersnap.'); return false; }
         s.path = p; s.network = n; save(s);
         return true;
       },
     },
   };
-  const rent = {
+  const cloud = {
+    quote: {
+      title: 'See the price',
+      what: 'Asks AgentMetal for a server (4 CPUs, 8 GB RAM) plus a 700 GB disk for one day, paid in USDC on Base (x402). Nothing is signed.',
+      cost: 'free',
+      cmd: 'fatline compute --quote',
+      run: () => fatline('compute', '--quote'),
+    },
+    rent: {
+      title: 'Rent it, approving with your wallet',
+      what: 'Type "pay", then choose how to approve: scan a QR code with your phone wallet, or connect a wallet extension in your browser. Your wallet shows each payment (server, then disk) before you approve it. No ETH needed. Prepaid; it stops by itself when the day ends (fatline compute renew --days N adds days).',
+      cost: 'the price you just saw (~11 USDC)',
+      cmd: 'fatline compute',
+      run: () => fatline('compute') && rented(),
+    },
+  };
+  const hetzner = {
     token: {
       title: 'Connect your Hetzner account',
       what: 'Fatline rents the server with your own Hetzner API token. Make one at console.hetzner.cloud → your project → Security → API tokens (Read & Write). It is saved to ~/.hetzner-token (mode 600) and never printed.',
       cost: 'free (Hetzner needs a card on the account)',
       cmd: 'save the token to ~/.hetzner-token (chmod 600)',
       run: async () => {
-        if (hasToken()) { console.log('  A token is already there.'); return true; }
+        const file = join(homedir(), '.hetzner-token');
+        if (process.env.HETZNER_TOKEN || existsSync(file)) { console.log('  A token is already there.'); return true; }
         const t = await askHidden('  Paste the token (hidden): ');
         if (!t) return false;
-        writeFileSync(join(homedir(), '.hetzner-token'), t + '\n', { mode: 0o600 });
-        chmodSync(join(homedir(), '.hetzner-token'), 0o600);
+        writeFileSync(file, t + '\n', { mode: 0o600 });
         console.log('  Saved to ~/.hetzner-token.');
         return true;
       },
@@ -121,31 +149,45 @@ function steps(s) {
       title: 'See the price',
       what: 'Asks Hetzner which server fits a node right now and what it costs. Nothing is created.',
       cost: 'free',
-      cmd: 'fatline compute --quote',
-      run: () => fatline('compute', '--quote'),
+      cmd: 'fatline compute hetzner --quote --no-node',
+      run: () => fatline('compute', 'hetzner', '--quote', '--no-node'),
     },
     rent: {
       title: 'Rent the server',
-      what: 'Creates the server and a 700 GB disk on your account. It asks you to type "create" first. From then on Hetzner bills by the hour until you run: fatline compute hetzner down',
+      what: 'Creates the server and a 700 GB disk on your account. It asks you to type "create" first. Hetzner bills by the hour until you run: fatline compute hetzner down',
       cost: 'the price you just saw, by the hour',
-      cmd: 'fatline compute',
-      run: () => fatline('compute') && hetznerRecord(),
+      cmd: 'fatline compute hetzner --no-node',
+      run: () => fatline('compute', 'hetzner', '--no-node') && rented(),
     },
+  };
+  const vps = {
+    host: {
+      title: 'Your server',
+      what: 'The address of a server you already have (root login). Fatline adds its own SSH key there (ssh asks for the password once, in its own prompt) and checks it has the RAM and ~650 GB free disk a node needs.',
+      cost: 'free',
+      cmd: 'fatline compute vps root@<ip>',
+      run: async () => {
+        const host = await ask('  Server? (root@1.2.3.4): ');
+        return Boolean(host) && fatline('compute', 'vps', host.includes('@') ? host : `root@${host}`);
+      },
+    },
+  };
+  const remote = {
     node: {
-      title: `Install your ${net} node on it`,
+      title: `Install your ${nodeName} node on it`,
       what: 'Copies the setup script to the server and streams the network snapshot (~400 GB) straight to its disk. You can Ctrl-C: the setup keeps going on the server, and this step follows it again when you come back.',
       cost: '1–3 hours',
-      cmd: `fatline node ${net}`,
-      run: () => fatline('node', net),
+      cmd: `fatline node ${nodeName}`,
+      run: () => fatline('node', nodeName),
     },
   };
   const local = {
     node: {
-      title: `Run your ${net} node on this machine`,
+      title: `Run your ${nodeName} node on this machine`,
       what: `Downloads the official ${net === 'farcaster' ? 'Snapchain' : 'Hypersnap'} bootstrap script, shows where it is so you can read it, and runs it with Docker after you say yes.`,
       cost: 'free; hours of download; ~1 TB disk',
-      cmd: `fatline node ${net} --local`,
-      run: () => fatline('node', net, '--local'),
+      cmd: `fatline node ${nodeName} --local`,
+      run: () => fatline('node', nodeName, '--local'),
     },
   };
   const nodePaths = {
@@ -195,10 +237,12 @@ function steps(s) {
       what: `Builds the web app and serves it at http://localhost:8787, reading ${s.path === 'light' ? 'from the node you chose' : 'from your own node'}. It stays running in this terminal; Ctrl-C stops it, fatline up starts it again.`,
       cost: 'free',
       cmd: `fatline init --network ${net} && fatline up`,
-      run: () => fatline('init', '--network', net, ...(s.path === 'light' ? ['--node', ''] : [])) && (s.done.push('client'), save(s), console.log(bold('\n  Setup is done. Starting the client (Ctrl-C to stop).\n  Later: post as yourself with fatline identity --fid <your FID>, in your own terminal (seed phrase in a hidden prompt, never in a chat).' + (s.path === 'rent' ? '\n  Stop paying for the server: fatline compute hetzner down' : '') + '\n')), fatline('up'), process.exit(0)),
+      run: () => fatline('init', '--network', net, ...(s.path === 'light' ? ['--node', ''] : [])) && (s.done.push('client'), save(s), console.log(bold('\n  Setup is done. Starting the client (Ctrl-C to stop).\n  Later: post as yourself with fatline identity --fid <your FID>, in your own terminal (seed phrase in a hidden prompt, never in a chat).' + ({ rent: '\n  The server stops when its paid days end. More days: fatline compute renew --days N', cloud: '\n  The server stops when its paid days end. More days: fatline compute renew --days N', hetzner: '\n  Stop paying for the server: fatline compute hetzner down' }[s.path] ?? '') + '\n')), fatline('up'), process.exit(0)),
     },
   };
-  const path = s.path === 'local' ? { ...local, ...nodePaths } : s.path === 'light' ? light : { ...rent, ...nodePaths };
+  const kind = s.path === 'rent' ? 'cloud' : s.path; // 'rent' was the old name of cloud
+  const path = kind === 'local' ? { ...local, ...nodePaths } : kind === 'light' ? light
+    : { ...({ cloud, hetzner, vps }[kind] ?? cloud), ...remote, ...nodePaths };
   return Object.entries({ ...common, ...path, ...end }).map(([id, x]) => ({ id, ...x }));
 }
 
@@ -215,7 +259,7 @@ if (args.includes('--plan')) {
     if (!done && !next) next = st;
     console.log(`${done ? '✓' : next === st ? '→' : ' '} ${i + 1}. ${st.title}  ${dim(st.cost)}\n     ${st.cmd}`);
   }
-  if (!s.path) console.log(dim('\nThe steps after "Choose a path" depend on the path. Guided: fatline setup'));
+  if (!s.path) console.log(dim('\nThe steps after "Where will your node live?" depend on the answer. Guided: fatline setup'));
   process.exit(0);
 }
 if (!process.stdin.isTTY) {
@@ -249,7 +293,7 @@ if (!s.agreed) {
   Everything you are about to run is open source, under the MIT license:
     ${REPO}
   You can read every line, change it, and share it. It comes as is, with no warranty.
-  Each step tells you what it does before it runs, and nothing costs money until you type "create".
+  Each step tells you what it does before it runs, and nothing costs money until you say so.
 `);
   const a = (await ask('  [Enter] I agree, let\'s begin · q quit: ')).toLowerCase();
   if (a === 'q') {

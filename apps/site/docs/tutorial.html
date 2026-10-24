@@ -99,8 +99,8 @@
     <p class="eyebrow">Before you start</p>
     <ul>
       <li><strong>git</strong>, <strong>Node.js 22.12 or newer</strong> and <strong>ssh</strong> on your computer.</li>
-      <li>A <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> account with a card, and an API token saved in <code>~/.hetzner-token</code> (<code>chmod 600</code>).</li>
-      <li>New Hetzner accounts have limits (ours: 1,385 GB of volumes and 14 vCPUs in total). One node needs a 700 GB volume, so one new account fits about <strong>one</strong> full node per volume. We run both networks on one server (8 Arm cores, 16 GB) with two volumes, right at that limit: Hypersnap's smallest shard (44 GB) sits on the server's own disk. $131.82 a month for both.</li>
+      <li>A wallet you already use (MetaMask, Rainbow, Rabby, Coinbase Wallet…) with about <strong>12 USDC on Base</strong>. No card, no account, no ETH: you approve the payments in your wallet, by QR code on your phone or in your browser.</li>
+      <li>Only if you'd rather use your own <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> account (card, hourly): an API token in <code>~/.hetzner-token</code> and <code>fatline compute hetzner</code>. New Hetzner accounts have limits: about one full node per account.</li>
       <li>To post: your Farcaster account's seed phrase, typed only into your own terminal.</li>
     </ul>
     <p class="eyebrow">The easy way</p>
@@ -113,8 +113,8 @@
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 npm install -g .             <span class="c"># the fatline command, from anywhere</span>
 
-fatline compute            <span class="c"># (0) rent a machine that can hold a node: price first, then you type "create"</span>
-fatline node farcaster     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
+fatline compute            <span class="c"># (0) rent a machine that can hold a node, in USDC: price first, then you type "pay"</span>
+fatline node snapchain     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
 fatline client             <span class="c"># (2) your client, reading from your node, on http://localhost:8787</span></code></pre>
     <p class="note"><span class="tag no">untested end to end</span> Each step has been run on its own. A complete fresh run of all three, start to finish, has not been done yet. Our own node was built with an earlier one-step version of steps 0 and 1.</p>
     <p class="muted">No room for a node? <code>fatline follow</code> copies only the accounts you choose from one node you pick. It is <a href="#follow">not a node</a>.</p>
@@ -123,8 +123,8 @@ fatline client             <span class="c"># (2) your client, reading from your 
     <p class="eyebrow">Antes de empezar</p>
     <ul>
       <li><strong>git</strong>, <strong>Node.js 22.12 o más nuevo</strong> y <strong>ssh</strong> en tu computador.</li>
-      <li>Una cuenta de <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> con tarjeta, y un token de API guardado en <code>~/.hetzner-token</code> (<code>chmod 600</code>).</li>
-      <li>Las cuentas nuevas de Hetzner tienen límites (la nuestra: 1.385 GB de volúmenes y 14 vCPU en total). Un nodo necesita un volumen de 700 GB, así que una cuenta nueva alcanza para <strong>un</strong> nodo completo. Nosotros corremos las dos redes en un solo servidor (8 núcleos Arm, 16 GB) con dos volúmenes, justo en ese límite: el shard más chico de Hypersnap (44 GB) vive en el disco propio del servidor. $131,82 al mes por ambas.</li>
+      <li>Una wallet que ya uses (MetaMask, Rainbow, Rabby, Coinbase Wallet…) con unos <strong>12 USDC en Base</strong>. Sin tarjeta, sin cuenta, sin ETH: apruebas los pagos en tu wallet, con un código QR en tu teléfono o en tu navegador.</li>
+      <li>Solo si prefieres tu propia cuenta de <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> (tarjeta, por hora): un token de API en <code>~/.hetzner-token</code> y <code>fatline compute hetzner</code>. Las cuentas nuevas de Hetzner tienen límites: más o menos un nodo completo por cuenta.</li>
       <li>Para publicar: la frase semilla de tu cuenta de Farcaster, escrita solo en tu propia terminal.</li>
     </ul>
     <p class="eyebrow">La forma fácil</p>
@@ -138,7 +138,7 @@ fatline client             <span class="c"># (2) your client, reading from your 
 npm install -g .             <span class="c"># the fatline command, from anywhere</span>
 
 fatline compute            <span class="c"># (0) arrienda una máquina capaz de tener un nodo: primero el precio, luego escribes "create"</span>
-fatline node farcaster     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
+fatline node snapchain     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
 fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo, en http://localhost:8787</span></code></pre>
     <p class="note"><span class="tag no">sin probar de punta a punta</span> Cada paso se ha corrido por separado. Una corrida nueva y completa de los tres, de principio a fin, todavía no se ha hecho. Nuestro propio nodo se armó con una versión anterior que juntaba los pasos 0 y 1.</p>
     <p class="muted">¿No te cabe un nodo? <code>fatline follow</code> copia solo las cuentas que elijas desde un nodo que tú eliges. <a href="#follow">No es un nodo</a>.</p>
@@ -193,27 +193,29 @@ fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo,
 <!-- ============================================================ STEP 0 -->
 <section id="machine" lang="en">
   <h2>Step 0: a machine for the node</h2>
-  <pre><code>fatline compute --quote   <span class="c"># price only, nothing is created</span>
-fatline compute           <span class="c"># asks you to type "create"</span></code></pre>
-  <p>It picks the cheapest server type in stock with at least 16 GB of RAM (on 2026-10-22: <code>cax31</code>, 8 ARM CPUs), adds a 700 GB volume, prints the price and asks before creating anything. It rents the machine only; step 1 puts the node on it. Everything it creates is written to <code>.fatline/hetzner.json</code>, so it can be deleted exactly.</p>
+  <pre><code>fatline compute --quote   <span class="c"># price only, nothing is signed</span>
+fatline compute           <span class="c"># type "pay", then approve in your wallet</span></code></pre>
+  <p>It rents a server (4 CPUs, 8 GB RAM) from AgentMetal for one day and adds a 700 GB disk: about 11 USDC, paid in USDC on Base (x402). You approve two payments, server then disk, in your own wallet: scan a QR code with your phone wallet, or connect a wallet extension on a page that opens in your browser. Nothing is typed in the terminal. No card, no account, no ETH. It is prepaid and stops by itself when the day ends; <code>--days N</code> buys more. It rents the machine only; step 1 puts the node on it.</p>
+  <p class="muted">Other places for the node: your own Hetzner account (<code>fatline compute hetzner</code>, API token and card, ~$2.60/day, billed by the hour), a server you already have at any provider (<code>fatline compute vps root@&lt;ip&gt;</code>), or this machine (<code>fatline node snapchain --local</code>). <code>fatline setup</code> asks.</p>
   <div class="concept"><strong>Why rent at all?</strong> A Farcaster node holds every account's current messages: about 600 GB today. Most laptops don't have that much free disk.</div>
-  <p>Already have a machine with Docker, 16 GB of RAM and about 700 GB free? Skip this step and use <code>fatline node farcaster --local</code> there. <code>fatline doctor</code> measures your machine and tells you which path fits.</p>
-  <p class="muted">Prefer paying in USDC? <code>fatline compute --provider agentmetal</code> rents by the day over x402. <span class="tag no">untested</span> with real money.</p>
+  <p>Already have a machine with Docker, 16 GB of RAM and about 700 GB free? Skip this step and use <code>fatline node snapchain --local</code> there. <code>fatline doctor</code> measures your machine and tells you which path fits.</p>
+  <p class="note"><span class="tag no">untested</span> Paying AgentMetal with real money has not been done yet; the price quote is live.</p>
 </section>
 <section id="machine" lang="es">
   <h2>Paso 0: una máquina para el nodo</h2>
-  <pre><code>fatline compute --quote   <span class="c"># solo el precio, no crea nada</span>
-fatline compute           <span class="c"># te pide escribir "create"</span></code></pre>
-  <p>Elige el tipo de servidor más barato con stock y al menos 16 GB de RAM (el 2026-10-22: <code>cax31</code>, 8 CPU ARM), le agrega un volumen de 700 GB, muestra el precio y pregunta antes de crear algo. Solo arrienda la máquina; el paso 1 le pone el nodo. Todo lo que crea queda anotado en <code>.fatline/hetzner.json</code>, para poder borrarlo exacto.</p>
+  <pre><code>fatline compute --quote   <span class="c"># solo el precio, no firma nada</span>
+fatline compute           <span class="c"># escribe "pay" y aprueba en tu wallet</span></code></pre>
+  <p>Arrienda un servidor (4 CPU, 8 GB RAM) en AgentMetal por un día y le agrega un disco de 700 GB: unos 11 USDC, en USDC en Base (x402). Apruebas dos pagos, servidor y disco, en tu propia wallet: escaneas un código QR con la wallet de tu teléfono, o conectas una extensión en una página que se abre en tu navegador. No se escribe nada en la terminal. Sin tarjeta, sin cuenta, sin ETH. Es prepago y se apaga solo cuando termina el día; <code>--days N</code> compra más. Solo arrienda la máquina; el paso 1 le pone el nodo.</p>
+  <p class="muted">Otros lugares para el nodo: tu propia cuenta de Hetzner (<code>fatline compute hetzner</code>, token de API y tarjeta, ~US$2,60/día, por hora), un servidor que ya tengas en cualquier proveedor (<code>fatline compute vps root@&lt;ip&gt;</code>), o este computador (<code>fatline node snapchain --local</code>). <code>fatline setup</code> te pregunta.</p>
   <div class="concept"><strong>¿Por qué arrendar?</strong> Un nodo de Farcaster guarda los mensajes vigentes de todas las cuentas: unos 600 GB hoy. A la mayoría de los computadores no le sobra tanto disco.</div>
-  <p>¿Ya tienes una máquina con Docker, 16 GB de RAM y unos 700 GB libres? Sáltate este paso y usa <code>fatline node farcaster --local</code> ahí. <code>fatline doctor</code> mide tu máquina y te dice qué camino te sirve.</p>
-  <p class="muted">¿Prefieres pagar en USDC? <code>fatline compute --provider agentmetal</code> arrienda por día vía x402. <span class="tag no">sin probar</span> con dinero real.</p>
+  <p>¿Ya tienes una máquina con Docker, 16 GB de RAM y unos 700 GB libres? Sáltate este paso y usa <code>fatline node snapchain --local</code> ahí. <code>fatline doctor</code> mide tu máquina y te dice qué camino te sirve.</p>
+  <p class="note"><span class="tag no">sin probar</span> Todavía no se ha pagado a AgentMetal con dinero real; el precio que muestra es en vivo.</p>
 </section>
 
 <!-- ============================================================ STEP 1 -->
 <section id="node" lang="en">
   <h2>Step 1: your read node</h2>
-  <pre><code>fatline node farcaster    <span class="c"># or: fatline node hypersnap</span></code></pre>
+  <pre><code>fatline node snapchain    <span class="c"># or: fatline node hypersnap</span></code></pre>
   <p>It installs that network's node on the machine from step 0 and follows the starting snapshot as it streams in (about 400 GB, roughly 1 to 3 hours). When the node answers on <code>/v1/info</code>, it becomes your own node in <code>fatline.config.json</code>, so step 2 reads from it. A server holds one network; it refuses to put the second one next to the first.</p>
   <p>With <code>--local</code>, it installs on the machine you are on instead: it downloads that network's official bootstrap script, shows you its address and checksum, and asks before running it.</p>
   <div class="concept"><strong>Read nodes and validators.</strong> Snapchain, Farcaster's network software, has a small set of validators that agree on the order of messages, in blocks. Your node is a read node: it follows those blocks and keeps its own copy of every message. When you post, your node checks the message and relays it to the validators. You never need a validator's permission to read.</div>
@@ -228,7 +230,7 @@ fatline compute           <span class="c"># te pide escribir "create"</span></co
 </section>
 <section id="node" lang="es">
   <h2>Paso 1: tu nodo de lectura</h2>
-  <pre><code>fatline node farcaster    <span class="c"># o: fatline node hypersnap</span></code></pre>
+  <pre><code>fatline node snapchain    <span class="c"># o: fatline node hypersnap</span></code></pre>
   <p>Instala el nodo de esa red en la máquina del paso 0 y sigue el snapshot de partida mientras llega (unos 400 GB, más o menos 1 a 3 horas). Cuando el nodo responde en <code>/v1/info</code>, queda como tu propio nodo en <code>fatline.config.json</code>, y el paso 2 lee de él. Un servidor tiene una sola red; no pone la segunda al lado de la primera.</p>
   <p>Con <code>--local</code>, lo instala en la máquina donde estás: descarga el script oficial de esa red, te muestra su dirección y su checksum, y pregunta antes de correrlo.</p>
   <div class="concept"><strong>Nodos de lectura y validadores.</strong> Snapchain, el software de la red de Farcaster, tiene un grupo pequeño de validadores que acuerdan el orden de los mensajes, en bloques. Tu nodo es de lectura: sigue esos bloques y guarda su propia copia de cada mensaje. Cuando publicas, tu nodo revisa el mensaje y se lo pasa a los validadores. Nunca necesitas permiso de un validador para leer.</div>

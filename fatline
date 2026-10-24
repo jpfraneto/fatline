@@ -33,11 +33,15 @@ Setup (in this order on a new machine):
                                      --plan shows where you are and the command for each step
   fatline doctor                Check this machine and the networks; recommends full, light or rent
   fatline init                  Choose the default network (Farcaster or Hypersnap)
-  fatline compute [--quote]     Rent a machine that can hold a node (Hetzner, hourly; needs ~/.hetzner-token)
-                                     x402 USDC sellers instead: --provider vpsagent|agentmetal
+  fatline compute [--quote]     Rent a machine that can hold a node, by the day, in USDC on Base (x402, AgentMetal,
+                                     ~11 USDC/day). You approve with your own wallet: phone (QR) or browser.
+                                     --pay phone|browser|here · compute renew --days N pays for more days
+                                     compute wallet --pay phone: connect your wallet and see its USDC, signs nothing
+  fatline compute hetzner       Your own Hetzner account instead (API token, card, hourly; ~$2.60/day a node)
+  fatline compute vps root@IP   A server you already have, any provider: checks it can hold a node
   fatline node <network>        Install a read node (farcaster or hypersnap) on that machine, wait until it
                                      answers, and use it. --local installs on this machine instead (16 GB RAM, Docker)
-  fatline compute status        The rented machine, its disk and node sync. compute down deletes it all
+  fatline compute status        The rented machine, its disk and node sync. compute down: how it stops costing
   fatline dashboard             Your servers and nodes on http://localhost:8790, every 15 s (add <host> to watch more)
   fatline up                    Install, build and start the indexer + apps on http://localhost:8787
   fatline client                The same, but first asks you to connect (below) if you haven't
@@ -85,15 +89,17 @@ cmd_setup() { need_node; install infra; node "$ROOT/infra/setup.mjs" "$@"; }
 cmd_init() { need_node; node "$ROOT/infra/config-tool.mjs" init "$@"; }
 
 cmd_node() {
+  # Both are Farcaster nodes: snapchain (Farcaster's own) or hypersnap. "farcaster" is the old name for snapchain.
+  if [ "${1:-}" = snapchain ]; then set -- farcaster "${@:2}"; fi
   local network="${1:-}"
   # A machine rented with fatline compute: install the node there, wait for it, use it.
-  if [ "${2:-}" != "--local" ] && { [ -f "$STATE/hetzner.json" ] || [ -f "$STATE/hetzner-hypersnap.json" ]; }; then
+  if [ "${2:-}" != "--local" ] && { [ -f "$STATE/hetzner.json" ] || [ -f "$STATE/hetzner-hypersnap.json" ] || [ -f "$STATE/compute.json" ] || [ -f "$STATE/vps.json" ]; }; then
     need_node; exec node "$ROOT/infra/node-remote.mjs" "$@"
   fi
   case "$network" in
     farcaster) URL="https://raw.githubusercontent.com/farcasterxyz/snapchain/refs/heads/main/scripts/snapchain-bootstrap.sh"; DIR="$HOME/snapchain" ;;
     hypersnap) URL="https://raw.githubusercontent.com/farcasterorg/hypersnap/@latest/scripts/hypersnap-bootstrap.sh"; DIR="$HOME/hypersnap" ;;
-    *) fail "usage: fatline node farcaster|hypersnap" ;;
+    *) fail "usage: fatline node snapchain|hypersnap" ;;
   esac
   docker info >/dev/null 2>&1 || fail "Docker must be installed and running. See https://docs.docker.com/engine/install/"
   local other; other=$([ "$network" = farcaster ] && echo hypersnap || echo farcaster)
@@ -219,12 +225,18 @@ cmd_status() {
 }
 
 cmd_compute() {
-  need_node; install infra
-  # Default: rent a machine big enough for a node on Hetzner (hourly, card); `node <network>` then installs it.
-  # `compute hetzner` keeps the older one-step flow (rent + Farcaster node). x402/USDC sellers: --provider <name>.
-  if [ "${1:-}" = hetzner ]; then shift; node "$ROOT/infra/hetzner.mjs" "$@"
-  elif printf '%s\n' "$@" | grep -q -- '^--provider'; then node "$ROOT/infra/compute.mjs" "$@"
-  else node "$ROOT/infra/hetzner.mjs" "$@" --no-node; fi
+  need_node; install infra; install indexer
+  # Default: a wallet pays in USDC on Base (x402, no card, no account, no ETH): AgentMetal, one day,
+  # a server plus a 700 GB disk, enough for a node. `node <network>` then installs it.
+  # Hetzner with your own API token and card (hourly) only when you ask for it: fatline compute hetzner.
+  case "${1:-}" in
+    hetzner) shift; node "$ROOT/infra/hetzner.mjs" "$@" ;;
+    vps) shift; node "$ROOT/infra/vps.mjs" "$@" ;;
+    status|down)
+      # A machine rented on Hetzner earlier keeps its own status and down.
+      if [ -f "$STATE/hetzner.json" ]; then node "$ROOT/infra/hetzner.mjs" "$@"; else node "$ROOT/infra/compute.mjs" "$@"; fi ;;
+    *) node "$ROOT/infra/compute.mjs" "$@" ;;
+  esac
 }
 
 cmd_test() {

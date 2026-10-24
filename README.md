@@ -15,11 +15,11 @@ It downloads Fatline into `~/fatline` and starts `fatline setup`, which goes thr
 ```sh
 git clone https://github.com/jpfraneto/fatline
 cd fatline && npm install -g .     # the `fatline` command, usable from anywhere (bin/fatline.mjs runs fatline in this clone)
-fatline compute                    # rent the server for your node: shows the price, creates nothing until you type "create"
-fatline node farcaster             # your own read node on it (or hypersnap); when it answers, `fatline up` opens your client
+fatline compute                    # rent the server for your node in USDC (x402, ~11 USDC/day): shows the price, pays nothing until you type "pay"
+fatline node snapchain             # your own read node on it (or hypersnap); when it answers, `fatline up` opens your client
 ```
 
-Stop paying any time with `fatline compute hetzner down`. The same command is packaged for npm as **`fatlines`**, not published yet. Once it is, `npm install -g fatlines` replaces the first two commands; on first use it downloads the repository into `~/fatline`. The name `fatline` on npm belongs to an unrelated project.
+You approve the payments in your own wallet: a QR code for your phone wallet (WalletConnect), or a page in your browser for a wallet extension. No key is typed anywhere. The server stops by itself when its paid days end; `fatline compute renew --days N` adds days. A server you already have at any provider: `fatline compute vps root@<ip>`. Your own Hetzner account (API token, card, hourly) is the by-hand option: `fatline compute hetzner`, and `fatline compute hetzner down` stops it. The same command is packaged for npm as **`fatlines`**, not published yet. Once it is, `npm install -g fatlines` replaces the first two commands; on first use it downloads the repository into `~/fatline`. The name `fatline` on npm belongs to an unrelated project.
 
 **You are your FID:** `fatline connect` draws a QR code (the Farcaster arch in the middle, a blue and a pink corner for the two networks). Scan it with your phone, sign in with the Farcaster app, and your own node confirms which FID signed ([indexer/src/connect.mjs](indexer/src/connect.mjs)). No seed phrase.
 
@@ -32,12 +32,12 @@ Stop paying any time with `fatline compute hetzner down`. The same command is pa
 **By hand**, the three commands:
 
 ```sh
-fatline compute          # (0) rent a server that can hold a node
-fatline node farcaster   # (1) your own read node on it, no API keys (or: node hypersnap)
+fatline compute          # (0) rent a server that can hold a node, paid in USDC from a wallet
+fatline node snapchain   # (1) your own read node on it, no API keys (or: node hypersnap)
 fatline client           # (2) your client, reading from your node
 ```
 
-Before them: `git clone https://github.com/jpfraneto/fatline && cd fatline && npm install -g .` (the `fatline` command). You need git, ssh and Node.js 22.12+, plus a Hetzner Cloud account with a card and an API token in `~/.hetzner-token`. Or use Docker on a machine of your own: `fatline node farcaster --local`. The tutorial is at [fatline.ink/docs](https://fatline.ink/docs/), in English, Spanish and Chinese.
+Before them: `git clone https://github.com/jpfraneto/fatline && cd fatline && npm install -g .` (the `fatline` command). You need git, ssh and Node.js 22.12+, plus a wallet you already use with ~12 USDC on Base (you approve the payments in it). Or by hand with your own Hetzner Cloud account: `fatline compute hetzner`. Or use Docker on a machine of your own: `fatline node snapchain --local`. The tutorial is at [fatline.ink/docs](https://fatline.ink/docs/), in English, Spanish and Chinese.
 
 **Status:** each command has been run on its own; a fresh run of all three, start to finish, by a stranger, is untested.
 
@@ -276,7 +276,7 @@ fatline doctor
 
 ```sh
 fatline init                    # choose the default network (readers can switch in Settings)
-fatline node farcaster          # full path only: run your own node (or: node hypersnap)
+fatline node snapchain          # full path only: run your own node (or: node hypersnap)
 fatline compute --quote         # rent path: price only, nothing is signed
 fatline compute --vault 0x…     # rent path: pay with one signature, set the server up
 fatline up                      # install, build, start on :8787

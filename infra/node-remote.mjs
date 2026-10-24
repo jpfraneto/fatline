@@ -23,7 +23,8 @@ export const NETWORKS = {
 export function pickServer(network, read = (f) => (existsSync(f) ? JSON.parse(readFileSync(f, 'utf8')) : null)) {
   const own = network === 'hypersnap' ? read(join(STATE, 'hetzner-hypersnap.json')) : null;
   if (own?.ipv4) return own.ipv4;
-  return read(join(STATE, 'hetzner.json'))?.ipv4 ?? null;
+  // Hetzner first, then a server paid in USDC (fatline compute), then your own (fatline compute vps).
+  return read(join(STATE, 'hetzner.json'))?.ipv4 ?? read(join(STATE, 'compute.json'))?.ipv4 ?? read(join(STATE, 'vps.json'))?.ipv4 ?? null;
 }
 
 const ssh = (ip, cmd, input) => spawnSync('ssh', [
@@ -42,9 +43,10 @@ async function info(url) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 async function main() {
-  const [network, ...flags] = process.argv.slice(2);
+  let [network, ...flags] = process.argv.slice(2);
+  if (network === 'snapchain') network = 'farcaster';
   const net = NETWORKS[network];
-  if (!net) throw new Error('Usage: fatline node farcaster|hypersnap [--force]');
+  if (!net) throw new Error('Usage: fatline node snapchain|hypersnap [--force]');
   if (flags.includes('--lite')) throw new Error('--lite (copy only the current state from our full node, no snapshot) is not tested yet. Coming soon.');
   const force = flags.includes('--force');
   const ip = pickServer(network);
@@ -52,6 +54,14 @@ async function main() {
   const url = `http://${ip}:${net.port}`;
   const log = `/root/${network}-setup.log`;
 
+  // A server rented a minute ago may still be booting: wait for SSH before anything else.
+  if (!(await info(url)) && ssh(ip, 'true').status !== 0) {
+    process.stdout.write(`Waiting for ${ip} to accept SSH (a new server takes a few minutes)`);
+    let ok = false;
+    for (let i = 0; i < 60 && !ok; i++) { await sleep(10_000); process.stdout.write('.'); ok = ssh(ip, 'true').status === 0; }
+    console.log(ok ? ' ready' : '');
+    if (!ok) throw new Error(`${ip} still refuses SSH after 10 minutes. Check the server with your provider, then run this again.`);
+  }
   if (!(await info(url))) {
     // `[n]ode-setup.sh`: the bracket keeps this check from matching its own command line.
     const pattern = `[${net.script[0]}]${net.script.slice(1)}`;
@@ -79,7 +89,11 @@ async function main() {
       const stopped = lines.includes('__stopped__');
       const line = lines.filter((l) => l !== '__stopped__').pop() ?? '';
       if (line && line !== last) { console.log(`  ${line.replace(/\x1b\[[0-9;]*m/g, '')}`); last = line; }
-      if (stopped && !(await info(url))) throw new Error(`The setup stopped before the node answered. See: ssh -i .fatline/ssh_ed25519 root@${ip} tail -50 ${log}`);
+      if (stopped && !(await info(url))) {
+        const tail = ssh(ip, `grep -a -v '^perl\\|locale\\|LANG\\|LC_\\|supported' ${log} | tail -n 15`).stdout.replace(/\x1b\[[0-9;]*m/g, '').trimEnd();
+        const why = tail.split('\n').find((l) => l.startsWith('FATLINE_ERROR:'));
+        throw new Error(`The setup stopped before the node answered.${why ? `\n${why.slice(15).trim()}` : ''}\nLast lines of ${log} on ${ip}:\n${tail.replace(/^/gm, '  ')}\nFix that and run this command again: finished steps are skipped.`);
+      }
       await sleep(30_000);
     }
   }

@@ -98,7 +98,7 @@ function body(f) {
     : '<p class="note warnline">Live numbers unavailable at the last check.</p>';
   const low = l?.disks.some((d) => d.freeMb < 25 * 1024) ? '<p class="note warnline">A disk is nearly full (under 25 GB free). The disk watch grows it or alerts the owner.</p>' : '';
   return `<h2>Its body</h2>
-    <p class="total">Keeping it alive costs <b>${usd(c.monthUsd)}</b> a month, about ${usd(c.dayUsd)} a day.</p>
+    <p class="total">Keeping it alive costs <b>${usd(c.dayUsd)} a day</b> (${usd(c.monthUsd)} a month), for ${f.nodes.length === 1 ? 'its one node' : f.nodes.length === 2 ? 'both its nodes' : `all ${f.nodes.length} of its nodes`}: ${f.nodes.map((n) => n.network === 'snapchain' ? 'Snapchain' : 'Hypersnap').join(' and ')}, on one server.</p>
     <div class="servers"><div class="server">
       <h3>${f.nodes.map((n) => `<span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span>`).join('')} One server, ${f.nodes.length} networks</h3>
       <div class="spec">${esc(s.provider)} ${esc(s.type)} · ${esc(s.location)}<br>${esc(s.cpu)} · ${s.ramGb} GB RAM</div>

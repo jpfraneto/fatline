@@ -84,7 +84,7 @@
   <p class="eyebrow">开始之前</p>
   <ul>
     <li>电脑上需要 <strong>git</strong>、<strong>Node.js 22.12 或更新版本</strong>和 <strong>ssh</strong>。</li>
-    <li>一个绑定银行卡的 <a href="https://www.hetzner.com/cloud">Hetzner Cloud</a> 账户，并把 API 令牌保存在 <code>~/.hetzner-token</code>（<code>chmod 600</code>）。</li>
+    <li>一个在 Base 上有约 <strong>12 USDC</strong> 的钱包。不需要银行卡、账户或 ETH：服务器用签名付款（x402）。你在自己的钱包里批准付款：用手机钱包扫二维码，或在浏览器钱包里批准。如果你更想用自己的 Hetzner 账户（银行卡，按小时计费）：<code>fatline compute hetzner</code>。</li>
     <li>新的 Hetzner 账户有额度限制（我们的是：卷总共 1,385 GB，14 个 vCPU）。一个节点需要 700 GB 的卷，所以一个新账户大约每个卷只够<strong>一个</strong>完整节点。我们在一台服务器（8 个 Arm 核心，16 GB）上用两个卷同时运行两个网络，正好在这个额度上：Hypersnap 最小的分片（44 GB）放在服务器自带的磁盘上。两个网络合计每月 131.82 美元。</li>
     <li>发帖需要你 Farcaster 账户的助记词，只在你自己的终端里输入。</li>
   </ul>
@@ -92,8 +92,8 @@
 <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 npm install -g .             <span class="c"># the fatline command, from anywhere</span>
 
-fatline compute            <span class="c"># (0) 租一台能装下节点的机器：先报价，你输入 "create" 才会创建</span>
-fatline node farcaster     <span class="c"># (1) 在上面装你的读取节点，不需要 API 密钥（或：node hypersnap）</span>
+fatline compute            <span class="c"># (0) 用 USDC 租一台能装下节点的机器：先报价，你输入 "pay" 才会付款</span>
+fatline node snapchain     <span class="c"># (1) 在上面装你的读取节点，不需要 API 密钥（或：node hypersnap）</span>
 fatline client             <span class="c"># (2) 你的客户端，从你的节点读取，在 http://localhost:8787</span></code></pre>
   <p class="note"><span class="tag no">尚未完整测试</span> 每一步都单独运行过。从零开始、一口气跑完三条命令的完整流程还没有做过。我们自己的节点是用更早的一步式版本搭建的。</p>
   <p class="muted">放不下一个节点？<code>fatline follow</code> 只从你选的一个节点复制你选的账户。它<a href="#follow">不是节点</a>。</p>
@@ -107,13 +107,13 @@ fatline client             <span class="c"># (2) 你的客户端，从你的节�
 
 <h2>第 0 步：给节点一台机器</h2>
 <pre><code>fatline compute --quote   <span class="c"># 只看价格，不创建任何东西</span>
-fatline compute           <span class="c"># 要求你输入 "create"</span></code></pre>
-<p>它会选有货的、内存至少 16 GB 的最便宜机型（2026-10-22 是 <code>cax31</code>，8 个 ARM CPU），加一个 700 GB 的卷，先显示价格再询问。它只负责租机器，第 1 步再装节点。创建的一切都记录在 <code>.fatline/hetzner.json</code>，可以精确删除。</p>
+fatline compute           <span class="c"># 要求你输入 "pay"</span></code></pre>
+<p>它在 AgentMetal 租一台服务器（4 CPU，8 GB 内存）一天，并加一个 700 GB 的磁盘：约 11 USDC，从你的钱包用 Base 上的 USDC 签两次名付款（x402）。预付，一天结束后自动停止；<code>--days N</code> 买更多天。它只负责租机器，第 1 步再装节点。想用自己的 Hetzner 账户：<code>fatline compute hetzner</code>。</p>
 <div class="concept"><strong>为什么要租？</strong>一个 Farcaster 节点保存所有账户当前的消息，今天大约 600 GB。大多数笔记本没有这么多空闲磁盘。</div>
-<p>已经有一台装了 Docker、16 GB 内存、约 700 GB 空闲磁盘的机器？跳过这一步，在那台机器上用 <code>fatline node farcaster --local</code>。</p>
+<p>已经有一台装了 Docker、16 GB 内存、约 700 GB 空闲磁盘的机器？跳过这一步，在那台机器上用 <code>fatline node snapchain --local</code>。</p>
 
 <h2>第 1 步：你的读取节点</h2>
-<pre><code>fatline node farcaster    <span class="c"># 或：fatline node hypersnap</span></code></pre>
+<pre><code>fatline node snapchain    <span class="c"># 或：fatline node hypersnap</span></code></pre>
 <p>它在第 0 步的机器上安装该网络的节点，并跟踪初始快照的传输（约 400 GB，大约 1 到 3 小时）。节点在 <code>/v1/info</code> 上应答后，就会成为 <code>fatline.config.json</code> 里你自己的节点，第 2 步就从它读取。一台服务器只放一个网络。</p>
 <div class="concept"><strong>读取节点和验证者。</strong>Snapchain 是 Farcaster 的网络软件，有一小组验证者对消息的顺序（区块）达成一致。你的节点是读取节点：跟随这些区块，保存每条消息的副本。你发帖时，节点检查消息并转发给验证者。读取从不需要验证者的许可。</div>
 <div class="concept"><strong>Farcaster 或 Hypersnap。</strong>Hypersnap 是 Snapchain 的社区分支。两者使用相同的 API，接受相同的签名消息。Hypersnap 保留完整历史；Farcaster 按每个账户的存储上限删除旧消息。默认没有偏向哪一个：由你选择。</div>

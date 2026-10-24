@@ -17,22 +17,24 @@ Tell them the truth first, in a few lines: **the mint is not open yet** (as of 2
 2. Offer what they can do today: run their own node and client (the steps below). It is the body a Fatline will live on, and it is free to try with the light path.
 3. If this file is newer than that date and names a mint link or contract, follow it instead; this section will change when the mint opens.
 
-**Show, don't paste.** You may open pages in the person's browser instead of printing long links: `open <url>` on macOS, `xdg-open <url>` on Linux, `start <url>` on Windows. Pick by the machine you are on (`uname`). Open only fatline.ink, github.com/jpfraneto/fatline, console.hetzner.cloud and nodejs.org pages, and say what you opened. If you are not on their computer (a chat on their phone), give the link instead.
+**Show, don't paste.** You may open pages in the person's browser instead of printing long links: `open <url>` on macOS, `xdg-open <url>` on Linux, `start <url>` on Windows. Pick by the machine you are on (`uname`). Open only fatline.ink, github.com/jpfraneto/fatline, basescan.org, console.hetzner.cloud and nodejs.org pages, and say what you opened. If you are not on their computer (a chat on their phone), give the link instead.
 
 ## Rules (never break these)
 
-1. **Money needs the person's explicit yes, every time.** Renting a server costs real money by the hour. Show the price first (`fatline compute --quote`), ask, and only then rent.
+1. **Money needs the person's explicit yes, every time.** Renting a server costs real money (USDC, prepaid by the day). Show the price first (`fatline compute --quote`), ask, and only then rent.
 2. **Never ask for, read, or handle a seed phrase or private key.** Posting as themselves (`fatline identity`) is something the person runs **in their own terminal**; it asks for the seed phrase in a hidden prompt and never saves it. Don't run it for them, don't pipe anything into it.
-3. **API tokens never go through the chat.** The person saves their Hetzner token to a file themselves (see step 3). You may check that the file exists; never `cat` it or print it.
+3. **Keys and tokens never go through the chat.** The paying wallet's key stays in `.fatline` (mode 600); never `cat` it or print it. If the person uses the Hetzner option, they save that token to a file themselves; you may check that the file exists, never print it.
 4. **Say which node is in use.** Fatline treats Farcaster (Snapchain) and Hypersnap as equals. Never switch a person to another node silently.
 5. **Don't invent results.** If something wasn't run or didn't work, say so, with the error.
-6. **Leave a way out.** Whenever a server is rented, tell the person how to stop paying: `fatline compute hetzner down` (deletes the server and its disk).
+6. **Leave a way out.** Whenever a server is rented, tell the person how it stops: a USDC server ends by itself when its paid days end (`fatline compute status` shows when). A Hetzner one bills by the hour until `fatline compute hetzner down`.
 
 ## Before you start: ask two things
 
-- **Which path?**
-  - **rent** (recommended): a Hetzner server runs their node, their client runs on their own computer. Needs a Hetzner Cloud account with a card. About $3–5 per day while it runs, billed by the hour. 1–3 hours to download, then up to ~6 hours to catch up.
-  - **local**: the node runs on this machine with Docker. Needs ~1 TB free disk, 16 GB RAM, 4+ CPUs.
+- **Where will the node live?** A node needs ~650 GB of disk, 8–16 GB of RAM, always on. Their client runs on their own computer either way.
+  - **cloud** (default): rented by the day, paid in USDC on Base (x402) from **their own wallet**. They approve each payment in it: by scanning a QR code with their phone wallet, or in a browser wallet extension. No account, no card, no ETH, no key typed anywhere. ~11.2 USDC a day (AgentMetal: 4 CPUs, 8 GB RAM + 700 GB disk).
+  - **hetzner**: their own Hetzner Cloud account (API token and card, billed by the hour). Cheapest: ~$2.60/day per node.
+  - **vps**: a server they already have, at any provider (root SSH). `fatline compute vps root@<ip>` checks it can hold a node.
+  - **local**: this machine with Docker. Needs ~700 GB free disk, 8–16 GB RAM, 4+ CPUs (`fatline doctor` says if it fits).
   - **light**: no node at all. Copies only chosen accounts from a public node. Free, minutes. It is **not a node**: it trusts the node it reads from.
 - **Which network?** `farcaster` (Snapchain) or `hypersnap`. If they don't mind, `farcaster`.
 
@@ -61,33 +63,36 @@ fatline connect
 In a terminal it draws a QR code; the person scans it with their phone and signs in with the Farcaster app. From an agent shell (no terminal) it opens the sign-in page in their browser instead, which shows the same request; tell them to approve it on their phone. It waits up to 5 minutes. Fatline checks the signature on this machine and asks the node which FID the signing address owns; only then is it saved (`.fatline/identity.json`, public data, no keys). No seed phrase is involved. Report the FID and username it prints. If they'd rather not, skip it.
 
 ### 2c. No FID? A worker
-A worker is a node keeper with no Farcaster account: `fatline worker new` makes a wallet on this machine and shows its recovery phrase once. **The person runs it in their own terminal, never you**: it refuses without a terminal, and a phrase must never pass through the chat. After that, `fatline worker` (safe for you) shows the address to fund with USDC on Base, and `fatline compute --provider vpsagent` pays from it (x402, no ETH). Its coin is not available yet; say so.
+A worker is a node keeper with no Farcaster account: `fatline worker new` makes a wallet on this machine and shows its recovery phrase once. **The person runs it in their own terminal, never you**: it refuses without a terminal, and a phrase must never pass through the chat. After that, `fatline worker` (safe for you) shows the address to fund with USDC on Base, and `fatline compute` pays from it (x402, no ETH). Its coin is not available yet; say so.
 
-### 3. (rent) Their Hetzner token
-They make one at console.hetzner.cloud → their project → Security → API tokens → Generate (Read & Write). Then **they** save it, without pasting it to you. Give them this line to run in their own terminal (macOS, after copying the token):
-```sh
-pbpaste > ~/.hetzner-token && chmod 600 ~/.hetzner-token
-```
-On Linux: `read -rs T && printf '%s\n' "$T" > ~/.hetzner-token && chmod 600 ~/.hetzner-token && unset T`. You check with `test -s ~/.hetzner-token && echo ok`.
+### 3. (cloud) Their wallet
+They need ~12 USDC **on Base** in a wallet they already use (MetaMask, Rainbow, Rabby, Coinbase Wallet, Trust…). No ETH needed: payments are signatures. **Never ask for a key or a phrase, and never suggest pasting one.** They approve in their own wallet:
+- `--pay browser`: opens a page on localhost in their browser; they connect a wallet extension and approve there. Works from your shell.
+- `--pay phone`: draws a WalletConnect QR code in the terminal; they scan it with their wallet app. Needs a WalletConnect project ID (`WALLETCONNECT_PROJECT_ID` or `walletConnectProjectId` in fatline.config.json). Best when they run the command in their own terminal, where they can see the code.
+- `--pay here`: a wallet made on this machine (`fatline compute wallet`, or a worker's), funded by them. It signs by itself.
 
-### 4. (rent) The price, then their yes, then rent
+### 4. (cloud) The price, then their yes, then rent
 ```sh
-fatline compute --quote        # free: shows server type, CPU/RAM/disk and the price per hour and per day
+fatline compute --quote        # free: server, disk, and the price for one day; nothing is signed
 ```
-Show them the price. **Ask: "Rent it? It costs about $X/day until you run fatline compute hetzner down."** Only after a clear yes:
+Show them the price. **Ask: "Rent it? About X USDC for one day, prepaid, no refunds. It stops by itself when the day ends."** Only after a clear yes:
 ```sh
-fatline compute --yes
+fatline compute --yes --pay browser     # or --pay phone / --pay here
 ```
-It picks the cheapest type in stock with 16 GB RAM and adds a 700 GB disk. If a type is sold out, the error lists what is in stock; use `--type <name>` (and `--location fsn1|hel1|nbg1`). New Hetzner accounts have limits (vCPUs, total volume size): if creating the volume is refused, the person has to ask Hetzner for a higher limit in the console (Limits).
+Tell them to approve two payments in their wallet (server, then disk). It rents AgentMetal's medium server (4 vCPU, 8 GB RAM) for one day and adds a 700 GB disk: two signatures, server then disk. If the disk payment fails, retry only the disk: `fatline compute disk --disk 700`. More days now: `--days N` (1–30); later: `fatline compute renew --days N` (they approve again).
+
+**(hetzner)** `fatline compute hetzner --quote --no-node`, then `fatline compute hetzner --yes --no-node`. It needs their own API token in `~/.hetzner-token` (console.hetzner.cloud → project → Security → API tokens, Read & Write), saved by them: `pbpaste > ~/.hetzner-token && chmod 600 ~/.hetzner-token`. It bills by the hour until `fatline compute hetzner down`.
+
+**(vps)** `fatline compute vps root@<ip>`. If the server doesn't know Fatline's SSH key yet, ssh asks for the server's password **in its own prompt**: the person runs that one in their own terminal.
 
 ### 5. Install the node
-- rent: `fatline node farcaster` (or `hypersnap`). It copies the setup to the server and streams the ~400 GB snapshot. It prints progress and waits until the node answers (1–3 hours). If your shell has a time limit, run it in the background and check later; re-running the same command just follows the setup again.
-- local: `fatline node farcaster --local`. It downloads the official bootstrap script and asks before running it: show the person the path and the sha256 it prints, and get their yes. It needs Docker running.
+- cloud, hetzner, vps: `fatline node snapchain` (or `hypersnap`). It copies the setup to the server and streams the ~400 GB snapshot. It prints progress and waits until the node answers (1–3 hours). If your shell has a time limit, run it in the background and check later; re-running the same command just follows the setup again.
+- local: `fatline node snapchain --local`. It downloads the official bootstrap script and asks before running it: show the person the path and the sha256 it prints, and get their yes. It needs Docker running.
 
 Don't put both networks on one rented server unless it has the disk for both (the command refuses by default).
 
 ### 6. Wait for sync
-Healthy means every shard is a few blocks behind or less. For a rented node the address is in `.fatline/hetzner.json` (`ipv4`); Snapchain answers on port 3381, Hypersnap on 4381:
+Healthy means every shard is a few blocks behind or less. For a rented node the address is in `.fatline/compute.json` (`ipv4`; `.fatline/hetzner.json` for Hetzner); Snapchain answers on port 3381, Hypersnap on 4381:
 ```sh
 curl -s http://<ipv4>:3381/v1/info    # shardInfos[].blockDelay: small numbers = in sync
 fatline status                       # for a node on this machine, and the client

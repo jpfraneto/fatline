@@ -15,8 +15,8 @@ const GB = 1024 ** 3;
 // Official Snapchain requirements (github.com/farcasterxyz/snapchain README, checked 2026-10-21).
 // Hypersnap keeps history unpruned, so it needs more disk, and it keeps growing.
 export const FULL_NODE = {
-  farcaster: { cpus: 4, ramGb: 16, diskGb: 1500, note: '1.5 TB minimum; the network state was ~550 GB on 2026-10-21 and grows.' },
-  hypersnap: { cpus: 4, ramGb: 16, diskGb: 2000, note: 'Unpruned history: ~800 GB on 2026-10-21 and growing. Plan for 2 TB+.' },
+  farcaster: { cpus: 4, ramGb: 8, diskGb: 650, note: 'Keeping 1 day of blocks (the default), the network state was ~560 GB on 2026-10-23 and grows. 16 GB RAM is comfortable.' },
+  hypersnap: { cpus: 4, ramGb: 16, diskGb: 800, note: 'Hypersnap keeps full history: ~730 GB on 2026-10-23 and growing.' },
 };
 export const LIGHT = { cpus: 1, ramGb: 1, diskGb: 2, node: [22, 12] };
 
@@ -136,7 +136,9 @@ export async function main() {
     console.log(dim('  It also needs ports 3381-3383 (TCP and UDP) reachable from the internet.'));
   } else if (plan === 'light') {
     const r = reachable[chosen];
-    console.log(`  This machine can't hold a full node, but it can run the indexer and apps,`);
+    console.log(`  This machine can't hold a ${label} node. Your own node can live somewhere else:`);
+    whereElse();
+    console.log(`  Meanwhile, this machine can run your client now,`);
     console.log(`  reading ${label} from ${r.url} (${r.own ? 'your node' : yellow('a public node you do not control')}).`);
     console.log('    fatline up');
     if (!r.own) {
@@ -146,9 +148,14 @@ export async function main() {
   } else {
     console.log(`  Nothing here can run Fatline for ${label} right now.`);
     if (!m.nodeOk) console.log(`  ${red('•')} Install Node.js 22.12+ (https://nodejs.org) and run doctor again; or`);
-    console.log(`  ${yellow('•')} rent a server with one x402 payment (USDC on Base). It runs the indexer and`);
-    console.log('    apps and reads from a public node. You pay once; that payment is how long it lives:');
-    console.log('      fatline compute            # shows the price, asks before paying');
+    whereElse();
+  }
+
+  function whereElse() {
+    console.log('    cloud     a server by the day, paid in USDC from your own wallet (~11 USDC/day): fatline compute');
+    console.log('    hetzner   your own Hetzner account, card, hourly (~$2.60/day): fatline compute hetzner');
+    console.log('    vps       a server you already have, any provider: fatline compute vps root@<ip>');
+    console.log(dim('  fatline setup asks, and walks you through the one you pick.'));
   }
 
   const report = { checkedAt: new Date().toISOString(), network: chosen, machine: m, full, light, reachable, plan };

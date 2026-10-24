@@ -11,6 +11,8 @@
 // After that, the client signs with the app key. The seed phrase is not needed again.
 import { randomBytes } from 'node:crypto';
 import readline from 'node:readline';
+import fs from 'node:fs';
+import os from 'node:os';
 import {
   FarcasterNetwork, MessageType, NobleEd25519Signer, ViemLocalEip712Signer,
   getFarcasterTime, makeKeyAdd, makeKeyAddBody, makeKeyRemove, makeKeyRemoveBodySelfRevoke,
@@ -32,7 +34,7 @@ const hex = (b) => `0x${Buffer.from(b).toString('hex')}`;
 function args() {
   const a = process.argv.slice(2);
   const get = (n) => { const i = a.indexOf(`--${n}`); return i >= 0 ? a[i + 1] : undefined; };
-  return { command: a[0] && !a[0].startsWith('--') ? a[0] : 'add', fid: get('fid'), network: get('network'), dryRun: a.includes('--dry-run') };
+  return { command: a[0] && !a[0].startsWith('--') ? a[0] : 'add', fid: get('fid'), network: get('network'), seedFile: get('seed-file'), dryRun: a.includes('--dry-run') };
 }
 
 function askHidden(question) {
@@ -87,8 +89,18 @@ async function add(opts, config) {
     return;
   }
 
-  console.log('\nType your seed phrase (12 or 24 words). It is hidden, used once on this machine, and never saved.');
-  let phrase = await askHidden('Seed phrase: ');
+  let phrase;
+  if (opts.seedFile) {
+    // A private file the owner filled in. Lines starting with # are ignored. It is read, never printed or copied.
+    const file = opts.seedFile.replace(/^~(?=\/)/, os.homedir());
+    if ((fs.statSync(file).mode & 0o077) !== 0) throw new Error(`${file} can be read by other users. Run: chmod 600 ${file}. Nothing was sent.`);
+    phrase = fs.readFileSync(file, 'utf8').split('\n').filter((l) => !l.trim().startsWith('#')).join(' ');
+    if (!phrase.trim()) throw new Error(`${file} has no seed phrase in it yet. Nothing was sent.`);
+    console.log(`\nReading the seed phrase from ${file} (not printed, not saved anywhere else).`);
+  } else {
+    console.log('\nType your seed phrase (12 or 24 words). It is hidden, used once on this machine, and never saved.');
+    phrase = await askHidden('Seed phrase: ');
+  }
   let custody;
   try {
     custody = mnemonicToAccount(phrase.trim().toLowerCase().split(/\s+/).join(' '));

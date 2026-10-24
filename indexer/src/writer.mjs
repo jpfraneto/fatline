@@ -129,8 +129,10 @@ export class Writer {
     const res = await this.fetch(url, { signal: AbortSignal.timeout(8_000) }).catch(() => null);
     if (!res) return null;
     if (res.status === 404) return false;
-    if (!res.ok) return null;
     const body = await res.json().catch(() => null);
+    // Snapchain says "not found" with HTTP 400 and NotFound in the error detail, not 404.
+    if (res.status === 400 && /NotFound/.test(body?.error_detail ?? '')) return false;
+    if (!res.ok) return null;
     if (!body?.data) return false;
     return hash ? body.hash === hash : true;
   }

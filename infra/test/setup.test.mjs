@@ -14,11 +14,21 @@ const plan = (state) => {
 };
 
 test('setup --plan: each path lists its own steps with the command to run by hand', () => {
-  const rent = plan({ done: ['check', 'connect', 'choose'], path: 'rent', network: 'hypersnap' });
-  assert.match(rent, /→ 4\. Connect your Hetzner account/);
-  assert.match(rent, /fatline compute --quote/);
-  assert.match(rent, /fatline node hypersnap\n/);
-  assert.match(rent, /Start your client/);
+  const cloud = plan({ done: ['check', 'connect', 'choose'], path: 'cloud', network: 'hypersnap' });
+  assert.match(cloud, /→ 4\. See the price/);
+  assert.match(cloud, /fatline compute --quote/);
+  assert.match(cloud, /fatline node hypersnap\n/);
+  assert.match(cloud, /Start your client/);
+  assert.doesNotMatch(cloud.split('→')[1], /Hetzner|token|private key/i, 'the cloud path never asks for an account or a key');
+  assert.equal(plan({ done: ['check', 'connect', 'choose'], path: 'rent', network: 'farcaster' }).includes('fatline compute --quote'), true, 'old saved "rent" means cloud');
+
+  const hetzner = plan({ done: ['check', 'connect', 'choose'], path: 'hetzner', network: 'farcaster' });
+  assert.match(hetzner, /→ 4\. Connect your Hetzner account/);
+  assert.match(hetzner, /fatline compute hetzner --no-node/);
+
+  const vps = plan({ done: ['check', 'connect', 'choose'], path: 'vps', network: 'farcaster' });
+  assert.match(vps, /fatline compute vps root@<ip>/);
+  assert.match(vps, /fatline node snapchain\n/);
 
   const light = plan({ done: ['check', 'connect', 'choose'], path: 'light', network: 'farcaster' });
   assert.doesNotMatch(light, /Hetzner|compute/, 'the free path never mentions renting');
@@ -26,7 +36,7 @@ test('setup --plan: each path lists its own steps with the command to run by han
 
   const local = plan({ done: [], path: 'local', network: 'farcaster' });
   assert.match(local, /→ 1\. Check this machine/);
-  assert.match(local, /node farcaster --local/);
+  assert.match(local, /node snapchain --local/);
 });
 
 test('setup without a terminal says how to see the plan instead of hanging', () => {

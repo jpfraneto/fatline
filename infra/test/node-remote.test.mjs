@@ -20,3 +20,12 @@ test('the two networks use different ports and folders', () => {
   assert.notEqual(NETWORKS.farcaster.port, NETWORKS.hypersnap.port);
   assert.notEqual(NETWORKS.farcaster.dir, NETWORKS.hypersnap.dir);
 });
+
+test('a server paid in USDC (fatline compute) is used when there is no Hetzner one', () => {
+  assert.equal(pickServer('farcaster', records({ 'compute.json': { ipv4: '3.3.3.3' } })), '3.3.3.3');
+  assert.equal(pickServer('farcaster', records({ 'hetzner.json': { ipv4: '1.1.1.1' }, 'compute.json': { ipv4: '3.3.3.3' } })), '1.1.1.1');
+});
+
+test('your own server (fatline compute vps) is used when nothing was rented', () => {
+  assert.equal(pickServer('farcaster', records({ 'vps.json': { ipv4: '4.4.4.4' } })), '4.4.4.4');
+});

@@ -37,14 +37,14 @@ function fakeNode({ delay = 1, refuse = null } = {}) {
       return new Response(JSON.stringify({ hash: hex(m.hash) }), { status: 200 });
     }
     reads += 1;
-    if (reads <= delay) return new Response('{}', { status: 404 });
+    if (reads <= delay) return new Response(JSON.stringify({ error: 'Failed to get cast', error_detail: 'status: NotFound, message: "cast not found"' }), { status: 400 }); // how Snapchain says "not found"
     const p = Object.fromEntries(u.searchParams);
     let key;
     if (u.pathname === '/v1/castById') key = `cast:${p.fid}:${p.hash}`;
     if (u.pathname === '/v1/reactionById') key = `reaction:${p.fid}:${p.reaction_type === 'Recast' ? 2 : 1}:${p.target_hash}`;
     if (u.pathname === '/v1/linkById') key = `link:${p.fid}:${p.target_fid}`;
     const hash = store.get(key);
-    return hash ? new Response(JSON.stringify({ data: {}, hash }), { status: 200 }) : new Response('{}', { status: 404 });
+    return hash ? new Response(JSON.stringify({ data: {}, hash }), { status: 200 }) : new Response(JSON.stringify({ error: 'Failed to get cast', error_detail: 'status: NotFound, message: "cast not found"' }), { status: 400 });
   };
   return { fetchImpl, submitted, network: { node: async () => ({ url: 'http://node.test', own: true }) } };
 }

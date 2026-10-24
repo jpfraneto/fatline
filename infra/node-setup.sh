@@ -37,6 +37,19 @@ say() { printf '\n\033[1m%s\033[0m\n' "$*"; }
 # With several volumes (e.g. a Hypersnap one on the same server): FATLINE_VOLUME wins, then the
 # volume that already holds a snapchain folder, then the first one.
 VOLUME="${FATLINE_VOLUME:-}"
+# A node needs ~650 GB. If no volume is mounted yet and the server's own disk is too small, the seller may
+# still be attaching the disk that was just bought: wait up to 15 minutes for it rather than filling / for hours.
+NEED_GB="${FATLINE_NEED_GB:-650}"
+root_free_gb() { df -BG --output=avail / | tail -1 | tr -dc 0-9; }
+if [ -z "$VOLUME" ] && ! ls -d /mnt/HC_Volume_* >/dev/null 2>&1 && [ "$(root_free_gb)" -lt "$NEED_GB" ]; then
+  say "Waiting for the data disk to be mounted (/ has only $(root_free_gb) GB free; a node needs ~$NEED_GB GB)"
+  for _ in $(seq 1 90); do ls -d /mnt/HC_Volume_* >/dev/null 2>&1 && break; sleep 10; done
+  if ! ls -d /mnt/HC_Volume_* >/dev/null 2>&1; then
+    echo "FATLINE_ERROR: no data disk. / has $(root_free_gb) GB free and no volume is mounted under /mnt; a node needs ~$NEED_GB GB."
+    echo "Attach a disk of ~700 GB (fatline compute disk --disk 700), then run fatline node again."
+    exit 1
+  fi
+fi
 if [ -z "$VOLUME" ]; then
   VOLUME=$(ls -d /mnt/HC_Volume_*/snapchain 2>/dev/null | head -1 | xargs -r dirname || true)
   [ -n "$VOLUME" ] || VOLUME=$(ls -d /mnt/HC_Volume_* 2>/dev/null | head -1 || true)

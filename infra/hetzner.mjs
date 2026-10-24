@@ -1,6 +1,6 @@
 // fatline compute hetzner [--type <name>] [--location nbg1] [--disk 700] [--quote] [--no-node]
 //   --type: default is the cheapest type in stock there with 16 GB+ RAM (cx43 and others sell out).
-//   --no-node: rent the machine only; install a node on it with fatline node farcaster|hypersnap.
+//   --no-node: rent the machine only; install a node on it with fatline node snapchain|hypersnap.
 // fatline compute hetzner status
 // fatline compute hetzner down        (deletes everything this created; billing stops)
 //
@@ -108,7 +108,7 @@ async function up(opts) {
   What you get   ${spec.cores} CPU · ${spec.memory} GB RAM · ${spec.disk} GB disk + ${opts.disk} GB volume, ${opts.location}
   Price          ~${p.perHour.toFixed(4)} ${p.currency}/hour = ~${p.perDay.toFixed(2)} ${p.currency}/day, billed by the hour on your Hetzner account
   Stop paying    fatline compute hetzner down   (deletes the server and the volume)
-  ${opts.noNode ? 'Next           fatline node farcaster   (or: node hypersnap) installs a read node on it' : 'It will run    a Farcaster read node: streamed snapshot (~600 GB), 1 day of blocks'}
+  ${opts.noNode ? 'Next           fatline node snapchain   (or: node hypersnap) installs a read node on it' : 'It will run    a Farcaster read node: streamed snapshot (~600 GB), 1 day of blocks'}
 `);
   if (opts.quote) return console.log('Quote only. Nothing was created.');
   if (!opts.yes && (await ask('Type "create" to create it: ')) !== 'create') return console.log('Stopped. Nothing was created.');
@@ -148,7 +148,7 @@ async function up(opts) {
   if (opts.noNode) {
     // Docker now, so `node <network>` only has to fetch its image.
     spawnSync('ssh', [...sshArgs(), `root@${record.ipv4}`, 'command -v docker >/dev/null || (curl -fsSL https://get.docker.com | sh >/dev/null 2>&1)'], { stdio: 'inherit' });
-    return console.log(`The machine is ready at ${record.ipv4}. Next: fatline node farcaster   (or: node hypersnap)`);
+    return console.log(`The machine is ready at ${record.ipv4}. Next: fatline node snapchain   (or: node hypersnap)`);
   }
   const put = spawnSync('ssh', [...sshArgs(), `root@${record.ipv4}`, 'cat > /root/node-setup.sh && chmod +x /root/node-setup.sh'], { input: readFileSync(join(ROOT, 'infra/node-setup.sh')) });
   if (put.status !== 0) throw new Error('Could not copy the node setup. Retry: fatline compute hetzner status');

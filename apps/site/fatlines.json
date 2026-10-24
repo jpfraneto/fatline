@@ -3,6 +3,8 @@
   "fatlines": [
     {
       "ticker": "FATLINE",
+      "name": "Aster",
+      "image": "img/world/aster.jpg",
       "ownerFid": 18350,
       "coin": {
         "chain": "base",
