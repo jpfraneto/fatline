@@ -36,6 +36,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {AppVault} from "./AppVault.sol";
 import {FatlineLaunchpad} from "./FatlineLaunchpad.sol";
+import {SafeToken} from "./SafeToken.sol";
 
 /// @title Fatliners
 /// @notice Eggs and the 777 beings that hatch from them. One token per Farcaster account: its id is the
@@ -69,6 +70,8 @@ import {FatlineLaunchpad} from "./FatlineLaunchpad.sol";
 ///
 /// Free: whoever submits pays the gas (an attester can relay it), and nothing is ever paid to this contract.
 contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
+    using SafeToken for address;
+
     uint256 public constant ROYALTY_BPS = 800; // 8%
     uint256 public constant WARM_DAYS = 3; // what attesters wait for before they sign a Hatch
     uint256 public constant REQUIRED = 3; // signatures a set needs (or all attesters, while there are fewer)
@@ -141,6 +144,8 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     uint256 public totalSupply; // Fatliners (at most maxSupply)
     uint256 public eggCount; // eggs taken, hatched or not
     uint256 public liveEggs; // eggs now (not hatched, not dead); liveEggs + totalSupply <= maxSupply
+    mapping(uint256 fid => uint256) public priceOf; // USDC (6 decimals) its holder asks; 0 = not for sale
+    bool private _selling; // the only way a token changes hands is a sale, paid in USDC
     mapping(uint256 fid => uint256) public hibernatingUntil; // after its egg died, no new egg before this
     bytes32 public orderRoot; // the ranking: leaves keccak256(abi.encode(fid, position)); 0 = open to everyone
     uint64 public orderStart; // day 1 of the ranking's window
@@ -168,6 +173,8 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     event Born(uint256 indexed fid, address indexed to, string surname, bytes32 dna, address server, uint256 signers);
     event FidLinked(uint256 indexed fatliner, uint256 indexed fid, address indexed holder);
     event Died(uint256 indexed fid, uint256 hibernatingUntil);
+    event Listed(uint256 indexed fid, address indexed holder, uint256 price);
+    event Sold(uint256 indexed fid, address indexed from, address indexed to, uint256 price);
     event Order(bytes32 root, uint64 start);
 
     error NotHolder();
@@ -181,6 +188,9 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     error AlreadyHatched();
     error NotTheSameEgg(); // an egg's owner, DNA and cutoff never change
     error Hibernating();
+    error OnlyBySale();
+    error NotForSale();
+    error PriceChanged();
     error NotYourTurn();
     error NoSlot();
     error Asleep();
@@ -501,10 +511,38 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         emit AppSet(fid, app);
     }
 
-    /// @dev Eggs and Fatliners move freely. A new holder brings their own frame of reference: the token falls asleep
-    /// (its link to a Farcaster account is cleared) until they wake it (`awaken`).
+    // ------------------------------------------------------------------ the market: the only way to move
+
+    /// @notice The holder puts an egg or a Fatliner up for sale, in USDC (6 decimals). 0 takes it off.
+    function list(uint256 fid, uint256 price) external {
+        if (_ownerOf(fid) != msg.sender) revert NotHolder();
+        priceOf[fid] = price;
+        emit Listed(fid, msg.sender, price);
+    }
+
+    /// @notice Buy it at its price (`maxPrice` guards against a change while you sign). The seller gets the price
+    /// minus 8%, which goes to the genesis Fatliner's vault. Then it is yours, and asleep until you wake it.
+    function buy(uint256 fid, uint256 maxPrice) external {
+        uint256 price = priceOf[fid];
+        if (price == 0) revert NotForSale();
+        if (price > maxPrice) revert PriceChanged();
+        address seller = _ownerOf(fid);
+        uint256 royalty = (price * ROYALTY_BPS) / 10_000;
+        usdc.safeTransferFrom(msg.sender, seller, price - royalty);
+        if (royalty != 0) usdc.safeTransferFrom(msg.sender, predictFatlinerVault(genesisFid), royalty);
+        _selling = true;
+        _transfer(seller, msg.sender, fid);
+        _selling = false;
+        emit Sold(fid, seller, msg.sender, price);
+    }
+
+    /// @dev Tokens are minted (an egg) and burned (an egg that died), and otherwise move only by `buy`. A new holder
+    /// brings their own frame of reference: the token falls asleep (its link to a Farcaster account is cleared)
+    /// until they wake it (`awaken`). Any listing ends with the sale.
     function _update(address to, uint256 tokenId, address auth) internal override returns (address from) {
         from = super._update(to, tokenId, auth);
+        if (from != address(0) && to != address(0) && !_selling) revert OnlyBySale();
+        if (priceOf[tokenId] != 0) delete priceOf[tokenId];
         if (from != address(0) && to != address(0) && from != to && linkedFidOf[tokenId] != 0) {
             delete linkedFidOf[tokenId];
             emit FidLinked(tokenId, 0, to);

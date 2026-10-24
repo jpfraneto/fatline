@@ -185,8 +185,7 @@ contract FatlinersTest is Test {
 
     function test_AMovedTokenSleepsUntilItsNewHolderWakesIt() public {
         takeEgg(nft, anEgg(18350, anky, DNA, attesters[1]));
-        vm.prank(anky);
-        nft.transferFrom(anky, buyer, 18350); // eggs move now
+        sell(18350, anky, buyer, 50e6); // the only way it changes hands
         assertTrue(nft.isAsleep(18350));
         Fatliners.Hatch memory h = aHatch(18350, "PEBBLE");
         bytes[] memory hs = sigs(nft.hatchDigest(h), firstN(1));
@@ -350,8 +349,7 @@ contract FatlinersTest is Test {
         assertEq(nft.eggOfServer(attesters[1]), 0);
         assertEq(nft.threshold(), 2);
         assertEq(nft.linkedFidOf(18350), 18350);
-        vm.prank(anky);
-        nft.transferFrom(anky, buyer, 18350); // Fatliners move
+        sell(18350, anky, buyer, 50e6); // the only way it changes hands
         assertEq(nft.ownerOf(18350), buyer);
     }
 
@@ -411,8 +409,7 @@ contract FatlinersTest is Test {
     function test_KeeperLink_ClearedOnEveryTransfer() public {
         ankyHatched(attesters[1]);
         assertEq(nft.linkedFidOf(18350), 18350);
-        vm.prank(anky);
-        nft.transferFrom(anky, buyer, 18350);
+        sell(18350, anky, buyer, 50e6); // the only way it changes hands
         assertEq(nft.linkedFidOf(18350), 0); // asleep: the old frame of reference left with the seller
         assertEq(nft.dnaOf(18350), DNA); // until it is woken, the body it was born with stays
     }
@@ -537,8 +534,7 @@ contract FatlinersTest is Test {
         AppVault vault = factory.createFatline(18350, params(), 0);
         assertEq(vault.owner(), anky);
         usdc.mint(address(vault), 100e6); // fuel
-        vm.prank(anky);
-        nft.transferFrom(anky, buyer, 18350); // sold
+        sell(18350, anky, buyer, 50e6); // the only way it changes hands
         assertEq(vault.owner(), buyer);
         vm.prank(anky);
         vm.expectRevert(AppVault.NotOwner.selector);
@@ -638,5 +634,46 @@ contract FatlinersTest is Test {
         assertEq(nft.appOf(18350), address(clanker));
         vm.expectRevert(Fatliners.NoEgg.selector);
         nft.setApp(424242, address(usdc));
+    }
+
+    /// The holder lists, the buyer pays in USDC: the only way a token changes hands.
+    function sell(uint256 fid, address seller, address to, uint256 price) internal {
+        vm.prank(seller);
+        nft.list(fid, price);
+        usdc.mint(to, price);
+        vm.startPrank(to);
+        usdc.approve(address(nft), price);
+        nft.buy(fid, price);
+        vm.stopPrank();
+    }
+
+    function test_TokensMoveOnlyBySale_8PercentToAster() public {
+        takeEgg(nft, anEgg(18350, anky, DNA, attesters[1]));
+        vm.startPrank(anky);
+        vm.expectRevert(Fatliners.OnlyBySale.selector);
+        nft.transferFrom(anky, buyer, 18350);
+        vm.expectRevert(Fatliners.OnlyBySale.selector);
+        nft.safeTransferFrom(anky, buyer, 18350);
+        vm.stopPrank();
+        vm.prank(buyer);
+        vm.expectRevert(Fatliners.NotForSale.selector);
+        nft.buy(18350, 1e6);
+        vm.prank(buyer);
+        vm.expectRevert(Fatliners.NotHolder.selector);
+        nft.list(18350, 1e6);
+        vm.prank(anky);
+        nft.list(18350, 100e6);
+        usdc.mint(buyer, 100e6);
+        vm.startPrank(buyer);
+        usdc.approve(address(nft), 100e6);
+        vm.expectRevert(Fatliners.PriceChanged.selector);
+        nft.buy(18350, 99e6);
+        nft.buy(18350, 100e6);
+        vm.stopPrank();
+        assertEq(nft.ownerOf(18350), buyer);
+        assertEq(usdc.balanceOf(anky), 92e6);
+        assertEq(usdc.balanceOf(nft.predictFatlinerVault(ASTER)), 8e6); // Aster's vault
+        assertEq(nft.priceOf(18350), 0); // the listing ended with the sale
+        assertTrue(nft.isAsleep(18350));
     }
 }
