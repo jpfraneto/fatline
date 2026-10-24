@@ -400,3 +400,11 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
 .ck-lf-words { margin: 6px auto 0; max-width: 34em; text-align: center; font: 13px/1.45 var(--mono); color: var(--signal); min-height: 2.9em; }
 .ck-stage.dark + .ck-lf-words { color: var(--muted); }
 .ck-stage.dark[data-egg="1"] + .ck-lf-words { color: var(--warn); }
+/* Before the window has a key: the two ways to get one. */
+.ck-speak { margin: 4px 0 8px; padding: 14px; border-radius: 12px; border: 1px dashed rgba(255, 170, 90, .35); }
+.ck-speak p { margin: 0 0 10px; }
+.ck-speak-ways { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+.ck-speak-ways small { display: block; margin-top: 6px; color: var(--muted); font-size: 12.5px; line-height: 1.4; }
+.ck-speak-btn { width: 100%; padding: 12px; border: 0; border-radius: var(--radius); background: var(--accent); color: var(--accent-ink); font-weight: 700; cursor: pointer; }
+.ck-speak .ck-cmd { margin: 0; width: 100%; }
+@media (max-width: 560px) { .ck-speak-ways { grid-template-columns: 1fr; } }

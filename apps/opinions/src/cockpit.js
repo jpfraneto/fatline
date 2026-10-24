@@ -133,6 +133,17 @@ function lower(d) {
   ];
 }
 
+// Before this window has a key: the two ways to get one, right here by the fire.
+function speak() {
+  return el('div', { class: 'ck-speak' },
+    el('p', {}, el('b', {}, 'Give this window a voice. '), 'It needs its own key for your account, made once:'),
+    el('div', { class: 'ck-speak-ways' },
+      el('div', {}, el('button', { type: 'button', class: 'ck-speak-btn', onclick: () => document.querySelector('.castbutton')?.click() }, 'Sign in with your wallet'),
+        el('small', {}, 'If a wallet you use (Rainbow, MetaMask, Coinbase…) owns your Farcaster account.')),
+      el('div', {}, cmd('fatline identity'),
+        el('small', {}, "If your account lives in the Farcaster app: run this in your terminal and type its recovery phrase (Settings → Advanced). It's used once, on your machine, and never saved."))));
+}
+
 // Around the fire: your voice and your people's, through this window.
 function fire(fids, onCast) {
   const list = el('div', { class: 'list ck-around' }, el('p', { class: 'muted' }, 'Listening…'));
@@ -179,7 +190,7 @@ export async function cockpitPage() {
       el('h2', { class: 'ck-h', id: 'ck-fire-h' }, 'By the fire'),
       el('p', { class: 'ck-sub' }, 'Your Fatliner, you, and your people. Talk about life.'),
       way,
-      castComposer({ onDone: () => setTimeout(around.load, 1500) }),
+      d.me.canWrite ? castComposer({ onDone: () => setTimeout(around.load, 1500) }) : speak(),
       around.list),
     bottom));
   const tick = async () => {
