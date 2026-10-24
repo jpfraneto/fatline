@@ -22,7 +22,7 @@ export function usdcStartTick(marketCapUsd) {
   return Math.floor(tick / TICK_SPACING) * TICK_SPACING;
 }
 
-export async function buildLaunch({ vault, tokenAdmin, name, symbol, image = '', description = '', chainId = 8453, startMarketCapUsd = 25_000, salt }) {
+export async function buildLaunch({ vault, tokenAdmin, name, symbol, image = '', description = '', url = '', chainId = 8453, startMarketCapUsd = 25_000, salt }) {
   const start = usdcStartTick(startMarketCapUsd);
   const clanker = new Clanker({});
   const tx = await clanker.getDeployTransaction({
@@ -32,7 +32,7 @@ export async function buildLaunch({ vault, tokenAdmin, name, symbol, image = '',
     image,
     tokenAdmin,
     salt: salt ?? keccak256(toHex(`${vault}:${symbol}:${Date.now()}`)),
-    metadata: { description },
+    metadata: { description, ...(url ? { socialMediaUrls: [{ platform: 'website', url }] } : {}) },
     context: { interface: 'Fatline' },
     pool: {
       pairedToken: USDC[chainId],

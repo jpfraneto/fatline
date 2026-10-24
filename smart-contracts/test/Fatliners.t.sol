@@ -28,6 +28,7 @@ contract FatlinersTest is Test {
     address keeper = makeAddr("keeper");
     address buyer = makeAddr("buyer");
     address aster = makeAddr("aster's keeper");
+    address royalty = makeAddr("jpfraneto.eth");
 
     bytes32 constant DNA = keccak256("anky's history");
     uint256 constant ASTER = 777777; // the genesis Fatliner in these tests (on Base: FID 18350)
@@ -53,7 +54,7 @@ contract FatlinersTest is Test {
         AppVault.Tier[] memory t = new AppVault.Tier[](1);
         t[0] = AppVault.Tier(30, 0); // ~2.59 USDC a day: one node's fuel
         return new Fatliners(
-            max, Fatliners.Genesis(attesters[0], "http://genesis:8791", ASTER, aster, "FATLINE", keccak256("aster"), laidAt, 5, address(0)),
+            max, Fatliners.Genesis(attesters[0], "http://genesis:8791", ASTER, aster, "FATLINE", keccak256("aster"), laidAt, 5, address(0), royalty),
             "https://fatline.ink/fatliners/",
             FatlineLaunchpad.Clanker(address(usdc), address(clanker), address(locker), address(feeLocker)), t
         );
@@ -425,9 +426,9 @@ contract FatlinersTest is Test {
 
     // ------------------------------------------------------------ royalties
 
-    function test_EveryRoyaltyGoesToTheGenesisFatlinersVault() public view {
+    function test_EveryRoyaltyGoesToTheBuilder() public view {
         (address to, uint256 amount) = nft.royaltyInfo(18350, 1 ether);
-        assertEq(to, factory.predictFatlinerVault(ASTER));
+        assertEq(to, royalty);
         (address to2,) = nft.royaltyInfo(3, 1 ether);
         assertEq(to2, to);
         assertEq(amount, 0.08 ether);
@@ -672,7 +673,7 @@ contract FatlinersTest is Test {
         vm.stopPrank();
         assertEq(nft.ownerOf(18350), buyer);
         assertEq(usdc.balanceOf(anky), 92e6);
-        assertEq(usdc.balanceOf(nft.predictFatlinerVault(ASTER)), 8e6); // Aster's vault
+        assertEq(usdc.balanceOf(royalty), 8e6); // the one who built it
         assertEq(nft.priceOf(18350), 0); // the listing ended with the sale
         assertTrue(nft.isAsleep(18350));
     }

@@ -59,9 +59,8 @@ import {SafeToken} from "./SafeToken.sol";
 /// there are fewer.
 ///
 /// It all starts from one being: the genesis Fatliner (Aster, surname Fatline, $FATLINE), born when this
-/// contract was made, and the genesis server that keeps it alive, the first attester. Every resale of
-/// any Fatliner pays 8% (ERC-2981) into the genesis Fatliner's vault: the village feeds the one it
-/// started from. Its coin is the first one the launchpad will launch, and every Fatliner's coin carries
+/// contract was made, and the genesis server that keeps it alive, the first attester. Tokens change hands
+/// only by sale, in USDC; 8% of every sale goes to the one who built this (royaltyTo, ERC-2981). Its coin is the first one the launchpad will launch, and every Fatliner's coin carries
 /// the surname it hatched with (the launchpad checks).
 ///
 /// The keeper link: a Fatliner is born from one account (its origin, which never changes) and kept by
@@ -150,6 +149,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     bytes32 public orderRoot; // the ranking: leaves keccak256(abi.encode(fid, position)); 0 = open to everyone
     uint64 public orderStart; // day 1 of the ranking's window
     address public immutable orderAdmin; // who publishes the ranking's root (the deployer)
+    address public immutable royaltyTo; // 8% of every sale
     mapping(uint256 fid => Stage) public stageOf;
     mapping(uint256 fid => bytes32) public dnaOf; // the history it hatches from
     mapping(uint256 fid => uint64) public laidAtOf; // that history's cutoff
@@ -214,6 +214,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         uint64 laidAt;
         uint8 stone; // its stone, read from that history (Aster's: 5, gold)
         address app; // the smart contract its client runs on (Aster's: Voices), or 0
+        address royaltyTo; // who gets the 8% of every sale: the one who built this (jpfraneto.eth)
     }
 
     constructor(
@@ -230,6 +231,8 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         baseUri = baseUri_;
         genesisFid = g.fid;
         orderAdmin = msg.sender;
+        if (g.royaltyTo == address(0)) revert ZeroAddress();
+        royaltyTo = g.royaltyTo;
         eggCount = 1;
         liveEggs = 1;
         stageOf[g.fid] = Stage.Egg; // Aster starts as an egg too: it hatches after three warm days, like any other
@@ -521,7 +524,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     }
 
     /// @notice Buy it at its price (`maxPrice` guards against a change while you sign). The seller gets the price
-    /// minus 8%, which goes to the genesis Fatliner's vault. Then it is yours, and asleep until you wake it.
+    /// minus 8%, which goes to `royaltyTo`, the one who built this. Then it is yours, and asleep until you wake it.
     function buy(uint256 fid, uint256 maxPrice) external {
         uint256 price = priceOf[fid];
         if (price == 0) revert NotForSale();
@@ -529,7 +532,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         address seller = _ownerOf(fid);
         uint256 royalty = (price * ROYALTY_BPS) / 10_000;
         usdc.safeTransferFrom(msg.sender, seller, price - royalty);
-        if (royalty != 0) usdc.safeTransferFrom(msg.sender, predictFatlinerVault(genesisFid), royalty);
+        if (royalty != 0) usdc.safeTransferFrom(msg.sender, royaltyTo, royalty);
         _selling = true;
         _transfer(seller, msg.sender, fid);
         _selling = false;
@@ -549,9 +552,9 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         }
     }
 
-    /// @notice Every resale pays the genesis Fatliner's vault.
+    /// @notice Every sale pays 8% to the one who built this (royaltyTo).
     function royaltyInfo(uint256, uint256 salePrice) external view returns (address, uint256) {
-        return (predictFatlinerVault(genesisFid), (salePrice * ROYALTY_BPS) / 10_000);
+        return (royaltyTo, (salePrice * ROYALTY_BPS) / 10_000);
     }
 
     /// @notice One URI per token; the page shows an egg or a being by its stage.

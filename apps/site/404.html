@@ -88,6 +88,7 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const main = document.getElementById('main');
 const m = location.pathname.match(/^\/base\/(0x[0-9a-fA-F]{40})\/?$/);
 const t = location.pathname.match(/^\/f\/([A-Za-z0-9]{1,12})\/?$/);
+const appPath = location.pathname.match(/^\/(0x[0-9a-fA-F]{40})\/?$/); // fatline.ink/<an app contract>
 const usd = (x) => `$${Number(x).toFixed(2)}`;
 const gb = (mb) => `${Math.round(mb / 1024)} GB`;
 
@@ -173,6 +174,38 @@ if (t) {
       ${being(f)}<h2>Its nodes</h2>${nodeRows(f)}${body(f)}
       <div class="links"><a class="btn primary" href="/docs/">Run your own</a><a class="btn" href="/explore.html">The board</a></div></div>`;
   });
+} else if (appPath) {
+  // One node, one client, one contract: which Fatline runs on this contract (Fatliners.appOf, its AppSet events).
+  const app = appPath[1].toLowerCase();
+  const RPC = 'https://mainnet.base.org';
+  const rpc = (method, params) => fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) }).then((r) => r.json()).then((j) => j.result);
+  const word = (n) => BigInt(n).toString(16).padStart(64, '0');
+  const str = (hex) => { const b = hex.slice(2); const len = parseInt(b.slice(64, 128), 16); let o = ''; for (let i = 0; i < len; i++) o += String.fromCharCode(parseInt(b.slice(128 + i * 2, 130 + i * 2), 16)); return o; };
+  const scan = `https://basescan.org/address/${app}`;
+  main.innerHTML = `<div><div class="kicker">Base · app contract</div><h1>Reading…</h1><p><code>${esc(app)}</code></p></div>`;
+  fetch('https://raw.githubusercontent.com/jpfraneto/fatline/main/smart-contracts/deployments/base.json', { cache: 'no-store' }).then((r) => r.json()).then(async (d) => {
+    const nft = d.Fatliners.address;
+    const logs = await rpc('eth_getLogs', [{ address: nft, fromBlock: '0x' + Number(d.fromBlock).toString(16), toBlock: 'latest',
+      topics: ['0xbb87f81106f8d961218386a4db09914d0ee98730973a7e85b726b37a340045d4', null, '0x' + word(app)] }]) ?? [];
+    const fids = [...new Set(logs.map((l) => Number(BigInt(l.topics[1]))))];
+    const live = [];
+    for (const fid of fids) { // still tied now? (a holder can replace it)
+      const now = await rpc('eth_call', [{ to: nft, data: '0xd47eae63' + word(fid) }, 'latest']);
+      if (now && now.slice(-40).toLowerCase() === app.slice(2)) live.push({ fid, surname: str(await rpc('eth_call', [{ to: nft, data: '0x8d967a78' + word(fid) }, 'latest'])) });
+    }
+    if (!live.length) {
+      document.title = `${app.slice(0, 10)}… · Fatline`;
+      main.innerHTML = `<div><div class="kicker">Base · app contract</div><h1>No Fatline runs on this yet</h1><p><code>${esc(app)}</code></p>
+        <p class="muted">A Fatline's holder ties one smart contract to it (<code>setApp</code>): the one its client runs on. None is tied to this address right now.</p>
+        <div class="links"><a class="btn" href="${scan}">Basescan ↗</a><a class="btn primary" href="/docs/">Run your own</a></div></div>`;
+      return;
+    }
+    const f = live[0];
+    document.title = `$${f.surname} · app · Fatline`;
+    main.innerHTML = `<div><div class="kicker">Base · the app of Fatline #${f.fid}</div><h1>$${esc(f.surname)}</h1><p><code>${esc(app)}</code></p>
+      <p>This is the smart contract Fatline #${f.fid}'s client runs on. One node, one client, one contract: the coin points here, and so does its client.</p>
+      <div class="links"><a class="btn" href="${scan}">Basescan ↗</a><a class="btn" href="/fatliners/${f.fid}">The being</a><a class="btn primary" href="/docs/">Run your own</a></div></div>`;
+  }).catch(() => { main.innerHTML = `<div><div class="kicker">Base · app contract</div><h1>Could not read Base right now</h1><p><code>${esc(app)}</code></p><div class="links"><a class="btn" href="${scan}">Basescan ↗</a></div></div>`; });
 } else if (!m) {
   document.title = 'Not found · Fatline';
   main.innerHTML = `<div><div class="kicker">404</div><h1>Nothing here</h1>

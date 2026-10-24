@@ -54,7 +54,8 @@ contract Deploy is Script {
                 dna: vm.envBytes32("GENESIS_DNA"),
                 laidAt: uint64(vm.envUint("GENESIS_LAID_AT")),
                 stone: uint8(vm.envOr("GENESIS_STONE", uint256(0))),
-                app: voices // the genesis client's contract: Voices, its long posts
+                app: voices, // the genesis client's contract: Voices, its long posts
+                royaltyTo: vm.envOr("ROYALTY_TO", address(0xed21735DC192dC4eeAFd71b4Dc023bC53fE4DF15)) // jpfraneto.eth
             });
             Fatliners f = new Fatliners(
                 777, g, "https://fatline.ink/fatliners/", FatlineLaunchpad.Clanker(USDC, CLANKER, LOCKER, FEE_LOCKER), defaultTiers()
