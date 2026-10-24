@@ -17,6 +17,8 @@ const RPCS = (process.env.BASE_RPCS ?? 'https://base-rpc.publicnode.com,https://
 
 const EGG_TAKEN = '0x8c16cbfb788ff0014645f2e619d6e70982930d43a1a53fcbb22ff48ab6eb0af0'; // EggTaken(uint256,address,address,bytes32,uint64)
 const BORN = '0x704dcc88ff1bfb0743f3746acd10e46292474d0ff7ab8869fc1e8f0626d629b0'; // Born(uint256,address,string,bytes32,address,uint256)
+const STONE = '0x070d70891cb4787d2b3536ef002157e545057758ca8cee05540e7f6682ac4d54'; // Stone(uint256,uint8): the egg's stone, from its history (0 ivory … 6 opal)
+const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
 const SURNAME_OF = '0x8d967a78'; // surnameOf(uint256)
 
 async function rpc(method, params) {
@@ -54,13 +56,14 @@ const tokenId = (l) => BigInt(l.topics[1]).toString();
 const tokens = new Map(); // fid -> { dna, laidAt, surname? }
 for (const l of await logs(EGG_TAKEN)) tokens.set(tokenId(l), { dna: word(l.data, 0), laidAt: Number(BigInt(word(l.data, 1))) });
 for (const l of await logs(BORN)) tokens.set(tokenId(l), { ...tokens.get(tokenId(l)), dna: word(l.data, 1), born: true });
+for (const l of await logs(STONE)) { const id = tokenId(l); tokens.set(id, { ...tokens.get(id), stone: STONES[Number(BigInt(l.data))] }); }
 // Genesis is born in the constructor, before any event can be read with its egg: always include it.
 const g = deployments.Fatliners.genesis;
-tokens.set(String(g.fid), { ...tokens.get(String(g.fid)), dna: g.dna, laidAt: g.laidAt, born: true });
+tokens.set(String(g.fid), { stone: g.stone, ...tokens.get(String(g.fid)), dna: g.dna, laidAt: g.laidAt, born: true });
 
 mkdirSync(out, { recursive: true });
 for (const [fid, t] of tokens) {
-  const attrs = [{ trait_type: 'FID', value: Number(fid), display_type: 'number' }, { trait_type: 'DNA', value: t.dna }];
+  const attrs = [{ trait_type: 'FID', value: Number(fid), display_type: 'number' }, ...(t.stone ? [{ trait_type: 'Stone', value: t.stone }] : []), { trait_type: 'DNA', value: t.dna }];
   let meta;
   if (t.born) {
     const surname = decodeString(await rpc('eth_call', [{ to: contract, data: SURNAME_OF + BigInt(fid).toString(16).padStart(64, '0') }, 'latest']));
