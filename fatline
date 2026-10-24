@@ -48,7 +48,7 @@ Setup (in this order on a new machine):
   fatline client                The same, but first asks you to connect (below) if you haven't
 
 You are your FID (no seed phrase):
-  fatline connect               A QR code: scan it with your phone, sign in with Farcaster; your node confirms
+  fatline connect [--node URL]  A QR code: scan it with your phone, sign in with Farcaster; your node confirms (it may still be syncing)
                                      the FID. --open opens the link on this device. connect show | connect forget
 
 No FID? Be a worker (as many as you like):

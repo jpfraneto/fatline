@@ -7,7 +7,7 @@ export const toMs = (fcSeconds) => (fcSeconds + FARCASTER_EPOCH) * 1000;
 export const toFc = (ms) => Math.floor(ms / 1000) - FARCASTER_EPOCH;
 
 const HEALTH_TTL_MS = 30_000;
-const MAX_HEALTHY_DELAY = 200; // blocks behind before a node counts as out of sync
+const MAX_HEALTHY_DELAY = 200; // blockDelay, in seconds behind the network, before a node counts as out of sync
 
 export class Network {
   constructor(name, { label, about, nodes }, { fetchImpl = fetch, timeoutMs = 8000 } = {}) {

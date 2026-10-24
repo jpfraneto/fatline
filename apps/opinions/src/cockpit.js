@@ -17,6 +17,8 @@ const BEINGS = { 18350: '9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM' };
 const NET = { farcaster: 'Snapchain', hypersnap: 'Hypersnap' };
 
 const n = (x) => Number(x).toLocaleString('en-US');
+// Snapchain's blockDelay is in seconds: how far behind the network's newest block this node is.
+const lag = (sec) => (sec < 120 ? `${Math.round(sec)} s` : sec < 7200 ? `${Math.round(sec / 60)} min` : sec < 172800 ? `${Math.round(sec / 3600)} hours` : `${Math.round(sec / 86400)} days`);
 const hours = (min) => (min < 90 ? `about ${Math.max(1, Math.round(min))} min` : `about ${Math.round(min / 60)} h`);
 const ago = (t) => { const s = Math.round((Date.now() - t) / 1000); return s < 60 ? 'just now' : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} h ago`; };
 const cmd = (text) => el('div', { class: 'ck-cmd' }, el('code', {}, text), el('button', { type: 'button', onclick: async (e) => {
@@ -49,7 +51,7 @@ export function story(d) {
   if (synced) return { mood: 'ready', title: 'Your node is in sync.', line: 'It holds its own copy of Farcaster. Now lay your egg: your node keeps it warm for three days, and it hatches into one of the 777.', next: 'fatline egg lay' };
   if (catching) {
     const eta = catching.etaMinutes != null ? ` About ${hours(catching.etaMinutes).replace(/^about /, "")} left at this pace.` : ' Measuring its pace…';
-    return { mood: 'sync', title: 'Your node is catching up.', line: `${NET[catching.network] ?? catching.label}: ${n(catching.blocksBehind)} blocks behind.${eta} When it's in sync, you can lay your egg.`, next: null };
+    return { mood: 'sync', title: 'Your node is catching up.', line: `${NET[catching.network] ?? catching.label} is ${lag(catching.blocksBehind)} behind the network.${eta} When it's in sync, you can lay your egg.`, next: null };
   }
   return { mood: 'idle', title: 'Your node is not answering yet.', line: 'If it is still downloading its snapshot, that is normal: it starts answering once the download is unpacked. Check it with fatline status.', next: 'fatline status' };
 }
@@ -75,7 +77,7 @@ function days(h) {
 
 function nodeRow(x) {
   const state = x.synced ? 'on' : x.answering ? 'sync' : 'off';
-  const what = x.synced ? `in sync · ${n(x.blocksBehind)} blocks behind` : x.answering ? `catching up · ${n(x.blocksBehind)} blocks behind${x.etaMinutes != null ? ` · ${hours(x.etaMinutes)} left` : ''}` : 'not answering';
+  const what = x.synced ? `in sync · ${lag(x.blocksBehind)} behind` : x.answering ? `catching up · ${lag(x.blocksBehind)} behind${x.etaMinutes != null ? ` · ${hours(x.etaMinutes)} left` : ''}` : 'not answering';
   return el('li', {}, el('i', { class: `ck-dot ${state} ${x.network}` }),
     el('span', {}, el('b', {}, NET[x.network] ?? x.label), ' ', el('small', {}, x.url.replace(/^https?:\/\//, ''))),
     el('small', { class: 'ck-what' }, what, x.messages ? ` · ${n(x.messages)} messages` : ''));
@@ -89,7 +91,7 @@ function casting(d) {
   const behind = own.filter((x) => x.answering && !x.synced).sort((a, b) => a.blocksBehind - b.blocksBehind)[0];
   if (!d.me.canWrite) return { ok: false, text: 'This window has no key to speak with yet. Run fatline identity, or tap Cast and sign once with your wallet.' };
   if (ready) return { ok: true, text: `Your casts leave through your own node (${NET[ready.network] ?? ready.label}), signed here by you.` };
-  if (behind) return { ok: false, text: `Your node is still catching up (${n(behind.blocksBehind)} blocks behind), so it can't check new casts yet. Until it can, your casts are still signed here, by you, and go out through Fatline's master node, which is not yours. You'll see which node carried each one.` };
+  if (behind) return { ok: false, text: `Your node is still catching up (${lag(behind.blocksBehind)} behind the network), so it can't check new casts yet. Until it can, your casts are still signed here, by you, and go out through Fatline's master node, which is not yours. You'll see which node carried each one.` };
   return { ok: false, text: "Your node isn't answering yet. Your casts are signed here and go out through Fatline's master node, which is not yours, until yours is in sync." };
 }
 

@@ -47,7 +47,7 @@ export async function verify({ message, signature, fid, nonce, node, now = new D
   if (signer.toLowerCase() !== m.address.toLowerCase()) throw new Error('The signature was not made by the address in the message.');
   const owned = await fidOf(node, signer);
   if (owned !== Number(fid)) {
-    throw new Error(`Your node (${node.url}) says ${signer} ${owned ? `owns FID ${owned}` : 'owns no FID'}, not ${fid}. Nothing was saved.`);
+    throw new Error(`Your node (${node.url}) says ${signer} ${owned ? `owns FID ${owned}` : 'owns no FID'}, not ${fid}. Nothing was saved.${owned ? '' : ' If your node is still catching up, it may not have read that registration yet: try again once it is further along (fatline status), or pick another node with --node <url>.'}`);
   }
   return { fid: Number(fid), custody: signer };
 }
@@ -68,10 +68,31 @@ function openInBrowser(url) {
   spawnSync(cmd[0], cmd[1], { stdio: 'ignore' });
 }
 
+// Signing in needs one thing from a node: which FID a custody address owns. A node still catching up often
+// already knows that (registrations come early), so a syncing node that answers is good enough; if it doesn't
+// know your FID yet, verify() says so plainly. --node <url> picks one explicitly.
+async function signInNode(network, wanted) {
+  await network.refresh();
+  if (wanted) {
+    const url = String(wanted).replace(/\/$/, '');
+    const n = network.nodes.find((x) => x.url === url) ?? { url, own: true, label: url.replace(/^https?:\/\//, '') };
+    if (!n.status) await network.checkNode(n);
+    if (n.status?.error) throw new Error(`${url} is not answering (${n.status.error}).`);
+    return n;
+  }
+  if (network.current) return network.current;
+  const answering = network.nodes.filter((x) => x.status && !x.status.error).sort((a, b) => (b.own - a.own) || ((a.status.blockDelay ?? 1e12) - (b.status.blockDelay ?? 1e12)))[0];
+  if (!answering) throw new Error(`None of your ${network.label} nodes answer yet (${network.nodes.map((x) => x.url).join(', ')}). If yours is still downloading its snapshot, wait until it answers: fatline status.`);
+  const behind = answering.status.blockDelay;
+  console.log(`\n  \x1b[33mYour node ${answering.url} is still catching up${Number.isFinite(behind) ? ` (about ${behind > 7200 ? `${Math.round(behind / 3600)} hours` : `${Math.round(behind / 60)} minutes`} behind)` : ''}.\x1b[0m`);
+  console.log('  Signing in only asks it which FID your address owns, which it usually knows already. If it does not yet, try again later.');
+  return answering;
+}
+
 async function connect(opts, config) {
   const networkName = opts.network ?? config.defaultNetwork;
   const network = new Network(networkName, config.networks[networkName]);
-  const node = await network.node();
+  const node = await signInNode(network, opts.node);
   const nonce = randomBytes(12).toString('hex');
   const channel = await relay('/v1/channel', { body: { siweUri: URI, domain: DOMAIN, nonce, acceptAuthAddress: false } });
 
@@ -116,7 +137,7 @@ async function main() {
     return;
   }
   if (a[0] === 'forget') { rmSync(identityPath(config), { force: true }); console.log('Forgotten. Nothing else was touched.'); return; }
-  await connect({ network: get('network'), open: a.includes('--open') }, config);
+  await connect({ network: get('network'), node: get('node'), open: a.includes('--open') }, config);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
