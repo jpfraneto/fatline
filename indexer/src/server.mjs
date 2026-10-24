@@ -9,6 +9,7 @@ import { VoicesIndex } from './voices.mjs';
 import { Launchpad } from './launchpad.mjs';
 import { Keeper } from './keeper.mjs';
 import { Writer, loadAppKey } from './writer.mjs';
+import { hatcheryConfig } from './hatchery-run.mjs';
 import { NodeMonitor } from './nodes.mjs';
 import { Coins } from './coin.mjs';
 import { Archive, TYPES as ARCHIVE_TYPES } from './archive.mjs';
@@ -97,6 +98,21 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/voices\/(\d+)$/, (q, [, id]) => api.voice(sel(q), id)],
     ['GET', /^\/api\/thread$/, (q) => api.thread(sel(q), { fid: q.get('fid'), hash: q.get('hash') })],
     ['GET', /^\/api\/user$/, (q) => api.resolve(sel(q), q.get('q') ?? q.get('fid'))],
+    // Your egg, as each attester sees it (the client only reads; laying and hatching are CLI steps).
+    ['GET', /^\/api\/egg$/, async () => {
+      const key = loadAppKey(config.dataDir);
+      if (!key) return { fid: null, attesters: [] };
+      const attesters = (hatcheryConfig(config).attesters ?? []).map((a) => (typeof a === 'string' ? { url: a } : a));
+      const seen = await Promise.all(attesters.map(async (a) => {
+        try {
+          const res = await fetch(`${a.url.replace(/\/$/, '')}/eggs/${key.fid}`, { signal: AbortSignal.timeout(8_000) });
+          return { label: a.label ?? a.url, egg: res.ok ? await res.json() : null, error: res.ok || res.status === 404 ? null : `HTTP ${res.status}` };
+        } catch (err) {
+          return { label: a.label ?? a.url, egg: null, error: err.message };
+        }
+      }));
+      return { fid: key.fid, attesters: seen };
+    }],
     ['GET', /^\/api\/me$/, (q, m, b, req) => {
       const key = loadAppKey(config.dataDir);
       if (!key) return { fid: null, canWrite: false };

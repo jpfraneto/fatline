@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
 import {AppFactory} from "../src/AppFactory.sol";
 import {AppVault} from "../src/AppVault.sol";
@@ -19,19 +20,19 @@ contract FatlinersTest is Test {
     Fatliners nft;
 
     address[] attesters;
-    address anky = makeAddr("anky"); // FID 18350's address in the list
+    uint256[] keys; // attester private keys, in the same order
+    address anky = makeAddr("anky"); // where FID 18350 hatches to
     address dwr = makeAddr("dwr"); // FID 3
     address v = makeAddr("v"); // FID 2
-    address late = makeAddr("late"); // FID 99999, only on day two's list
     address keeper = makeAddr("keeper");
     address buyer = makeAddr("buyer");
 
     bytes32 constant DNA = keccak256("anky's history");
-    uint256 day1;
+    uint64 laidAt;
 
     function setUp() public {
         vm.warp(1_792_600_000); // October 2026
-        day1 = block.timestamp / 1 days;
+        laidAt = uint64(block.timestamp - 3 days);
         usdc = new MockUSDC();
         locker = new MockLocker();
         feeLocker = new MockFeeLocker();
@@ -39,100 +40,89 @@ contract FatlinersTest is Test {
         AppVault.Tier[] memory t = new AppVault.Tier[](1);
         t[0] = AppVault.Tier(30, 0); // ~2.59 USDC a day: one node's fuel
         factory = new AppFactory(address(usdc), address(clanker), address(locker), address(feeLocker), t);
-        for (uint256 i; i < 5; i++) attesters.push(makeAddr(string.concat("attester", vm.toString(i))));
+        for (uint256 i; i < 5; i++) {
+            (address a, uint256 k) = makeAddrAndKey(string.concat("attester", vm.toString(i)));
+            attesters.push(a);
+            keys.push(k);
+        }
         nft = new Fatliners(777, attesters, IFatlineVaults(address(factory)), "https://fatline.ink/fatliners/");
         factory.setFatliners(address(nft));
     }
 
-    // ------------------------------------------------------------ the list
+    // ------------------------------------------------------------ hatching
 
-    function hashPair(bytes32 a, bytes32 b) internal pure returns (bytes32) {
-        return a < b ? keccak256(abi.encode(a, b)) : keccak256(abi.encode(b, a));
+    function egg(uint256 fid, address to, bytes32 dna) internal view returns (Fatliners.Hatch memory) {
+        return Fatliners.Hatch({fid: fid, to: to, dna: dna, laidAt: laidAt, deadline: block.timestamp + 30 days});
     }
 
-    /// Day one's list: four accounts. Returns the root and each leaf's proof.
-    function dayOneList() internal returns (bytes32 root, bytes32[][] memory proofs) {
-        bytes32[4] memory l = [
-            nft.leaf(18350, anky, 1, DNA),
-            nft.leaf(3, dwr, 2, keccak256("dwr")),
-            nft.leaf(2, v, 3, keccak256("v")),
-            nft.leaf(1, makeAddr("farcaster"), 4, keccak256("fc"))
-        ];
-        bytes32 n01 = hashPair(l[0], l[1]);
-        bytes32 n23 = hashPair(l[2], l[3]);
-        root = hashPair(n01, n23);
-        proofs = new bytes32[][](4);
-        for (uint256 i; i < 4; i++) {
-            proofs[i] = new bytes32[](2);
-            proofs[i][0] = l[i ^ 1];
-            proofs[i][1] = i < 2 ? n23 : n01;
-        }
+    function sign(Fatliners c, Fatliners.Hatch memory h, uint256 key) internal view returns (bytes memory) {
+        (uint8 v_, bytes32 r, bytes32 s_) = vm.sign(key, c.hatchDigest(h));
+        return abi.encodePacked(r, s_, v_);
     }
 
-    /// The first `n` attesters vote for `root` on `day`.
-    function vote(Fatliners c, uint256 n, uint256 day, bytes32 root, uint256 eligible) internal {
+    /// Signatures from the attesters at `which`, ordered by signer address as the contract wants them.
+    function sigs(Fatliners c, Fatliners.Hatch memory h, uint256[] memory which) internal view returns (bytes[] memory out) {
+        uint256 n = which.length;
+        address[] memory who = new address[](n);
+        out = new bytes[](n);
         for (uint256 i; i < n; i++) {
-            vm.prank(attesters[i]);
-            c.attest(day, root, eligible, "https://fatline.ink/lists/day.json");
+            who[i] = attesters[which[i]];
+            out[i] = sign(c, h, keys[which[i]]);
+        }
+        for (uint256 i; i < n; i++) {
+            for (uint256 j = i + 1; j < n; j++) {
+                if (who[j] < who[i]) {
+                    (who[i], who[j]) = (who[j], who[i]);
+                    (out[i], out[j]) = (out[j], out[i]);
+                }
+            }
         }
     }
 
-    function publishDayOne() internal returns (bytes32[][] memory proofs) {
-        bytes32 root;
-        (root, proofs) = dayOneList();
-        vote(nft, 3, day1, root, 777); // 3 of 5: more than half
+    function firstN(uint256 n) internal pure returns (uint256[] memory w) {
+        w = new uint256[](n);
+        for (uint256 i; i < n; i++) w[i] = i;
+    }
+
+    function hatchAnky() internal {
+        Fatliners.Hatch memory h = egg(18350, anky, DNA);
+        nft.hatch(h, sigs(nft, h, firstN(3))); // 3 of 5: more than half
     }
 
     // ------------------------------------------------------------ birth
 
-    function test_MintFromTodaysList_TokenIdIsTheFid() public {
-        bytes32[][] memory proofs = publishDayOne();
-        vm.prank(anky);
-        nft.mint(18350, 1, DNA, proofs[0]);
+    function test_Hatch_TokenIdIsTheFid_AnyoneCanSubmit() public {
+        Fatliners.Hatch memory h = egg(18350, anky, DNA);
+        bytes[] memory s = sigs(nft, h, firstN(3));
+        vm.prank(buyer); // a relayer pays the gas; the being still goes to anky
+        nft.hatch(h, s);
         assertEq(nft.ownerOf(18350), anky);
         assertEq(nft.dnaOf(18350), DNA);
-        assertEq(nft.rankOf(18350), 1);
+        assertEq(nft.laidAtOf(18350), laidAt);
         assertEq(nft.totalSupply(), 1);
         assertEq(nft.tokenURI(18350), "https://fatline.ink/fatliners/18350");
+        assertEq(nft.WARM_DAYS(), 3);
     }
 
-    function test_OnlyTheAddressInTheListCanMintThatFid() public {
-        bytes32[][] memory proofs = publishDayOne();
-        vm.prank(buyer);
-        vm.expectRevert(Fatliners.NotOnTodaysList.selector);
-        nft.mint(18350, 1, DNA, proofs[0]);
-        vm.prank(anky); // the right address, but a different history
-        vm.expectRevert(Fatliners.NotOnTodaysList.selector);
-        nft.mint(18350, 1, keccak256("another history"), proofs[0]);
+    function test_SignaturesCoverEveryField() public {
+        Fatliners.Hatch memory h = egg(18350, anky, DNA);
+        bytes[] memory s = sigs(nft, h, firstN(3));
+        Fatliners.Hatch memory stolen = egg(18350, buyer, DNA); // someone copies the signatures to take it
+        vm.expectRevert(); // recovers to strangers
+        nft.hatch(stolen, s);
+        Fatliners.Hatch memory otherHistory = egg(18350, anky, keccak256("another history"));
+        vm.expectRevert();
+        nft.hatch(otherHistory, s);
+        nft.hatch(h, s);
+        assertEq(nft.ownerOf(18350), anky);
     }
 
     function test_EachFidIsBornOnce() public {
-        bytes32[][] memory proofs = publishDayOne();
-        vm.startPrank(anky);
-        nft.mint(18350, 1, DNA, proofs[0]);
+        hatchAnky();
+        Fatliners.Hatch memory again = egg(18350, buyer, DNA);
+        bytes[] memory s = sigs(nft, again, firstN(5));
         vm.expectRevert(abi.encodeWithSelector(IERC721Errors.ERC721InvalidSender.selector, address(0)));
-        nft.mint(18350, 1, DNA, proofs[0]);
-    }
-
-    function test_ProofsOnlyWorkOnTheirDay_AndTheNextListGrows() public {
-        bytes32[][] memory proofs = publishDayOne();
-        vm.warp(block.timestamp + 1 days);
-        vm.prank(anky);
-        vm.expectRevert(Fatliners.NoRootToday.selector);
-        nft.mint(18350, 1, DNA, proofs[0]);
-
-        // Day two: a bigger list (here: anky and someone ranked lower). Yesterday's proof no longer works.
-        bytes32 a = nft.leaf(18350, anky, 1, DNA);
-        bytes32 b = nft.leaf(99999, late, 5000, keccak256("late"));
-        vote(nft, 3, day1 + 1, hashPair(a, b), 7777);
-        vm.prank(anky);
-        vm.expectRevert(Fatliners.NotOnTodaysList.selector);
-        nft.mint(18350, 1, DNA, proofs[0]);
-        bytes32[] memory p = new bytes32[](1);
-        p[0] = a;
-        vm.prank(late);
-        nft.mint(99999, 5000, keccak256("late"), p);
-        assertEq(nft.ownerOf(99999), late);
+        nft.hatch(again, s);
     }
 
     function test_MoreThanHalfOfTheAttesters() public {
@@ -140,62 +130,48 @@ contract FatlinersTest is Test {
         address[] memory four = new address[](4);
         for (uint256 i; i < 4; i++) four[i] = attesters[i];
         assertEq(new Fatliners(777, four, IFatlineVaults(address(factory)), "").threshold(), 3); // not 2: no ties
+        Fatliners.Hatch memory h = egg(18350, anky, DNA);
+        bytes[] memory two = sigs(nft, h, firstN(2));
+        vm.expectRevert(Fatliners.NotEnoughAttesters.selector);
+        nft.hatch(h, two);
     }
 
-    function test_AListNeedsAMajority_NoneMeansNoMint() public {
-        (bytes32 root, bytes32[][] memory proofs) = dayOneList();
-        vote(nft, 2, day1, root, 777); // 2 of 5: not yet
-        assertEq(nft.rootOf(day1), bytes32(0));
-        vm.prank(anky);
-        vm.expectRevert(Fatliners.NoRootToday.selector);
-        nft.mint(18350, 1, DNA, proofs[0]);
-        vm.prank(attesters[2]);
-        nft.attest(day1, root, 777, "");
-        assertEq(nft.rootOf(day1), root); // the third vote makes it the list
+    function test_EachAttesterCountsOnce() public {
+        Fatliners.Hatch memory h = egg(18350, anky, DNA);
+        bytes[] memory s = new bytes[](3);
+        s[0] = sign(nft, h, keys[0]);
+        s[1] = s[0];
+        s[2] = s[0];
+        vm.expectRevert(Fatliners.SignersNotSorted.selector);
+        nft.hatch(h, s);
     }
 
-    function test_ALyingAttesterCannotWin() public {
-        (bytes32 root,) = dayOneList();
-        bytes32 fake = keccak256("my friends");
-        vm.prank(attesters[0]);
-        nft.attest(day1, fake, 777, "");
-        vm.prank(attesters[1]);
-        nft.attest(day1, fake, 777, ""); // two liars
-        vote(nft, 0, day1, root, 777);
-        for (uint256 i = 2; i < 5; i++) {
-            vm.prank(attesters[i]);
-            nft.attest(day1, root, 777, "");
-        }
-        assertEq(nft.rootOf(day1), root);
-        assertEq(nft.votesFor(day1, keccak256(abi.encode(fake, uint256(777)))), 2);
+    function test_StrangersCannotSign() public {
+        Fatliners.Hatch memory h = egg(18350, anky, DNA);
+        bytes[] memory s = sigs(nft, h, firstN(2));
+        (address stranger, uint256 sk) = makeAddrAndKey("stranger");
+        bytes[] memory three = new bytes[](3);
+        // put the stranger's signature where its address sorts
+        bytes memory st = sign(nft, h, sk);
+        address a0 = ECDSA.recover(nft.hatchDigest(h), s[0]);
+        address a1 = ECDSA.recover(nft.hatchDigest(h), s[1]);
+        if (stranger < a0) (three[0], three[1], three[2]) = (st, s[0], s[1]);
+        else if (stranger < a1) (three[0], three[1], three[2]) = (s[0], st, s[1]);
+        else (three[0], three[1], three[2]) = (s[0], s[1], st);
+        vm.expectRevert(abi.encodeWithSelector(Fatliners.NotAttester.selector, stranger));
+        nft.hatch(h, three);
     }
 
-    function test_VotingRules() public {
-        (bytes32 root,) = dayOneList();
-        vm.expectRevert(Fatliners.NotAttester.selector);
-        nft.attest(day1, root, 777, "");
-        vm.startPrank(attesters[0]);
-        nft.attest(day1, root, 777, "");
-        vm.expectRevert(Fatliners.AlreadyVoted.selector);
-        nft.attest(day1, root, 777, "");
-        vm.expectRevert(Fatliners.PastDay.selector);
-        nft.attest(day1 - 1, root, 777, "");
-        nft.attest(day1 + 1, root, 7777, ""); // tomorrow's vote can come ahead
-        vm.stopPrank();
-        for (uint256 i = 1; i < 3; i++) {
-            vm.prank(attesters[i]);
-            nft.attest(day1, root, 777, ""); // attesters 1 and 2 complete the majority
-        }
-        // An agreed root never changes, even if more votes arrive for another.
-        vm.prank(attesters[3]);
-        nft.attest(day1, keccak256("late change"), 777, "");
-        assertEq(nft.rootOf(day1), root);
+    function test_AHatchExpires() public {
+        Fatliners.Hatch memory h = egg(18350, anky, DNA);
+        bytes[] memory s = sigs(nft, h, firstN(3));
+        vm.warp(h.deadline + 1);
+        vm.expectRevert(Fatliners.Expired.selector);
+        nft.hatch(h, s);
     }
 
     function test_KeeperLink_ClearedOnEveryTransfer() public {
-        bytes32[][] memory proofs = publishDayOne();
-        vm.prank(anky);
-        nft.mint(18350, 1, DNA, proofs[0]);
+        hatchAnky();
         assertEq(nft.linkedFidOf(18350), 18350); // at birth: its origin
         vm.prank(anky);
         nft.transferFrom(anky, buyer, 18350);
@@ -211,17 +187,12 @@ contract FatlinersTest is Test {
 
     function test_NoMoreThanMaxSupply() public {
         Fatliners small = new Fatliners(1, attesters, IFatlineVaults(address(factory)), "");
-        bytes32 a = small.leaf(18350, anky, 1, DNA);
-        bytes32 b = small.leaf(3, dwr, 2, keccak256("dwr"));
-        vote(small, 3, day1, hashPair(a, b), 2);
-        bytes32[] memory p = new bytes32[](1);
-        p[0] = b;
-        vm.prank(anky);
-        small.mint(18350, 1, DNA, p);
-        p[0] = a;
-        vm.prank(dwr);
+        Fatliners.Hatch memory a = egg(18350, anky, DNA);
+        small.hatch(a, sigs(small, a, firstN(3)));
+        Fatliners.Hatch memory b = egg(3, dwr, keccak256("dwr"));
+        bytes[] memory s = sigs(small, b, firstN(3));
         vm.expectRevert(Fatliners.SoldOut.selector);
-        small.mint(3, 2, keccak256("dwr"), p);
+        small.hatch(b, s);
     }
 
     // ------------------------------------------------------------ royalties
@@ -241,9 +212,7 @@ contract FatlinersTest is Test {
     }
 
     function born() internal returns (AppVault vault) {
-        bytes32[][] memory proofs = publishDayOne();
-        vm.prank(anky);
-        nft.mint(18350, 1, DNA, proofs[0]);
+        hatchAnky();
         vm.prank(anky);
         vault = factory.createFatline(18350, params(), 0);
     }
@@ -272,9 +241,7 @@ contract FatlinersTest is Test {
     }
 
     function test_OnlyTheHolderGivesItAVault_Once() public {
-        bytes32[][] memory proofs = publishDayOne();
-        vm.prank(anky);
-        nft.mint(18350, 1, DNA, proofs[0]);
+        hatchAnky();
         vm.prank(buyer);
         vm.expectRevert(AppFactory.NotTheFatlinersHolder.selector);
         factory.createFatline(18350, params(), 0);
@@ -302,9 +269,7 @@ contract FatlinersTest is Test {
     }
 
     function test_LaunchFatline_FeesGoToItsVault() public {
-        bytes32[][] memory proofs = publishDayOne();
-        vm.prank(anky);
-        nft.mint(18350, 1, DNA, proofs[0]);
+        hatchAnky();
         address predicted = factory.predictFatlinerVault(18350);
 
         IClanker.DeploymentConfig memory c;
