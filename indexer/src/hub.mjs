@@ -7,7 +7,13 @@ export const toMs = (fcSeconds) => (fcSeconds + FARCASTER_EPOCH) * 1000;
 export const toFc = (ms) => Math.floor(ms / 1000) - FARCASTER_EPOCH;
 
 const HEALTH_TTL_MS = 30_000;
-const MAX_HEALTHY_DELAY = 200; // blockDelay, in seconds behind the network, before a node counts as out of sync
+const MAX_HEALTHY_DELAY = 200;
+// When none of the person's nodes is in sync (theirs is still being born), reads and writes go through one of these,
+// always labelled "not yours". A fresh setup lists only its own node, so without them nothing would work for hours.
+export const FALLBACKS = {
+  farcaster: [['http://46.225.208.199:3381', 'Fatline master node (not yours, while yours catches up)'], ['https://crackle.farcaster.xyz:3381', 'crackle.farcaster.xyz (not yours, while yours catches up)']],
+  hypersnap: [['http://46.225.208.199:4381', 'Fatline Hypersnap node (not yours, while yours catches up)'], ['https://haatz.quilibrium.com', 'haatz.quilibrium.com (not yours, while yours catches up)']],
+}; // blockDelay, in seconds behind the network, before a node counts as out of sync
 
 export class Network {
   constructor(name, { label, about, nodes }, { fetchImpl = fetch, timeoutMs = 8000 } = {}) {
@@ -55,6 +61,12 @@ export class Network {
   async refresh() {
     await Promise.all(this.nodes.map((n) => this.checkNode(n)));
     this.current = this.nodes.find((n) => n.status?.ok) ?? null;
+    if (!this.current) {
+      // None of theirs is in sync: a public one, labelled, until theirs is.
+      const known = new Set(this.nodes.map((n) => n.url));
+      this.fallbacks ??= (FALLBACKS[this.name] ?? []).filter(([url]) => !known.has(url)).map(([url, label]) => ({ url, own: false, label, fallback: true, status: null }));
+      for (const f of this.fallbacks) { await this.checkNode(f); if (f.status?.ok) { this.current = f; break; } }
+    }
     this.checkedAt = Date.now();
     return this.current;
   }
