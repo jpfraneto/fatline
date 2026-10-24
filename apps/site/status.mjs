@@ -71,7 +71,13 @@ for (const f of fatlines) {
 // its node is on the same host. Nobody has to be listed by hand.
 async function eggs() {
   const RPC = 'https://mainnet.base.org';
-  const call = (method, params) => fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(20000) }).then((r) => r.json()).then((j) => j.result).catch(() => null);
+  const call = async (method, params) => {
+    for (const url of [RPC, 'https://base-rpc.publicnode.com', 'https://base.llamarpc.com']) {
+      const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(20000) }).then((x) => x.json()).catch(() => null);
+      if (r && r.result !== undefined && !r.error) return r.result;
+    }
+    return null;
+  };
   const word = (n) => BigInt(n).toString(16).padStart(64, '0');
   const str = (hex) => { if (!hex || hex.length < 130) return ''; const b = hex.slice(2); const len = parseInt(b.slice(64, 128), 16); return Buffer.from(b.slice(128, 128 + len * 2), 'hex').toString(); };
   let d; try { d = JSON.parse(readFileSync(join(here, '../../smart-contracts/deployments/base.json'), 'utf8')); } catch { return []; }
@@ -85,12 +91,26 @@ async function eggs() {
     const url = str(await call('eth_call', [{ to: nft, data: '0x60f2ba1d' + word(fid) }, 'latest']));
     const surname = str(await call('eth_call', [{ to: nft, data: '0x8d967a78' + word(fid) }, 'latest']));
     let host = null; try { host = new URL(url).hostname; } catch {}
-    out.push({ fid, surname, stage, host, genesis: fid === Number(d.Fatliners.genesis?.fid) });
+    const stone = Number(BigInt((await call('eth_call', [{ to: nft, data: '0xeed0951e' + word(fid) }, 'latest'])) ?? '0x0'));
+    out.push({ fid, surname, stage, stone, host, hatchery: url, genesis: fid === Number(d.Fatliners.genesis?.fid), name: fid === Number(d.Fatliners.genesis?.fid) ? (d.Fatliners.genesis?.name ?? null) : null });
   }
   return out;
 }
 const listed = new Set(fatlines.map((f) => Number(f.ownerFid)));
-for (const e of await eggs()) {
+const allEggs = await eggs();
+// The hatchery: every egg onchain, who keeps it, its stone, and how warm it is (from the attester that checks it).
+const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
+const attester = 'http://46.225.208.199:8791';
+result.eggs = [];
+for (const e of allEggs) {
+  const w = (await get(`${attester}/eggs/${e.fid}`)) ?? (e.hatchery ? await get(`${e.hatchery.replace(/\/$/, '')}/eggs/${e.fid}`) : null);
+  const today = w?.days?.at(-1);
+  result.eggs.push({ fid: e.fid, name: e.name ?? (e.surname ? e.surname.charAt(0) + e.surname.slice(1).toLowerCase() : null), surname: e.surname,
+    stone: STONES[e.stone] ?? 'ivory', stage: e.stage === 2 ? 'hatched' : 'egg', genesis: e.genesis,
+    keeper: await profile(e.fid, [{ url: 'https://crackle.farcaster.xyz:3381', network: 'snapchain' }]),
+    warmth: w ? { warmDays: w.warmDays, needed: w.needed, day: today?.day ?? null, passed: today?.passed ?? null, need: today?.need ?? null, since: w.layingAt ?? null } : null });
+}
+for (const e of allEggs) {
   if (e.genesis || listed.has(e.fid) || !e.host) continue;
   const nodes = [];
   for (const [network, port, label] of [['snapchain', 3381, 'Snapchain'], ['hypersnap', 4381, 'Hypersnap']]) {
