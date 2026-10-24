@@ -13,8 +13,7 @@ const erc20 = parseAbi([
 const factoryAbi = parseAbi([
   'struct AppParams { address owner; address keeper; uint256 billingPeriod; string uri; bytes32 salt; }',
   'function createApp(AppParams p, uint256 deposit) returns (address)',
-  'function launchApp(AppParams p, bytes deployCalldata, uint256 deposit) payable returns (address, address)',
-  'function launchAppWithPermit(AppParams p, bytes deployCalldata, uint256 deposit, uint256 deadline, uint8 v, bytes32 r, bytes32 s) payable returns (address, address)',
+  'function launchFatline(uint256 fid, AppParams p, bytes deployCalldata, uint256 deposit) payable returns (address, address)',
 ]);
 const vaultAbi = parseAbi(['function deposit(uint256 amount, string note)', 'function checkIn()']);
 
@@ -202,7 +201,7 @@ export function launchPage() {
   const field = (key, input) => el('label', { class: 'field' }, el('span', {}, t(key)), input);
   const f = {
     name: el('input', { required: true, maxlength: 60 }),
-    symbol: el('input', { required: true, maxlength: 12, autocapitalize: 'characters' }),
+    fid: el('input', { required: true, type: 'number', min: '1', inputmode: 'numeric', placeholder: '18350' }),
     description: el('textarea', { rows: 3, maxlength: 500 }),
     image: el('input', { type: 'url', placeholder: 'https://' }),
     expType: el('select', {}, ...Object.entries(t('expTypes')).map(([k, v]) => el('option', { value: k }, v))),
@@ -214,8 +213,10 @@ export function launchPage() {
     billing: el('input', { type: 'number', min: '1', max: '31', value: '30' }),
     node: el('input', { type: 'url', placeholder: 'http://1.2.3.4:3381' }),
   };
-  const symbolField = field('symbol', f.symbol);
-  f.coin.addEventListener('change', () => { symbolField.hidden = !f.coin.checked; f.symbol.required = f.coin.checked; });
+  // A coin is a Fatliner's: its holder launches it, and its ticker is the Fatliner's surname.
+  const symbolField = field('fatlinerField', f.fid);
+  f.name.required = false;
+  f.coin.addEventListener('change', () => { symbolField.hidden = !f.coin.checked; f.fid.required = f.coin.checked; f.name.required = !f.coin.checked; });
   const status = el('p', { class: 'status', role: 'status' });
   const button = el('button', { type: 'submit' }, t('launchButton'));
 
@@ -229,7 +230,7 @@ export function launchPage() {
         status.textContent = t('preparing');
         const prep = await api('/api/launch/prepare', {}, {
           creator: w.account, owner: f.owner.value.trim() || w.account, keeper: f.keeper.value.trim() || w.account,
-          name: f.name.value.trim(), symbol: f.symbol.value.trim().toUpperCase(), description: f.description.value.trim(),
+          name: f.name.value.trim(), fid: f.coin.checked ? Number(f.fid.value) : null, description: f.description.value.trim(),
           image: f.image.value.trim(), experience: f.expUrl.value.trim() ? { type: f.expType.value, url: f.expUrl.value.trim() } : null,
           coin: f.coin.checked, billingDays: Number(f.billing.value) || 30, node: f.node.value.trim() || null,
         });
@@ -237,21 +238,10 @@ export function launchPage() {
         const deposit = parseUnits(f.deposit.value || '0', 6);
         status.textContent = t('signing');
         const call = f.coin.checked
-          ? { to: prep.factory, value: BigInt(prep.value ?? 0), data: encodeFunctionData({ abi: factoryAbi, functionName: 'launchApp', args: [params, prep.deployCalldata, deposit] }) }
+          ? { to: prep.factory, value: BigInt(prep.value ?? 0), data: encodeFunctionData({ abi: factoryAbi, functionName: 'launchFatline', args: [BigInt(prep.fid), params, prep.deployCalldata, deposit] }) }
           : { to: prep.factory, data: encodeFunctionData({ abi: factoryAbi, functionName: 'createApp', args: [params, deposit] }) };
 
-        let done = false;
-        if (f.coin.checked && deposit > 0n) {
-          // Plain wallets: permit signature + one transaction. Smart wallets fall through to a batch.
-          const code = await w.reader.getCode({ address: w.account });
-          if (!code || code === '0x') {
-            const p = await permit(w, prep.factory, deposit);
-            const hash = await w.client.writeContract({ account: w.account, address: prep.factory, abi: factoryAbi, functionName: 'launchAppWithPermit', args: [params, prep.deployCalldata, deposit, p.deadline, p.v, p.r, p.s], value: BigInt(prep.value ?? 0) });
-            await w.reader.waitForTransactionReceipt({ hash });
-            done = true;
-          }
-        }
-        if (!done) await withUsdc(w, { spender: prep.factory, amount: deposit, call });
+        await withUsdc(w, { spender: prep.factory, amount: deposit, call });
         status.textContent = t('born');
         setTimeout(() => { location.hash = `#/app/${prep.vault}`; }, 3000);
       } catch (err) {

@@ -50,8 +50,8 @@ Every step in detail: **[the full tutorial](tutorial.html)** · [Español](tutor
 | | |
 |---|---|
 | **Alive** | Aster Fatline's two nodes, Snapchain and Hypersnap, in sync on one server kept by @anky. It is also the first attester: its hatchery checks eggs every hour |
-| **On Base** | [Fatliners](https://basescan.org/address/0x91513c7CBe6d989FaD635926EBAF0daC3a24200e), with Aster (#18350) born in it, and [the launchpad](https://basescan.org/address/0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a) |
-| **Open** | eggs: run a node, lay your egg, keep it alive three days, and your Fatliner hatches |
+| **On Base** | [Fatliners](https://basescan.org/address/0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb), with Aster (#18350) born in it, and [the launchpad](https://basescan.org/address/0x8695DB518B2fFa5b87b1A956a1302206c18BfF37) |
+| **Open** | eggs, for any account: run a node, lay your egg (it is yours onchain), keep it alive three days, and it hatches |
 | **Ready, not launched** | $FATLINE, Aster's coin: rehearsed against Base, waiting for its holder |
 | **Not yet** | the reveal (the being drawn from its DNA), the first hatched egg |
 
@@ -74,7 +74,7 @@ What a worker gets is the thing itself: its own node of the Farcaster protocol, 
 
 ## Hatch a Fatliner
 
-A Fatliner hatches from an egg, and **your node keeps the egg warm**. Nobody keeps a list and nobody chooses: the first 777 to keep a node alive are the 777. Minting is free.
+A Fatliner hatches from an egg, and **your node keeps the egg warm**. Any account can take an egg, once, and there are as many eggs as accounts. Only 777 ever hatch: the first 777 to keep a node alive. Nobody keeps a list and nobody chooses. Free.
 
 On the machine where you ran the steps above, once your node is in sync:
 
@@ -92,11 +92,13 @@ fatline egg lay
 
 1. Puts a **hatchery** on your server, next to your node: a small service with a key of its own. It is how other servers recognize yours.
 2. Gives your client its own **app key** for your FID. You type your seed phrase in your own terminal, once; it is never saved.
-3. **Lays your egg**: your app key signs "this server keeps my egg warm, hatch me to this address" (your custody address unless you pass `--to`). The egg holds your history up to this hour: that is your being's body, its DNA.
+3. **Lays your egg**: your app key signs "this server keeps my egg warm, hatch me to this address" (your custody address unless you pass `--to`). The egg holds your history up to this hour: that is your being's body, its DNA. As soon as the servers have read it, **your egg is onchain**: token #your-FID in the Fatliners contract, held by that address. It can't be sold or moved.
 
 Then keep your node alive. **Every hour, the servers that already hatched check yours**: it answers, it is in sync, it returns messages they pick at random from their own nodes, and its hatchery answers with its key. A day is warm when 18 of its 24 checks pass. A cold day doesn't reset anything; it just doesn't count. `fatline egg` shows each day.
 
-**After three warm days it hatches.** `fatline hatch` collects the servers' signatures and the Fatliner is born to you; a server pays the gas. And your server becomes one of the servers that check the next eggs. One server, one egg.
+**After three warm days it hatches.** `fatline hatch` collects the servers' signatures and **the egg itself becomes the Fatliner**, with its **surname**, read from its DNA. A server pays the gas. Your server becomes one of the servers that check the next eggs. One server, one egg.
+
+The surname is also your coin's ticker. **One coin per Fatliner, and only Fatliners**: at most 777 coins, ever, and $FATLINE first. Launch yours through the launchpad when you want: `fatline coin launch` (it simulates first; you sign).
 
 What it costs is your node for those days: about 11 USDC a day rented in USDC, or about $2.60 a day on your own Hetzner account. Why it works this way: [the manifesto](../manifesto.html).
 
@@ -106,9 +108,9 @@ Two contracts on Base, and every Fatline server, client and hatchery reads the s
 
 | | |
 |---|---|
-| **Fatliners** · [`0x9151…200e`](https://basescan.org/address/0x91513c7CBe6d989FaD635926EBAF0daC3a24200e) | The 777. Token id = FID. A `Hatch` needs signatures from 3 attesters (all of them, while there are fewer); the server that kept the egg warm joins them. `hatcheries()` lists every attester and where it answers. Every resale pays 8% to Aster's vault. |
-| **The launchpad** · [`0x0cCd…d39a`](https://basescan.org/address/0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a) | Each Fatliner can have a vault, owned by whoever holds it, and a coin: paired with USDC on Clanker, 100% of its trading fees to that vault, in USDC, paying for its node. |
-| **Aster** · #18350 | The genesis Fatliner, $FATLINE, born when the contract was made, kept alive by the first server. Its vault: [`0xa00D…4492`](https://basescan.org/address/0xa00D8b3a9D00bd8e34e9Fae3b77aAF79fd054492). |
+| **Fatliners** · [`0x93a6…8ceb`](https://basescan.org/address/0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb) | Eggs and the 777. Token id = FID. `takeEgg`: one egg per account, unlimited, can't be moved. `hatch`: the egg becomes a Fatliner with its surname; at most 777. Each needs signatures from 3 attesters (all of them, while there are fewer); the server that kept the egg warm joins them. `hatcheries()` lists every attester and where it answers. Every resale pays 8% to Aster's vault. |
+| **The launchpad** · [`0x8695…fF37`](https://basescan.org/address/0x8695DB518B2fFa5b87b1A956a1302206c18BfF37) | One coin per Fatliner, and only Fatliners: at most 777 coins. $FATLINE first. The ticker must be the Fatliner's surname. Paired with USDC on Clanker, 100% of its trading fees to the Fatliner's vault (owned by whoever holds it), in USDC, paying for its node. |
+| **Aster** · #18350 | The genesis Fatliner, surname Fatline, born when the contract was made, kept alive by the first server. Its coin, $FATLINE, is the first the launchpad will launch. Its vault: [`0x45C6…4067`](https://basescan.org/address/0x45C671db706575Eca43597829d634B8ae34E4067). |
 
 Every address, transaction and Aster's DNA: [`deployments/base.json`](https://github.com/jpfraneto/fatline/blob/main/smart-contracts/deployments/base.json).
 

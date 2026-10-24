@@ -39,9 +39,11 @@ export function hatcheryConfig(config) {
   const h = config.hatchery ?? {};
   return {
     port: Number(process.env.HATCHERY_PORT ?? h.port ?? 8791),
-    chainId: Number(process.env.FATLINERS_CHAIN_ID ?? h.chainId ?? 8453),
-    contract: process.env.FATLINERS_ADDRESS ?? h.contract ?? null,
-    rpc: process.env.FATLINERS_RPC ?? h.rpc ?? 'https://mainnet.base.org',
+    // Empty env values (a service file with nothing set) fall through to the config, which defaults to the
+    // one deployment in smart-contracts/deployments/base.json.
+    chainId: Number(process.env.FATLINERS_CHAIN_ID || h.chainId || 8453),
+    contract: process.env.FATLINERS_ADDRESS || h.contract || null,
+    rpc: process.env.FATLINERS_RPC || h.rpc || 'https://mainnet.base.org',
     relay: process.env.HATCHERY_RELAY ? process.env.HATCHERY_RELAY === '1' : Boolean(h.relay),
     reference: h.reference ?? { farcaster: 'http://127.0.0.1:3381', hypersnap: 'http://127.0.0.1:4381' },
     attesters: h.attesters ?? [],

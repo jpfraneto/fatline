@@ -3,6 +3,12 @@
 // trades its coin on Uniswap v4 so the vault has real trading fees to harvest.
 //
 //   node infra/fork-demo.mjs [name] [symbol]
+//
+// Retired on 2026-10-24: the launchpad now launches coins only for hatched Fatliners (one each, the ticker
+// is the surname). The real path, rehearsed on a Base fork with the real Clanker, is `fatline coin launch`;
+// smart-contracts/test/fork/LaunchOnBase.t.sol keeps the trading and fee checks.
+console.log('This demo launched a coin without a Fatliner, which the launchpad no longer allows. Coins are one per Fatliner now: fatline coin launch (see the README).');
+process.exit(0);
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -9,7 +9,7 @@
    "coin": {
     "chain": "base",
     "address": null,
-    "note": "Not launched yet. It launches through the launchpad, paired with USDC, 100% of its fees to Aster's vault; its page will be /base/<address>."
+    "note": "Not launched yet. It will be the launchpad's first coin: paired with USDC, 100% of its fees to Aster's vault. Its page will be /base/<address>."
    },
    "nodes": [
     {
@@ -47,13 +47,14 @@
    },
    "fatliner": {
     "id": 18350,
-    "contract": "0x91513c7CBe6d989FaD635926EBAF0daC3a24200e",
-    "born": "2026-10-24T03:33Z",
-    "bornTx": "0xe8d5f9ccf7eb6e88c76546cfae5b7da55067fe383a6d25e100beb04afe6aae76",
+    "contract": "0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb",
+    "born": "2026-10-24T04:20Z",
+    "bornTx": "0xe922f8663fbc815ddc218b4e12c81011dd99b11be80a546d0a8a6316264db003",
     "dna": "0xde5d5dfabe29f7e02bb28a37b3579b078c616c95b255a1b86b63008e246bb904",
-    "vault": "0xa00D8b3a9D00bd8e34e9Fae3b77aAF79fd054492",
+    "vault": "0x45C671db706575Eca43597829d634B8ae34E4067",
     "genesis": true,
-    "note": "Born when the contract was made. Every resale of any Fatliner pays 8% into its vault."
+    "note": "Born when the contract was made. Its surname, FATLINE, is its coin's ticker, and its coin is the first the launchpad will launch. Every resale of any Fatliner pays 8% into its vault.",
+    "surname": "FATLINE"
    }
   }
  ],

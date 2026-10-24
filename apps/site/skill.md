@@ -11,18 +11,19 @@ Source of truth for every command: the repository's `README.md` and `fatline hel
 
 ## If they asked for one of the 777
 
-Tell them how it works, in a few lines: **a Fatliner hatches from an egg that their own node keeps warm** (live on Base since 2026-10-24). Nobody keeps a list. The first 777 to keep a node alive get them, and minting is free. The steps:
+Tell them how it works, in a few lines: **a Fatliner hatches from an egg that their own node keeps warm** (live on Base since 2026-10-24). Any account can take an egg; only 777 hatch, the first 777 to keep a node alive. Nobody keeps a list. Free. The steps:
 
 1. Their own node, on a server reachable from the internet (the setup below: cloud, hetzner or vps; not light, not local behind a home router). Wait until it is in sync (`fatline status`).
 2. `fatline hatchery install`: a small service next to their node, with a key of its own (no money, no question).
 3. `fatline identity`: **they run it in their own terminal** (it asks for their seed phrase, hidden; rule 2).
-4. `fatline egg lay`: signs the egg with the app key from step 3 (no seed phrase, nothing to approve). It hatches to their custody address unless they say otherwise (`--to 0x…`): ask them.
+4. `fatline egg lay`: signs the egg with the app key from step 3 (no seed phrase, nothing to approve). Once the servers have read their history, the egg goes onchain by itself (a server pays the gas): a token with their FID as its id, held by their custody address unless they say otherwise (`--to 0x…`: ask them). Eggs can't be sold or moved.
 5. Keep the node alive. Show them `fatline egg` from time to time: every hour the servers that already hatched check theirs; a day is warm at 18 of 24 checks; three warm days and it hatches. A cold day doesn't reset anything.
-6. `fatline hatch`: the Fatliner is born to them, free; a server pays the gas. Their server becomes an attester.
+6. `fatline hatch`: the egg becomes their Fatliner, free, with a surname read from its DNA. Their server becomes an attester.
+7. Later, only if they want: `fatline coin launch` simulates their Fatliner's coin (ticker = its surname, paired with USDC, 100% of fees to its vault). Sending it needs their own signature (`--go --seed-file`, a file they make themselves; never ask for the phrase) and costs a little ETH. One coin per Fatliner; $FATLINE launches first.
 
 Their node must keep running for those days, which costs money (rule 1): about 11 USDC a day rented in USDC, about $2.60 a day on their own Hetzner account. Say so before they rent.
 
-The contracts (the only ones): Fatliners `0x91513c7CBe6d989FaD635926EBAF0daC3a24200e` and the launchpad `0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a`, on Base. Never send them to any other address, and never make up whether they will get one.
+The contracts (the only ones): Fatliners `0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb` and the launchpad `0x8695DB518B2fFa5b87b1A956a1302206c18BfF37`, on Base. Never send them to any other address, and never make up whether they will get one.
 
 **Show, don't paste.** You may open pages in the person's browser instead of printing long links: `open <url>` on macOS, `xdg-open <url>` on Linux, `start <url>` on Windows. Pick by the machine you are on (`uname`). Open only fatline.ink, github.com/jpfraneto/fatline, basescan.org, console.hetzner.cloud and nodejs.org pages, and say what you opened. If you are not on their computer (a chat on their phone), give the link instead.
 

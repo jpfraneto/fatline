@@ -1,33 +1,43 @@
 {
  "note": "The one Fatline launchpad and the one Fatliners contract, on Base. Every Fatline server, client and hatchery reads these unless its config says otherwise.",
  "chainId": 8453,
- "deployedAt": "2026-10-24T03:33Z",
+ "deployedAt": "2026-10-24T04:20Z",
  "deployer": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
- "fromBlock": 53011430,
+ "fromBlock": 53012364,
  "AppFactory": {
-  "address": "0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a",
-  "tx": "0x272ca252a761724ccef018a51c437055273dbe001462245e23850c0c9309f200",
+  "address": "0x8695DB518B2fFa5b87b1A956a1302206c18BfF37",
+  "tx": "0xa58d2d99a628b37bbf38e11b80701cb15e231c7615ac59bf9b61323dd1209790",
+  "rules": "Coins only for hatched Fatliners, one each (at most 777). $FATLINE first. The coin's symbol must be the Fatliner's surname. 100% of fees to its vault, in USDC.",
   "usdc": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "clanker": "0xE85A59c628F7d27878ACeB4bf3b35733630083a9",
   "locker": "0xffA37784D619F228D8B379d287a4D7282e500762",
   "feeLocker": "0xF3622742b1E446D92e45E22923Ef11C2fcD55D68"
  },
  "Fatliners": {
-  "address": "0x91513c7CBe6d989FaD635926EBAF0daC3a24200e",
-  "tx": "0xe8d5f9ccf7eb6e88c76546cfae5b7da55067fe383a6d25e100beb04afe6aae76",
-  "linkTx": "0xfc11aeaf0dc34860b8aa5e8752f2e38dcf5e00b70687fdd4005fbe103e226652",
+  "address": "0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb",
+  "tx": "0xe922f8663fbc815ddc218b4e12c81011dd99b11be80a546d0a8a6316264db003",
+  "linkTx": "0x3c238f481e14f6f2c1060fe001d3b14c4d4a818ad6688be7f781d2f31e69d770",
+  "rules": "Eggs: unlimited, one per FID, can't be moved (takeEgg). Fatliners: hatched from an egg (hatch), at most 777, transferable. Attesters: servers that hatched; 3 signatures (or all, while fewer).",
   "genesis": {
    "fid": 18350,
    "name": "Aster",
-   "ticker": "FATLINE",
    "bornTo": "0x3ae59405ea68e9ce61442cadf74c335abfbc6b60",
    "dna": "0xde5d5dfabe29f7e02bb28a37b3579b078c616c95b255a1b86b63008e246bb904",
    "laidAt": 1792810800,
    "dnaNote": "History commitment of FID 18350 up to 2026-10-24T03:00Z: 640 messages (320 Snapchain, 320 Hypersnap). Computed on the master's nodes and again from crackle + haatz: identical.",
-   "vault": "0xa00D8b3a9D00bd8e34e9Fae3b77aAF79fd054492",
+   "vault": "0x45C671db706575Eca43597829d634B8ae34E4067",
    "server": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
-   "hatchery": "http://46.225.208.199:8791"
+   "hatchery": "http://46.225.208.199:8791",
+   "surname": "FATLINE",
+   "ticker": "FATLINE"
   },
   "royalty": "8% of every resale, to the genesis Fatliner's vault"
- }
+ },
+ "superseded": [
+  {
+   "note": "First deployment (2026-10-24 03:33Z): eggs offchain, any coin could launch. Replaced 45 minutes later by the pair above; nothing was launched or hatched on it. Aster #18350 exists there too; it is not the real one.",
+   "AppFactory": "0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a",
+   "Fatliners": "0x91513c7CBe6d989FaD635926EBAF0daC3a24200e"
+  }
+ ]
 }

@@ -47,8 +47,8 @@ Before them: `git clone https://github.com/jpfraneto/fatline && cd fatline && np
 | --- | --- |
 | **Our node** | One Hetzner server (`cax31`, 8 Arm cores, 16 GB) in Nuremberg runs **both** networks: Snapchain (Farcaster) and Hypersnap, each in sync, each with its own disk. $131.82/month, about $4.33/day. Live numbers: [fatline.ink/f/FATLINE](https://fatline.ink/f/FATLINE). |
 | **The client** | Reads from either network through a node you pick, and says which. Posting with a gasless app key works on the real network: tested with @anky (cast, reply, like, recast, follow, and undoing each). Shows which app made each cast, and hides or shows apps. |
-| **The launchpad** | **On Base:** [`0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a`](https://basescan.org/address/0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a). A coin on Clanker paired with USDC, 100% of its fees into a vault that pays the node. $FATLINE is ready (its launch simulates cleanly against Base) and waits for Aster's holder: `fatline coin launch`. |
-| **The 777 Fatliners** | **On Base:** [`0x91513c7CBe6d989FaD635926EBAF0daC3a24200e`](https://basescan.org/address/0x91513c7CBe6d989FaD635926EBAF0daC3a24200e). Aster (#18350, $FATLINE) was born at deployment; every other one hatches from an egg a node keeps warm for three days, checked by the servers that hatched before. Our server is the first attester. Portraits can be made for any FID ([fatliners/docs/PFP.md](fatliners/docs/PFP.md)). |
+| **The launchpad** | **On Base:** [`0x8695DB518B2fFa5b87b1A956a1302206c18BfF37`](https://basescan.org/address/0x8695DB518B2fFa5b87b1A956a1302206c18BfF37). **One coin per Fatliner, and only Fatliners: at most 777 coins.** $FATLINE launches first, and every ticker must be its Fatliner's surname. Paired with USDC on Clanker, 100% of fees into the Fatliner's vault, which pays its node. $FATLINE is ready (simulated against Base) and waits for Aster's holder: `fatline coin launch`. |
+| **The 777 Fatliners** | **On Base:** [`0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb`](https://basescan.org/address/0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb). **Eggs** for any account (one each, unlimited, onchain, can't be moved), kept warm by a node; after three warm days **the egg itself hatches** into one of the 777, with a surname read from its DNA. Aster (#18350, surname Fatline) was born at deployment. Our server is the first attester. Portraits can be made for any FID ([fatliners/docs/PFP.md](fatliners/docs/PFP.md)). |
 | **No room for a node?** | `fatline follow` copies only the accounts you choose from one node, and `fatline feed` reads them back offline. Not a node: it trusts that node. [More below](#copy-only-the-accounts-you-follow-not-a-node). |
 
 ## What Fatline is
@@ -78,9 +78,9 @@ The full design is in [research/FATLINE-PROTOCOL.md](research/FATLINE-PROTOCOL.m
 
 The first inhabitants of the Fatline: small stone beings, one per Farcaster account, drawn from that account's history. Same history, same being. A Fatliner can wake up as a node: hold one, launch its coin, and its fees run its own server. Every Fatliner that lives is one more copy of the network kept alive by someone who isn't a company.
 
-- **Who gets one:** whoever keeps a node alive. Run a node, `fatline hatchery install`, `fatline egg lay` (your app key signs the egg), keep it warm three days, `fatline hatch`. Free; a server pays the gas. The first 777 to do it are the 777. [Docs](https://fatline.ink/docs/#hatch-a-fatliner)
-- **Who checks:** the servers that hatched. Each hour their hatcheries check your server against their own nodes (in sync, real messages, its hatchery answers with its key); 18 of 24 checks make a warm day. A `Hatch` needs 3 signatures (all attesters while fewer); then your server joins them. Nobody adds or removes attesters; the genesis server, which keeps Aster alive, is the only one that didn't hatch.
-- **The circle:** it starts from Aster, the genesis Fatliner. Every resale of any Fatliner pays 8% into Aster's vault, and Aster's coin, $FATLINE, pays the first node through the same launchpad every Fatline uses.
+- **Who gets one:** whoever keeps a node alive. Run a node, `fatline hatchery install`, `fatline egg lay` (your app key signs the egg; it goes onchain: token id = your FID, held by your custody address, can't be moved), keep it warm three days, `fatline hatch` (the same token becomes your Fatliner, with its surname). Any account can take an egg; only 777 hatch. Free; a server pays the gas. [Docs](https://fatline.ink/docs/#hatch-a-fatliner)
+- **Who checks:** the servers that hatched. Each hour their hatcheries check your server against their own nodes (in sync, real messages, its hatchery answers with its key); 18 of 24 checks make a warm day. An `Egg` or a `Hatch` needs 3 signatures (all attesters while fewer); at hatching your server joins them. Nobody adds or removes attesters; the genesis server, which keeps Aster alive, is the only one that didn't hatch.
+- **The circle:** it starts from Aster, the genesis Fatliner. Every resale of any Fatliner pays 8% into Aster's vault; Aster's coin, $FATLINE, is the launchpad's first; and each of the 777 can have exactly one coin, whose ticker is its surname, read from its DNA (nobody picks it, not even the holder). One FID, one being, one coin.
 - **The ranking** ([ranking/README.md](ranking/README.md)), 593,815 accounts scored on both our nodes, is a reading of the network; it no longer decides who mints.
 - **The look:** a big following buys a place in line, not a better-looking being. [fatliners/SPECIES-CANON.md](fatliners/SPECIES-CANON.md) is the authority; [fatliners/README.md](fatliners/README.md) has the deterministic generator and the portrait pipeline.
 - **Not done:** the first egg hatched on Base, the reveal (the being drawn from its DNA on its page), and the 777 portraits.
@@ -251,13 +251,10 @@ AGENTS.md                    start here: for any agent or person continuing the 
 A local fork of Base runs the real Clanker, Uniswap and USDC contracts with fake money. You need Node.js 22.12+ and [Foundry](https://getfoundry.sh).
 
 ```sh
-fatline contracts fork          # fork Base, deploy AppFactory + Voices, fund a dev wallet with 10,000 USDC
-fatline up                      # in another terminal: indexer + app on http://localhost:8787
-node infra/fork-demo.mjs               # launch an app like the browser does, then trade its coin
-node infra/fork-crowd.mjs <vault> 25   # 25 people check in for free; the keeper posts them onchain
+BASE_RPC_URL=https://mainnet.base.org forge test --ffi --match-path "test/fork/*"   # in smart-contracts/: launch, trade, harvest, pay the node
 ```
 
-To launch from the browser, import the dev key from `.fatline/dev.key` into a browser wallet and add the network `http://127.0.0.1:8545` (chain 8453). Then open **Launch an app**. Public RPCs are slow for forks; set `BASE_RPC_URL` to your own Base RPC if it times out.
+The whole egg-to-coin path was rehearsed the same way on 2026-10-24 (a Base fork, the real Clanker, our real node and two hatcheries): an egg laid and taken onchain, three warm days, hatched as $NOUNOUYUR, a coin before $FATLINE refused, $FATLINE launched, $NOUNOUYUR launched, a second coin refused. To repeat it: deploy with `FATLINERS=true forge script script/Deploy.s.sol` on the fork, run two hatcheries with `HATCHERY_DAY_MS=120000 HATCHERY_CHECK_MS=10000`, and point `FATLINE_CONFIG` / `FATLINE_DEPLOYMENTS` at the fork. (`infra/fork-demo.mjs` launched coins without a Fatliner; the launchpad no longer allows that.)
 
 ## Run it on a brand-new machine
 
@@ -294,16 +291,15 @@ Once the vault owner runs `setKeeper(<that address>)`, the server pays itself fr
 
 | | |
 | --- | --- |
-| AppFactory (the launchpad) | [`0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a`](https://basescan.org/address/0x0cCd82a04477eE302a098a1C3d01FE0Bfd62d39a) |
-| Fatliners | [`0x91513c7CBe6d989FaD635926EBAF0daC3a24200e`](https://basescan.org/address/0x91513c7CBe6d989FaD635926EBAF0daC3a24200e) |
+| AppFactory (the launchpad) | [`0x8695DB518B2fFa5b87b1A956a1302206c18BfF37`](https://basescan.org/address/0x8695DB518B2fFa5b87b1A956a1302206c18BfF37) |
+| Fatliners | [`0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb`](https://basescan.org/address/0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb) |
 | Aster (#18350), the genesis Fatliner | born to FID 18350's custody; DNA `0xde5d5dfa…6bb904` (its history to 03:00 UTC, the same from our nodes and from crackle + haatz) |
-| Aster's vault (all royalties, and $FATLINE's fees) | [`0xa00D8b3a9D00bd8e34e9Fae3b77aAF79fd054492`](https://basescan.org/address/0xa00D8b3a9D00bd8e34e9Fae3b77aAF79fd054492) (made when the coin launches) |
+| Aster's vault (every royalty, and $FATLINE's fees) | [`0x45C671db706575Eca43597829d634B8ae34E4067`](https://basescan.org/address/0x45C671db706575Eca43597829d634B8ae34E4067) (made when the coin launches) |
 | The genesis attester (our server) | `0x37757a1D0E0117EB169dDADBa10C18c796343bAE`, hatchery at `http://46.225.208.199:8791` |
 
 ```sh
 fatline coin launch                              # simulate a Fatliner's coin against Base (default: $FATLINE)
 fatline coin launch --go --seed-file <file>      # send it: the Fatliner's holder signs
-fatline up                                       # then: Launch an app (any coin, without a Fatliner)
 ```
 
 The factory is wired to Clanker's Base contracts, as used by `clanker-sdk@4.2.19`:

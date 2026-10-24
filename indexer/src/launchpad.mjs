@@ -10,8 +10,9 @@ export const factoryAbi = parseAbi([
   'function usdc() view returns (address)',
   'struct AppParams { address owner; address keeper; uint256 billingPeriod; string uri; bytes32 salt; }',
   'function createApp(AppParams p, uint256 deposit) returns (address)',
-  'function launchApp(AppParams p, bytes deployCalldata, uint256 deposit) payable returns (address, address)',
-  'function launchAppWithPermit(AppParams p, bytes deployCalldata, uint256 deposit, uint256 deadline, uint8 v, bytes32 r, bytes32 s) payable returns (address, address)',
+  'function launchFatline(uint256 fid, AppParams p, bytes deployCalldata, uint256 deposit) payable returns (address, address)',
+  'function predictFatlinerVault(uint256 fid) view returns (address)',
+  'function fatliners() view returns (address)',
 ]);
 
 export const vaultAbi = parseAbi([
@@ -320,15 +321,29 @@ export class Launchpad {
    * Everything the browser needs to launch an app in one transaction: the predicted vault, the
    * Clanker deployment (fees 100% to that vault, in USDC) and the app params.
    */
-  async prepare({ creator, owner, keeper, name, symbol, description = '', image = '', experience = null, node = null, coin = true, billingDays = 30, startMarketCapUsd = 25_000 }) {
+  async prepare({ creator, owner, keeper, name, symbol, description = '', image = '', experience = null, node = null, coin = true, fid = null, billingDays = 30, startMarketCapUsd = 25_000 }) {
     if (!this.enabled) throw Object.assign(new Error('The launchpad is not configured (no factory address)'), { status: 503 });
     creator = getAddress(creator);
     const salt = keccak256(toHex(`${creator}:${name}:${Date.now()}`));
-    const vault = await this.client.readContract({ address: this.factory, abi: factoryAbi, functionName: 'predictVault', args: [creator, salt] });
+    let vault;
+    if (coin) {
+      // Coins are only for Fatliners, one each; the ticker is the Fatliner's surname (the launchpad checks).
+      if (!fid) throw Object.assign(new Error('A coin needs a Fatliner: give its number (its FID).'), { status: 400 });
+      const nft = await this.client.readContract({ address: this.factory, abi: factoryAbi, functionName: 'fatliners' });
+      const nftAbi = parseAbi(['function isFatliner(uint256) view returns (bool)', 'function surnameOf(uint256) view returns (string)', 'function ownerOf(uint256) view returns (address)']);
+      const read = (functionName) => this.client.readContract({ address: nft, abi: nftAbi, functionName, args: [BigInt(fid)] });
+      if (!(await read('isFatliner').catch(() => false))) throw Object.assign(new Error(`#${fid} is not a hatched Fatliner.`), { status: 400 });
+      if (getAddress(await read('ownerOf')) !== creator) throw Object.assign(new Error(`Only the holder of Fatliner #${fid} can launch its coin.`), { status: 403 });
+      symbol = await read('surnameOf');
+      name = name || symbol.charAt(0) + symbol.slice(1).toLowerCase();
+      vault = await this.client.readContract({ address: this.factory, abi: factoryAbi, functionName: 'predictFatlinerVault', args: [BigInt(fid)] });
+    } else {
+      vault = await this.client.readContract({ address: this.factory, abi: factoryAbi, functionName: 'predictVault', args: [creator, salt] });
+    }
     if (node !== null && node !== '' && !/^https?:\/\/[^\s/]+(:\d+)?\/?$/.test(String(node))) throw Object.assign(new Error('The node must be a URL like http://1.2.3.4:3381'), { status: 400 });
     const uri = appUri({ name, description, image, experience, node: node || null });
     const params = { owner: getAddress(owner ?? creator), keeper: getAddress(keeper ?? creator), billingPeriod: String(billingDays * 86_400), uri, salt };
-    const out = { chainId: this.chainId, factory: this.factory, vault, params };
+    const out = { chainId: this.chainId, factory: this.factory, vault, params, fid: coin ? Number(fid) : null, symbol: coin ? symbol : null };
     if (coin) {
       const launch = await buildLaunch({ vault, tokenAdmin: params.owner, name, symbol, image, description, chainId: this.chainId, startMarketCapUsd, salt });
       out.deployCalldata = launch.data;
