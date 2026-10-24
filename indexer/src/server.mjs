@@ -6,6 +6,7 @@ import { loadConfig } from './config.mjs';
 import { openDb } from './db.mjs';
 import { Network } from './hub.mjs';
 import { VoicesIndex } from './voices.mjs';
+import { useFatlineApp } from './fatline-app.mjs';
 import { Launchpad } from './launchpad.mjs';
 import { Keeper } from './keeper.mjs';
 import { Writer, loadAppKey } from './writer.mjs';
@@ -59,6 +60,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
 
   const sel = (q) => ({ name: q.get('network'), node: q.get('node') });
   const routes = [
+    ['GET', /^\/api\/fatline$/, () => config.fatlineApp ?? null],
     ['GET', /^\/api\/health$/, () => ({ ok: true, voices: voices.status(), launchpad: launchpad.status(), keeper: keeper?.status() ?? null })],
     ['GET', /^\/api\/apps$/, () => launchpad.list()],
     ['GET', /^\/api\/apps\/(0x[0-9a-fA-F]{40})$/, async (q, [, address]) => {
@@ -172,7 +174,9 @@ function serveApp(dir, pathname, res) {
   createReadStream(file).pipe(res);
 }
 
-export function start(config = loadConfig()) {
+export async function start(config = loadConfig()) {
+  // One node, one client, one contract: run on the contract this client's Fatline is tied to (appOf).
+  const fatline = await useFatlineApp(config);
   const db = openDb(config.dataDir);
   const networks = Object.fromEntries(Object.entries(config.networks).map(([name, n]) => [name, new Network(name, n)]));
   const voices = new VoicesIndex(db, config.voices);
@@ -196,6 +200,7 @@ export function start(config = loadConfig()) {
   server.listen(config.port, () => {
     console.log(`Fatline indexer on http://localhost:${config.port}`);
     console.log(`  config:   ${config.path}`);
+    console.log(`  fatline:  #${fatline.fid}${fatline.app ? `, runs on ${fatline.app} (appOf)` : ', no contract tied yet'}`);
     console.log(`  networks: ${Object.keys(networks).join(', ')} (default: ${config.defaultNetwork})`);
     console.log(`  apps:     ${launchpad.enabled ? `factory ${launchpad.factory} on chain ${launchpad.chainId}` : 'off (no factory address in config)'}`);
     console.log(`  keeper:   ${keeper ? keeper.account.address : 'off'}`);
