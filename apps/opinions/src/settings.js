@@ -36,7 +36,7 @@ export async function settingsPage({ onChange }) {
     const s = node.status;
     if (!s) return t('unknownState');
     if (s.error) return `${t('downState')} · ${s.error}`;
-    return `v${s.version ?? '?'} · ${s.blockDelay > 200 ? t('behind', s.blockDelay) : `${s.blockDelay} ${t('blocksBehind')}`}`;
+    return `v${s.version ?? '?'} · ${s.blockDelay > 200 ? t('behind', s.blockDelay) : `${s.blockDelay} s ${t("blocksBehind")}`}`;
   };
   const net = status.find((n) => n.name === state.network);
   nodes.replaceChildren(
