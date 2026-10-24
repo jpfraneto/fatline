@@ -75,24 +75,46 @@ export function laidAtOf(atMs) {
 }
 
 // EIP-712, exactly as Fatliners.sol hashes it.
-export const hatchTypes = {
-  Hatch: [
+export const eggTypes = {
+  Egg: [
     { name: 'fid', type: 'uint256' },
     { name: 'to', type: 'address' },
+    { name: 'server', type: 'address' },
+    { name: 'url', type: 'string' },
     { name: 'dna', type: 'bytes32' },
     { name: 'laidAt', type: 'uint64' },
     { name: 'deadline', type: 'uint256' },
-    { name: 'server', type: 'address' },
-    { name: 'url', type: 'string' },
+  ],
+};
+export const hatchTypes = {
+  Hatch: [
+    { name: 'fid', type: 'uint256' },
+    { name: 'surname', type: 'string' },
+    { name: 'deadline', type: 'uint256' },
   ],
 };
 export const hatchDomain = ({ chainId, address }) => ({ name: 'Fatliners', version: '1', chainId: Number(chainId), verifyingContract: address });
 
-/** The Hatch for an egg. Every field comes from the claim and the DNA, so attesters agree on it. */
-export function hatchOf(egg) {
+/** The onchain egg, from the claim and the DNA. Every field is deterministic, so attesters sign the same one. */
+export function eggOf(egg) {
   const laidAt = laidAtOf(egg.claim.at);
-  return { fid: BigInt(egg.claim.fid), to: egg.claim.to, dna: egg.dna, laidAt: BigInt(laidAt), deadline: BigInt(laidAt + HATCH_VALID_S),
-    server: egg.claim.server, url: egg.claim.hatchery };
+  return { fid: BigInt(egg.claim.fid), to: egg.claim.to, server: egg.claim.server, url: egg.claim.hatchery,
+    dna: egg.dna, laidAt: BigInt(laidAt), deadline: BigInt(laidAt + HATCH_VALID_S) };
+}
+
+/**
+ * The being's surname: its name, read from its DNA (fatliners/src/pfp/name.mjs, the same name its portrait
+ * carries), in capitals. It is also its coin's ticker, and the launchpad accepts no other.
+ */
+export async function surnameOf(fid, dna) {
+  const { seedOf } = await import('../../fatliners/src/dna.mjs');
+  const { beingName } = await import('../../fatliners/src/pfp/name.mjs');
+  return beingName(seedOf({ kind: 'fid', fid: Number(fid) }, dna)).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+}
+
+/** The Hatch for an egg: which egg and its surname. */
+export async function hatchOf(egg) {
+  return { fid: BigInt(egg.claim.fid), surname: await surnameOf(egg.claim.fid, egg.dna), deadline: BigInt(laidAtOf(egg.claim.at) + HATCH_VALID_S) };
 }
 
 /**

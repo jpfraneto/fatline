@@ -15,7 +15,7 @@ import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { privateKeyToAccount } from 'viem/accounts';
 import {
-  CHECK_EVERY_MS, CLAIM_SKEW_MS, DAY_MS, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, normalizeUrl, sameHost, verifyClaim, warmth,
+  CHECK_EVERY_MS, CLAIM_SKEW_MS, DAY_MS, eggOf, eggTypes, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, normalizeUrl, sameHost, verifyClaim, warmth,
 } from './egg.mjs';
 
 export const MAX_LAG_BLOCKS = 600; // ~10 minutes of blocks
@@ -122,6 +122,7 @@ export class Hatchery {
     if (existing) {
       // Moving the egg to another node keeps its warmth and its DNA.
       existing.claim = { ...existing.claim, node, network: c.network, server: c.server, hatchery: hatcheryUrl };
+      existing.egg = null; // its server changed: the Egg is signed again
       existing.publicKey = signed.publicKey;
       existing.signature = signed.signature;
       existing.checks.push(first);
@@ -143,6 +144,7 @@ export class Hatchery {
       const dna = await this.computeDna(fid, egg.laidAt * 1000);
       if (!/^0x[0-9a-f]{64}$/.test(dna)) throw new Error(`bad DNA ${dna}`);
       egg.dna = dna;
+      await this.signEgg(egg);
       this.save();
       this.log(`FID ${fid}: DNA ${dna.slice(0, 12)}…`);
     } catch (err) {
@@ -210,6 +212,7 @@ export class Hatchery {
         if (r.ok !== null) egg.checks.push(r); // hours the attester could not judge are left out
         else this.log(`FID ${fid}: ${r.reason}`);
         if (!egg.dna) this.fillDna(fid);
+        await this.signEgg(egg);
         await this.signIfReady(egg);
         this.save();
       } finally {
@@ -222,9 +225,20 @@ export class Hatchery {
     return warmth(egg, { now: this.now(), dayMs: this.dayMs, checkEveryMs: this.checkEveryMs });
   }
 
+  /** The Egg: what puts the egg onchain (takeEgg). Signed once the DNA is in. */
+  async signEgg(egg) {
+    if (egg.egg || !egg.dna) return null;
+    const message = eggOf(egg);
+    const signature = await this.account.signTypedData({ domain: hatchDomain(this.contract), types: eggTypes, primaryType: 'Egg', message });
+    egg.egg = { message: Object.fromEntries(Object.entries(message).map(([k, v]) => [k, String(v)])), signature, signer: this.address, at: this.now(), contract: this.contract };
+    this.log(`FID ${egg.claim.fid}: egg signed`);
+    return egg.egg;
+  }
+
+  /** The Hatch: after WARM_DAYS warm days. It names the being's surname, read from its DNA. */
   async signIfReady(egg) {
     if (egg.hatch || !egg.dna || !this.warmth(egg).ready) return null;
-    const message = hatchOf(egg);
+    const message = await hatchOf(egg);
     const signature = await this.account.signTypedData({ domain: hatchDomain(this.contract), types: hatchTypes, primaryType: 'Hatch', message });
     egg.hatch = { message: Object.fromEntries(Object.entries(message).map(([k, v]) => [k, String(v)])), signature, signer: this.address, at: this.now(), contract: this.contract };
     this.log(`FID ${egg.claim.fid}: hatched, signed`);
@@ -242,7 +256,7 @@ export class Hatchery {
       fid: egg.claim.fid, network: egg.claim.network, node: egg.claim.node, to: egg.claim.to, server: egg.claim.server, hatchery: egg.claim.hatchery,
       laidAt: egg.laidAt, layingAt: egg.claim.at, dna: egg.dna, dnaError: egg.dna ? undefined : egg.dnaError,
       warmDays: w.warmDays, needed: w.needed, days: w.days.map(({ day, checks, passed, need, warm, done }) => ({ day, checks, passed, need, warm, done })),
-      recent, hatched: Boolean(egg.hatch), hatch: egg.hatch, attester: this.address,
+      recent, egg: egg.egg ?? null, hatched: Boolean(egg.hatch), hatch: egg.hatch, attester: this.address,
     };
   }
 

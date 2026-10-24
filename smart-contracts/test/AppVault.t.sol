@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {OpenFactory} from "./mocks/OpenFactory.sol";
 import {Test} from "forge-std/Test.sol";
 import {AppFactory} from "../src/AppFactory.sol";
 import {AppVault} from "../src/AppVault.sol";
@@ -13,7 +14,7 @@ contract AppVaultTest is Test {
     MockLocker locker;
     MockFeeLocker feeLocker;
     MockClanker clanker;
-    AppFactory factory;
+    OpenFactory factory;
 
     address creator = makeAddr("creator");
     address owner = makeAddr("owner"); // could be a Safe
@@ -33,7 +34,7 @@ contract AppVaultTest is Test {
         AppVault.Tier[] memory t = new AppVault.Tier[](2);
         t[0] = AppVault.Tier(uint64(SEED), 0);
         t[1] = AppVault.Tier(uint64(GROW), 100);
-        factory = new AppFactory(address(usdc), address(clanker), address(locker), address(feeLocker), t);
+        factory = new OpenFactory(address(usdc), address(clanker), address(locker), address(feeLocker), t);
 
         for (uint256 i; i < 3; i++) {
             address who = [creator, fan, trader][i];

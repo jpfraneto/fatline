@@ -18,11 +18,17 @@ import { createPublicClient, createWalletClient, http, parseAbi, recoverTypedDat
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia, foundry } from 'viem/chains';
 import { loadConfig } from './config.mjs';
-import { hatchDomain, hatchTypes } from './egg.mjs';
+import { eggTypes, hatchDomain, hatchTypes } from './egg.mjs';
 import { Hatchery } from './hatchery.mjs';
 
 export const fatlinersAbi = parseAbi([
-  'function hatch((uint256 fid, address to, bytes32 dna, uint64 laidAt, uint256 deadline, address server, string url) h, bytes[] signatures)',
+  'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, uint256 deadline) e, bytes[] signatures)',
+  'function hatch((uint256 fid, string surname, uint256 deadline) h, bytes[] signatures)',
+  'function stageOf(uint256) view returns (uint8)',
+  'function serverOf(uint256) view returns (address)',
+  'function isFatliner(uint256) view returns (bool)',
+  'function surnameOf(uint256) view returns (string)',
+  'function genesisFid() view returns (uint256)',
   'function hatcheries() view returns (address[] who, string[] urls)',
   'function attesters() view returns (address[])',
   'function threshold() view returns (uint256)',
@@ -66,11 +72,12 @@ function dnaFrom(config, reference) {
 }
 
 /** Puts the signatures in the order the contract wants (by signer, ascending), keeping only real attesters. */
-export async function orderSignatures(message, contract, sigs, attesters) {
+export async function orderSignatures(message, contract, sigs, attesters, kind = 'Hatch') {
+  const types = kind === 'Egg' ? eggTypes : hatchTypes;
   const allowed = new Set(attesters.map((a) => a.toLowerCase()));
   const seen = new Map();
   for (const s of sigs) {
-    const signer = await recoverTypedDataAddress({ domain: hatchDomain(contract), types: hatchTypes, primaryType: 'Hatch', message, signature: s.signature }).catch(() => null);
+    const signer = await recoverTypedDataAddress({ domain: hatchDomain(contract), types, primaryType: kind, message, signature: s.signature }).catch(() => null);
     if (signer && allowed.has(signer.toLowerCase())) seen.set(signer.toLowerCase(), s.signature);
   }
   return [...seen.entries()].sort(([a], [b]) => (BigInt(a) < BigInt(b) ? -1 : 1));
@@ -80,10 +87,11 @@ export async function orderSignatures(message, contract, sigs, attesters) {
 export function bornCheck(hc) {
   if (!hc.contract) return async () => false;
   const reader = createPublicClient({ chain: chainOf(hc.chainId), transport: http(hc.rpc) });
-  return (fid) => reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'ownerOf', args: [BigInt(fid)] }).then(() => true, () => false);
+  return (fid) => reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'isFatliner', args: [BigInt(fid)] }).catch(() => false);
 }
 
-const toMessage = (m) => ({ fid: BigInt(m.fid), to: m.to, dna: m.dna, laidAt: BigInt(m.laidAt), deadline: BigInt(m.deadline), server: m.server, url: m.url });
+const toHatch = (m) => ({ fid: BigInt(m.fid), surname: m.surname, deadline: BigInt(m.deadline) });
+const toEgg = (m) => ({ fid: BigInt(m.fid), to: m.to, server: m.server, url: m.url, dna: m.dna, laidAt: BigInt(m.laidAt), deadline: BigInt(m.deadline) });
 
 /** Every attester and its hatchery URL, from the one Fatliners contract. Without a contract: the config's list. */
 export function attesterList(hc) {
@@ -110,23 +118,27 @@ async function serve() {
   const reader = createPublicClient({ chain, transport: http(hc.rpc) });
   const wallet = createWalletClient({ account: privateKeyToAccount(privateKey), chain, transport: http(hc.rpc) });
 
-  async function relay(fid, body) {
-    if (!hc.relay) throw Object.assign(new Error('This attester does not submit mints.'), { status: 404 });
+  /** Submits a takeEgg ('Egg') or a hatch ('Hatch'): this attester's signature plus those sent, sorted. */
+  async function relay(fid, body, kind) {
+    if (!hc.relay) throw Object.assign(new Error('This attester does not submit transactions.'), { status: 404 });
     if (!hc.contract) throw Object.assign(new Error('Fatliners is not deployed yet.'), { status: 409 });
     const own = hatchery.status(fid);
-    if (!own?.hatch) throw Object.assign(new Error('This attester has not seen that egg hatch.'), { status: 409 });
-    const message = toMessage(own.hatch.message);
-    const owner = await reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'ownerOf', args: [BigInt(fid)] }).catch(() => null);
-    if (owner) throw Object.assign(new Error(`Already born. Fatliner #${fid} belongs to ${owner}.`), { status: 409 });
-    const [attesters, threshold] = await Promise.all([
-      reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'attesters' }),
-      reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'threshold' }),
-    ]);
-    const ordered = await orderSignatures(message, contract, [own.hatch, ...(body?.signatures ?? [])], attesters);
+    const mine = kind === 'Egg' ? own?.egg : own?.hatch;
+    if (!mine) throw Object.assign(new Error(kind === 'Egg' ? 'This attester has not signed that egg (its DNA may still be read).' : 'This attester has not seen that egg hatch.'), { status: 409 });
+    const read = (functionName, args = []) => reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName, args });
+    const [stage, server] = await Promise.all([read('stageOf', [BigInt(fid)]), read('serverOf', [BigInt(fid)])]);
+    if (Number(stage) === 2) throw Object.assign(new Error(`Already born. Fatliner #${fid} hatched as $${await read('surnameOf', [BigInt(fid)])}.`), { status: 409 });
+    if (kind === 'Egg' && Number(stage) === 1 && server.toLowerCase() === mine.message.server.toLowerCase()) {
+      throw Object.assign(new Error(`Egg #${fid} is already onchain, kept warm by this server.`), { status: 409 });
+    }
+    if (kind === 'Hatch' && Number(stage) !== 1) throw Object.assign(new Error(`Egg #${fid} is not onchain yet: fatline egg take`), { status: 409 });
+    const message = kind === 'Egg' ? toEgg(mine.message) : toHatch(mine.message);
+    const [attesters, threshold] = await Promise.all([read('attesters'), read('threshold')]);
+    const ordered = await orderSignatures(message, contract, [mine, ...(body?.signatures ?? [])], attesters, kind);
     if (BigInt(ordered.length) < threshold) {
       throw Object.assign(new Error(`${ordered.length} of the ${threshold} attester signatures needed.`), { status: 409 });
     }
-    const hash = await wallet.writeContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'hatch', args: [message, ordered.map(([, s]) => s)] });
+    const hash = await wallet.writeContract({ address: hc.contract, abi: fatlinersAbi, functionName: kind === 'Egg' ? 'takeEgg' : 'hatch', args: [message, ordered.map(([, sig]) => sig)] });
     const receipt = await reader.waitForTransactionReceipt({ hash });
     return { tx: hash, status: receipt.status, signers: ordered.map(([a]) => a) };
   }
@@ -135,7 +147,8 @@ async function serve() {
     ['GET', /^\/$/, () => hatchery.info()],
     ['GET', /^\/eggs\/(\d{1,12})$/, (m) => hatchery.status(m[1]) ?? Promise.reject(Object.assign(new Error('No egg for that FID here.'), { status: 404 }))],
     ['POST', /^\/eggs$/, (m, body) => hatchery.lay(body)],
-    ['POST', /^\/eggs\/(\d{1,12})\/hatch$/, (m, body) => relay(Number(m[1]), body)],
+    ['POST', /^\/eggs\/(\d{1,12})\/take$/, (m, body) => relay(Number(m[1]), body, 'Egg')],
+    ['POST', /^\/eggs\/(\d{1,12})\/hatch$/, (m, body) => relay(Number(m[1]), body, 'Hatch')],
   ];
   const server = createServer(async (req, res) => {
     res.setHeader('access-control-allow-origin', '*');

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { recoverTypedDataAddress } from 'viem';
-import { claimText, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, signClaim, verifyClaim, warmth } from '../src/egg.mjs';
+import { claimText, eggOf, eggTypes, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, signClaim, surnameOf, verifyClaim, warmth } from '../src/egg.mjs';
 import { Hatchery } from '../src/hatchery.mjs';
 
 const HOUR = 3_600_000, DAY = 24 * HOUR;
@@ -120,7 +120,22 @@ test('the egg names its server\'s hatchery: same machine, the key it claims, not
   assert.equal(egg.hatchery, HATCH);
 });
 
-test('three warm days hatch it; the Hatch is signed for the contract and recovers to the attester', async () => {
+test('the Egg is signed as soon as the DNA is in, and recovers to the attester', async () => {
+  const { h, claim } = setup();
+  await h.lay(claim());
+  await new Promise((r) => setImmediate(r)); // the DNA fills in the background
+  await new Promise((r) => setImmediate(r));
+  const s = h.status(18350);
+  assert.ok(s.egg, 'egg signed');
+  assert.equal(s.egg.message.server, SERVER);
+  assert.equal(s.egg.message.url, HATCH);
+  assert.equal(s.egg.message.dna, `0x${'ab'.repeat(32)}`);
+  const message = eggOf(h.state.eggs[18350]);
+  const signer = await recoverTypedDataAddress({ domain: hatchDomain(h.contract), types: eggTypes, primaryType: 'Egg', message, signature: s.egg.signature });
+  assert.equal(signer, h.address);
+});
+
+test('three warm days hatch it; the Hatch names the surname from the DNA and recovers to the attester', async () => {
   const { h, claim, tick } = setup();
   await h.lay(claim());
   await new Promise((r) => setImmediate(r)); // the DNA fills in the background
@@ -132,11 +147,10 @@ test('three warm days hatch it; the Hatch is signed for the contract and recover
   const s = h.status(18350);
   assert.equal(s.warmDays, 3);
   assert.ok(s.hatched);
-  const message = hatchOf(h.state.eggs[18350]);
-  assert.equal(s.hatch.message.dna, `0x${'ab'.repeat(32)}`);
+  const message = await hatchOf(h.state.eggs[18350]);
+  assert.equal(s.hatch.message.surname, await surnameOf(18350, `0x${'ab'.repeat(32)}`));
+  assert.match(s.hatch.message.surname, /^[A-Z]{2,12}$/);
   assert.equal(s.hatch.message.deadline, String(message.deadline));
-  assert.equal(s.hatch.message.server, SERVER);
-  assert.equal(s.hatch.message.url, HATCH);
   const signer = await recoverTypedDataAddress({ domain: hatchDomain(h.contract), types: hatchTypes, primaryType: 'Hatch', message, signature: s.hatch.signature });
   assert.equal(signer, h.address);
   const checks = h.state.eggs[18350].checks.length;

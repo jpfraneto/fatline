@@ -58,7 +58,9 @@ contract MockClanker {
     }
 
     function deployToken(IClanker.DeploymentConfig memory c) external payable returns (address token) {
-        token = address(new MockUSDC());
+        MockUSDC t = new MockUSDC();
+        t.setSymbol(c.tokenConfig.symbol);
+        token = address(t);
         TokenRewardInfo memory info;
         info.token = token;
         info.poolKey = PoolKey(c.poolConfig.pairedToken, token, 0, 200, address(0));

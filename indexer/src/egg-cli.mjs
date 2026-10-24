@@ -3,7 +3,8 @@
 //   fatline egg                         how warm your egg is, at every attester
 //   fatline egg lay [--node URL] [--network farcaster|hypersnap] [--to 0x…]
 //                                       sign the claim with this client's app key and give it to the attesters
-//   fatline hatch                       collect the attesters' signatures and have the Fatliner minted
+//   fatline egg take                    put the egg onchain (lay does it; this retries)
+//   fatline hatch                       collect the attesters' signatures; the egg becomes the Fatliner
 //
 // The node must be your own and reachable from the internet (attesters check it every hour).
 // Default node: the server `fatline compute` rented (.fatline/compute.json). Default address to hatch to:
@@ -12,7 +13,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from './config.mjs';
 import { laidAtOf, normalizeNode, signClaim } from './egg.mjs';
-import { attesterList, hatcheryConfig } from './hatchery-run.mjs';
+import { createPublicClient, http } from 'viem';
+import { base } from 'viem/chains';
+import { attesterList, fatlinersAbi, hatcheryConfig } from './hatchery-run.mjs';
 import { Network } from './hub.mjs';
 import { loadAppKey } from './writer.mjs';
 
@@ -88,14 +91,26 @@ async function lay(config, opts) {
       say(`  ✗ ${a.label ?? a.url}: ${err.message}`);
     }
   }
-  say(ok ? '\nYour node now keeps it warm. Attesters check it every hour. See how it goes: fatline egg' : '\nNo attester took the egg.');
-  if (!ok) process.exitCode = 1;
+  if (!ok) { say('\nNo attester took the egg.'); process.exitCode = 1; return; }
+  await take(config);
+  say('\nYour node now keeps it warm. Attesters check it every hour; after three warm days: fatline hatch. See how it goes: fatline egg');
+}
+
+/** What the Fatliners contract says about this FID: nothing, an egg, or a Fatliner (with its surname). */
+async function onchain(config, fid) {
+  const hc = hatcheryConfig(config);
+  if (!hc.contract || hc.chainId !== 8453) return null;
+  const c = createPublicClient({ chain: base, transport: http(hc.rpc) });
+  const read = (functionName) => c.readContract({ address: hc.contract, abi: fatlinersAbi, functionName, args: [BigInt(fid)] });
+  const stage = Number(await read('stageOf').catch(() => -1));
+  if (stage === 2) return `a Fatliner, $${await read('surnameOf')}`;
+  return { 0: 'nothing yet (no egg onchain)', 1: 'an egg', [-1]: 'unknown (could not read Base)' }[stage];
 }
 
 async function status(config) {
   const key = loadAppKey(config.dataDir);
   if (!key) throw new Error('This client has no app key. Run fatline identity, then fatline egg lay.');
-  say(`\nFID ${key.fid}'s egg:`);
+  say(`\nFID ${key.fid}'s egg. Onchain: ${(await onchain(config, key.fid)) ?? 'no contract on Base in this config'}.`);
   let any = false;
   for (const a of await attestersOf(config)) {
     try {
@@ -114,45 +129,68 @@ async function status(config) {
   if (!any) process.exitCode = 1;
 }
 
-async function hatch(config) {
+/**
+ * Collects the attesters' signatures for this account's Egg ('egg': takeEgg) or Hatch ('hatch'), and has
+ * an attester that relays submit them. Returns true when it is onchain (or already was).
+ */
+async function submit(config, kind, { quiet = false } = {}) {
   const key = loadAppKey(config.dataDir);
   if (!key) throw new Error('This client has no app key.');
+  const field = kind === 'egg' ? 'egg' : 'hatch';
   const sigs = [];
   const relays = [];
   for (const a of await attestersOf(config)) {
     try {
       const s = await json(`${a.url}/eggs/${key.fid}`, { timeoutMs: 15_000 });
-      if (s.hatch) { sigs.push({ signer: s.hatch.signer, signature: s.hatch.signature, message: s.hatch.message, url: a.url }); relays.push(a); }
-      say(`  ${a.label ?? a.url}: ${s.hatch ? 'signed' : `${s.warmDays}/${s.needed} warm days, not yet`}`);
+      const sig = s[field];
+      if (sig) { sigs.push({ signer: sig.signer, signature: sig.signature, message: sig.message }); relays.push(a); }
+      if (!quiet) say(`  ${a.label ?? a.url}: ${sig ? 'signed' : kind === 'egg' ? 'reading your history (the DNA), not signed yet' : `${s.warmDays}/${s.needed} warm days, not yet`}`);
     } catch (err) {
-      say(`  ${a.label ?? a.url}: ${err.message}`);
+      if (!quiet) say(`  ${a.label ?? a.url}: ${err.message}`);
     }
   }
-  if (!sigs.length) throw new Error('No attester has signed yet. Keep your node running: fatline egg');
-  // Everyone must have signed the same Hatch. If not, the DNA differs between attesters: say so.
+  if (!sigs.length) {
+    if (quiet) return false;
+    throw new Error(kind === 'egg' ? 'No attester has signed your egg yet. Try again in a few minutes: fatline egg take' : 'No attester has signed yet. Keep your node running: fatline egg');
+  }
+  // Everyone must have signed the same message. If not, the DNA differs between attesters: say so.
   const same = sigs.filter((s) => JSON.stringify(s.message) === JSON.stringify(sigs[0].message));
-  if (same.length < sigs.length) say(`  Note: ${sigs.length - same.length} attester(s) signed a different Hatch (a different DNA). Only matching ones count.`);
+  if (same.length < sigs.length) say(`  Note: ${sigs.length - same.length} attester(s) signed something different (a different DNA). Only matching ones count.`);
   for (const r of relays) {
     try {
-      const out = await json(`${r.url}/eggs/${key.fid}/hatch`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ signatures: same }), timeoutMs: 120_000 });
-      say(`\nBorn. Fatliner #${key.fid} → ${sigs[0].message.to}`);
-      say(`  tx ${out.tx} (${out.status}), signed by ${out.signers.length} attesters`);
-      return;
+      const out = await json(`${r.url}/eggs/${key.fid}/${kind === 'egg' ? 'take' : 'hatch'}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ signatures: same }), timeoutMs: 120_000 });
+      if (kind === 'egg') say(`\nYour egg is onchain: token #${key.fid}, an egg, held by ${sigs[0].message.to}. It can't be moved; it hatches where it is.`);
+      else say(`\nBorn. Fatliner #${key.fid}, $${sigs[0].message.surname}.`);
+      say(`  tx ${out.tx} (${out.status}), signed by ${out.signers.length} attester${out.signers.length === 1 ? '' : 's'}`);
+      return true;
     } catch (err) {
-      if (/^Already born/.test(err.message)) { say(`\n${err.message}`); return; }
-      say(`  ${r.label ?? r.url} could not submit it: ${err.message}`);
+      if (/^Already born|already onchain/.test(err.message)) { say(`\n${err.message}`); return true; }
+      if (!quiet) say(`  ${r.label ?? r.url} could not submit it: ${err.message}`);
     }
   }
-  say('\nNobody submitted it. Anyone can, with a little ETH on Base: call hatch(h, signatures) on the Fatliners contract with');
-  say(JSON.stringify({ h: same[0].message, signatures: same.map((s) => s.signature) }, null, 1));
+  if (quiet) return false;
+  const fn = kind === 'egg' ? 'takeEgg(e, signatures)' : 'hatch(h, signatures)';
+  say(`\nNobody submitted it. Anyone can, with a little ETH on Base: call ${fn} on the Fatliners contract with`);
+  say(JSON.stringify({ message: same[0].message, signatures: same.map((s) => s.signature) }, null, 1));
   process.exitCode = 1;
+  return false;
+}
+
+async function take(config) {
+  // The attesters read the history first (seconds for most accounts, minutes for big ones).
+  for (let i = 0; i < 20; i++) {
+    if (await submit(config, 'egg', { quiet: true })) return;
+    if (i === 0) say('\nPutting your egg onchain once the attesters have read your history (the DNA)…');
+    await new Promise((r) => setTimeout(r, 15_000));
+  }
+  await submit(config, 'egg');
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const opts = args();
   const config = loadConfig();
-  const run = { lay: () => lay(config, opts), status: () => status(config), hatch: () => hatch(config) }[opts.cmd];
-  if (!run) { console.error(`Unknown: ${opts.cmd}. Try fatline egg, fatline egg lay, fatline hatch.`); process.exit(1); }
+  const run = { lay: () => lay(config, opts), status: () => status(config), take: () => take(config), hatch: () => submit(config, 'hatch') }[opts.cmd];
+  if (!run) { console.error(`Unknown: ${opts.cmd}. Try fatline egg, fatline egg lay, fatline egg take, fatline hatch.`); process.exit(1); }
   run().catch((err) => { console.error(err.message); process.exit(1); });
 }
 

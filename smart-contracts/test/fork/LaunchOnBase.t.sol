@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {OpenFactory} from "../mocks/OpenFactory.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {AppFactory} from "../../src/AppFactory.sol";
 import {AppVault} from "../../src/AppVault.sol";
@@ -64,7 +65,7 @@ contract LaunchOnBaseTest is Test {
     address constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address constant POOL_MANAGER = 0x498581fF718922c3f8e6A244956aF099B2652b2b; // holds plenty of USDC
 
-    AppFactory factory;
+    OpenFactory factory;
     address creator = makeAddr("creator");
     address keeper = makeAddr("keeper");
     bool noFork;
@@ -77,7 +78,7 @@ contract LaunchOnBaseTest is Test {
         }
         vm.createSelectFork(rpc);
         Deploy d = new Deploy();
-        factory = new AppFactory(USDC, d.CLANKER(), d.LOCKER(), d.FEE_LOCKER(), d.defaultTiers());
+        factory = new OpenFactory(USDC, d.CLANKER(), d.LOCKER(), d.FEE_LOCKER(), d.defaultTiers());
         vm.prank(POOL_MANAGER);
         IERC20(USDC).transfer(creator, 10_000e6);
     }

@@ -13,131 +13,148 @@ interface IFatlineVaults {
 }
 
 /// @title Fatliners
-/// @notice 777 beings, each born from one Farcaster account. The token id is the account's FID:
-/// you are your FID.
+/// @notice Eggs and the 777 beings that hatch from them. One token per Farcaster account: its id is the
+/// account's FID. You are your FID.
 ///
-/// A Fatliner hatches from an egg, and the egg is kept warm by a Fatline server: a machine running a
-/// Farcaster node, a client and a hatchery. To lay one, the account signs a claim with its app key: "this
-/// server keeps my egg warm; hatch me to this address". The attesters' hatcheries then check that server
-/// every hour, by themselves: does its node answer, is it in sync, does it hold real messages, does its
-/// hatchery answer? A day is warm when most of its checks pass. After three warm days each attester signs
-/// an EIP-712 Hatch, and anyone can bring the signatures here.
+/// An egg: any account can take one, once. It is laid on a Fatline server (a machine running a Farcaster
+/// node, a client and a hatchery) and holds the account's history up to that hour, its DNA. The account
+/// signs the claim with its app key; the attesters check it and the server, and sign an EIP-712 Egg;
+/// `takeEgg` mints the egg to the account. Eggs are unlimited and cannot be moved: an egg belongs to
+/// the account that laid it.
 ///
-/// It all starts from one Fatliner: the genesis Fatliner (Aster, $FATLINE), born when this contract is
-/// deployed, and the server that keeps it alive, the genesis attester. Every other Fatliner hatches.
+/// A Fatliner: the same token, hatched. The attesters' hatcheries check the egg's server every hour, by
+/// themselves: its node answers, is in sync, returns messages they pick at random from their own nodes,
+/// and its hatchery answers with the egg's key. A day is warm when most checks pass. After three warm
+/// days each attester signs an EIP-712 Hatch, which also names the being's surname, read from its DNA.
+/// `hatch` turns the egg into a Fatliner. Only 777 ever hatch. A Fatliner can only come from an egg.
 ///
-/// Attesters are Fatline servers that hatched. When an egg hatches, the server that kept it warm becomes
-/// an attester (its hatchery key and address are part of the Hatch). Nobody adds or removes attesters:
-/// the only way in is three days of a real node, checked by the servers already in. The genesis server
-/// is the only exception, because the first egg needs someone to check it. A Hatch needs signatures from REQUIRED attesters, or from all of them while
+/// Attesters are Fatline servers that hatched: when an egg hatches, the server that kept it warm becomes
+/// one. Nobody adds or removes attesters. A signature set needs REQUIRED attesters, or all of them while
 /// there are fewer.
 ///
-/// The Hatch carries the egg's DNA: a hash of the account's history up to the hour the egg was laid
-/// (fatliners/src/history.mjs commitment()), computed by each attester on its own node. The being is
-/// drawn from that history, and anyone holding those messages can check it.
+/// It all starts from one being: the genesis Fatliner (Aster, surname Fatline, $FATLINE), born when this
+/// contract was made, and the genesis server that keeps it alive, the first attester. Every resale of
+/// any Fatliner pays 8% (ERC-2981) into the genesis Fatliner's vault: the village feeds the one it
+/// started from. Its coin is the first one the launchpad will launch, and every Fatliner's coin carries
+/// the surname it hatched with (the launchpad checks).
 ///
-/// The keeper link: a Fatliner is born from one account (its origin, which never changes), and is
-/// kept by whoever holds it. The holder links the FID they live on Farcaster through; the link is
-/// cleared on every transfer, so a new holder brings their own frame of reference. The contract
-/// records which FID the holder claims; readers check, on a node, that the holder's address belongs
-/// to that FID (as its custody or a verified address) before they trust it.
+/// The keeper link: a Fatliner is born from one account (its origin, which never changes) and kept by
+/// whoever holds it. The holder links the FID they live on Farcaster through; the link is cleared on
+/// every transfer. Readers check on a node that the holder's address belongs to that FID.
 ///
-/// Minting is free, and whoever submits it pays the gas, not necessarily the one it is born to.
-/// When all 777 exist, no more can be made.
-///
-/// Resales: 8% royalty (ERC-2981) on every Fatliner, to the genesis Fatliner's vault: the system feeds
-/// the one it starts from. The vault's address is known before the vault exists, so royalties are never lost. Marketplaces read ERC-2981
-/// and usually pay it; it is not enforced on transfers, so gifts and moves between your own wallets
-/// stay free.
+/// Free: whoever submits pays the gas (an attester can relay it), and nothing is ever paid to this contract.
 contract Fatliners is ERC721, IERC2981, EIP712 {
     uint256 public constant ROYALTY_BPS = 800; // 8%
-    uint256 public constant WARM_DAYS = 3; // what attesters wait for before they sign; written here so anyone can see it
-    uint256 public constant REQUIRED = 3; // signatures a Hatch needs (or all attesters, while there are fewer)
+    uint256 public constant WARM_DAYS = 3; // what attesters wait for before they sign a Hatch
+    uint256 public constant REQUIRED = 3; // signatures a set needs (or all attesters, while there are fewer)
 
-    /// @dev fid: the account. to: who it is born to. dna: the history commitment when the egg was laid.
-    /// laidAt: when the egg was laid (unix seconds, the history's cutoff). deadline: the Hatch expires.
-    /// server: the hatchery key of the server that kept the egg warm; it becomes an attester. url: where
-    /// that hatchery answers.
-    bytes32 public constant HATCH_TYPEHASH = keccak256(
-        "Hatch(uint256 fid,address to,bytes32 dna,uint64 laidAt,uint256 deadline,address server,string url)"
+    /// @dev The egg: who it belongs to, the server that keeps it warm (its hatchery key, which becomes an
+    /// attester at hatching) and where that hatchery answers, the history commitment (DNA) and its cutoff.
+    bytes32 public constant EGG_TYPEHASH = keccak256(
+        "Egg(uint256 fid,address to,address server,string url,bytes32 dna,uint64 laidAt,uint256 deadline)"
     );
+    /// @dev The hatching: which egg, and the surname read from its DNA (its coin's ticker).
+    bytes32 public constant HATCH_TYPEHASH = keccak256("Hatch(uint256 fid,string surname,uint256 deadline)");
 
-    struct Hatch {
+    struct Egg {
         uint256 fid;
         address to;
+        address server;
+        string url;
         bytes32 dna;
         uint64 laidAt;
         uint256 deadline;
-        address server;
-        string url;
     }
 
-    uint256 public immutable maxSupply;
+    struct Hatch {
+        uint256 fid;
+        string surname;
+        uint256 deadline;
+    }
+
+    enum Stage {
+        None,
+        Egg,
+        Fatliner
+    }
+
+    uint256 public immutable maxSupply; // Fatliners, not eggs
     uint256 public immutable genesisFid; // the Fatliner it all starts from; every royalty goes to its vault
+    IFatlineVaults public immutable vaults; // the launchpad, which gives each Fatliner its vault
+    string internal baseUri;
+
     address[] internal _attesters;
     mapping(address => bool) public isAttester;
     mapping(address => string) public urlOf; // where each attester's hatchery answers
-    mapping(address => uint256) public fidOfAttester; // the Fatliner its server hatched (0: genesis)
-    IFatlineVaults public immutable vaults; // the factory that gives each Fatliner its vault
-    string internal baseUri;
+    mapping(address => uint256) public fidOfAttester; // the Fatliner its server hatched
 
-    uint256 public totalSupply;
-    mapping(uint256 fid => bytes32) public dnaOf; // the history hash the being hatched from
-    mapping(uint256 fid => uint64) public laidAtOf; // the moment that history was frozen
-    mapping(uint256 fid => address) public serverOf; // the server that kept its egg warm
-    mapping(uint256 fid => uint256) public linkedFidOf; // the keeper link: the FID its holder lives through
+    uint256 public totalSupply; // Fatliners (at most maxSupply)
+    uint256 public eggCount; // eggs taken, hatched or not
+    mapping(uint256 fid => Stage) public stageOf;
+    mapping(uint256 fid => bytes32) public dnaOf; // the history it hatches from
+    mapping(uint256 fid => uint64) public laidAtOf; // that history's cutoff
+    mapping(uint256 fid => address) public serverOf; // the server keeping (or that kept) the egg warm
+    mapping(uint256 fid => string) public serverUrlOf;
+    mapping(address server => uint256 fid) public eggOfServer; // one server, one egg
+    mapping(uint256 fid => string) public surnameOf; // set at hatching; its coin's ticker
+    mapping(uint256 fid => uint256) public linkedFidOf; // the keeper link
 
     event AttesterJoined(address indexed attester, uint256 indexed fid, string url);
     event UrlChanged(address indexed attester, string url);
+    event EggTaken(uint256 indexed fid, address indexed to, address indexed server, bytes32 dna, uint64 laidAt);
+    event EggMoved(uint256 indexed fid, address indexed server, string url);
+    event Born(uint256 indexed fid, address indexed to, string surname, bytes32 dna, address server, uint256 signers);
     event FidLinked(uint256 indexed fatliner, uint256 indexed fid, address indexed holder);
-    event Born(uint256 indexed fid, address indexed to, bytes32 dna, uint64 laidAt, address server, uint256 signers);
 
     error NotHolder();
     error NotAttester(address signer);
     error AlreadyAttester();
+    error ServerKeepsAnotherEgg();
     error Expired();
     error NotEnoughAttesters();
     error SignersNotSorted(); // each attester once: signatures ordered by signer address, ascending
+    error NoEgg();
+    error AlreadyHatched();
+    error NotTheSameEgg(); // an egg's owner, DNA and cutoff never change
+    error EggsDoNotMove();
+    error BadSurname();
     error SoldOut();
     error ZeroAddress();
 
-    /// @param genesis      the genesis server's hatchery key: the first attester
-    /// @param genesisUrl   where its hatchery answers
-    /// @param genesisFid_  the genesis Fatliner, born here to `genesisTo` with `genesisDna` (history up to `genesisLaidAt`)
+    /// @param genesis        the genesis server's hatchery key: the first attester
+    /// @param genesisUrl     where its hatchery answers
+    /// @param genesisFid_    the genesis Fatliner, born here to `genesisTo`
+    /// @param genesisSurname its surname and its coin's ticker (Aster's: FATLINE)
+    /// @param genesisDna     its history commitment, up to `genesisLaidAt`
     constructor(
         uint256 maxSupply_,
         address genesis,
         string memory genesisUrl,
         uint256 genesisFid_,
         address genesisTo,
+        string memory genesisSurname,
         bytes32 genesisDna,
         uint64 genesisLaidAt,
         IFatlineVaults vaults_,
         string memory baseUri_
     ) ERC721("Fatliners", "FATLINER") EIP712("Fatliners", "1") {
         if (genesis == address(0) || genesisTo == address(0) || address(vaults_) == address(0)) revert ZeroAddress();
+        if (!_validSurname(genesisSurname)) revert BadSurname();
         maxSupply = maxSupply_;
         vaults = vaults_;
         baseUri = baseUri_;
         genesisFid = genesisFid_;
-        totalSupply = 1;
+        eggCount = 1;
         dnaOf[genesisFid_] = genesisDna;
         laidAtOf[genesisFid_] = genesisLaidAt;
         serverOf[genesisFid_] = genesis;
+        serverUrlOf[genesisFid_] = genesisUrl;
+        eggOfServer[genesis] = genesisFid_;
         _mint(genesisTo, genesisFid_);
-        linkedFidOf[genesisFid_] = genesisFid_;
-        _join(genesis, genesisFid_, genesisUrl);
-        emit Born(genesisFid_, genesisTo, genesisDna, genesisLaidAt, genesis, 0);
-        emit FidLinked(genesisFid_, genesisFid_, genesisTo);
+        _born(genesisFid_, genesisTo, genesisSurname, 0);
     }
 
-    function _join(address a, uint256 fid, string memory url) internal {
-        isAttester[a] = true;
-        urlOf[a] = url;
-        fidOfAttester[a] = fid;
-        _attesters.push(a);
-        emit AttesterJoined(a, fid, url);
-    }
+    // ------------------------------------------------------------------ attesters
 
     function attesters() external view returns (address[] memory) {
         return _attesters;
@@ -150,7 +167,7 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
         for (uint256 i; i < who.length; i++) urls[i] = urlOf[who[i]];
     }
 
-    /// @notice How many signatures a Hatch needs right now.
+    /// @notice How many signatures an Egg or a Hatch needs right now.
     function threshold() public view returns (uint256) {
         return _attesters.length < REQUIRED ? _attesters.length : REQUIRED;
     }
@@ -162,21 +179,8 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
         emit UrlChanged(msg.sender, url);
     }
 
-    /// @notice What an attester signs (EIP-712) when an egg hatches.
-    function hatchDigest(Hatch calldata h) public view returns (bytes32) {
-        return _hashTypedDataV4(
-            keccak256(abi.encode(HATCH_TYPEHASH, h.fid, h.to, h.dna, h.laidAt, h.deadline, h.server, keccak256(bytes(h.url))))
-        );
-    }
-
-    /// @notice Be born. Anyone may submit it; the Fatliner goes to `h.to`, and the server that kept the egg
-    /// warm becomes an attester. Free. `signatures` come from attesters, ordered by their address (lowest first).
-    function hatch(Hatch calldata h, bytes[] calldata signatures) external {
-        if (block.timestamp > h.deadline) revert Expired();
-        if (h.to == address(0) || h.server == address(0)) revert ZeroAddress();
-        if (isAttester[h.server]) revert AlreadyAttester(); // one server, one egg
+    function _checkSignatures(bytes32 digest, bytes[] calldata signatures) internal view {
         if (signatures.length < threshold()) revert NotEnoughAttesters();
-        bytes32 digest = hatchDigest(h);
         address last;
         for (uint256 i; i < signatures.length; i++) {
             address signer = ECDSA.recover(digest, signatures[i]);
@@ -184,29 +188,114 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
             if (!isAttester[signer]) revert NotAttester(signer);
             last = signer;
         }
-        if (totalSupply >= maxSupply) revert SoldOut();
-        totalSupply++;
-        dnaOf[h.fid] = h.dna;
-        laidAtOf[h.fid] = h.laidAt;
-        serverOf[h.fid] = h.server;
-        _mint(h.to, h.fid); // reverts if this FID was already born
-        linkedFidOf[h.fid] = h.fid; // at birth, its holder is its origin
-        _join(h.server, h.fid, h.url);
-        emit Born(h.fid, h.to, h.dna, h.laidAt, h.server, signatures.length);
-        emit FidLinked(h.fid, h.fid, h.to);
     }
+
+    // ------------------------------------------------------------------ eggs
+
+    function eggDigest(Egg calldata e) public view returns (bytes32) {
+        return _hashTypedDataV4(
+            keccak256(
+                abi.encode(EGG_TYPEHASH, e.fid, e.to, e.server, keccak256(bytes(e.url)), e.dna, e.laidAt, e.deadline)
+            )
+        );
+    }
+
+    /// @notice Take an egg: one per FID, as many FIDs as there are. Anyone may submit the attesters'
+    /// signatures; the egg goes to `e.to`. Sent again for an egg that exists (same owner, DNA and
+    /// cutoff), it moves the egg to another server.
+    function takeEgg(Egg calldata e, bytes[] calldata signatures) external {
+        if (block.timestamp > e.deadline) revert Expired();
+        if (e.to == address(0) || e.server == address(0)) revert ZeroAddress();
+        if (isAttester[e.server]) revert AlreadyAttester();
+        uint256 other = eggOfServer[e.server];
+        if (other != 0 && other != e.fid) revert ServerKeepsAnotherEgg();
+        _checkSignatures(eggDigest(e), signatures);
+
+        Stage s = stageOf[e.fid];
+        if (s == Stage.Fatliner) revert AlreadyHatched();
+        if (s == Stage.Egg) {
+            if (_ownerOf(e.fid) != e.to || dnaOf[e.fid] != e.dna || laidAtOf[e.fid] != e.laidAt) revert NotTheSameEgg();
+            delete eggOfServer[serverOf[e.fid]];
+        } else {
+            stageOf[e.fid] = Stage.Egg;
+            eggCount++;
+            dnaOf[e.fid] = e.dna;
+            laidAtOf[e.fid] = e.laidAt;
+            _mint(e.to, e.fid);
+            emit EggTaken(e.fid, e.to, e.server, e.dna, e.laidAt);
+        }
+        serverOf[e.fid] = e.server;
+        serverUrlOf[e.fid] = e.url;
+        eggOfServer[e.server] = e.fid;
+        emit EggMoved(e.fid, e.server, e.url);
+    }
+
+    // ------------------------------------------------------------------ hatching
+
+    function hatchDigest(Hatch calldata h) public view returns (bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(HATCH_TYPEHASH, h.fid, keccak256(bytes(h.surname)), h.deadline)));
+    }
+
+    /// @notice The egg becomes a Fatliner, with the surname its DNA gave it. Its server becomes an attester.
+    function hatch(Hatch calldata h, bytes[] calldata signatures) external {
+        if (block.timestamp > h.deadline) revert Expired();
+        Stage s = stageOf[h.fid];
+        if (s == Stage.Fatliner) revert AlreadyHatched();
+        if (s != Stage.Egg) revert NoEgg();
+        if (!_validSurname(h.surname)) revert BadSurname();
+        _checkSignatures(hatchDigest(h), signatures);
+        if (totalSupply >= maxSupply) revert SoldOut();
+        _born(h.fid, _ownerOf(h.fid), h.surname, signatures.length);
+    }
+
+    function _born(uint256 fid, address to, string memory surname, uint256 signers) internal {
+        stageOf[fid] = Stage.Fatliner;
+        totalSupply++;
+        surnameOf[fid] = surname;
+        linkedFidOf[fid] = fid; // at birth, its holder is its origin
+        address server = serverOf[fid];
+        delete eggOfServer[server];
+        isAttester[server] = true;
+        urlOf[server] = serverUrlOf[fid];
+        fidOfAttester[server] = fid;
+        _attesters.push(server);
+        emit AttesterJoined(server, fid, serverUrlOf[fid]);
+        emit Born(fid, to, surname, dnaOf[fid], server, signers);
+        emit FidLinked(fid, fid, to);
+    }
+
+    /// @dev 1 to 12 characters, A-Z and 0-9: what a coin's ticker can be.
+    function _validSurname(string memory s) internal pure returns (bool) {
+        bytes memory b = bytes(s);
+        if (b.length == 0 || b.length > 12) return false;
+        for (uint256 i; i < b.length; i++) {
+            bytes1 c = b[i];
+            if (!((c >= "A" && c <= "Z") || (c >= "0" && c <= "9"))) return false;
+        }
+        return true;
+    }
+
+    /// @notice Is `fid` a hatched Fatliner? (The launchpad asks.)
+    function isFatliner(uint256 fid) external view returns (bool) {
+        return stageOf[fid] == Stage.Fatliner;
+    }
+
+    // ------------------------------------------------------------------ holding
 
     /// @notice The keeper link: the holder says which FID they live on Farcaster through.
     /// 0 removes the link. Readers check on a node that the holder's address belongs to `fid`.
     function linkFid(uint256 fatliner, uint256 fid) external {
+        if (stageOf[fatliner] != Stage.Fatliner) revert NoEgg();
         if (ownerOf(fatliner) != msg.sender) revert NotHolder();
         linkedFidOf[fatliner] = fid;
         emit FidLinked(fatliner, fid, msg.sender);
     }
 
-    /// @dev A new holder brings their own frame of reference: the link is cleared on every transfer.
+    /// @dev Eggs stay with the account that laid them. Fatliners move freely; a new holder brings their own
+    /// frame of reference, so the keeper link is cleared on every transfer.
     function _update(address to, uint256 tokenId, address auth) internal override returns (address from) {
         from = super._update(to, tokenId, auth);
+        if (from != address(0) && stageOf[tokenId] == Stage.Egg) revert EggsDoNotMove();
         if (from != address(0) && from != to && linkedFidOf[tokenId] != 0) {
             delete linkedFidOf[tokenId];
             emit FidLinked(tokenId, 0, to);
@@ -218,6 +307,7 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
         return (vaults.predictFatlinerVault(genesisFid), (salePrice * ROYALTY_BPS) / 10_000);
     }
 
+    /// @notice One URI per token; the page shows an egg or a being by its stage.
     function tokenURI(uint256 fid) public view override returns (string memory) {
         _requireOwned(fid);
         return string.concat(baseUri, Strings.toString(fid));

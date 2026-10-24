@@ -25,7 +25,7 @@ export function loadConfig() {
   if (process.env.LAUNCHPAD_FACTORY) config.launchpad.factory = process.env.LAUNCHPAD_FACTORY;
 
   // The one launchpad and the one Fatliners contract (smart-contracts/deployments/base.json), unless set.
-  const deployed = JSON.parse(readFileSync(join(ROOT, 'smart-contracts/deployments/base.json'), 'utf8'));
+  const deployed = JSON.parse(readFileSync(process.env.FATLINE_DEPLOYMENTS ?? join(ROOT, 'smart-contracts/deployments/base.json'), 'utf8'));
   if (!config.launchpad.factory && Number(config.launchpad.chainId ?? 8453) === deployed.chainId) {
     config.launchpad.factory = deployed.AppFactory.address;
     config.launchpad.fromBlock = deployed.fromBlock;

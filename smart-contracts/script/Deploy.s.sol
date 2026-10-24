@@ -20,6 +20,7 @@ import {MockUSDC} from "../test/mocks/MockUSDC.sol";
 ///     GENESIS_URL      where its hatchery answers
 ///     GENESIS_FID      the genesis Fatliner (Aster: 18350), born at deployment
 ///     GENESIS_TO       who it is born to
+///     GENESIS_SURNAME  its surname and its coin's ticker (default FATLINE)
 ///     GENESIS_DNA      its history commitment, GENESIS_LAID_AT its cutoff (unix seconds)
 contract Deploy is Script {
     // Base mainnet (chain 8453)
@@ -61,6 +62,7 @@ contract Deploy is Script {
                     vm.envString("GENESIS_URL"),
                     vm.envUint("GENESIS_FID"),
                     vm.envAddress("GENESIS_TO"),
+                    vm.envOr("GENESIS_SURNAME", string("FATLINE")),
                     vm.envBytes32("GENESIS_DNA"),
                     uint64(vm.envUint("GENESIS_LAID_AT")),
                     IFatlineVaults(address(factory)),

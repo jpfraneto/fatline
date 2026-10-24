@@ -4,7 +4,11 @@ pragma solidity ^0.8.28;
 /// @notice Minimal 6-decimal token for tests and local development. Not for production.
 contract MockUSDC {
     string public constant name = "Mock USDC";
-    string public constant symbol = "mUSDC";
+    string public symbol = "mUSDC"; // the mock Clanker renames its coins
+
+    function setSymbol(string calldata s) external {
+        symbol = s;
+    }
     uint8 public constant decimals = 6;
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
