@@ -23,7 +23,7 @@ Tell them how it works, in a few lines: **a Fatliner hatches from an egg that th
 
 Their node must keep running for those days, which costs money (rule 1): about 11 USDC a day rented in USDC, about $2.60 a day on their own Hetzner account. Say so before they rent.
 
-The contracts (the only ones): Fatliners `0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb` and the launchpad `0x8695DB518B2fFa5b87b1A956a1302206c18BfF37`, on Base. Never send them to any other address, and never make up whether they will get one.
+The contracts (the only ones): Fatliners `0x73B27C61F9370398EF778c1b3a14BD1Ea899e7e5` and the launchpad `0x341AE48f22cc4F7428C969a559cb832912A1119F`, on Base. Never send them to any other address, and never make up whether they will get one.
 
 **Show, don't paste.** You may open pages in the person's browser instead of printing long links: `open <url>` on macOS, `xdg-open <url>` on Linux, `start <url>` on Windows. Pick by the machine you are on (`uname`). Open only fatline.ink, github.com/jpfraneto/fatline, basescan.org, console.hetzner.cloud and nodejs.org pages, and say what you opened. If you are not on their computer (a chat on their phone), give the link instead.
 

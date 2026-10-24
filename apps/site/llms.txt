@@ -9,7 +9,7 @@
 - [Tutorial](https://fatline.ink/docs/tutorial.html): every step, English, Spanish, Chinese.
 
 - [Manifesto](https://fatline.ink/manifesto.html): the 777, how they hatch, the circle, and what is true today.
-- [Contracts on Base](https://github.com/jpfraneto/fatline/blob/main/smart-contracts/deployments/base.json): Fatliners 0x93a6b4707F9f37488A863b298e32C6B3e29f8ceb, launchpad 0x8695DB518B2fFa5b87b1A956a1302206c18BfF37.
+- [Contracts on Base](https://github.com/jpfraneto/fatline/blob/main/smart-contracts/deployments/base.json): Fatliners 0x73B27C61F9370398EF778c1b3a14BD1Ea899e7e5, launchpad 0x341AE48f22cc4F7428C969a559cb832912A1119F.
 
 ## Source
 - [Repository](https://github.com/jpfraneto/fatline): README has what is tested and what is not.
