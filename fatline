@@ -69,6 +69,13 @@ Everyday:
                                      --before <cursor>, --fids a,b, --replies, --json, --stats
   fatline test                  Run every test (contracts, indexer, infra)
 
+Your egg (a Fatliner hatches after your node keeps it warm for 3 days):
+  fatline egg lay               Sign the egg with your app key; attesters check your node every hour
+                                     --node URL (default: the server fatline compute rented), --to 0x…
+  fatline egg                   How warm it is: each day's checks, at every attester
+  fatline hatch                 Collect the attesters' signatures; the Fatliner is minted to you (no gas)
+  fatline hatchery [init]       Run an attester: check eggs, sign the ones that hatch
+
 Fatliners (PFPs from any FID's history, reference-conditioned):
   fatline fatliners prompt --fid 18350          Read our nodes, write traits + prompt + request (no image call)
                                      --generate makes the image (Codex image tool); --input <file> works offline
@@ -143,6 +150,20 @@ YAML
   echo "Watch progress with: fatline status   (healthy when blockDelay is near 0 on every shard)"
 }
 
+cmd_egg() {
+  need_node
+  install indexer
+  cd "$ROOT/indexer" && node --experimental-sqlite --no-warnings=ExperimentalWarning src/egg-cli.mjs "$@"
+}
+
+cmd_hatch() { cmd_egg hatch "$@"; }
+
+cmd_hatchery() {
+  need_node
+  install indexer
+  cd "$ROOT/indexer" && exec node --experimental-sqlite --no-warnings=ExperimentalWarning src/hatchery-run.mjs "$@"
+}
+
 cmd_follow() {
   need_node
   install indexer
@@ -203,15 +224,23 @@ cmd_dev() {
 
 cmd_status() {
   local port; port=$(node -e 'try{console.log(require(process.argv[1]).port||8787)}catch{console.log(8787)}' "$ROOT/fatline.config.json")
-  bold "Your node"
-  if curl -fsS -m 3 http://127.0.0.1:3381/v1/info >/dev/null 2>&1; then
-    curl -fsS http://127.0.0.1:3381/v1/info | node -e '
-      let s=""; process.stdin.on("data",d=>s+=d).on("end",()=>{ const i=JSON.parse(s);
-        console.log("  version " + i.version);
-        for (const x of i.shardInfos) console.log(`  shard ${x.shardId}: height ${x.maxHeight}, blockDelay ${x.blockDelay}`); });'
-  else
-    echo "  no node on this machine (that is fine in light mode)"
-  fi
+  bold "Your nodes"
+  # Every node marked as yours in fatline.config.json, wherever it runs (this machine or a rented server).
+  node -e '
+    const fs = require("fs");
+    let c = {}; try { c = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); } catch {}
+    const own = Object.entries(c.networks ?? {}).flatMap(([net, n]) => (n.nodes ?? []).filter((x) => x.own).map((x) => ({ net, url: x.url })));
+    (async () => {
+      let any = false;
+      for (const { net, url } of own) {
+        const i = await fetch(url + "/v1/info", { signal: AbortSignal.timeout(5000) }).then((r) => r.json()).catch(() => null);
+        if (!i) { if (!url.includes("127.0.0.1")) console.log(`  ${net} ${url}: not answering`); continue; }
+        any = true;
+        const worst = Math.max(...i.shardInfos.filter((x) => x.shardId !== 0).map((x) => Number(x.blockDelay ?? 0)));
+        console.log(`  ${net === "farcaster" ? "Snapchain" : "Hypersnap"} ${i.version} at ${url}: ${worst <= 50 ? "in sync" : `catching up, ${worst} blocks behind`}`);
+      }
+      if (!any) console.log("  no node of yours is answering (fine in light mode; rent one with fatline compute)");
+    })();' "$ROOT/fatline.config.json"
   bold "Indexer"
   if curl -fsS -m 3 "http://127.0.0.1:$port/api/networks" > "$STATE/status.json" 2>/dev/null; then
     node -e '
@@ -299,6 +328,6 @@ cmd_contracts() {
 command="${1:-help}"; shift || true
 case "$command" in
   help|-h|--help) cmd_help ;;
-  doctor|init|node|up|client|connect|dashboard|worker|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup) "cmd_$command" "$@" ;;
+  doctor|init|node|up|client|connect|dashboard|worker|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup|egg|hatch|hatchery) "cmd_$command" "$@" ;;
   *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
 esac
