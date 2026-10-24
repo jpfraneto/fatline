@@ -1,21 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Test} from "forge-std/Test.sol";
+import {Test, stdStorage, StdStorage} from "forge-std/Test.sol";
 import {IERC721Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.sol";
-import {AppFactory} from "../src/AppFactory.sol";
+import {FatlineLaunchpad} from "../src/FatlineLaunchpad.sol";
 import {AppVault} from "../src/AppVault.sol";
-import {Fatliners, IFatlineVaults} from "../src/Fatliners.sol";
+import {Fatliners} from "../src/Fatliners.sol";
 import {IClanker} from "../src/interfaces/IClanker.sol";
 import {MockUSDC} from "./mocks/MockUSDC.sol";
 import {MockClanker, MockFeeLocker, MockLocker} from "./mocks/MockClanker.sol";
 
 contract FatlinersTest is Test {
+    using stdStorage for StdStorage;
+
     MockUSDC usdc;
     MockLocker locker;
     MockFeeLocker feeLocker;
     MockClanker clanker;
-    AppFactory factory;
+    Fatliners factory; // the launchpad is the Fatliners contract itself
     Fatliners nft;
 
     // attesters[0] is the genesis server (it keeps Aster alive); attesters[1..5] join by hatching eggs.
@@ -38,22 +40,22 @@ contract FatlinersTest is Test {
         locker = new MockLocker();
         feeLocker = new MockFeeLocker();
         clanker = new MockClanker(locker, address(usdc));
-        AppVault.Tier[] memory t = new AppVault.Tier[](1);
-        t[0] = AppVault.Tier(30, 0); // ~2.59 USDC a day: one node's fuel
-        factory = new AppFactory(address(usdc), address(clanker), address(locker), address(feeLocker), t);
         for (uint256 i; i < 6; i++) {
             (address a, uint256 k) = makeAddrAndKey(string.concat("server", vm.toString(i)));
             attesters.push(a);
             keys.push(k);
         }
         nft = genesis(777);
-        factory.setFatliners(address(nft));
+        factory = nft;
     }
 
     function genesis(uint256 max) internal returns (Fatliners) {
+        AppVault.Tier[] memory t = new AppVault.Tier[](1);
+        t[0] = AppVault.Tier(30, 0); // ~2.59 USDC a day: one node's fuel
         return new Fatliners(
             max, attesters[0], "http://genesis:8791", ASTER, aster, "FATLINE", keccak256("aster"), laidAt,
-            IFatlineVaults(address(factory)), "https://fatline.ink/fatliners/"
+            "https://fatline.ink/fatliners/",
+            FatlineLaunchpad.Clanker(address(usdc), address(clanker), address(locker), address(feeLocker)), t
         );
     }
 
@@ -365,8 +367,8 @@ contract FatlinersTest is Test {
 
     // ------------------------------------------------------------ the launchpad: one coin per Fatliner
 
-    function params() internal view returns (AppFactory.AppParams memory) {
-        return AppFactory.AppParams({owner: address(0), keeper: keeper, billingPeriod: 30 days, uri: "", salt: 0});
+    function params() internal view returns (FatlineLaunchpad.AppParams memory) {
+        return FatlineLaunchpad.AppParams({owner: address(0), keeper: keeper, billingPeriod: 30 days, uri: "", salt: 0});
     }
 
     function deployCall(uint256 fid, string memory symbol) internal view returns (bytes memory) {
@@ -397,7 +399,7 @@ contract FatlinersTest is Test {
         ankyHatched(attesters[1]);
         bytes memory d2 = deployCall(18350, "PEBBLE");
         vm.prank(anky);
-        vm.expectRevert(AppFactory.GenesisFirst.selector);
+        vm.expectRevert(FatlineLaunchpad.GenesisFirst.selector);
         factory.launchFatline(18350, params(), d2, 0);
         (AppVault vault, address coin) = launchAster();
         assertEq(address(vault), factory.predictFatlinerVault(ASTER));
@@ -414,7 +416,7 @@ contract FatlinersTest is Test {
     function test_TheTickerIsTheSurname_NobodyPicksIt() public {
         bytes memory d4 = deployCall(ASTER, "ASTER");
         vm.prank(aster);
-        vm.expectRevert(AppFactory.WrongTicker.selector);
+        vm.expectRevert(FatlineLaunchpad.WrongTicker.selector);
         factory.launchFatline(ASTER, params(), d4, 0);
     }
 
@@ -422,17 +424,17 @@ contract FatlinersTest is Test {
         launchAster();
         bytes memory d5 = deployCall(ASTER, "FATLINE");
         vm.prank(aster);
-        vm.expectRevert(AppFactory.AlreadyHasCoin.selector);
+        vm.expectRevert(FatlineLaunchpad.AlreadyHasCoin.selector);
         factory.launchFatline(ASTER, params(), d5, 0);
         takeEgg(nft, anEgg(18350, anky, DNA, attesters[1])); // an egg, not yet a Fatliner: it has its coin already
         assertEq(nft.surnameOf(18350), "PEBBLE");
         bytes memory wrong = deployCall(18350, "MOON");
         vm.prank(anky);
-        vm.expectRevert(AppFactory.WrongTicker.selector);
+        vm.expectRevert(FatlineLaunchpad.WrongTicker.selector);
         factory.launchFatline(18350, params(), wrong, 0);
         bytes memory d6 = deployCall(18350, "PEBBLE");
         vm.prank(buyer);
-        vm.expectRevert(AppFactory.NotTheFatlinersHolder.selector);
+        vm.expectRevert(FatlineLaunchpad.NotTheFatlinersHolder.selector);
         factory.launchFatline(18350, params(), d6, 0);
         vm.prank(anky);
         (AppVault eggVault, address eggCoin) = factory.launchFatline(18350, params(), d6, 0);
@@ -442,7 +444,7 @@ contract FatlinersTest is Test {
         assertEq(factory.coinOfFatliner(18350), eggCoin);
         bytes memory d7 = deployCall(424242, "X");
         vm.prank(buyer);
-        vm.expectRevert(AppFactory.NotTheFatlinersHolder.selector);
+        vm.expectRevert(FatlineLaunchpad.NotAFatliner.selector);
         factory.launchFatline(424242, params(), d7, 0); // nothing there
     }
 
@@ -479,11 +481,11 @@ contract FatlinersTest is Test {
     function test_OnlyTheHolderGivesItAVault_Once() public {
         ankyHatched(attesters[1]);
         vm.prank(buyer);
-        vm.expectRevert(AppFactory.NotTheFatlinersHolder.selector);
+        vm.expectRevert(FatlineLaunchpad.NotTheFatlinersHolder.selector);
         factory.createFatline(18350, params(), 0);
         vm.startPrank(anky);
         factory.createFatline(18350, params(), 0);
-        vm.expectRevert(AppFactory.FatlinerHasVault.selector);
+        vm.expectRevert(FatlineLaunchpad.FatlinerHasVault.selector);
         factory.createFatline(18350, params(), 0);
     }
 
@@ -498,11 +500,19 @@ contract FatlinersTest is Test {
         assertEq(aster.balance, 0.05 ether);
     }
 
-    function test_FatlinersIsSetOnceByTheDeployer() public {
-        vm.expectRevert(AppFactory.AlreadySet.selector);
-        factory.setFatliners(address(1));
+    function test_The777thCoinIsTheLast() public {
+        launchAster();
+        takeEgg(nft, anEgg(18350, anky, DNA, attesters[1]));
+        assertEq(factory.MAX_COINS(), 777);
+        stdstore.target(address(nft)).sig("coinsLaunched()").checked_write(uint256(777));
+        bytes memory d = deployCall(18350, "PEBBLE");
         vm.prank(anky);
-        vm.expectRevert(AppFactory.NotDeployer.selector);
-        factory.setFatliners(address(1));
+        vm.expectRevert(FatlineLaunchpad.AllCoinsLaunched.selector);
+        factory.launchFatline(18350, params(), d, 0);
+    }
+
+    function test_OneContract_TheLaunchpadIsTheFatliners() public view {
+        assertEq(address(factory), address(nft));
+        assertEq(AppVault(payable(nft.vaultImplementation())).factory(), address(nft));
     }
 }

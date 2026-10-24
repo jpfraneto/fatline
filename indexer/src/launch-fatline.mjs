@@ -10,7 +10,7 @@
 // The ticker is not an option: it is the Fatliner's surname, read from its DNA when it hatched
 // (Fatliners.surnameOf), and the launchpad refuses any other. $FATLINE (Aster) launches first.
 //
-// One transaction, AppFactory.launchFatline: the Fatliner's vault (owned by whoever holds the Fatliner) and its
+// One transaction, Fatliners.launchFatline (the launchpad is the Fatliners contract): the vault (owned by whoever holds the Fatliner) and its
 // Clanker v4 coin, paired with USDC, with 100% of the trading fees going to that vault. The keeper is the
 // server that keeps the Fatliner alive: it pays itself for compute from the vault, in USDC.
 // Only the holder of the egg or Fatliner can do this, once. Defaults: the genesis Fatliner, Aster, $FATLINE.

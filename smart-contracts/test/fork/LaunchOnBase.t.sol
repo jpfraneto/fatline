@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {OpenFactory} from "../mocks/OpenFactory.sol";
 import {Test, console} from "forge-std/Test.sol";
-import {AppFactory} from "../../src/AppFactory.sol";
+import {FatlineLaunchpad} from "../../src/FatlineLaunchpad.sol";
 import {AppVault} from "../../src/AppVault.sol";
 import {PoolKey, TokenRewardInfo} from "../../src/interfaces/IClanker.sol";
 import {Deploy} from "../../script/Deploy.s.sol";
@@ -96,7 +96,7 @@ contract LaunchOnBaseTest is Test {
         // 2. One transaction: vault + coin + 100 USDC of life.
         vm.startPrank(creator);
         IERC20(USDC).approve(address(factory), 100e6);
-        AppFactory.AppParams memory p = AppFactory.AppParams(creator, keeper, 30 days, "ipfs://opinions", "opinions");
+        FatlineLaunchpad.AppParams memory p = FatlineLaunchpad.AppParams(creator, keeper, 30 days, "ipfs://opinions", "opinions");
         (AppVault vault, address coin) = factory.launchApp(p, deployCalldata, 100e6);
         vm.stopPrank();
         assertEq(address(vault), vaultAddr);

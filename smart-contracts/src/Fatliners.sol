@@ -1,16 +1,40 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+// In Dan Simmons' Hyperion, the worlds of humankind are light-years apart, and one thing joins them:
+// the fatline, a message that arrives everywhere at once. Nobody in the books owns it. Everybody leans on it.
+// Farcaster took its name from those books. Its farcasters were doors between worlds; ours are messages
+// between people, signed by the people who write them.
+//
+// A protocol is only as free as the machines that carry it. For a long time there was one way to read
+// Farcaster: someone else's server. Then there were two networks, Snapchain and Hypersnap, and a question
+// nobody had to ask before: which one is true? A Fatline doesn't answer that question for you. It gives you
+// a node of your own, on the network you choose, and a client that reads only from it.
+//
+// This contract is the other half. A node that keeps someone's egg warm for three days hatches a being,
+// one of 777, named by its own history. An egg, or a being, can have one coin. Every fee that coin earns
+// goes to its vault, in USDC, and pays the server that keeps its node alive; whatever the node doesn't
+// need goes to whoever holds it. One node, one client, one contract. This one.
+//
+// Why now: because the network split, because agents can run servers, and because a node that pays its
+// own rent is the first kind of node that can outlive the people who started it.
+//
+// If you're reading this, you can have one too. Ask your agent:
+//
+//     Help me run my own Fatline: a Farcaster node and its client. Follow https://fatline.ink/skill.md
+//
+// You are your FID.
+//
+// [ Aster, #18350, the first. Born on Base, 24 October 2026. ]
+
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-
-interface IFatlineVaults {
-    function predictFatlinerVault(uint256 fid) external view returns (address);
-}
+import {AppVault} from "./AppVault.sol";
+import {FatlineLaunchpad} from "./FatlineLaunchpad.sol";
 
 /// @title Fatliners
 /// @notice Eggs and the 777 beings that hatch from them. One token per Farcaster account: its id is the
@@ -43,7 +67,7 @@ interface IFatlineVaults {
 /// every transfer. Readers check on a node that the holder's address belongs to that FID.
 ///
 /// Free: whoever submits pays the gas (an attester can relay it), and nothing is ever paid to this contract.
-contract Fatliners is ERC721, IERC2981, EIP712 {
+contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     uint256 public constant ROYALTY_BPS = 800; // 8%
     uint256 public constant WARM_DAYS = 3; // what attesters wait for before they sign a Hatch
     uint256 public constant REQUIRED = 3; // signatures a set needs (or all attesters, while there are fewer)
@@ -82,7 +106,6 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
 
     uint256 public immutable maxSupply; // Fatliners, not eggs
     uint256 public immutable genesisFid; // the Fatliner it all starts from; every royalty goes to its vault
-    IFatlineVaults public immutable vaults; // the launchpad, which gives each Fatliner its vault
     string internal baseUri;
 
     address[] internal _attesters;
@@ -137,13 +160,13 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
         string memory genesisSurname,
         bytes32 genesisDna,
         uint64 genesisLaidAt,
-        IFatlineVaults vaults_,
-        string memory baseUri_
-    ) ERC721("Fatliners", "FATLINER") EIP712("Fatliners", "1") {
-        if (genesis == address(0) || genesisTo == address(0) || address(vaults_) == address(0)) revert ZeroAddress();
+        string memory baseUri_,
+        Clanker memory clanker_,
+        AppVault.Tier[] memory tiers_
+    ) ERC721("Fatliners", "FATLINER") EIP712("Fatliners", "1") FatlineLaunchpad(clanker_, tiers_) {
+        if (genesis == address(0) || genesisTo == address(0)) revert ZeroAddress();
         if (!_validSurname(genesisSurname)) revert BadSurname();
         maxSupply = maxSupply_;
-        vaults = vaults_;
         baseUri = baseUri_;
         genesisFid = genesisFid_;
         eggCount = 1;
@@ -292,9 +315,27 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
         return true;
     }
 
-    /// @notice Is `fid` an egg or a Fatliner? Either can have a coin. (The launchpad asks.)
+    /// @notice Is `fid` an egg or a Fatliner? Either can have a coin.
     function hasCoinRight(uint256 fid) external view returns (bool) {
         return stageOf[fid] != Stage.None;
+    }
+
+    // ------------------------------------------------------------------ the launchpad's questions
+
+    function _holderOf(uint256 fid) internal view override returns (address) {
+        return _ownerOf(fid);
+    }
+
+    function _hasCoinRight(uint256 fid) internal view override returns (bool) {
+        return stageOf[fid] != Stage.None;
+    }
+
+    function _tickerOf(uint256 fid) internal view override returns (string memory) {
+        return surnameOf[fid];
+    }
+
+    function _genesis() internal view override returns (uint256) {
+        return genesisFid;
     }
 
     /// @notice Is `fid` a hatched Fatliner?
@@ -326,7 +367,7 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
 
     /// @notice Every resale pays the genesis Fatliner's vault.
     function royaltyInfo(uint256, uint256 salePrice) external view returns (address, uint256) {
-        return (vaults.predictFatlinerVault(genesisFid), (salePrice * ROYALTY_BPS) / 10_000);
+        return (predictFatlinerVault(genesisFid), (salePrice * ROYALTY_BPS) / 10_000);
     }
 
     /// @notice One URI per token; the page shows an egg or a being by its stage.

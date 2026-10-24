@@ -1,57 +1,60 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {AppVault} from "./AppVault.sol";
 import {SafeToken} from "./SafeToken.sol";
 import {IClanker, IClankerFeeLocker, IClankerLpLocker, TokenRewardInfo} from "./interfaces/IClanker.sol";
 
-/// @title AppFactory (the Fatline launchpad)
-/// @notice One coin per Fatliner, and only Fatliners: at most 777 coins, ever. Each Fatliner gets one vault,
-/// at an address known before it exists (`predictFatlinerVault`), owned by whoever holds that Fatliner,
-/// and one coin on Clanker, paired with USDC, launched by its holder.
+/// @title FatlineLaunchpad
+/// @notice The launchpad half of the Fatliners contract (Fatliners inherits it: one contract, not two).
 ///
-/// The coin's ticker is the Fatliner's surname, read from its DNA when it hatched (`Fatliners.surnameOf`):
-/// nobody picks it, not even the holder. The first coin is the genesis Fatliner's ($FATLINE); no other
-/// can launch before it.
+/// At most 777 coins, ever: one per egg or Fatliner, launched by whoever holds it. Each gets one vault, at an
+/// address known before it exists (`predictFatlinerVault`), owned by whoever holds that token, and one coin on
+/// Clanker, paired with USDC. The coin's ticker is the surname read from the egg's DNA (`surnameOf`): nobody
+/// picks it, not even the holder. The genesis Fatliner's coin ($FATLINE) comes first.
 ///
-/// The factory checks the launched coin onchain and reverts unless 100% of its trading fees go to the
-/// Fatliner's vault, converted to USDC, with the vault as the only admin. Since the vault has no function
-/// to change that, nobody (not the holder, not us) can ever redirect the fees.
+/// The launch is checked onchain: it reverts unless 100% of the coin's trading fees go to the vault, converted
+/// to USDC, with the vault as the only admin. The vault has no function to change that, so nobody (not the
+/// holder, not us) can ever redirect the fees.
 ///
-/// Apps without a coin can still have a vault (`createApp`): they live on deposits.
-contract AppFactory {
+/// Vaults are minimal clones (EIP-1167) of one AppVault, deployed with this contract.
+abstract contract FatlineLaunchpad {
     using SafeToken for address;
 
     uint8 internal constant FEE_IN_PAIRED = 1;
+    uint256 public constant MAX_COINS = 777;
 
     address public immutable usdc;
     address public immutable clanker;
     IClankerLpLocker public immutable locker;
     IClankerFeeLocker public immutable feeLocker;
+    address public immutable vaultImplementation;
 
     AppVault.Tier[] internal _tiers;
 
-    address public immutable deployer; // may set the Fatliners contract, once
-    address public fatliners;
     mapping(uint256 fid => address vault) public vaultOfFatliner;
-    uint256 public coinsLaunched; // at most one per Fatliner
     mapping(uint256 fid => address coin) public coinOfFatliner;
-
-    address[] public apps;
     mapping(address coin => address vault) public vaultOfCoin;
-    mapping(address vault => bool) public isApp;
+    uint256 public coinsLaunched; // at most MAX_COINS
+
+    struct Clanker {
+        address usdc;
+        address clanker;
+        address locker;
+        address feeLocker;
+    }
 
     struct AppParams {
-        address owner; // a person or a multisig (e.g. a Safe)
+        address owner; // ignored for a Fatliner's vault: its owner is whoever holds the token
         address keeper; // the server wallet that pays for compute
         uint256 billingPeriod; // seconds the keeper may pay ahead (1 to 31 days)
         string uri; // the app's description and experience
-        bytes32 salt;
+        bytes32 salt; // ignored for a Fatliner's vault
     }
 
     event AppCreated(address indexed vault, address indexed creator, address indexed owner, string uri);
     event CoinLaunched(address indexed vault, address indexed coin);
-    event FatlinersSet(address fatliners);
     event FatlineBorn(uint256 indexed fid, address indexed vault);
 
     error EmptyTiers();
@@ -60,79 +63,58 @@ contract AppFactory {
     error ClankerFailed(bytes reason);
     error FeesNotLockedToVault();
     error NotPairedWithUsdc();
-    error NotDeployer();
-    error AlreadySet();
-    error NoFatliners();
     error NotTheFatlinersHolder();
     error FatlinerHasVault();
-    error NotAFatliner(); // an egg, or nothing
+    error NotAFatliner(); // no egg, no Fatliner
     error AlreadyHasCoin();
     error GenesisFirst(); // the genesis Fatliner's coin launches before any other
-    error WrongTicker(); // the coin's symbol must be the Fatliner's surname
+    error WrongTicker(); // the coin's symbol must be the surname
+    error AllCoinsLaunched(); // 777, ever
 
-    constructor(address usdc_, address clanker_, address locker_, address feeLocker_, AppVault.Tier[] memory tiers_) {
+    constructor(Clanker memory c, AppVault.Tier[] memory tiers_) {
         if (tiers_.length == 0) revert EmptyTiers();
         if (tiers_[0].minDau != 0) revert FirstTierMustBeOpen();
-        deployer = msg.sender;
-        usdc = usdc_;
-        clanker = clanker_;
-        locker = IClankerLpLocker(locker_);
-        feeLocker = IClankerFeeLocker(feeLocker_);
+        usdc = c.usdc;
+        clanker = c.clanker;
+        locker = IClankerLpLocker(c.locker);
+        feeLocker = IClankerFeeLocker(c.feeLocker);
+        vaultImplementation = address(new AppVault()); // its `factory` is this contract
         for (uint256 i; i < tiers_.length; i++) {
             _tiers.push(tiers_[i]);
         }
     }
 
+    // What the token side answers (Fatliners implements these).
+    function _holderOf(uint256 fid) internal view virtual returns (address);
+    function _hasCoinRight(uint256 fid) internal view virtual returns (bool);
+    function _tickerOf(uint256 fid) internal view virtual returns (string memory);
+    function _genesis() internal view virtual returns (uint256);
+
     function tiers() external view returns (AppVault.Tier[] memory) {
         return _tiers;
     }
 
-    function appsCount() external view returns (uint256) {
-        return apps.length;
-    }
-
-    /// @notice The vault address `creator` will get for `salt`. Use it as the fee recipient when
-    /// building the Clanker deployment, before calling `launchApp`.
-    function predictVault(address creator, bytes32 salt) public view returns (address) {
-        return _predict(_salt(creator, salt));
-    }
-
-    /// @notice The Fatliners contract, set once (it needs this factory's address, so it comes after).
-    function setFatliners(address fatliners_) external {
-        if (msg.sender != deployer) revert NotDeployer();
-        if (fatliners != address(0)) revert AlreadySet();
-        fatliners = fatliners_;
-        emit FatlinersSet(fatliners_);
-    }
-
-    /// @notice Where the vault of Fatliner `fid` is, or will be. Royalties can be sent here before it exists.
+    /// @notice Where the vault of egg or Fatliner `fid` is, or will be. Royalties can be sent here before it exists.
     function predictFatlinerVault(uint256 fid) public view returns (address) {
-        return _predict(_fatlinerSalt(fid));
+        return Clones.predictDeterministicAddress(vaultImplementation, _fatlinerSalt(fid));
     }
 
-    /// @notice An app with no coin. It lives on deposits.
-    function createApp(AppParams calldata p, uint256 deposit) external returns (AppVault vault) {
-        vault = _create(p, _salt(msg.sender, p.salt), p.owner);
-        _deposit(vault, deposit);
-    }
-
-    /// @notice A Fatliner's vault, with no coin. Only its holder can do this, once. `p.owner` and `p.salt`
-    /// are ignored: the vault belongs to whoever holds the Fatliner.
+    /// @notice A vault with no coin yet. Only the holder, once. It belongs to whoever holds the token.
     function createFatline(uint256 fid, AppParams calldata p, uint256 deposit) external returns (AppVault vault) {
         vault = _createFatline(fid, p);
         _deposit(vault, deposit);
     }
 
-    /// @notice A Fatliner's vault and its coin. `deployCalldata`'s fees must go to `predictFatlinerVault(fid)`.
-    /// @notice The coin of an egg or a Fatliner (and its vault, if it has none yet). Only its holder, once. The
-    /// coin's symbol must be its surname, and the genesis Fatliner's coin comes first.
+    /// @notice The coin of an egg or a Fatliner (and its vault, if it has none yet). Only its holder, once.
+    /// The coin's symbol must be its surname; the genesis Fatliner's comes first; 777 coins, ever.
     function launchFatline(uint256 fid, AppParams calldata p, bytes calldata deployCalldata, uint256 deposit)
         external
         payable
         returns (AppVault vault, address coin)
     {
         if (coinOfFatliner[fid] != address(0)) revert AlreadyHasCoin();
-        if (coinsLaunched == 0 && fid != IFatliners(fatliners).genesisFid()) revert GenesisFirst();
+        if (coinsLaunched >= MAX_COINS) revert AllCoinsLaunched();
+        if (coinsLaunched == 0 && fid != _genesis()) revert GenesisFirst();
         address existing = vaultOfFatliner[fid];
         if (existing == address(0)) {
             vault = _createFatline(fid, p);
@@ -141,43 +123,30 @@ contract AppFactory {
             vault = AppVault(payable(existing));
         }
         coin = _launch(vault, deployCalldata);
-        if (keccak256(bytes(IERC20Symbol(coin).symbol())) != keccak256(bytes(IFatliners(fatliners).surnameOf(fid)))) {
-            revert WrongTicker();
-        }
+        if (keccak256(bytes(IERC20Symbol(coin).symbol())) != keccak256(bytes(_tickerOf(fid)))) revert WrongTicker();
         coinOfFatliner[fid] = coin;
         coinsLaunched++;
         _deposit(vault, deposit);
     }
 
     function _create(AppParams calldata p, bytes32 salt, address owner) internal returns (AppVault vault) {
-        vault = new AppVault{salt: salt}();
+        vault = AppVault(payable(Clones.cloneDeterministic(vaultImplementation, salt)));
         vault.initialize(usdc, locker, feeLocker, owner, p.keeper, _tiers, p.billingPeriod, p.uri);
-        apps.push(address(vault));
-        isApp[address(vault)] = true;
         emit AppCreated(address(vault), msg.sender, owner, p.uri);
     }
 
-    /// @dev The caller must hold `fid`, an egg or a hatched Fatliner.
     function _requireHolder(uint256 fid) internal view {
-        if (fatliners == address(0)) revert NoFatliners();
-        (bool ok, bytes memory ret) = fatliners.staticcall(abi.encodeWithSignature("ownerOf(uint256)", fid));
-        if (!ok || ret.length < 32 || abi.decode(ret, (address)) != msg.sender) revert NotTheFatlinersHolder();
-        if (!IFatliners(fatliners).hasCoinRight(fid)) revert NotAFatliner();
+        if (!_hasCoinRight(fid)) revert NotAFatliner();
+        if (_holderOf(fid) != msg.sender) revert NotTheFatlinersHolder();
     }
 
     function _createFatline(uint256 fid, AppParams calldata p) internal returns (AppVault vault) {
         if (vaultOfFatliner[fid] != address(0)) revert FatlinerHasVault();
         _requireHolder(fid);
         vault = _create(p, _fatlinerSalt(fid), msg.sender);
-        vault.bindToNft(fatliners, fid);
+        vault.bindToNft(address(this), fid);
         vaultOfFatliner[fid] = address(vault);
         emit FatlineBorn(fid, address(vault));
-    }
-
-    function _predict(bytes32 salt) internal view returns (address) {
-        bytes32 hash =
-            keccak256(abi.encodePacked(bytes1(0xff), address(this), salt, keccak256(type(AppVault).creationCode)));
-        return address(uint160(uint256(hash)));
     }
 
     function _fatlinerSalt(uint256 fid) internal pure returns (bytes32) {
@@ -210,17 +179,6 @@ contract AppFactory {
         if (amount == 0) return;
         usdc.safeTransferFrom(msg.sender, address(vault), amount);
     }
-
-    function _salt(address creator, bytes32 salt) internal pure returns (bytes32) {
-        return keccak256(abi.encode(creator, salt));
-    }
-}
-
-interface IFatliners {
-    function genesisFid() external view returns (uint256);
-    function isFatliner(uint256 fid) external view returns (bool);
-    function hasCoinRight(uint256 fid) external view returns (bool);
-    function surnameOf(uint256 fid) external view returns (string memory);
 }
 
 interface IERC20Symbol {

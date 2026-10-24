@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {OpenFactory} from "./mocks/OpenFactory.sol";
 import {Test} from "forge-std/Test.sol";
-import {AppFactory} from "../src/AppFactory.sol";
+import {FatlineLaunchpad} from "../src/FatlineLaunchpad.sol";
 import {AppVault} from "../src/AppVault.sol";
 import {IClanker, IClankerFeeLocker, IClankerLpLocker} from "../src/interfaces/IClanker.sol";
 import {MockUSDC} from "./mocks/MockUSDC.sol";
@@ -44,8 +44,8 @@ contract AppVaultTest is Test {
         }
     }
 
-    function params(bytes32 salt) internal view returns (AppFactory.AppParams memory) {
-        return AppFactory.AppParams({owner: owner, keeper: keeper, billingPeriod: 30 days, uri: "ipfs://app", salt: salt});
+    function params(bytes32 salt) internal view returns (FatlineLaunchpad.AppParams memory) {
+        return FatlineLaunchpad.AppParams({owner: owner, keeper: keeper, billingPeriod: 30 days, uri: "ipfs://app", salt: salt});
     }
 
     function deployCall(address recipient, address admin, uint16 bps, uint8 pref, address paired)
@@ -106,7 +106,7 @@ contract AppVaultTest is Test {
         ];
         for (uint256 i; i < bad.length; i++) {
             vm.prank(creator);
-            vm.expectRevert(AppFactory.FeesNotLockedToVault.selector);
+            vm.expectRevert(FatlineLaunchpad.FeesNotLockedToVault.selector);
             factory.launchApp(params("app"), bad[i], 0);
         }
     }
@@ -114,13 +114,13 @@ contract AppVaultTest is Test {
     function test_RevertWhen_NotPairedWithUsdc() public {
         address predicted = factory.predictVault(creator, "app");
         vm.prank(creator);
-        vm.expectRevert(AppFactory.NotPairedWithUsdc.selector);
+        vm.expectRevert(FatlineLaunchpad.NotPairedWithUsdc.selector);
         factory.launchApp(params("app"), deployCall(predicted, predicted, 10_000, 1, makeAddr("weth")), 0);
     }
 
     function test_RevertWhen_CalldataIsNotDeployToken() public {
         vm.prank(creator);
-        vm.expectRevert(AppFactory.NotDeployToken.selector);
+        vm.expectRevert(FatlineLaunchpad.NotDeployToken.selector);
         factory.launchApp(params("app"), abi.encodeWithSignature("transfer(address,uint256)", creator, 1), 0);
     }
 

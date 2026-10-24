@@ -12,7 +12,6 @@ export const factoryAbi = parseAbi([
   'function createApp(AppParams p, uint256 deposit) returns (address)',
   'function launchFatline(uint256 fid, AppParams p, bytes deployCalldata, uint256 deposit) payable returns (address, address)',
   'function predictFatlinerVault(uint256 fid) view returns (address)',
-  'function fatliners() view returns (address)',
 ]);
 
 export const vaultAbi = parseAbi([
@@ -329,7 +328,7 @@ export class Launchpad {
     if (coin) {
       // Coins are for eggs and Fatliners, one each; the ticker is the surname (the launchpad checks).
       if (!fid) throw Object.assign(new Error('A coin needs a Fatliner: give its number (its FID).'), { status: 400 });
-      const nft = await this.client.readContract({ address: this.factory, abi: factoryAbi, functionName: 'fatliners' });
+      const nft = this.factory; // the launchpad is the Fatliners contract itself
       const nftAbi = parseAbi(['function hasCoinRight(uint256) view returns (bool)', 'function surnameOf(uint256) view returns (string)', 'function ownerOf(uint256) view returns (address)']);
       const read = (functionName) => this.client.readContract({ address: nft, abi: nftAbi, functionName, args: [BigInt(fid)] });
       if (!(await read('hasCoinRight').catch(() => false))) throw Object.assign(new Error(`#${fid} has no egg onchain yet.`), { status: 400 });

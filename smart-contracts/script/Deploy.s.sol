@@ -3,19 +3,16 @@ pragma solidity ^0.8.28;
 
 import {Script, console} from "forge-std/Script.sol";
 import {Voices} from "../src/Voices.sol";
-import {AppFactory} from "../src/AppFactory.sol";
 import {AppVault} from "../src/AppVault.sol";
 import {PrizeSplit} from "../src/PrizeSplit.sol";
-import {Fatliners, IFatlineVaults} from "../src/Fatliners.sol";
-import {MockUSDC} from "../test/mocks/MockUSDC.sol";
+import {Fatliners} from "../src/Fatliners.sol";
+import {FatlineLaunchpad} from "../src/FatlineLaunchpad.sol";
 
 /// Deploys the Fatline contracts.
 ///
 ///   VOICES=true                  deploy Voices (default true)
-///   FACTORY=true                 deploy AppFactory (default true)
 ///   SPLIT_A=0x... SPLIT_B=0x...  deploy a 50/50 PrizeSplit
-///   LOCAL_DEV=true               on anvil: mock USDC, no Clanker (apps without coins only)
-///   FATLINERS=true               deploy Fatliners on the new AppFactory (its vaults) and link them. Needs:
+///   FATLINERS=true               deploy Fatliners: the eggs, the 777, and the launchpad (one contract). Needs:
 ///     GENESIS          the genesis server's hatchery key (the first attester)
 ///     GENESIS_URL      where its hatchery answers
 ///     GENESIS_FID      the genesis Fatliner (Aster: 18350), born at deployment
@@ -38,39 +35,26 @@ contract Deploy is Script {
     }
 
     function run() external {
-        bool local = vm.envOr("LOCAL_DEV", false);
         vm.startBroadcast();
 
         if (vm.envOr("VOICES", true)) console.log("Voices", address(new Voices()));
 
-        if (vm.envOr("FACTORY", true)) {
-            address usdc = USDC;
-            address clanker = CLANKER;
-            address locker = LOCKER;
-            address feeLocker = FEE_LOCKER;
-            if (local) {
-                usdc = address(new MockUSDC());
-                console.log("MockUSDC", usdc);
-                (clanker, locker, feeLocker) = (address(0), address(0), address(0));
-            }
-            AppFactory factory = new AppFactory(usdc, clanker, locker, feeLocker, defaultTiers());
-            console.log("AppFactory", address(factory));
-            if (vm.envOr("FATLINERS", false)) {
-                Fatliners f = new Fatliners(
-                    777,
-                    vm.envAddress("GENESIS"),
-                    vm.envString("GENESIS_URL"),
-                    vm.envUint("GENESIS_FID"),
-                    vm.envAddress("GENESIS_TO"),
-                    vm.envOr("GENESIS_SURNAME", string("FATLINE")),
-                    vm.envBytes32("GENESIS_DNA"),
-                    uint64(vm.envUint("GENESIS_LAID_AT")),
-                    IFatlineVaults(address(factory)),
-                    "https://fatline.ink/fatliners/"
-                );
-                factory.setFatliners(address(f));
-                console.log("Fatliners", address(f));
-            }
+        if (vm.envOr("FATLINERS", false)) {
+            Fatliners f = new Fatliners(
+                777,
+                vm.envAddress("GENESIS"),
+                vm.envString("GENESIS_URL"),
+                vm.envUint("GENESIS_FID"),
+                vm.envAddress("GENESIS_TO"),
+                vm.envOr("GENESIS_SURNAME", string("FATLINE")),
+                vm.envBytes32("GENESIS_DNA"),
+                uint64(vm.envUint("GENESIS_LAID_AT")),
+                "https://fatline.ink/fatliners/",
+                FatlineLaunchpad.Clanker(USDC, CLANKER, LOCKER, FEE_LOCKER),
+                defaultTiers()
+            );
+            console.log("Fatliners", address(f));
+            console.log("VaultImplementation", f.vaultImplementation());
         }
 
         address a = vm.envOr("SPLIT_A", address(0));
