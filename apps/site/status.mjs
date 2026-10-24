@@ -67,5 +67,42 @@ for (const f of fatlines) {
   }
   result.fatlines.push({ ticker: f.ticker, name: f.name, image: f.image, page: f.page, notice: f.notice, coin: f.coin, fatliner: f.fatliner ?? null, server: f.server ? await server(f.server) : null, owner: await profile(f.ownerFid, f.nodes), nodes });
 }
+// Every other Fatline: the eggs onchain. Each names the server that keeps it warm (serverUrlOf: its hatchery);
+// its node is on the same host. Nobody has to be listed by hand.
+async function eggs() {
+  const RPC = 'https://mainnet.base.org';
+  const call = (method, params) => fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(20000) }).then((r) => r.json()).then((j) => j.result).catch(() => null);
+  const word = (n) => BigInt(n).toString(16).padStart(64, '0');
+  const str = (hex) => { if (!hex || hex.length < 130) return ''; const b = hex.slice(2); const len = parseInt(b.slice(64, 128), 16); return Buffer.from(b.slice(128, 128 + len * 2), 'hex').toString(); };
+  let d; try { d = JSON.parse(readFileSync(join(here, '../../smart-contracts/deployments/base.json'), 'utf8')); } catch { return []; }
+  const nft = d.Fatliners.address;
+  const logs = (await call('eth_getLogs', [{ address: nft, fromBlock: '0x' + Number(d.fromBlock).toString(16), toBlock: 'latest', topics: ['0x8c16cbfb788ff0014645f2e619d6e70982930d43a1a53fcbb22ff48ab6eb0af0'] }])) ?? [];
+  const fids = [...new Set(logs.map((l) => Number(BigInt(l.topics[1]))))];
+  const out = [];
+  for (const fid of fids) {
+    const stage = Number(BigInt((await call('eth_call', [{ to: nft, data: '0xc7d25b15' + word(fid) }, 'latest'])) ?? '0x0'));
+    if (!stage) continue; // died
+    const url = str(await call('eth_call', [{ to: nft, data: '0x60f2ba1d' + word(fid) }, 'latest']));
+    const surname = str(await call('eth_call', [{ to: nft, data: '0x8d967a78' + word(fid) }, 'latest']));
+    let host = null; try { host = new URL(url).hostname; } catch {}
+    out.push({ fid, surname, stage, host, genesis: fid === Number(d.Fatliners.genesis?.fid) });
+  }
+  return out;
+}
+const listed = new Set(fatlines.map((f) => Number(f.ownerFid)));
+for (const e of await eggs()) {
+  if (e.genesis || listed.has(e.fid) || !e.host) continue;
+  const nodes = [];
+  for (const [network, port, label] of [['snapchain', 3381, 'Snapchain'], ['hypersnap', 4381, 'Hypersnap']]) {
+    const info = await get(`http://${e.host}:${port}/v1/info`);
+    if (!info && network === 'hypersnap') continue;
+    const delays = (info?.shardInfos ?? []).filter((s) => s.shardId !== 0).map((s) => Number(s.blockDelay ?? 0));
+    const behind = delays.length ? Math.max(...delays) : null;
+    nodes.push({ network, label, version: info?.version ?? null, state: !info ? 'offline' : behind !== null && behind <= 200 ? 'alive' : 'catching-up', blocksBehind: behind, messages: info?.dbStats?.numMessages ?? null });
+  }
+  const name = e.surname ? e.surname.charAt(0) + e.surname.slice(1).toLowerCase() : null;
+  result.fatlines.push({ ticker: e.surname || String(e.fid), name, page: `/${e.fid}`, fatliner: { id: e.fid, stage: e.stage === 2 ? 'hatched' : 'egg' }, server: null,
+    owner: await profile(e.fid, [{ url: 'https://crackle.farcaster.xyz:3381', network: 'snapchain' }]), nodes });
+}
 writeFileSync(out, JSON.stringify(result, null, 2) + '\n');
 console.log(JSON.stringify(result));
