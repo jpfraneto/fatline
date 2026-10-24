@@ -4,7 +4,7 @@
 //   node src/app-account.mjs fname fatline            register the username (Farcaster's name server)
 //   node src/app-account.mjs key                      give the account a posting key (.fatline/app-account.key.json)
 //   node src/app-account.mjs profile display=Fatline bio="…" pfp=https://… url=https://fatline.ink username=fatline
-//   node src/app-account.mjs cast "text" [url]        cast as Fatline
+//   node src/app-account.mjs cast "text" [url] [url]  cast as Fatline (up to two embeds)
 import { readFileSync, existsSync, writeFileSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { FarcasterNetwork, NobleEd25519Signer, UserDataType, ViemLocalEip712Signer, makeCastAdd, makeUserDataAdd, makeUserNameProofClaim, CastType } from '@farcaster/core';
@@ -50,13 +50,13 @@ async function profile(pairs) {
   }
 }
 
-async function cast(text, url) {
+async function cast(text, ...urls) {
   const size = Buffer.byteLength(text);
-  const m = unwrap(await makeCastAdd({ text, embeds: url ? [{ url }] : [], embedsDeprecated: [], mentions: [], mentionsPositions: [], type: size > 320 ? CastType.LONG_CAST : CastType.CAST }, opts, appSigner()), 'cast');
+  const m = unwrap(await makeCastAdd({ text, embeds: urls.filter(Boolean).slice(0, 2).map((url) => ({ url })), embedsDeprecated: [], mentions: [], mentionsPositions: [], type: size > 320 ? CastType.LONG_CAST : CastType.CAST }, opts, appSigner()), 'cast');
   await sendMessage(NODE, m);
   console.log(`cast 0x${Buffer.from(m.hash).toString('hex')}`);
 }
 
 const [cmd, ...rest] = process.argv.slice(2);
 if (!FID) throw new Error('No app account (FATLINE_APP_FID).');
-await ({ fname: () => fname(rest[0]), key, profile: () => profile(rest), cast: () => cast(rest[0], rest[1]) }[cmd] ?? (() => { throw new Error('fname | key | profile | cast'); }))();
+await ({ fname: () => fname(rest[0]), key, profile: () => profile(rest), cast: () => cast(rest[0], ...rest.slice(1)) }[cmd] ?? (() => { throw new Error('fname | key | profile | cast'); }))();
