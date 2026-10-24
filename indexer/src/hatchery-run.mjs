@@ -22,7 +22,7 @@ import { eggTypes, hatchDomain, hatchTypes } from './egg.mjs';
 import { Hatchery } from './hatchery.mjs';
 
 export const fatlinersAbi = parseAbi([
-  'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, string surname, uint8 stone, uint256 deadline) e, bytes[] signatures)',
+  'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, string surname, uint8 stone, uint256 deadline) e, bytes[] signatures, uint256 position, bytes32[] proof)',
   'function fidOfSurname(bytes32) view returns (uint256)',
   'error SurnameTaken()',
   'function hatch((uint256 fid, string surname, uint256 deadline) h, bytes[] signatures)',
@@ -159,7 +159,7 @@ async function serve() {
     }
     let hash;
     try {
-      hash = await wallet.writeContract({ address: hc.contract, abi: fatlinersAbi, functionName: kind === 'Egg' ? 'takeEgg' : 'hatch', args: [message, ordered.map(([, sig]) => sig)] });
+      hash = await wallet.writeContract({ address: hc.contract, abi: fatlinersAbi, functionName: kind === 'Egg' ? 'takeEgg' : 'hatch', args: kind === 'Egg' ? [message, ordered.map(([, sig]) => sig), BigInt(body?.position ?? 0), body?.proof ?? []] : [message, ordered.map(([, sig]) => sig)] });
     } catch (err) {
       // Another egg took this surname first: sign again with the next free one, and say to retry.
       if (kind === 'Egg' && /SurnameTaken/.test(String(err.shortMessage ?? err.message) + String(err.cause?.data?.errorName ?? ''))) {

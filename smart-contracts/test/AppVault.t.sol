@@ -194,51 +194,20 @@ contract AppVaultTest is Test {
         coin; // silence
     }
 
-    /// $5,000 of fees: the server keeps one period of rent at its real cost, and the rest goes to the holder.
-    function test_FeesAboveRentGoToTheHolder_NoCap() public {
-        (AppVault vault,) = launch(); // 300 USDC deposited, 30-day period
-        vm.prank(fan);
-        vm.expectRevert(AppVault.NotOwner.selector);
-        vault.setRate(130);
+    /// Fees are fuel. Anyone pays the server its rent; the owner can take all the rest, and then the node dies.
+    function test_FuelOrRevenue_TheOwnerCanTakeItAll() public {
+        (AppVault vault,) = launch(); // 300 USDC
         vm.prank(owner);
-        vault.setRate(130); // ~11.23 USDC a day: what the server really costs, above every tier
-        assertEq(vault.ratePerSecond(), 130);
-
-        vm.startPrank(trader);
-        usdc.approve(address(feeLocker), type(uint256).max);
-        feeLocker.store(address(usdc), address(vault), 5_000e6);
-        vm.stopPrank();
-
-        uint256 reserve = 130 * 30 days;
-        assertEq(vault.surplus(), 5_300e6 - reserve);
-        vm.prank(fan); // anyone can trigger it; the money only goes to the holder
-        uint256 sent = vault.distribute();
-        assertEq(sent, 5_300e6 - reserve);
-        assertEq(usdc.balanceOf(owner), sent);
-        assertEq(usdc.balanceOf(address(vault)), reserve);
-        assertEq(vault.distribute(), 0); // nothing above the reserve
-
-        vm.prank(keeper);
-        assertEq(vault.payCompute(), reserve); // the server is paid a full period at its real rate
-    }
-
-    /// Anyone can settle: fees in, the server's rent out (only to the keeper), the rest to the holder.
-    function test_AnyoneSettles_MoneyOnlyGoesWhereItBelongs() public {
-        (AppVault vault,) = launch(); // 300 USDC, 30-day period, SEED rate
-        vm.startPrank(trader);
-        usdc.approve(address(feeLocker), type(uint256).max);
-        feeLocker.store(address(usdc), address(vault), 1_000e6);
-        vm.stopPrank();
+        vault.setRate(130); // the server's real cost, no cap
         vm.prank(fan);
-        (uint256 paid, uint256 out) = vault.settle();
-        assertEq(paid, SEED * 30 days);
+        uint256 paid = vault.payCompute(); // anyone can trigger it; only the keeper is paid
         assertEq(usdc.balanceOf(keeper), paid);
-        assertEq(out, 1_300e6 - paid - SEED * 30 days);
-        assertEq(usdc.balanceOf(owner), out);
-        assertEq(usdc.balanceOf(fan), 10_000e6);
-        vm.prank(trader);
-        (paid, out) = vault.settle(); // nothing due, nothing above the reserve
-        assertEq(paid + out, 0);
+        uint256 left = vault.balance();
+        vm.prank(owner);
+        vault.withdraw(owner, left); // the rug: all of it
+        assertEq(vault.balance(), 0);
+        vm.warp(vault.paidThrough() + 1);
+        assertFalse(vault.isAlive());
     }
 
     function test_OwnerHasAgencyButCannotTakeWhatIsPaid() public {

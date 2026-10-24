@@ -33,6 +33,7 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {AppVault} from "./AppVault.sol";
 import {FatlineLaunchpad} from "./FatlineLaunchpad.sol";
 
@@ -82,6 +83,27 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     );
     /// @dev The hatching: which egg, and the surname read from its DNA (its coin's ticker).
     bytes32 public constant HATCH_TYPEHASH = keccak256("Hatch(uint256 fid,string surname,uint256 deadline)");
+    /// @dev An egg whose node stopped: the attesters say so, and it dies.
+    bytes32 public constant DEATH_TYPEHASH = keccak256("Death(uint256 fid,uint256 deadline)");
+    /// @dev A token that changed hands wakes up living through its new holder's Farcaster account (sourceFid):
+    /// a new history, so a new DNA and stone. Its surname, coin and vault stay.
+    bytes32 public constant AWAKEN_TYPEHASH =
+        keccak256("Awaken(uint256 fid,address holder,uint256 sourceFid,bytes32 dna,uint8 stone,uint256 deadline)");
+    uint256 public constant HIBERNATION = 7 days; // after an egg dies, its account waits this long for another
+
+    struct Death {
+        uint256 fid;
+        uint256 deadline;
+    }
+
+    struct Awaken {
+        uint256 fid;
+        address holder;
+        uint256 sourceFid;
+        bytes32 dna;
+        uint8 stone;
+        uint256 deadline;
+    }
 
     struct Egg {
         uint256 fid;
@@ -118,6 +140,11 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
 
     uint256 public totalSupply; // Fatliners (at most maxSupply)
     uint256 public eggCount; // eggs taken, hatched or not
+    uint256 public liveEggs; // eggs now (not hatched, not dead); liveEggs + totalSupply <= maxSupply
+    mapping(uint256 fid => uint256) public hibernatingUntil; // after its egg died, no new egg before this
+    bytes32 public orderRoot; // the ranking: leaves keccak256(abi.encode(fid, position)); 0 = open to everyone
+    uint64 public orderStart; // day 1 of the ranking's window
+    address public immutable orderAdmin; // who publishes the ranking's root (the deployer)
     mapping(uint256 fid => Stage) public stageOf;
     mapping(uint256 fid => bytes32) public dnaOf; // the history it hatches from
     mapping(uint256 fid => uint64) public laidAtOf; // that history's cutoff
@@ -140,6 +167,8 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     event AppSet(uint256 indexed fid, address indexed app);
     event Born(uint256 indexed fid, address indexed to, string surname, bytes32 dna, address server, uint256 signers);
     event FidLinked(uint256 indexed fatliner, uint256 indexed fid, address indexed holder);
+    event Died(uint256 indexed fid, uint256 hibernatingUntil);
+    event Order(bytes32 root, uint64 start);
 
     error NotHolder();
     error NotAttester(address signer);
@@ -151,7 +180,12 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     error NoEgg();
     error AlreadyHatched();
     error NotTheSameEgg(); // an egg's owner, DNA and cutoff never change
-    error EggsDoNotMove();
+    error Hibernating();
+    error NotYourTurn();
+    error NoSlot();
+    error Asleep();
+    error NotOrderAdmin();
+    error StillAnEgg();
     error BadSurname();
     error SurnameTaken();
     error BadStone();
@@ -185,7 +219,12 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         maxSupply = maxSupply_;
         baseUri = baseUri_;
         genesisFid = g.fid;
+        orderAdmin = msg.sender;
         eggCount = 1;
+        liveEggs = 1;
+        stageOf[g.fid] = Stage.Egg; // Aster starts as an egg too: it hatches after three warm days, like any other
+        surnameOf[g.fid] = g.surname;
+        linkedFidOf[g.fid] = g.fid;
         dnaOf[g.fid] = g.dna;
         laidAtOf[g.fid] = g.laidAt;
         serverOf[g.fid] = g.server;
@@ -198,8 +237,14 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
             appOf[g.fid] = g.app;
             emit AppSet(g.fid, g.app);
         }
+        // Its server is the first attester from the start, so there is someone to sign Aster's own hatching.
+        isAttester[g.server] = true;
+        urlOf[g.server] = g.url;
+        fidOfAttester[g.server] = g.fid;
+        _attesters.push(g.server);
+        emit AttesterJoined(g.server, g.fid, g.url);
         _mint(g.to, g.fid);
-        _born(g.fid, g.to, g.surname, 0);
+        emit EggTaken(g.fid, g.to, g.server, g.dna, g.laidAt);
     }
 
     // ------------------------------------------------------------------ attesters
@@ -262,7 +307,9 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     /// @notice Take an egg: one per FID, as many FIDs as there are. Anyone may submit the attesters'
     /// signatures; the egg goes to `e.to`. Sent again for an egg that exists (same owner, DNA and
     /// cutoff), it moves the egg to another server.
-    function takeEgg(Egg calldata e, bytes[] calldata signatures) external {
+    /// While the ranking is published (`orderRoot`), a new egg needs its FID's place in it: `position` and a Merkle
+    /// `proof`, and that place must be open today (day 1: 1–777, day 2: 1–7,777, day 3: 1–77,777, then everyone).
+    function takeEgg(Egg calldata e, bytes[] calldata signatures, uint256 position, bytes32[] calldata proof) external {
         if (block.timestamp > e.deadline) revert Expired();
         if (e.to == address(0) || e.server == address(0)) revert ZeroAddress();
         if (isAttester[e.server]) revert AlreadyAttester();
@@ -281,8 +328,13 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
             ) revert NotTheSameEgg();
             delete eggOfServer[serverOf[e.fid]];
         } else {
+            if (block.timestamp < hibernatingUntil[e.fid]) revert Hibernating();
+            if (!mayTakeEgg(e.fid, position, proof)) revert NotYourTurn();
+            if (liveEggs + totalSupply >= maxSupply) revert NoSlot();
             stageOf[e.fid] = Stage.Egg;
             eggCount++;
+            liveEggs++;
+            linkedFidOf[e.fid] = e.fid;
             dnaOf[e.fid] = e.dna;
             laidAtOf[e.fid] = e.laidAt;
             bytes32 h = keccak256(bytes(e.surname));
@@ -314,8 +366,10 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         if (s == Stage.Fatliner) revert AlreadyHatched();
         if (s != Stage.Egg) revert NoEgg();
         if (keccak256(bytes(h.surname)) != keccak256(bytes(surnameOf[h.fid]))) revert BadSurname(); // set at the egg
+        if (linkedFidOf[h.fid] == 0) revert Asleep(); // moved and not woken by its new holder yet
         _checkSignatures(hatchDigest(h), signatures);
         if (totalSupply >= maxSupply) revert SoldOut();
+        liveEggs--;
         _born(h.fid, _ownerOf(h.fid), h.surname, signatures.length);
     }
 
@@ -323,16 +377,16 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         stageOf[fid] = Stage.Fatliner;
         totalSupply++;
         surnameOf[fid] = surname;
-        linkedFidOf[fid] = fid; // at birth, its holder is its origin
         address server = serverOf[fid];
         delete eggOfServer[server];
-        isAttester[server] = true;
-        urlOf[server] = serverUrlOf[fid];
-        fidOfAttester[server] = fid;
-        _attesters.push(server);
-        emit AttesterJoined(server, fid, serverUrlOf[fid]);
+        if (!isAttester[server]) { // the genesis server already is one
+            isAttester[server] = true;
+            urlOf[server] = serverUrlOf[fid];
+            fidOfAttester[server] = fid;
+            _attesters.push(server);
+            emit AttesterJoined(server, fid, serverUrlOf[fid]);
+        }
         emit Born(fid, to, surname, dnaOf[fid], server, signers);
-        emit FidLinked(fid, fid, to);
     }
 
     /// @dev 1 to 12 characters, A-Z and 0-9: what a coin's ticker can be.
@@ -376,13 +430,65 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
 
     // ------------------------------------------------------------------ holding
 
-    /// @notice The keeper link: the holder says which FID they live on Farcaster through.
-    /// 0 removes the link. Readers check on a node that the holder's address belongs to `fid`.
-    function linkFid(uint256 fatliner, uint256 fid) external {
-        if (stageOf[fatliner] != Stage.Fatliner) revert NoEgg();
-        if (ownerOf(fatliner) != msg.sender) revert NotHolder();
-        linkedFidOf[fatliner] = fid;
-        emit FidLinked(fatliner, fid, msg.sender);
+    // ------------------------------------------------------------------ death, sleep and the order
+
+    /// @notice An egg whose node stopped dies, when the attesters say so: it is burned, its slot opens for the next
+    /// person, and its account hibernates for seven days before it can take another egg. Its coin, if any, stays.
+    function die(Death calldata d, bytes[] calldata signatures) external {
+        if (block.timestamp > d.deadline) revert Expired();
+        if (stageOf[d.fid] != Stage.Egg) revert NoEgg();
+        if (d.fid == genesisFid) revert StillAnEgg(); // Aster is kept by the genesis server itself
+        _checkSignatures(_hashTypedDataV4(keccak256(abi.encode(DEATH_TYPEHASH, d.fid, d.deadline))), signatures);
+        stageOf[d.fid] = Stage.None;
+        liveEggs--;
+        delete eggOfServer[serverOf[d.fid]];
+        delete linkedFidOf[d.fid];
+        hibernatingUntil[d.fid] = block.timestamp + HIBERNATION;
+        _burn(d.fid);
+        emit Died(d.fid, hibernatingUntil[d.fid]);
+    }
+
+    /// @notice A token that changed hands is asleep (`linkedFidOf` = 0) until its new holder wakes it: they choose the
+    /// Farcaster account it lives through, and the attesters sign the DNA and stone read from that account's history.
+    function awaken(Awaken calldata a, bytes[] calldata signatures) external {
+        if (block.timestamp > a.deadline) revert Expired();
+        if (stageOf[a.fid] == Stage.None) revert NoEgg();
+        if (_ownerOf(a.fid) != a.holder) revert NotHolder();
+        if (a.stone > 6) revert BadStone();
+        _checkSignatures(
+            _hashTypedDataV4(
+                keccak256(abi.encode(AWAKEN_TYPEHASH, a.fid, a.holder, a.sourceFid, a.dna, a.stone, a.deadline))
+            ),
+            signatures
+        );
+        linkedFidOf[a.fid] = a.sourceFid;
+        dnaOf[a.fid] = a.dna;
+        stoneOf[a.fid] = a.stone;
+        emit Stone(a.fid, a.stone);
+        emit FidLinked(a.fid, a.sourceFid, a.holder);
+    }
+
+    function isAsleep(uint256 fid) external view returns (bool) {
+        return stageOf[fid] != Stage.None && linkedFidOf[fid] == 0;
+    }
+
+    /// @notice Publishes the ranking (its Merkle root) and when its window opens. 0 opens eggs to everyone.
+    function setOrder(bytes32 root, uint64 start) external {
+        if (msg.sender != orderAdmin) revert NotOrderAdmin();
+        orderRoot = root;
+        orderStart = start;
+        emit Order(root, start);
+    }
+
+    /// @notice Can `fid`, at `position` in the ranking, take an egg today?
+    function mayTakeEgg(uint256 fid, uint256 position, bytes32[] calldata proof) public view returns (bool) {
+        if (orderRoot == bytes32(0)) return true;
+        if (block.timestamp < orderStart) return false;
+        if (!MerkleProof.verifyCalldata(proof, orderRoot, keccak256(bytes.concat(keccak256(abi.encode(fid, position)))))) {
+            return false;
+        }
+        uint256 day = (block.timestamp - orderStart) / 1 days;
+        return day >= 3 || position <= [uint256(777), 7_777, 77_777][day];
     }
 
     /// @notice The holder of an egg or a Fatliner ties one smart contract to it: the one its client runs on.
@@ -395,12 +501,11 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         emit AppSet(fid, app);
     }
 
-    /// @dev Eggs stay with the account that laid them. Fatliners move freely; a new holder brings their own
-    /// frame of reference, so the keeper link is cleared on every transfer.
+    /// @dev Eggs and Fatliners move freely. A new holder brings their own frame of reference: the token falls asleep
+    /// (its link to a Farcaster account is cleared) until they wake it (`awaken`).
     function _update(address to, uint256 tokenId, address auth) internal override returns (address from) {
         from = super._update(to, tokenId, auth);
-        if (from != address(0) && stageOf[tokenId] == Stage.Egg) revert EggsDoNotMove();
-        if (from != address(0) && from != to && linkedFidOf[tokenId] != 0) {
+        if (from != address(0) && to != address(0) && from != to && linkedFidOf[tokenId] != 0) {
             delete linkedFidOf[tokenId];
             emit FidLinked(tokenId, 0, to);
         }

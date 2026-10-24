@@ -60,7 +60,6 @@ contract AppVault {
     event Harvested(uint256 amount);
     event ComputePaid(address indexed keeper, uint256 amount, uint256 paidThrough);
     event Withdrawn(address indexed to, uint256 amount);
-    event Distributed(address indexed to, uint256 amount);
     event RateSet(uint256 ratePerSecond);
     event TierChanged(uint8 tier, uint256 ratePerSecond);
     event CheckedIn(address indexed person, uint256 indexed day);
@@ -159,13 +158,6 @@ contract AppVault {
         return customRate != 0 ? customRate : _tiers[tier].ratePerSecond;
     }
 
-    /// @notice What `distribute` would send to the holder now: everything above one billing period of rent.
-    function surplus() public view returns (uint256) {
-        uint256 reserve = ratePerSecond() * billingPeriod;
-        uint256 have = balance() + pendingFees();
-        return have > reserve ? have - reserve : 0;
-    }
-
     function balance() public view returns (uint256) {
         (bool ok, bytes memory ret) = usdc.staticcall(abi.encodeWithSignature("balanceOf(address)", address(this)));
         return ok && ret.length >= 32 ? abi.decode(ret, (uint256)) : 0;
@@ -232,29 +224,8 @@ contract AppVault {
         emit ComputePaid(keeper, amount, newPaidThrough);
     }
 
-    /// @notice Anyone can call it: collects the coin's fees, keeps one billing period of rent for the server,
-    /// and sends the rest to the owner (a Fatliner's or an egg's holder). The coin earns; the holder gets it.
-    function distribute() public returns (uint256 amount) {
-        harvest();
-        uint256 reserve = ratePerSecond() * billingPeriod;
-        uint256 have = balance();
-        if (have <= reserve) return 0;
-        address to = owner();
-        if (to == address(0)) revert ZeroAddress();
-        amount = have - reserve;
-        usdc.safeTransfer(to, amount);
-        emit Distributed(to, amount);
-    }
-
-    /// @notice Everything in one call, for anyone: collect the coin's fees, pay the server what is due, and send
-    /// what is left above one period of rent to the holder.
-    function settle() external returns (uint256 paid, uint256 distributed) {
-        (paid,) = computeDue();
-        if (paid != 0) payCompute();
-        distributed = distribute();
-    }
-
-    /// @notice The owner moves USDC (to buy other coins, pay people, anything). Less money is less life.
+    /// @notice The owner moves USDC: any amount, all of it if they want. It is the node's fuel and the holder's
+    /// revenue at once. Take it all and the node dies; that is the game.
     function withdraw(address to, uint256 amount) external onlyOwner {
         if (amount > balance()) revert InsufficientFree();
         usdc.safeTransfer(to, amount);
