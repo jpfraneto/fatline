@@ -26,7 +26,8 @@ async function send(path, body, network = state.network) {
 }
 
 function report(status, result) {
-  status.textContent = result.state === 'confirmed' ? t('confirmed', result.node) : t('pending');
+  status.textContent = (result.state === 'confirmed' ? t('confirmed', result.node) : t('pending'))
+    + (result.via ? ` Sent through ${result.via.label ?? result.via.node}${result.via.own ? '' : ' (not yours)'}: ${result.via.because}.` : '');
   status.classList.remove('confirmed', 'pending');
   status.classList.add(result.state);
 }

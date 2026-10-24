@@ -48,16 +48,41 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     const given = (req.headers.authorization ?? '').replace(/^Bearer /, '');
     return Boolean(writeToken && given.length === writeToken.length && timingSafeEqual(Buffer.from(given), Buffer.from(writeToken)));
   };
-  const writer = (network, node) => {
+  const writer = async (network, node) => {
     const key = loadAppKey(config.dataDir);
-    if (!key) throw Object.assign(new Error('This client has no app key yet. Run fatline identity on the machine that runs it.'), { status: 409 });
+    if (!key) throw Object.assign(new Error('This client has no app key yet. Run fatline identity on the machine that runs it, or log in with the Cast button.'), { status: 409 });
     const name = network && networks[network] ? network : key.network;
-    // Posts go to the network the person chose, through the node they chose (no fallback), or the automatic one.
-    return new Writer({ network: node ? networks[name].pinned(node) : networks[name], key });
+    const net = networks[name];
+    if (!node) return { w: new Writer({ network: net, key }) }; // automatic: the first node in sync
+    // A node that is still catching up can't check a new message (it may not know the account's key or storage
+    // yet), so it would refuse or never confirm it. Until it is in sync, the message goes through the first node
+    // that is, and the reply says so. Reads stay on the node the person chose.
+    const chosen = net.nodes.find((n) => n.url === String(node).replace(/\/$/, ''));
+    if (chosen) await net.checkNode(chosen);
+    if (chosen && !chosen.status?.ok && chosen.status?.blockDelay > 0) {
+      let other = await net.refresh();
+      if (!other || other.url === chosen.url) {
+        // This client lists no other node in sync: send through a well-known public one (for sending only).
+        const { Network } = await import('./hub.mjs');
+        const relays = { farcaster: [['http://46.225.208.199:3381', 'Fatline master node'], ['https://crackle.farcaster.xyz:3381', 'crackle.farcaster.xyz']],
+          hypersnap: [['http://46.225.208.199:4381', 'Fatline Hypersnap node'], ['https://haatz.quilibrium.com', 'haatz.quilibrium.com']] }[name] ?? [];
+        const relay = new Network(name, { nodes: relays.map(([url, label]) => ({ url, label })) });
+        other = relays.length ? await relay.refresh() : null;
+        if (other) return { w: new Writer({ network: relay.pinned(other.url), key }),
+          via: { node: other.url, own: false, label: other.label, because: `${chosen.label ?? chosen.url} is ${chosen.status.blockDelay} blocks behind and can't check new messages yet` } };
+      }
+      if (other && other.url !== chosen.url) {
+        return { w: new Writer({ network: net.pinned(other.url), key }),
+          via: { node: other.url, own: other.own, label: other.label, because: `${chosen.label ?? chosen.url} is ${chosen.status.blockDelay} blocks behind and can't check new messages yet` } };
+      }
+    }
+    return { w: new Writer({ network: net.pinned(node), key }) };
   };
-  const write = (fn) => (q, m, body, req) => {
+  const write = (fn) => async (q, m, body, req) => {
     if (!mayWrite(req)) throw Object.assign(new Error('Posting is only allowed from this machine, or with its write token.'), { status: 401 });
-    return fn(writer(body?.network ?? q.get('network'), body?.node ?? q.get('node')), body ?? {});
+    const { w, via } = await writer(body?.network ?? q.get('network'), body?.node ?? q.get('node'));
+    const out = await fn(w, body ?? {});
+    return via ? { ...out, via } : out;
   };
 
   // Log in with a wallet (the account's custody address): a QR code, one signature, an app key for this client.

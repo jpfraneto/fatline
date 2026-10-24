@@ -57,3 +57,47 @@ test('behind a proxy, the write token lets the owner post', async () => {
     assert.equal(me.privateKey, undefined, 'the private key never leaves the server');
   } finally { server.close(); }
 });
+
+test("while your node catches up, a cast goes through a node in sync, and the reply says so", async () => {
+  const { Network } = await import('../src/hub.mjs');
+  const { Message } = await import('@farcaster/core');
+  const info = (behind) => ({ shardInfos: [{ shardId: 1, maxHeight: 100, blockDelay: behind }, { shardId: 2, maxHeight: 100, blockDelay: behind }], dbStats: {} });
+  const seen = { 'http://own.test': [], 'http://public.test': [] };
+  const stored = new Set();
+  const fake = async (input, init = {}) => {
+    const u = new URL(String(input));
+    const base = `${u.protocol}//${u.host}`;
+    const json = (b, status = 200) => new Response(JSON.stringify(b), { status });
+    if (u.pathname === '/v1/info') return json(info(base === 'http://own.test' ? 5000 : 0));
+    if (u.pathname === '/v1/submitMessage') {
+      seen[base].push(1);
+      const m = Message.decode(new Uint8Array(init.body));
+      stored.add(`0x${Buffer.from(m.hash).toString('hex')}`);
+      return json({ hash: `0x${Buffer.from(m.hash).toString('hex')}` });
+    }
+    if (u.pathname === '/v1/castById') return stored.has(u.searchParams.get('hash')) ? json({ data: {}, hash: u.searchParams.get('hash') }) : json({ error: 'nf' }, 400);
+    return json({}, 404);
+  };
+  const realFetch = globalThis.__realFetch ?? globalThis.fetch;
+  globalThis.__realFetch = realFetch;
+  globalThis.fetch = fake;
+  const net = new Network('farcaster', { nodes: [{ url: 'http://own.test', own: true, label: 'Your node' }, { url: 'http://public.test', label: 'crackle' }] }, { fetchImpl: fake });
+  const dataDir = mkdtempSync(join(tmpdir(), 'write-'));
+  saveAppKey(dataDir, { fid: 18350, privateKey: `0x${randomBytes(32).toString('hex')}`, publicKey: '0x00', network: 'farcaster', scopes: [] });
+  const config = { dataDir, appDir: join(dataDir, 'none'), networks: { farcaster: {} }, defaultNetwork: 'farcaster' };
+  const server = buildServer({ config, networks: { farcaster: net }, voices: { status: () => ({}) }, launchpad: { status: () => ({}) } });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  try {
+    const res = await realFetch(`http://127.0.0.1:${server.address().port}/api/cast`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text: 'hello while syncing', node: 'http://own.test' }) });
+    const out = await res.json();
+    assert.equal(res.status, 200, JSON.stringify(out));
+    assert.equal(out.state, 'confirmed');
+    assert.equal(out.via.node, 'http://public.test');
+    assert.match(out.via.because, /5000 blocks behind/);
+    assert.equal(seen['http://own.test'].length, 0);
+    assert.equal(seen['http://public.test'].length, 1);
+  } finally {
+    server.close();
+    globalThis.fetch = realFetch;
+  }
+});
