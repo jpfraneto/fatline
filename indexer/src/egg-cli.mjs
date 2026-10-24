@@ -201,10 +201,25 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (has) return status(config);
     const { mintEgg } = await import('./egg-mint.mjs');
     const out = await mintEgg(config, opts);
-    if (out?.layTo) return lay(config, { ...opts, to: out.layTo });
+    if (out?.layTo) {
+      await lay(config, { ...opts, to: out.layTo });
+      const me = Number(loadAppKey(config.dataDir)?.fid ?? opts.fid ?? 0);
+      const now = me ? Number(await c.readContract({ address: nft, abi: a, functionName: 'stageOf', args: [BigInt(me)] })) : 0;
+      if (now === 1) await (await import('./egg-mint.mjs')).showEgg(config, { fid: me, holder: out.layTo });
+      else say('  When your egg is onchain, see it: fatline egg show');
+      return;
+    }
     return out;
   };
-  const run = { lay: () => lay(config, opts), status: eggOrMint, mint: eggOrMint, take: () => take(config), hatch: () => submit(config, 'hatch') }[opts.cmd];
+  const show = async () => {
+    const { existsSync } = await import('node:fs');
+    const fid = Number(opts.fid ?? loadAppKey(config.dataDir)?.fid ?? config.deployments.Fatliners.genesis.fid);
+    const saved = join(config.dataDir, `egg-${fid}.html`);
+    const { showEgg } = await import('./egg-mint.mjs');
+    if (existsSync(saved) && !opts.fid) { const { spawn } = await import('node:child_process'); spawn(process.platform === 'darwin' ? 'open' : 'xdg-open', [saved], { detached: true, stdio: 'ignore' }).unref(); return say(`  Opened ${saved}`); }
+    return showEgg(config, { fid });
+  };
+  const run = { lay: () => lay(config, opts), status: eggOrMint, mint: eggOrMint, show, take: () => take(config), hatch: () => submit(config, 'hatch') }[opts.cmd];
   if (!run) { console.error(`Unknown: ${opts.cmd}. Try fatline egg, fatline egg lay, fatline egg take, fatline hatch.`); process.exit(1); }
   run().then(() => process.exit(process.exitCode ?? 0), (err) => { console.error(err.shortMessage ?? err.message); process.exit(1); });
 }

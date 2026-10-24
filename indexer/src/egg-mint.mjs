@@ -37,6 +37,30 @@ export async function tieOf(node, address, fid) {
   return found ? { fid: Number(fid), how: 'verified address' } : null;
 }
 
+/** The moment after the mint: your history pulled into the egg, then the egg, its name and its stone (a page). */
+export async function showEgg(config, { fid, holder, tx = null, historyFid = null, node = null }) {
+  const { castsOf, openReveal } = await import('../../infra/egg-reveal.mjs');
+  const d = config.deployments;
+  const client = createPublicClient({ chain: base, transport: http(config.hatchery?.rpc ?? 'https://mainnet.base.org') });
+  const nft = parseAbi(['function surnameOf(uint256) view returns (string)', 'function stoneOf(uint256) view returns (uint8)', 'function ownerOf(uint256) view returns (address)']);
+  const read = (functionName) => client.readContract({ address: d.Fatliners.address, abi: nft, functionName, args: [BigInt(fid)] });
+  const [surname, stone] = await Promise.all([read('surnameOf'), read('stoneOf')]);
+  holder ??= await read('ownerOf').catch(() => null);
+  const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
+  const art = await fetch('https://fatline.ink/fatliners-art.json').then((r) => r.json()).catch(() => ({}));
+  const stoneName = STONES[Number(stone)] ?? 'ivory';
+  const nodeUrl = node?.url ?? 'https://crackle.farcaster.xyz:3381';
+  const who = historyFid ?? fid;
+  const user = await fetch(`${nodeUrl}/v1/userDataByFid?fid=${who}&user_data_type=6`, { signal: AbortSignal.timeout(8000) }).then((r) => r.json()).catch(() => null);
+  const name = Number(fid) === Number(d.Fatliners.genesis?.fid) ? (d.Fatliners.genesis?.name ?? 'Aster') : surname.charAt(0) + surname.slice(1).toLowerCase();
+  const file = openReveal(join(config.dataDir, `egg-${fid}.html`), {
+    name, surname, stoneName, fid, holder, tx, contract: d.Fatliners.address, who: user?.data?.userDataBody?.value ? `@${user.data.userDataBody.value}` : `FID ${who}`,
+    image: art.eggs?.[stoneName]?.image ?? art.egg?.image ?? '', casts: await castsOf(nodeUrl, who, 14),
+  });
+  say(`\n  Your egg opened in your browser: ${file}   (again: fatline egg show)`);
+  return file;
+}
+
 export async function mintEgg(config, opts = {}) {
   const d = config.deployments;
   const contract = d.Fatliners.address;
@@ -96,6 +120,7 @@ export async function mintEgg(config, opts = {}) {
       if (r.status !== 'success') throw new Error(`The transaction failed: https://basescan.org/tx/${hash}`);
       ok(`Aster's egg is yours: token #${genesisFid}, an egg, in ${wallet.address}`);
       say(`    https://basescan.org/tx/${hash}`);
+      await showEgg(config, { fid: genesisFid, holder: wallet.address, tx: hash, historyFid: tie?.fid ?? fid, node });
       say('\nThe genesis server starts counting its warm days within five minutes. Watch it: fatline egg  ·  open your client: fatline up');
       return true;
     }
