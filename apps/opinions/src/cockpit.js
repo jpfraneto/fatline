@@ -44,6 +44,7 @@ export function story(d) {
       : `${w} of ${need} warm days.${today && !today.done ? ` Today: ${today.passed} of ${today.need} hourly checks passed (of ${today.checks} so far).` : ''} Keep the node running: if it stops, the egg dies.`;
     return { mood: 'warm', title: 'Your egg is warming.', line, next: w >= need ? 'fatline hatch' : null };
   }
+  if (tk?.genesis && stage === 'none') return { mood: 'ready', title: 'Aster is waiting for its keeper.', line: `The first egg is reserved for ${tk.genesis.to ? `${tk.genesis.to.slice(0, 6)}…${tk.genesis.to.slice(-4)}` : 'its keeper'}. Claim it with that wallet (a QR code to sign) and its three days begin.`, next: 'fatline genesis claim' };
   if (hib) return { mood: 'idle', title: 'Your Fatline is hibernating.', line: `An egg died here. You can take another on ${new Date(hib).toLocaleString()}.`, next: null };
   if (synced) return { mood: 'ready', title: 'Your node is in sync.', line: 'It holds its own copy of Farcaster. Now lay your egg: your node keeps it warm for three days, and it hatches into one of the 777.', next: 'fatline egg lay' };
   if (catching) {
