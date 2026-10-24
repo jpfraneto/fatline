@@ -49,9 +49,10 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
     uint256 public constant REQUIRED = 3; // signatures a set needs (or all attesters, while there are fewer)
 
     /// @dev The egg: who it belongs to, the server that keeps it warm (its hatchery key, which becomes an
-    /// attester at hatching) and where that hatchery answers, the history commitment (DNA) and its cutoff.
+    /// attester at hatching) and where that hatchery answers, the history commitment (DNA), its cutoff, and the
+    /// surname read from that DNA: its coin's ticker from the day it is laid, and its name when it hatches.
     bytes32 public constant EGG_TYPEHASH = keccak256(
-        "Egg(uint256 fid,address to,address server,string url,bytes32 dna,uint64 laidAt,uint256 deadline)"
+        "Egg(uint256 fid,address to,address server,string url,bytes32 dna,uint64 laidAt,string surname,uint256 deadline)"
     );
     /// @dev The hatching: which egg, and the surname read from its DNA (its coin's ticker).
     bytes32 public constant HATCH_TYPEHASH = keccak256("Hatch(uint256 fid,string surname,uint256 deadline)");
@@ -63,6 +64,7 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
         string url;
         bytes32 dna;
         uint64 laidAt;
+        string surname;
         uint256 deadline;
     }
 
@@ -96,7 +98,7 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
     mapping(uint256 fid => address) public serverOf; // the server keeping (or that kept) the egg warm
     mapping(uint256 fid => string) public serverUrlOf;
     mapping(address server => uint256 fid) public eggOfServer; // one server, one egg
-    mapping(uint256 fid => string) public surnameOf; // set at hatching; its coin's ticker
+    mapping(uint256 fid => string) public surnameOf; // set when the egg is taken; its coin's ticker
     mapping(uint256 fid => uint256) public linkedFidOf; // the keeper link
 
     event AttesterJoined(address indexed attester, uint256 indexed fid, string url);
@@ -195,7 +197,17 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
     function eggDigest(Egg calldata e) public view returns (bytes32) {
         return _hashTypedDataV4(
             keccak256(
-                abi.encode(EGG_TYPEHASH, e.fid, e.to, e.server, keccak256(bytes(e.url)), e.dna, e.laidAt, e.deadline)
+                abi.encode(
+                    EGG_TYPEHASH,
+                    e.fid,
+                    e.to,
+                    e.server,
+                    keccak256(bytes(e.url)),
+                    e.dna,
+                    e.laidAt,
+                    keccak256(bytes(e.surname)),
+                    e.deadline
+                )
             )
         );
     }
@@ -209,18 +221,23 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
         if (isAttester[e.server]) revert AlreadyAttester();
         uint256 other = eggOfServer[e.server];
         if (other != 0 && other != e.fid) revert ServerKeepsAnotherEgg();
+        if (!_validSurname(e.surname)) revert BadSurname();
         _checkSignatures(eggDigest(e), signatures);
 
         Stage s = stageOf[e.fid];
         if (s == Stage.Fatliner) revert AlreadyHatched();
         if (s == Stage.Egg) {
-            if (_ownerOf(e.fid) != e.to || dnaOf[e.fid] != e.dna || laidAtOf[e.fid] != e.laidAt) revert NotTheSameEgg();
+            if (
+                _ownerOf(e.fid) != e.to || dnaOf[e.fid] != e.dna || laidAtOf[e.fid] != e.laidAt
+                    || keccak256(bytes(surnameOf[e.fid])) != keccak256(bytes(e.surname))
+            ) revert NotTheSameEgg();
             delete eggOfServer[serverOf[e.fid]];
         } else {
             stageOf[e.fid] = Stage.Egg;
             eggCount++;
             dnaOf[e.fid] = e.dna;
             laidAtOf[e.fid] = e.laidAt;
+            surnameOf[e.fid] = e.surname;
             _mint(e.to, e.fid);
             emit EggTaken(e.fid, e.to, e.server, e.dna, e.laidAt);
         }
@@ -242,7 +259,7 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
         Stage s = stageOf[h.fid];
         if (s == Stage.Fatliner) revert AlreadyHatched();
         if (s != Stage.Egg) revert NoEgg();
-        if (!_validSurname(h.surname)) revert BadSurname();
+        if (keccak256(bytes(h.surname)) != keccak256(bytes(surnameOf[h.fid]))) revert BadSurname(); // set at the egg
         _checkSignatures(hatchDigest(h), signatures);
         if (totalSupply >= maxSupply) revert SoldOut();
         _born(h.fid, _ownerOf(h.fid), h.surname, signatures.length);
@@ -275,7 +292,12 @@ contract Fatliners is ERC721, IERC2981, EIP712 {
         return true;
     }
 
-    /// @notice Is `fid` a hatched Fatliner? (The launchpad asks.)
+    /// @notice Is `fid` an egg or a Fatliner? Either can have a coin. (The launchpad asks.)
+    function hasCoinRight(uint256 fid) external view returns (bool) {
+        return stageOf[fid] != Stage.None;
+    }
+
+    /// @notice Is `fid` a hatched Fatliner?
     function isFatliner(uint256 fid) external view returns (bool) {
         return stageOf[fid] == Stage.Fatliner;
     }

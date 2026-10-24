@@ -243,7 +243,7 @@ export class Hatchery {
   /** The Egg: what puts the egg onchain (takeEgg). Signed once the DNA is in. */
   async signEgg(egg) {
     if (egg.egg || !egg.dna) return null;
-    const message = eggOf(egg);
+    const message = await eggOf(egg);
     const signature = await this.account.signTypedData({ domain: hatchDomain(this.contract), types: eggTypes, primaryType: 'Egg', message });
     egg.egg = { message: Object.fromEntries(Object.entries(message).map(([k, v]) => [k, String(v)])), signature, signer: this.address, at: this.now(), contract: this.contract };
     this.log(`FID ${egg.claim.fid}: egg signed`);

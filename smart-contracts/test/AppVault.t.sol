@@ -194,6 +194,34 @@ contract AppVaultTest is Test {
         coin; // silence
     }
 
+    /// $5,000 of fees: the server keeps one period of rent at its real cost, and the rest goes to the holder.
+    function test_FeesAboveRentGoToTheHolder_NoCap() public {
+        (AppVault vault,) = launch(); // 300 USDC deposited, 30-day period
+        vm.prank(fan);
+        vm.expectRevert(AppVault.NotOwner.selector);
+        vault.setRate(130);
+        vm.prank(owner);
+        vault.setRate(130); // ~11.23 USDC a day: what the server really costs, above every tier
+        assertEq(vault.ratePerSecond(), 130);
+
+        vm.startPrank(trader);
+        usdc.approve(address(feeLocker), type(uint256).max);
+        feeLocker.store(address(usdc), address(vault), 5_000e6);
+        vm.stopPrank();
+
+        uint256 reserve = 130 * 30 days;
+        assertEq(vault.surplus(), 5_300e6 - reserve);
+        vm.prank(fan); // anyone can trigger it; the money only goes to the holder
+        uint256 sent = vault.distribute();
+        assertEq(sent, 5_300e6 - reserve);
+        assertEq(usdc.balanceOf(owner), sent);
+        assertEq(usdc.balanceOf(address(vault)), reserve);
+        assertEq(vault.distribute(), 0); // nothing above the reserve
+
+        vm.prank(keeper);
+        assertEq(vault.payCompute(), reserve); // the server is paid a full period at its real rate
+    }
+
     function test_OwnerHasAgencyButCannotTakeWhatIsPaid() public {
         (AppVault vault,) = launch();
         vm.prank(keeper);

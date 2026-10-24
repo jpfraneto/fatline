@@ -47,6 +47,7 @@ contract AppVault {
     uint8 public tier;
     uint256 public billingPeriod; // how far ahead the keeper may pay itself (1 to 31 days)
     uint256 public paidThrough; // compute is paid up to this timestamp
+    uint64 public customRate; // if set by the owner, the rent per second (what the server really costs), no cap
 
     // Presence: unique people per day (day = unix time / 1 day).
     bytes32 public constant CHECKIN_TYPEHASH = keccak256("CheckIn(uint256 day)");
@@ -59,6 +60,8 @@ contract AppVault {
     event Harvested(uint256 amount);
     event ComputePaid(address indexed keeper, uint256 amount, uint256 paidThrough);
     event Withdrawn(address indexed to, uint256 amount);
+    event Distributed(address indexed to, uint256 amount);
+    event RateSet(uint256 ratePerSecond);
     event TierChanged(uint8 tier, uint256 ratePerSecond);
     event CheckedIn(address indexed person, uint256 indexed day);
     event KeeperChanged(address keeper);
@@ -151,8 +154,16 @@ contract AppVault {
         return _tiers;
     }
 
+    /// @notice The rent per second: the owner's own rate if set, else the tier's.
     function ratePerSecond() public view returns (uint256) {
-        return _tiers[tier].ratePerSecond;
+        return customRate != 0 ? customRate : _tiers[tier].ratePerSecond;
+    }
+
+    /// @notice What `distribute` would send to the holder now: everything above one billing period of rent.
+    function surplus() public view returns (uint256) {
+        uint256 reserve = ratePerSecond() * billingPeriod;
+        uint256 have = balance() + pendingFees();
+        return have > reserve ? have - reserve : 0;
     }
 
     function balance() public view returns (uint256) {
@@ -219,6 +230,20 @@ contract AppVault {
         paidThrough = newPaidThrough;
         usdc.safeTransfer(keeper, amount);
         emit ComputePaid(keeper, amount, newPaidThrough);
+    }
+
+    /// @notice Anyone can call it: collects the coin's fees, keeps one billing period of rent for the server,
+    /// and sends the rest to the owner (a Fatliner's or an egg's holder). The coin earns; the holder gets it.
+    function distribute() external returns (uint256 amount) {
+        harvest();
+        uint256 reserve = ratePerSecond() * billingPeriod;
+        uint256 have = balance();
+        if (have <= reserve) return 0;
+        address to = owner();
+        if (to == address(0)) revert ZeroAddress();
+        amount = have - reserve;
+        usdc.safeTransfer(to, amount);
+        emit Distributed(to, amount);
     }
 
     /// @notice The owner moves USDC (to buy other coins, pay people, anything). Less money is less life.
@@ -329,7 +354,15 @@ contract AppVault {
         uint32 have = dau();
         if (tier_ > tier && have < need) revert NotEnoughDau(have, need);
         tier = tier_;
+        customRate = 0;
         emit TierChanged(tier_, _tiers[tier_].ratePerSecond);
+    }
+
+    /// @notice The owner sets the rent to what the server really costs (USDC units per second). No cap, no
+    /// users needed: it is the owner's money. 0 goes back to the tier's rate.
+    function setRate(uint64 rate) external onlyOwner {
+        customRate = rate;
+        emit RateSet(ratePerSecond());
     }
 
     // ------------------------------------------------------------------ settings

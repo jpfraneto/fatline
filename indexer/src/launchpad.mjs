@@ -327,12 +327,12 @@ export class Launchpad {
     const salt = keccak256(toHex(`${creator}:${name}:${Date.now()}`));
     let vault;
     if (coin) {
-      // Coins are only for Fatliners, one each; the ticker is the Fatliner's surname (the launchpad checks).
+      // Coins are for eggs and Fatliners, one each; the ticker is the surname (the launchpad checks).
       if (!fid) throw Object.assign(new Error('A coin needs a Fatliner: give its number (its FID).'), { status: 400 });
       const nft = await this.client.readContract({ address: this.factory, abi: factoryAbi, functionName: 'fatliners' });
-      const nftAbi = parseAbi(['function isFatliner(uint256) view returns (bool)', 'function surnameOf(uint256) view returns (string)', 'function ownerOf(uint256) view returns (address)']);
+      const nftAbi = parseAbi(['function hasCoinRight(uint256) view returns (bool)', 'function surnameOf(uint256) view returns (string)', 'function ownerOf(uint256) view returns (address)']);
       const read = (functionName) => this.client.readContract({ address: nft, abi: nftAbi, functionName, args: [BigInt(fid)] });
-      if (!(await read('isFatliner').catch(() => false))) throw Object.assign(new Error(`#${fid} is not a hatched Fatliner.`), { status: 400 });
+      if (!(await read('hasCoinRight').catch(() => false))) throw Object.assign(new Error(`#${fid} has no egg onchain yet.`), { status: 400 });
       if (getAddress(await read('ownerOf')) !== creator) throw Object.assign(new Error(`Only the holder of Fatliner #${fid} can launch its coin.`), { status: 403 });
       symbol = await read('surnameOf');
       name = name || symbol.charAt(0) + symbol.slice(1).toLowerCase();

@@ -83,6 +83,7 @@ export const eggTypes = {
     { name: 'url', type: 'string' },
     { name: 'dna', type: 'bytes32' },
     { name: 'laidAt', type: 'uint64' },
+    { name: 'surname', type: 'string' },
     { name: 'deadline', type: 'uint256' },
   ],
 };
@@ -95,11 +96,14 @@ export const hatchTypes = {
 };
 export const hatchDomain = ({ chainId, address }) => ({ name: 'Fatliners', version: '1', chainId: Number(chainId), verifyingContract: address });
 
-/** The onchain egg, from the claim and the DNA. Every field is deterministic, so attesters sign the same one. */
-export function eggOf(egg) {
+/**
+ * The onchain egg, from the claim and the DNA. Every field is deterministic, so attesters sign the same one.
+ * It carries the surname read from the DNA: the egg's coin ticker from the day it is onchain, and its name at hatching.
+ */
+export async function eggOf(egg) {
   const laidAt = laidAtOf(egg.claim.at);
   return { fid: BigInt(egg.claim.fid), to: egg.claim.to, server: egg.claim.server, url: egg.claim.hatchery,
-    dna: egg.dna, laidAt: BigInt(laidAt), deadline: BigInt(laidAt + HATCH_VALID_S) };
+    dna: egg.dna, laidAt: BigInt(laidAt), surname: await surnameOf(egg.claim.fid, egg.dna), deadline: BigInt(laidAt + HATCH_VALID_S) };
 }
 
 /**

@@ -22,7 +22,7 @@ import { eggTypes, hatchDomain, hatchTypes } from './egg.mjs';
 import { Hatchery } from './hatchery.mjs';
 
 export const fatlinersAbi = parseAbi([
-  'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, uint256 deadline) e, bytes[] signatures)',
+  'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, string surname, uint256 deadline) e, bytes[] signatures)',
   'function hatch((uint256 fid, string surname, uint256 deadline) h, bytes[] signatures)',
   'function stageOf(uint256) view returns (uint8)',
   'function serverOf(uint256) view returns (address)',
@@ -93,7 +93,7 @@ export function bornCheck(hc) {
 }
 
 const toHatch = (m) => ({ fid: BigInt(m.fid), surname: m.surname, deadline: BigInt(m.deadline) });
-const toEgg = (m) => ({ fid: BigInt(m.fid), to: m.to, server: m.server, url: m.url, dna: m.dna, laidAt: BigInt(m.laidAt), deadline: BigInt(m.deadline) });
+const toEgg = (m) => ({ fid: BigInt(m.fid), to: m.to, server: m.server, url: m.url, dna: m.dna, laidAt: BigInt(m.laidAt), surname: m.surname, deadline: BigInt(m.deadline) });
 
 /** Every attester and its hatchery URL, from the one Fatliners contract. Without a contract: the config's list. */
 export function attesterList(hc) {

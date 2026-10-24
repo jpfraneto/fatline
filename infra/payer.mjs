@@ -9,7 +9,8 @@
 //   here     a wallet made on this machine (fatline compute wallet, or a worker: fatline worker new). You send it
 //            USDC; it signs by itself. Only its key is kept, in .fatline (mode 600).
 //
-// Each returns an "account" with { address, signTypedData, close }, which is all x402.mjs needs.
+// Each returns an "account" with { address, signTypedData, close }, which is all x402.mjs needs. Phone and browser
+// accounts can also send a transaction from the person's wallet (sendTransaction), e.g. to launch a coin.
 // What a wallet signs is checked here before it is sent: the signature must recover to the connected address.
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
@@ -78,7 +79,7 @@ export async function phoneAccount({ root, say = console.log }) {
     metadata: { name: 'Fatline', description: 'Pay for your Farcaster node', url: 'https://fatline.ink', icons: ['https://fatline.ink/img/world/aster.jpg'] },
   });
   const { uri, approval } = await client.connect({
-    optionalNamespaces: { eip155: { chains: [`eip155:${BASE}`], methods: ['eth_signTypedData_v4'], events: ['accountsChanged', 'chainChanged'] } },
+    optionalNamespaces: { eip155: { chains: [`eip155:${BASE}`], methods: ['eth_signTypedData_v4', 'eth_sendTransaction'], events: ['accountsChanged', 'chainChanged'] } },
   });
   say('\n  Scan this with your wallet app (or its WalletConnect scanner), then approve the connection:\n');
   await showQr(uri);
@@ -96,6 +97,11 @@ export async function phoneAccount({ root, say = console.log }) {
       return client.request({ topic: session.topic, chainId: `eip155:${BASE}`, request: { method: 'eth_signTypedData_v4', params: [address, typedDataJson(args)] } });
     }, close),
     from: peer,
+    /** Sends a transaction from the connected wallet, on Base. Returns its hash once the person approves. */
+    async sendTransaction({ to, data, value = 0n }) {
+      say(`  Approve the transaction on your phone (${peer})…`);
+      return client.request({ topic: session.topic, chainId: `eip155:${BASE}`, request: { method: 'eth_sendTransaction', params: [{ from: address, to, data, value: `0x${BigInt(value).toString(16)}` }] } });
+    },
   };
 }
 
@@ -110,7 +116,7 @@ export async function browserAccount({ say = console.log, open = true } = {}) {
     if (req.method !== 'POST' || req.headers['x-fatline'] !== token) return json(403, { error: 'no' });
     const msg = JSON.parse(body || '{}');
     if (req.url === '/address') { address = getAddress(msg.address); waitAddress(address); return json(200, { ok: true }); }
-    if (req.url === '/next') return json(200, job ? { id: job.id, typedData: job.typedData, label: job.label } : { wait: true });
+    if (req.url === '/next') return json(200, job ? { id: job.id, typedData: job.typedData, tx: job.tx, label: job.label } : { wait: true });
     if (req.url === '/signed') {
       const p = pending.get(msg.id); if (!p) return json(404, {});
       pending.delete(msg.id); job = null;
@@ -137,12 +143,19 @@ export async function browserAccount({ say = console.log, open = true } = {}) {
       say('  Approve the payment in your browser wallet…');
     }), close),
     from: 'your browser wallet',
+    /** Sends a transaction from the browser wallet, on Base. Returns its hash once the person approves. */
+    sendTransaction: ({ to, data, value = 0n }) => new Promise((resolve, reject) => {
+      const id = ++n;
+      pending.set(id, { resolve, reject });
+      job = { id, tx: { from: address, to, data, value: `0x${BigInt(value).toString(16)}` }, label: 'a transaction' };
+      say('  Approve the transaction in your browser wallet…');
+    }),
   };
 }
 
 const PAGE = `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fatline · pay</title>
 <style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#17120d;color:#f1e4c8;font:17px/1.5 system-ui,sans-serif}main{max-width:30em;padding:24px}h1{font:700 30px Georgia,serif;margin:0 0 10px}button{font:600 16px system-ui;padding:12px 18px;border:0;border-radius:10px;background:#f1e4c8;color:#17120d;cursor:pointer}p{color:#c9b48d}#log{font:14px ui-monospace,monospace;white-space:pre-wrap;color:#f1e4c8}</style>
-<main><h1>Pay for your node</h1><p>Fatline asks your wallet to sign USDC payments on Base (x402). Each one shows the amount in your wallet before you approve. Nothing moves until you do. No ETH needed.</p>
+<main><h1>Fatline · your wallet</h1><p>Fatline asks your wallet to approve things on Base: USDC payments for your node (x402, no ETH needed), or a transaction like launching your coin. Each one shows in your wallet before you approve. Nothing moves until you do.</p>
 <button id="go">Connect wallet</button><div id="log"></div></main>
 <script>
 const T = location.hash.slice(1), log = (t) => (document.getElementById('log').textContent += t + '\\n');
@@ -160,7 +173,7 @@ document.getElementById('go').onclick = async () => {
       const j = await post('/next', {});
       if (j.wait) { await new Promise((r) => setTimeout(r, 1000)); continue; }
       log('Sign ' + j.label + '…');
-      try { const signature = await eth.request({ method: 'eth_signTypedData_v4', params: [address, j.typedData] }); await post('/signed', { id: j.id, signature }); log('Signed.'); }
+      try { const signature = j.tx ? await eth.request({ method: 'eth_sendTransaction', params: [j.tx] }) : await eth.request({ method: 'eth_signTypedData_v4', params: [address, j.typedData] }); await post('/signed', { id: j.id, signature }); log(j.tx ? 'Sent.' : 'Signed.'); }
       catch (e) { await post('/signed', { id: j.id, error: e.message || String(e) }); log('Refused: ' + (e.message || e)); }
     }
   } catch (e) { log('Error: ' + (e.message || e)); }

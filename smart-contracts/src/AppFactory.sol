@@ -124,8 +124,8 @@ contract AppFactory {
     }
 
     /// @notice A Fatliner's vault and its coin. `deployCalldata`'s fees must go to `predictFatlinerVault(fid)`.
-    /// @notice A Fatliner's coin (and its vault, if it has none yet). Only its holder, once. The coin's
-    /// symbol must be the Fatliner's surname, and the genesis Fatliner's coin comes first.
+    /// @notice The coin of an egg or a Fatliner (and its vault, if it has none yet). Only its holder, once. The
+    /// coin's symbol must be its surname, and the genesis Fatliner's coin comes first.
     function launchFatline(uint256 fid, AppParams calldata p, bytes calldata deployCalldata, uint256 deposit)
         external
         payable
@@ -157,12 +157,12 @@ contract AppFactory {
         emit AppCreated(address(vault), msg.sender, owner, p.uri);
     }
 
-    /// @dev The caller must hold `fid`, and it must be a hatched Fatliner (not an egg).
+    /// @dev The caller must hold `fid`, an egg or a hatched Fatliner.
     function _requireHolder(uint256 fid) internal view {
         if (fatliners == address(0)) revert NoFatliners();
         (bool ok, bytes memory ret) = fatliners.staticcall(abi.encodeWithSignature("ownerOf(uint256)", fid));
         if (!ok || ret.length < 32 || abi.decode(ret, (address)) != msg.sender) revert NotTheFatlinersHolder();
-        if (!IFatliners(fatliners).isFatliner(fid)) revert NotAFatliner();
+        if (!IFatliners(fatliners).hasCoinRight(fid)) revert NotAFatliner();
     }
 
     function _createFatline(uint256 fid, AppParams calldata p) internal returns (AppVault vault) {
@@ -219,6 +219,7 @@ contract AppFactory {
 interface IFatliners {
     function genesisFid() external view returns (uint256);
     function isFatliner(uint256 fid) external view returns (bool);
+    function hasCoinRight(uint256 fid) external view returns (bool);
     function surnameOf(uint256 fid) external view returns (string memory);
 }
 

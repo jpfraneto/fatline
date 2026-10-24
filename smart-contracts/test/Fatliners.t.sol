@@ -62,8 +62,16 @@ contract FatlinersTest is Test {
     function anEgg(uint256 fid, address to, bytes32 dna, address server) internal view returns (Fatliners.Egg memory) {
         return Fatliners.Egg({
             fid: fid, to: to, server: server, url: string.concat("http://server-", vm.toString(fid), ":8791"),
-            dna: dna, laidAt: laidAt, deadline: block.timestamp + 30 days
+            dna: dna, laidAt: laidAt, surname: surnameFor(fid), deadline: block.timestamp + 30 days
         });
+    }
+
+    /// The surname the attesters read from each test egg's DNA.
+    function surnameFor(uint256 fid) internal pure returns (string memory) {
+        if (fid == 18350) return "PEBBLE";
+        if (fid == 3) return "DWR";
+        if (fid > 1000 && fid < 2000) return string.concat("BEING", vm.toString(fid - 1000));
+        return string.concat("F", vm.toString(fid));
     }
 
     function aHatch(uint256 fid, string memory surname) internal view returns (Fatliners.Hatch memory) {
@@ -410,17 +418,28 @@ contract FatlinersTest is Test {
         factory.launchFatline(ASTER, params(), d4, 0);
     }
 
-    function test_OneCoinPerFatliner_OnlyFatliners() public {
+    function test_OneCoinPerFatliner_EggsToo() public {
         launchAster();
         bytes memory d5 = deployCall(ASTER, "FATLINE");
         vm.prank(aster);
         vm.expectRevert(AppFactory.AlreadyHasCoin.selector);
         factory.launchFatline(ASTER, params(), d5, 0);
-        takeEgg(nft, anEgg(18350, anky, DNA, attesters[1])); // an egg, not yet a Fatliner
-        bytes memory d6 = deployCall(18350, "PEBBLE");
+        takeEgg(nft, anEgg(18350, anky, DNA, attesters[1])); // an egg, not yet a Fatliner: it has its coin already
+        assertEq(nft.surnameOf(18350), "PEBBLE");
+        bytes memory wrong = deployCall(18350, "MOON");
         vm.prank(anky);
-        vm.expectRevert(AppFactory.NotAFatliner.selector);
+        vm.expectRevert(AppFactory.WrongTicker.selector);
+        factory.launchFatline(18350, params(), wrong, 0);
+        bytes memory d6 = deployCall(18350, "PEBBLE");
+        vm.prank(buyer);
+        vm.expectRevert(AppFactory.NotTheFatlinersHolder.selector);
         factory.launchFatline(18350, params(), d6, 0);
+        vm.prank(anky);
+        (AppVault eggVault, address eggCoin) = factory.launchFatline(18350, params(), d6, 0);
+        assertEq(eggVault.owner(), anky);
+        assertEq(eggVault.coin(), eggCoin);
+        hatch(nft, 18350, "PEBBLE"); // hatching keeps the coin and the surname
+        assertEq(factory.coinOfFatliner(18350), eggCoin);
         bytes memory d7 = deployCall(424242, "X");
         vm.prank(buyer);
         vm.expectRevert(AppFactory.NotTheFatlinersHolder.selector);

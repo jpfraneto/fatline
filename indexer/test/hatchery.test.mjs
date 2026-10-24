@@ -126,14 +126,14 @@ test('the egg names its server\'s hatchery: same machine, the key it claims, not
 test('the Egg is signed as soon as the DNA is in, and recovers to the attester', async () => {
   const { h, claim } = setup();
   await h.lay(claim());
-  await new Promise((r) => setImmediate(r)); // the DNA fills in the background
-  await new Promise((r) => setImmediate(r));
+  for (let i = 0; i < 200 && !h.status(18350).egg; i++) await new Promise((r) => setTimeout(r, 10)); // DNA, then the surname
   const s = h.status(18350);
   assert.ok(s.egg, 'egg signed');
+  assert.match(s.egg.message.surname, /^[A-Z0-9]{1,12}$/, 'the egg carries its surname (its coin ticker)');
   assert.equal(s.egg.message.server, SERVER);
   assert.equal(s.egg.message.url, HATCH);
   assert.equal(s.egg.message.dna, `0x${'ab'.repeat(32)}`);
-  const message = eggOf(h.state.eggs[18350]);
+  const message = await eggOf(h.state.eggs[18350]);
   const signer = await recoverTypedDataAddress({ domain: hatchDomain(h.contract), types: eggTypes, primaryType: 'Egg', message, signature: s.egg.signature });
   assert.equal(signer, h.address);
 });
