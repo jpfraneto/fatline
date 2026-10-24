@@ -81,6 +81,10 @@
   "recovery": "0xf2fe4dd9a86ecafe22424bfb6085036bca7835a8",
   "registeredTx": "0x95a5901b5fc78cf64444987cbd9ff5d9e35abf044c3170f60c82b30f318639e0",
   "chain": "Optimism",
-  "note": "Fatline's Farcaster app account: it signs Sign in with Farcaster key requests (the genesis server, POST /signer-request)."
+  "note": "Fatline's Farcaster app account: it signs Sign in with Farcaster key requests (the genesis server, POST /signer-request).",
+  "username": "fatline",
+  "display": "Fatline",
+  "pfp": "https://fatline.ink/img/fatline-app.png",
+  "firstCast": "0x1728cbff5dba5240069237d09c3f07a8a87f903b"
  }
 }
