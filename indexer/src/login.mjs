@@ -6,7 +6,7 @@
 //     phrase): one EIP-712 signature (a gasless KEY_ADD), no transaction, submitted to your node. No relay, no app.
 import { rmSync } from 'node:fs';
 import { qrSvg } from './qr.mjs';
-import { buildKeyAdd, fidOfCustody, waitForKey } from './identity.mjs';
+import { buildKeyAdd, fidOfCustody, savedFid, waitForKey } from './identity.mjs';
 import { appKeyPath, loadAppKey, saveAppKey, sendMessage } from './writer.mjs';
 
 /** viem's typed-data arguments as JSON a wallet takes (eth_signTypedData_v4): numbers as strings, bytes as hex. */
@@ -71,7 +71,7 @@ export class WalletLogin {
     const networkName = this.config.defaultNetwork;
     const node = await this.networks[networkName].node();
     this.state = { step: 'finding', wallet: true };
-    const fid = await fidOfCustody(node, address);
+    const fid = await fidOfCustody(node, address, savedFid(this.config)); // fast when fatline connect saved the FID
     if (!fid) {
       this.state = { step: 'idle' };
       throw Object.assign(new Error(`${address} does not own a Farcaster account (asked ${node.label ?? node.url}). Only the address that owns your FID (its custody address) can add a key. If your account lives in the Farcaster app, use the QR code instead.`), { status: 400 });

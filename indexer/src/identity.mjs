@@ -84,6 +84,11 @@ export async function fidOfCustody(node, address, fid) {
   return owner === address.toLowerCase() ? Number(event.fid) : null;
 }
 
+/** The FID fatline connect proved and saved (.fatline/identity.json), if any. */
+export function savedFid(config) {
+  try { return Number(JSON.parse(fs.readFileSync(`${config.dataDir}/identity.json`, 'utf8')).fid) || undefined; } catch { return undefined; }
+}
+
 async function username(node, fid) {
   const res = await get(node, '/v1/userDataByFid', { fid, user_data_type: 6 }).catch(() => null);
   return res?.data?.userDataBody?.value ?? null;
@@ -179,7 +184,13 @@ async function add(opts, config) {
   }
   console.log(`Custody address (derivation m/44'/60'/0'/0/0): ${custody.address}`);
 
-  const fid = await fidOfCustody(node, custody.address, opts.fid);
+  // The FID to check first (fast): --fid, or the one fatline connect saved. Without it, the node's lookup by address
+  // can take a long time.
+  const hint = opts.fid ?? savedFid(config);
+  console.log(`Asking ${node.label ?? node.url} which account this address owns${hint ? ` (checking FID ${hint} first)` : ' (this can take up to a minute; --fid <your FID> makes it instant)'}…`);
+  const fid = await fidOfCustody(node, custody.address, hint).catch((err) => {
+    throw new Error(`${err.message} Nothing was sent. Run it again with your FID, which is instant: fatline identity --phrase --fid <your FID>`);
+  });
   if (!fid) throw new Error(`${custody.address} does not own a Farcaster account on this network. Check the phrase. Nothing was sent.`);
   if (opts.fid && Number(opts.fid) !== fid) throw new Error(`This phrase owns FID ${fid}, not ${opts.fid}. Nothing was sent.`);
   console.log(`It owns FID ${fid}${(await username(node, fid)) ? ` (@${await username(node, fid)})` : ''}.`);
