@@ -144,7 +144,7 @@ function being(f) {
 
 function nodeRows(f) {
   return f.nodes.map((n) => `<div class="row"><span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span><b>${NAME[n.network]}</b>
-      <span class="muted">${n.state === 'alive' ? `alive · running ${since(n.since)}` : n.state === 'catching-up' ? `catching up · ${Number(n.blocksBehind).toLocaleString('en')} blocks behind` : 'offline at the last check'} · ${esc(n.label)}</span></div>`).join('');
+      <span class="muted">${n.state === 'alive' ? `alive · running ${since(n.since)}` : n.state === 'catching-up' ? `catching up · ${(b => b < 7200 ? `${Math.round(b / 60)} min` : `${Math.round(b / 3600)} h`)(Number(n.blocksBehind))} behind` : 'offline at the last check'} · ${esc(n.label)}</span></div>`).join('');
 }
 function owner(f) {
   const o = f.owner ?? {};
