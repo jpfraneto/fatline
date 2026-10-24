@@ -220,6 +220,18 @@ function steps(s) {
         && fatline('egg', 'lay')
         && (console.log('  Watch it: fatline egg. When it hatches: fatline hatch.'), true),
     },
+    coin: {
+      title: 'Launch your egg\'s coin',
+      what: 'Your egg already has its surname (read from its DNA); that is its coin\'s ticker. One transaction makes the coin on Clanker, paired with USDC, with 100% of its trading fees going to your egg\'s vault: it pays your server, and everything above one month of rent goes to you. You approve it in your own wallet (a QR code to scan; the wallet that holds the egg). $FATLINE launches first; if it hasn\'t yet, come back to this step later. Skip it if you don\'t want a coin.',
+      cost: 'gas only, a few cents of ETH on Base, in the egg\'s wallet',
+      cmd: 'fatline coin launch --fid <your FID> --go',
+      run: () => {
+        let fid;
+        try { fid = JSON.parse(readFileSync(join(STATE_DIR, 'appkey.json'), 'utf8')).fid; } catch {}
+        if (!fid) { console.log('  No app key yet: lay your egg first.'); return false; }
+        return fatline('coin', 'launch', '--fid', String(fid), '--go');
+      },
+    },
   };
   const light = {
     follow: {

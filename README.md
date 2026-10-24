@@ -299,7 +299,7 @@ Once the vault owner runs `setKeeper(<that address>)`, the server pays itself fr
 
 ```sh
 fatline coin launch                              # simulate a Fatliner's coin against Base (default: $FATLINE)
-fatline coin launch --go --seed-file <file>      # send it: the Fatliner's holder signs
+fatline coin launch --go                         # send it: the holder approves in their own wallet (QR code)
 ```
 
 The factory is wired to Clanker's Base contracts, as used by `clanker-sdk@4.2.19`:

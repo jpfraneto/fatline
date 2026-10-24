@@ -34,6 +34,7 @@ const nftAbi = parseAbi([
   'function ownerOf(uint256) view returns (address)',
   'function isFatliner(uint256) view returns (bool)',
   'function hasCoinRight(uint256) view returns (bool)',
+  'function serverOf(uint256) view returns (address)',
   'function surnameOf(uint256) view returns (string)',
   'function genesisFid() view returns (uint256)',
 ]);
@@ -60,8 +61,9 @@ export async function planFatlineLaunch(config, opts = {}) {
   const titled = ticker.charAt(0) + ticker.slice(1).toLowerCase();
   const name = opts.name ?? (isGenesis ? `${g.name} Fatline` : titled);
   const image = opts.image ?? (isGenesis ? 'https://fatline.ink/img/world/aster.jpg' : '');
-  const keeper = opts.keeper ?? (isGenesis ? g.server : null);
-  if (!keeper) throw new Error('Which server keeps it alive? Pass --keeper 0x… (that server\'s wallet pays itself from the vault).');
+  // The keeper: the server that keeps it alive (for an egg, the one keeping it warm), paid from the vault.
+  const keeper = opts.keeper ?? (isGenesis ? g.server : await nft('serverOf'));
+  if (!keeper || keeper === ZERO) throw new Error('Which server keeps it alive? Pass --keeper 0x… (that server\'s wallet pays itself from the vault).');
   const launch = await buildLaunch({
     vault, tokenAdmin: holder, name, symbol: ticker, image, chainId: 8453, startMarketCapUsd: Number(opts.mcap ?? 25_000),
     description: `${name}: Fatliner #${fid}${(await nft('isFatliner')) ? '' : ' (still an egg)'}. 100% of this coin's trading fees go to its vault, in USDC, and keep its Farcaster node alive. fatline.ink/f/${ticker}`,
