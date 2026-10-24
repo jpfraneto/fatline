@@ -205,7 +205,29 @@ async function serve() {
     console.log(`Hatchery on :${hc.port}. Attester ${hatchery.address}. Fatliners ${hc.contract ?? '(not deployed: Hatches are signed for address null)'} on chain ${hc.chainId}.`);
     console.log(`Checks every ${hc.checkEveryMs / 60_000} min against ${JSON.stringify(hc.reference)}. Relay ${hc.relay ? 'on' : 'off'}.`);
   });
-  const loop = async () => { try { await hatchery.tick(); } catch (err) { console.log(`[hatchery] tick failed: ${err.message}`); } };
+  // The genesis egg (Aster) is kept warm by this very server, once its keeper has claimed it onchain. It has no claim
+  // signed by an app key: its record starts at the claim, and its node is checked against an outside node (crackle),
+  // not against itself. Three warm days and this attester signs its Hatch, like any other.
+  const genesis = async () => {
+    if (!hc.contract) return;
+    const read = (functionName, args = []) => reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName, args });
+    const fid = Number(await read('genesisFid'));
+    if (hatchery.state.eggs[fid] || Number(await read('stageOf', [BigInt(fid)])) !== 1) return;
+    const d = config.deployments?.Fatliners?.genesis ?? {};
+    const to = (await read('ownerOf', [BigInt(fid)])).toLowerCase();
+    const url = `http://${String(d.hatchery ?? 'http://46.225.208.199:8791').replace(/^https?:\/\//, '').split(':')[0]}`;
+    hatchery.state.eggs[fid] = {
+      claim: { fid, network: 'farcaster', node: `${url}:3381`, to, server: hatchery.address.toLowerCase(), hatchery: `${url}:8791`, at: Date.now(), reference: 'https://crackle.farcaster.xyz:3381', genesis: true },
+      publicKey: null, signature: null, laidAt: Number(d.laidAt), dna: d.dna, surname: d.surname ?? 'FATLINE', stone: 5,
+      egg: { genesis: true, onchain: true }, checks: [], hatch: null,
+    };
+    hatchery.save();
+    console.log(`[hatchery] FID ${fid}: the genesis egg is onchain (held by ${to}); keeping it warm from now`);
+  };
+  const loop = async () => {
+    try { await genesis(); } catch (err) { console.log(`[hatchery] genesis: ${err.shortMessage ?? err.message}`); }
+    try { await hatchery.tick(); } catch (err) { console.log(`[hatchery] tick failed: ${err.message}`); }
+  };
   loop();
   setInterval(loop, Math.min(5 * 60_000, hc.checkEveryMs / 4));
 }

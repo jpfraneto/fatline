@@ -181,7 +181,7 @@ export class Hatchery {
   /** One check of one egg's server. Returns { at, ok, reason?, ms? }. ok: null means the attester could not judge. */
   async check({ network, node, server, hatchery }) {
     const at = this.now();
-    const ref = this.reference[network];
+    const ref = arguments[0].reference ?? this.reference[network]; // the genesis egg is checked against an outside node
     const [mine, theirs] = await Promise.all([
       this.json(`${ref}/v1/info`, 15_000).catch(() => null),
       this.json(`${node}/v1/info`).catch((e) => ({ error: String(e.message ?? e) })),
