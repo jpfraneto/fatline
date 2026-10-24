@@ -1,0 +1,32 @@
+<!doctype html>
+<!-- Source of og-docs.jpg (the link preview for /docs). Render: build.sh -->
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,300..900,0..100,0..1&family=JetBrains+Mono:wght@500&display=block" rel="stylesheet">
+<style>
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body { position: relative; font-family: Fraunces, serif; color: #f6ecd7; background: #140d07; }
+  .bg { position: absolute; inset: 0; background: url(../world/the-archive.jpg) center/cover; filter: saturate(1.1); }
+  .shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(20,13,7,.96) 0%, rgba(20,13,7,.88) 40%, rgba(20,13,7,.2) 66%, rgba(20,13,7,0) 100%); }
+  .kicker { position: absolute; left: 70px; top: 78px; font: 500 22px 'JetBrains Mono', monospace; letter-spacing: .4em; color: #e6cfa4; }
+  .title { position: absolute; left: 62px; top: 112px; font-weight: 800; font-size: 132px; line-height: 1; letter-spacing: -.02em;
+    font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1; text-shadow: 0 4px 0 rgba(0,0,0,.35), 0 0 60px rgba(255,170,80,.35); }
+  .line { position: absolute; left: 70px; top: 262px; width: 520px; height: 5px; border-radius: 5px;
+    background: linear-gradient(90deg, #3d8bff, #fff 50%, #ff5fa8); box-shadow: 0 0 18px #ff5fa8, 0 0 30px rgba(61,139,255,.6); }
+  .line:after { content: ""; position: absolute; right: -9px; top: -6px; width: 17px; height: 17px; border-radius: 50%; background: #fff; box-shadow: 0 0 14px 4px #3d8bff, 0 0 30px 8px #ff5fa8; }
+  .say { position: absolute; left: 70px; top: 300px; width: 560px; font-weight: 600; font-size: 46px; line-height: 1.12;
+    font-variation-settings: 'opsz' 96, 'SOFT' 100, 'WONK' 1; }
+  .say em { font-style: normal; color: #ffb36b; }
+  .cmd { position: absolute; left: 70px; bottom: 62px; font: 500 24px 'JetBrains Mono', monospace; color: #f6ecd7;
+    background: rgba(0,0,0,.45); border: 1px solid rgba(246,236,215,.25); border-radius: 10px; padding: 12px 18px; }
+  .cmd b { color: #ffb36b; font-weight: 500; }
+  .win { position: absolute; bottom: 0; width: 230px; border-radius: 115px 115px 0 0; overflow: hidden;
+    box-shadow: 0 0 0 3px rgba(246,236,215,.2), 0 -10px 50px rgba(255,170,80,.35); }
+  .win img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .a { left: 690px; height: 380px; } .b { left: 935px; height: 330px; }
+</style>
+<div class="bg"></div><div class="shade"></div>
+<div class="kicker">THE DOCS</div>
+<div class="title">FATLINE</div>
+<div class="line"></div>
+<div class="say">Run your own <em>Farcaster node</em>. Snapchain or Hypersnap, paid in USDC.</div>
+<div class="cmd"><b>$</b> fatline node snapchain</div>

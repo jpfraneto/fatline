@@ -11,6 +11,7 @@ import {
 } from '@farcaster/core';
 
 export const CAST_MAX_BYTES = 320;
+export const LONG_CAST_MAX_BYTES = 1024; // a LONG_CAST: 321 to 1024 bytes
 
 /** Links in a cast become embeds (what Farcaster apps turn into preview cards): https only, at most 2, each ≤256 bytes. */
 export function linkEmbeds(text) {
@@ -84,8 +85,9 @@ export class Writer {
     text = String(text ?? '').trim();
     if (!text) throw fail('Write something first.');
     const size = Buffer.byteLength(text);
-    if (size > CAST_MAX_BYTES) throw fail(`A cast holds ${CAST_MAX_BYTES} bytes; this is ${size}. Longer opinions go in Voices.`);
-    const body = { text, embeds: linkEmbeds(text), embedsDeprecated: [], mentions: [], mentionsPositions: [], type: CastType.CAST };
+    if (size > LONG_CAST_MAX_BYTES) throw fail(`A cast holds ${LONG_CAST_MAX_BYTES} bytes; this is ${size}. Longer opinions go in Voices.`);
+    const type = size > CAST_MAX_BYTES ? CastType.LONG_CAST : CastType.CAST;
+    const body = { text, embeds: linkEmbeds(text), embedsDeprecated: [], mentions: [], mentionsPositions: [], type };
     if (parent) body.parentCastId = { fid: Number(parent.fid), hash: bytes(parent.hash) };
     const message = unwrap(await makeCastAdd(body, this.options, this.signer), 'Could not build the cast');
     return this.#publish('cast', message, (hash) => ['/v1/castById', { fid: this.fid, hash }], true);

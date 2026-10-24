@@ -70,6 +70,14 @@ test('https links in a cast become embeds, so apps show a preview card', async (
   assert.deepEqual(node.submitted[0].data.castAddBody.embeds.map((e) => e.url), ['https://fatline.ink/docs']);
 });
 
+test('casts over 320 bytes go out as long casts (up to 1024)', async () => {
+  const node = fakeNode();
+  const writer = new Writer({ network: node.network, key: appKey(), fetchImpl: node.fetchImpl, pollMs: 1 });
+  await writer.cast({ text: 'short' });
+  await writer.cast({ text: 'x'.repeat(500) });
+  assert.deepEqual(node.submitted.map((m) => m.data.castAddBody.type), [0, 1]);
+});
+
 test('replies point at their parent', async () => {
   const node = fakeNode();
   const writer = new Writer({ network: node.network, key: appKey(), fetchImpl: node.fetchImpl, pollMs: 1 });
@@ -105,7 +113,7 @@ test('refusals and oversized casts are explained, not swallowed', async () => {
   const node = fakeNode({ refuse: 'invalid signer' });
   const writer = new Writer({ network: node.network, key: appKey(), fetchImpl: node.fetchImpl, pollMs: 1 });
   await assert.rejects(writer.cast({ text: 'x' }), /invalid signer/);
-  await assert.rejects(writer.cast({ text: 'é'.repeat(161) }), /320 bytes/);
+  await assert.rejects(writer.cast({ text: 'é'.repeat(513) }), /1024 bytes/);
   await assert.rejects(writer.cast({ text: '   ' }), /Write something/);
 });
 
