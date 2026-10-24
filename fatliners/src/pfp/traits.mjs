@@ -229,6 +229,25 @@ function liveLight(n, silent) {
 /** low | mid | high against the calibrated tertiles. */
 const level = (x, q) => (x < q.q33 ? 'low' : x > q.q67 ? 'high' : 'mid');
 
+/** The stones, in the order the Fatliners contract numbers them (Egg.stone, stoneOf). */
+export const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
+
+/** The Roots material (the egg's stone): from the features, the networks read and how much history there is. */
+export function rootsMaterial({ features: f, network, coverage, calibration }) {
+  const Q = calibration.quantiles;
+  const messages = coverage.messages ?? 0;
+  const silent = f.pulse.silent;
+  const neutral = silent || (!silent && messages < SPARSE_MESSAGES);
+  const age = f.roots.ageDays;
+  if (age < NEWCOMER_DAYS) return 'opal';
+  if (f.roots.returns >= 1 && !neutral && network.read.length) return 'gold';
+  if (neutral) return 'ivory';
+  if (f.roots.continuity < Q['roots.continuity'].q20) return 'moss';
+  if (age >= Q['roots.ageDays'].q67) return f.roots.continuity >= Q['roots.continuity'].q50 ? 'basalt' : 'sandstone';
+  if (age <= Q['roots.ageDays'].q33) return 'marble';
+  return 'ivory';
+}
+
 /**
  * @param {object} o
  * @param {object} o.features     fatliners.features/1
@@ -248,15 +267,8 @@ export function visualTraits({ features: f, dna, network, coverage, calibration 
   const cal = { calibration: calibration.name };
 
   // ---- ROOTS
-  let mat;
   const age = f.roots.ageDays;
-  if (age < NEWCOMER_DAYS) mat = 'opal';
-  else if (f.roots.returns >= 1 && !neutral && network.read.length) mat = 'gold';
-  else if (neutral) mat = 'ivory';
-  else if (f.roots.continuity < Q['roots.continuity'].q20) mat = 'moss';
-  else if (age >= Q['roots.ageDays'].q67) mat = f.roots.continuity >= Q['roots.continuity'].q50 ? 'basalt' : 'sandstone';
-  else if (age <= Q['roots.ageDays'].q33) mat = 'marble';
-  else mat = 'ivory';
+  const mat = rootsMaterial({ features: f, network, coverage, calibration });
   const sub = SUBSTRATE[mat];
   const seams = mat === 'gold' ? Math.min(3, f.roots.returns) : 0;
   const qa = Q['roots.ageDays'];

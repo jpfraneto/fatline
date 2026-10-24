@@ -19,6 +19,7 @@ import {FatlineLaunchpad} from "../src/FatlineLaunchpad.sol";
 ///     GENESIS_TO       who it is born to
 ///     GENESIS_SURNAME  its surname and its coin's ticker (default FATLINE)
 ///     GENESIS_DNA      its history commitment, GENESIS_LAID_AT its cutoff (unix seconds)
+///     GENESIS_STONE    its stone, read from that history (0 ivory … 6 opal; Aster: 5, gold)
 contract Deploy is Script {
     // Base mainnet (chain 8453)
     address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
@@ -40,18 +41,18 @@ contract Deploy is Script {
         if (vm.envOr("VOICES", true)) console.log("Voices", address(new Voices()));
 
         if (vm.envOr("FATLINERS", false)) {
+            Fatliners.Genesis memory g = Fatliners.Genesis({
+                server: vm.envAddress("GENESIS"),
+                url: vm.envString("GENESIS_URL"),
+                fid: vm.envUint("GENESIS_FID"),
+                to: vm.envAddress("GENESIS_TO"),
+                surname: vm.envOr("GENESIS_SURNAME", string("FATLINE")),
+                dna: vm.envBytes32("GENESIS_DNA"),
+                laidAt: uint64(vm.envUint("GENESIS_LAID_AT")),
+                stone: uint8(vm.envOr("GENESIS_STONE", uint256(0)))
+            });
             Fatliners f = new Fatliners(
-                777,
-                vm.envAddress("GENESIS"),
-                vm.envString("GENESIS_URL"),
-                vm.envUint("GENESIS_FID"),
-                vm.envAddress("GENESIS_TO"),
-                vm.envOr("GENESIS_SURNAME", string("FATLINE")),
-                vm.envBytes32("GENESIS_DNA"),
-                uint64(vm.envUint("GENESIS_LAID_AT")),
-                "https://fatline.ink/fatliners/",
-                FatlineLaunchpad.Clanker(USDC, CLANKER, LOCKER, FEE_LOCKER),
-                defaultTiers()
+                777, g, "https://fatline.ink/fatliners/", FatlineLaunchpad.Clanker(USDC, CLANKER, LOCKER, FEE_LOCKER), defaultTiers()
             );
             console.log("Fatliners", address(f));
             console.log("VaultImplementation", f.vaultImplementation());

@@ -53,7 +53,7 @@ contract FatlinersTest is Test {
         AppVault.Tier[] memory t = new AppVault.Tier[](1);
         t[0] = AppVault.Tier(30, 0); // ~2.59 USDC a day: one node's fuel
         return new Fatliners(
-            max, attesters[0], "http://genesis:8791", ASTER, aster, "FATLINE", keccak256("aster"), laidAt,
+            max, Fatliners.Genesis(attesters[0], "http://genesis:8791", ASTER, aster, "FATLINE", keccak256("aster"), laidAt, 5),
             "https://fatline.ink/fatliners/",
             FatlineLaunchpad.Clanker(address(usdc), address(clanker), address(locker), address(feeLocker)), t
         );
@@ -64,7 +64,7 @@ contract FatlinersTest is Test {
     function anEgg(uint256 fid, address to, bytes32 dna, address server) internal view returns (Fatliners.Egg memory) {
         return Fatliners.Egg({
             fid: fid, to: to, server: server, url: string.concat("http://server-", vm.toString(fid), ":8791"),
-            dna: dna, laidAt: laidAt, surname: surnameFor(fid), deadline: block.timestamp + 30 days
+            dna: dna, laidAt: laidAt, surname: surnameFor(fid), stone: 1, deadline: block.timestamp + 30 days
         });
     }
 
@@ -514,5 +514,56 @@ contract FatlinersTest is Test {
     function test_OneContract_TheLaunchpadIsTheFatliners() public view {
         assertEq(address(factory), address(nft));
         assertEq(AppVault(payable(nft.vaultImplementation())).factory(), address(nft));
+    }
+
+    function test_NoTwoEggsShareASurname() public {
+        takeEgg(nft, anEgg(18350, anky, DNA, attesters[1])); // PEBBLE
+        Fatliners.Egg memory same = anEgg(3, dwr, keccak256("dwr"), attesters[2]);
+        same.surname = "PEBBLE";
+        bytes[] memory s = sigs(nft.eggDigest(same), firstN(nft.threshold()));
+        vm.expectRevert(Fatliners.SurnameTaken.selector);
+        nft.takeEgg(same, s);
+        Fatliners.Egg memory fatline = anEgg(3, dwr, keccak256("dwr"), attesters[2]);
+        fatline.surname = "FATLINE"; // Aster's, reserved at genesis
+        bytes[] memory f = sigs(nft.eggDigest(fatline), firstN(nft.threshold()));
+        vm.expectRevert(Fatliners.SurnameTaken.selector);
+        nft.takeEgg(fatline, f);
+        takeEgg(nft, anEgg(3, dwr, keccak256("dwr"), attesters[2])); // its own next name: fine
+        assertEq(nft.fidOfSurname(keccak256("DWR")), 3);
+    }
+
+    function test_TheEggCarriesItsStone() public {
+        Fatliners.Egg memory e = anEgg(18350, anky, DNA, attesters[1]);
+        e.stone = 6; // opal: a newcomer
+        takeEgg(nft, e);
+        assertEq(nft.stoneOf(18350), 6);
+        Fatliners.Egg memory moved = anEgg(18350, anky, DNA, attesters[2]);
+        moved.stone = 3; // a move can't change it
+        bytes[] memory s = sigs(nft.eggDigest(moved), firstN(nft.threshold()));
+        vm.expectRevert(Fatliners.NotTheSameEgg.selector);
+        nft.takeEgg(moved, s);
+        Fatliners.Egg memory bad = anEgg(3, dwr, keccak256("dwr"), attesters[3]);
+        bad.stone = 7;
+        bytes[] memory b = sigs(nft.eggDigest(bad), firstN(nft.threshold()));
+        vm.expectRevert(Fatliners.BadStone.selector);
+        nft.takeEgg(bad, b);
+    }
+
+    function test_OneFatlineOneContract() public {
+        takeEgg(nft, anEgg(18350, anky, DNA, attesters[1]));
+        vm.prank(buyer);
+        vm.expectRevert(Fatliners.NotHolder.selector);
+        nft.setApp(18350, address(usdc));
+        vm.prank(anky);
+        vm.expectRevert(Fatliners.NotAContract.selector);
+        nft.setApp(18350, buyer);
+        vm.prank(anky);
+        nft.setApp(18350, address(usdc)); // the egg's holder ties one contract to it
+        assertEq(nft.appOf(18350), address(usdc));
+        vm.prank(anky);
+        nft.setApp(18350, address(clanker)); // another replaces it: still one
+        assertEq(nft.appOf(18350), address(clanker));
+        vm.expectRevert(Fatliners.NoEgg.selector);
+        nft.setApp(424242, address(usdc));
     }
 }

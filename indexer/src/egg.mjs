@@ -84,6 +84,7 @@ export const eggTypes = {
     { name: 'dna', type: 'bytes32' },
     { name: 'laidAt', type: 'uint64' },
     { name: 'surname', type: 'string' },
+    { name: 'stone', type: 'uint8' },
     { name: 'deadline', type: 'uint256' },
   ],
 };
@@ -103,7 +104,8 @@ export const hatchDomain = ({ chainId, address }) => ({ name: 'Fatliners', versi
 export async function eggOf(egg) {
   const laidAt = laidAtOf(egg.claim.at);
   return { fid: BigInt(egg.claim.fid), to: egg.claim.to, server: egg.claim.server, url: egg.claim.hatchery,
-    dna: egg.dna, laidAt: BigInt(laidAt), surname: await surnameOf(egg.claim.fid, egg.dna), deadline: BigInt(laidAt + HATCH_VALID_S) };
+    dna: egg.dna, laidAt: BigInt(laidAt), surname: egg.surname ?? await surnameOf(egg.claim.fid, egg.dna),
+    stone: Number(egg.stone ?? 0), deadline: BigInt(laidAt + HATCH_VALID_S) };
 }
 
 /**
@@ -111,14 +113,24 @@ export async function eggOf(egg) {
  * carries), in capitals. It is also its coin's ticker, and the launchpad accepts no other.
  */
 export async function surnameOf(fid, dna) {
+  return surnameCandidate(fid, dna, 0);
+}
+
+/**
+ * The k-th surname an egg could take. k = 0 is its name; if that is already taken onchain (Fatliners.fidOfSurname),
+ * the attesters take k = 1, 2, … in this order, so they all land on the same one. No two eggs share a surname.
+ */
+export async function surnameCandidate(fid, dna, k) {
   const { seedOf } = await import('../../fatliners/src/dna.mjs');
   const { beingName } = await import('../../fatliners/src/pfp/name.mjs');
-  return beingName(seedOf({ kind: 'fid', fid: Number(fid) }, dna)).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
+  let seed = seedOf({ kind: 'fid', fid: Number(fid) }, dna);
+  if (k > 0) seed = (await import('../../fatliners/src/hash.mjs')).sha256Hex(`${seed}:name:${k}`);
+  return beingName(seed).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12);
 }
 
 /** The Hatch for an egg: which egg and its surname. */
 export async function hatchOf(egg) {
-  return { fid: BigInt(egg.claim.fid), surname: await surnameOf(egg.claim.fid, egg.dna), deadline: BigInt(laidAtOf(egg.claim.at) + HATCH_VALID_S) };
+  return { fid: BigInt(egg.claim.fid), surname: egg.surname ?? await surnameOf(egg.claim.fid, egg.dna), deadline: BigInt(laidAtOf(egg.claim.at) + HATCH_VALID_S) };
 }
 
 /**

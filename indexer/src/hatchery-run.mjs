@@ -14,7 +14,7 @@
 import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
-import { createPublicClient, createWalletClient, http, parseAbi, recoverTypedDataAddress } from 'viem';
+import { createPublicClient, createWalletClient, http, parseAbi, recoverTypedDataAddress, keccak256, toBytes } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia, foundry } from 'viem/chains';
 import { loadConfig } from './config.mjs';
@@ -22,7 +22,9 @@ import { eggTypes, hatchDomain, hatchTypes } from './egg.mjs';
 import { Hatchery } from './hatchery.mjs';
 
 export const fatlinersAbi = parseAbi([
-  'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, string surname, uint256 deadline) e, bytes[] signatures)',
+  'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, string surname, uint8 stone, uint256 deadline) e, bytes[] signatures)',
+  'function fidOfSurname(bytes32) view returns (uint256)',
+  'error SurnameTaken()',
   'function hatch((uint256 fid, string surname, uint256 deadline) h, bytes[] signatures)',
   'function stageOf(uint256) view returns (uint8)',
   'function serverOf(uint256) view returns (address)',
@@ -61,7 +63,7 @@ function loadKey(dataDir) {
   return readFileSync(p, 'utf8').trim();
 }
 
-/** The history commitment at the egg's cutoff, read from this attester's own nodes. */
+/** The history commitment at the egg's cutoff, and the egg's stone from that same history, read from this attester's own nodes. */
 function dnaFrom(config, reference) {
   return async (fid, snapshotAt) => {
     const { historyFromNodes } = await import('../../fatliners/src/sources/node.mjs');
@@ -69,7 +71,14 @@ function dnaFrom(config, reference) {
     // The same archive the backfill writes to: this attester's data folder.
     const got = await historyFromNodes(fid, { config, dbPath: join(config.dataDir, 'indexer.sqlite'), snapshotAt, overrides: reference });
     if (got.state === 'unavailable' || got.state === 'account-not-found') throw new Error(`history: ${got.state}`);
-    return commitment(got.history);
+    const { extractFeatures } = await import('../../fatliners/src/features.mjs');
+    const { networkEvidence, rootsMaterial, STONES } = await import('../../fatliners/src/pfp/traits.mjs');
+    const { loadCalibration } = await import('../../fatliners/src/pfp/pipeline.mjs');
+    const history = got.history;
+    const network = networkEvidence(history, [...new Set((got.sources ?? []).map((s) => s.network))]);
+    const messages = history.messages.filter((m) => m.kind !== 'link').length;
+    const material = rootsMaterial({ features: extractFeatures(history), network, coverage: { messages }, calibration: loadCalibration() });
+    return { dna: commitment(history), stone: Math.max(0, STONES.indexOf(material)) };
   };
 }
 
@@ -85,6 +94,13 @@ export async function orderSignatures(message, contract, sigs, attesters, kind =
   return [...seen.entries()].sort(([a], [b]) => (BigInt(a) < BigInt(b) ? -1 : 1));
 }
 
+/** Which FID holds this surname onchain (0: free). No two eggs share one, so no two coins share a ticker. */
+export function surnameCheck(hc) {
+  if (!hc.contract) return async () => 0;
+  const reader = createPublicClient({ chain: chainOf(hc.chainId), transport: http(hc.rpc) });
+  return (name) => reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'fidOfSurname', args: [keccak256(toBytes(name))] });
+}
+
 /** Is this FID's Fatliner already born? (No contract: never.) */
 export function bornCheck(hc) {
   if (!hc.contract) return async () => false;
@@ -93,7 +109,7 @@ export function bornCheck(hc) {
 }
 
 const toHatch = (m) => ({ fid: BigInt(m.fid), surname: m.surname, deadline: BigInt(m.deadline) });
-const toEgg = (m) => ({ fid: BigInt(m.fid), to: m.to, server: m.server, url: m.url, dna: m.dna, laidAt: BigInt(m.laidAt), surname: m.surname, deadline: BigInt(m.deadline) });
+const toEgg = (m) => ({ fid: BigInt(m.fid), to: m.to, server: m.server, url: m.url, dna: m.dna, laidAt: BigInt(m.laidAt), surname: m.surname, stone: Number(m.stone ?? 0), deadline: BigInt(m.deadline) });
 
 /** Every attester and its hatchery URL, from the one Fatliners contract. Without a contract: the config's list. */
 export function attesterList(hc) {
@@ -115,7 +131,8 @@ async function serve() {
   const privateKey = loadKey(config.dataDir);
   const contract = { chainId: hc.chainId, address: hc.contract };
   const hatchery = new Hatchery({ config, privateKey, contract, reference: hc.reference, dataDir: config.dataDir,
-    computeDna: dnaFrom(config, hc.reference), listAttesters: attesterList(hc), isBorn: bornCheck(hc), dayMs: hc.dayMs, checkEveryMs: hc.checkEveryMs });
+    computeDna: dnaFrom(config, hc.reference), listAttesters: attesterList(hc), isBorn: bornCheck(hc), dayMs: hc.dayMs, checkEveryMs: hc.checkEveryMs,
+    surnameTaken: surnameCheck(hc) });
   const chain = chainOf(hc.chainId);
   const reader = createPublicClient({ chain, transport: http(hc.rpc) });
   const wallet = createWalletClient({ account: privateKeyToAccount(privateKey), chain, transport: http(hc.rpc) });
@@ -140,7 +157,19 @@ async function serve() {
     if (BigInt(ordered.length) < threshold) {
       throw Object.assign(new Error(`${ordered.length} of the ${threshold} attester signatures needed.`), { status: 409 });
     }
-    const hash = await wallet.writeContract({ address: hc.contract, abi: fatlinersAbi, functionName: kind === 'Egg' ? 'takeEgg' : 'hatch', args: [message, ordered.map(([, sig]) => sig)] });
+    let hash;
+    try {
+      hash = await wallet.writeContract({ address: hc.contract, abi: fatlinersAbi, functionName: kind === 'Egg' ? 'takeEgg' : 'hatch', args: [message, ordered.map(([, sig]) => sig)] });
+    } catch (err) {
+      // Another egg took this surname first: sign again with the next free one, and say to retry.
+      if (kind === 'Egg' && /SurnameTaken/.test(String(err.shortMessage ?? err.message) + String(err.cause?.data?.errorName ?? ''))) {
+        const egg = hatchery.state.eggs[fid];
+        egg.surname = null; egg.egg = null;
+        await hatchery.signEgg(egg); hatchery.save();
+        throw Object.assign(new Error('That surname was just taken by another egg. Signed again with the next one: fatline egg take'), { status: 409 });
+      }
+      throw err;
+    }
     const receipt = await reader.waitForTransactionReceipt({ hash });
     return { tx: hash, status: receipt.status, signers: ordered.map(([a]) => a) };
   }

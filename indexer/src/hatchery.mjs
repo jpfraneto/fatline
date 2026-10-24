@@ -18,7 +18,7 @@ import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { privateKeyToAccount } from 'viem/accounts';
 import {
-  CHECK_EVERY_MS, CLAIM_SKEW_MS, DAY_MS, eggOf, eggTypes, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, normalizeUrl, sameHost, verifyClaim, warmth,
+  CHECK_EVERY_MS, CLAIM_SKEW_MS, DAY_MS, eggOf, eggTypes, surnameCandidate, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, normalizeUrl, sameHost, verifyClaim, warmth,
 } from './egg.mjs';
 
 export const MAX_LAG_BLOCKS = 600; // ~10 minutes of blocks
@@ -39,7 +39,7 @@ export class Hatchery {
    * @param listAttesters async () => [{ address, url }]: every attester, from the contract
    */
   constructor({ config, privateKey, contract, reference, dataDir, computeDna, listAttesters = async () => [], isBorn = async () => false, fetchImpl = fetch, now = () => Date.now(),
-    dayMs = DAY_MS, checkEveryMs = CHECK_EVERY_MS, random = Math.random, log = console.log, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) }) {
+    dayMs = DAY_MS, checkEveryMs = CHECK_EVERY_MS, random = Math.random, log = console.log, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), surnameTaken = async () => 0 }) {
     this.config = config;
     this.account = privateKeyToAccount(privateKey);
     this.contract = contract;
@@ -54,6 +54,7 @@ export class Hatchery {
     this.checkEveryMs = checkEveryMs;
     this.random = random;
     this.sleep = sleep;
+    this.surnameTaken = surnameTaken; // (surname) => the FID that holds it onchain, or 0
     this.log = (m) => log(`[hatchery] ${m}`);
     this.state = existsSync(this.file) ? JSON.parse(readFileSync(this.file, 'utf8')) : { eggs: {} };
     this.busy = new Set();
@@ -146,9 +147,11 @@ export class Hatchery {
     if (!egg || egg.dna || this.busy.has(`dna:${fid}`)) return;
     this.busy.add(`dna:${fid}`);
     try {
-      const dna = await this.computeDna(fid, egg.laidAt * 1000);
+      const got = await this.computeDna(fid, egg.laidAt * 1000);
+      const dna = typeof got === 'string' ? got : got.dna; // the DNA, and the stone read from the same history
       if (!/^0x[0-9a-f]{64}$/.test(dna)) throw new Error(`bad DNA ${dna}`);
       egg.dna = dna;
+      egg.stone = typeof got === 'string' ? 0 : Number(got.stone ?? 0);
       await this.signEgg(egg);
       this.save();
       this.log(`FID ${fid}: DNA ${dna.slice(0, 12)}…`);
@@ -243,6 +246,15 @@ export class Hatchery {
   /** The Egg: what puts the egg onchain (takeEgg). Signed once the DNA is in. */
   async signEgg(egg) {
     if (egg.egg || !egg.dna) return null;
+    if (!egg.surname) {
+      // The first surname no other egg holds onchain. Every attester walks the same list, so they agree.
+      for (let k = 0; k < 50 && !egg.surname; k++) {
+        const name = await surnameCandidate(egg.claim.fid, egg.dna, k);
+        const holder = Number(await this.surnameTaken(name));
+        if (!holder || holder === Number(egg.claim.fid)) egg.surname = name;
+      }
+      if (!egg.surname) throw new Error('no free surname in 50 tries');
+    }
     const message = await eggOf(egg);
     const signature = await this.account.signTypedData({ domain: hatchDomain(this.contract), types: eggTypes, primaryType: 'Egg', message });
     egg.egg = { message: Object.fromEntries(Object.entries(message).map(([k, v]) => [k, String(v)])), signature, signer: this.address, at: this.now(), contract: this.contract };

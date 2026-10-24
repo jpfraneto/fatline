@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { recoverTypedDataAddress } from 'viem';
-import { claimText, eggOf, eggTypes, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, signClaim, surnameOf, verifyClaim, warmth } from '../src/egg.mjs';
+import { surnameCandidate, claimText, eggOf, eggTypes, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, signClaim, surnameOf, verifyClaim, warmth } from '../src/egg.mjs';
 import { Hatchery } from '../src/hatchery.mjs';
 
 const HOUR = 3_600_000, DAY = 24 * HOUR;
@@ -52,7 +52,7 @@ function fakeNet({ signers, now }) {
   };
 }
 
-function setup({ dayMs = DAY, checkEveryMs = HOUR, attesters = [] } = {}) {
+function setup({ dayMs = DAY, checkEveryMs = HOUR, attesters = [], surnameTaken, computeDna = async () => `0x${'ab'.repeat(32)}` } = {}) {
   let clock = T0;
   const now = () => clock;
   const key = appKey();
@@ -61,7 +61,7 @@ function setup({ dayMs = DAY, checkEveryMs = HOUR, attesters = [] } = {}) {
     config: { networks: { farcaster: { nodes: [{ url: 'https://crackle.farcaster.xyz:3381' }] } } },
     privateKey: `0x${'42'.repeat(32)}`, contract: { chainId: 8453, address: '0x5FbDB2315678afecb367f032d93F642f64180aa3' },
     reference: { farcaster: REF }, dataDir: mkdtempSync(join(tmpdir(), 'hatchery-')),
-    computeDna: async () => `0x${'ab'.repeat(32)}`, listAttesters: async () => attesters, fetchImpl: fakeNet({ signers, now }), now, dayMs, checkEveryMs, log: () => {}, sleep: async () => {},
+    computeDna, surnameTaken, listAttesters: async () => attesters, fetchImpl: fakeNet({ signers, now }), now, dayMs, checkEveryMs, log: () => {}, sleep: async () => {},
   });
   const claim = (over = {}) => {
     const node = over.node ?? GOOD;
@@ -205,4 +205,20 @@ test('warmth starts when the node starts syncing: a node that is catching up pas
   assert.ok(first.behind > 600);
   await tick(HOUR);
   assert.equal(h.state.eggs[18350].checks.at(-1).ok, true, 'still catching up an hour later: still warm');
+});
+
+test('no two eggs share a surname: a taken name moves the egg to its next one, and the stone is signed in', async () => {
+  const dna = `0x${'ab'.repeat(32)}`;
+  const first = await surnameCandidate(18350, dna, 0);
+  const second = await surnameCandidate(18350, dna, 1);
+  assert.notEqual(first, second);
+  const { h, claim } = setup({ surnameTaken: async (name) => (name === first ? 3 : 0), computeDna: async () => ({ dna, stone: 6 }) });
+  await h.lay(claim());
+  for (let i = 0; i < 200 && !h.status(18350).egg; i++) await new Promise((r) => setTimeout(r, 10));
+  const s = h.status(18350);
+  assert.equal(s.egg.message.surname, second, 'FID 3 holds the first name, so this egg takes the next');
+  assert.equal(s.egg.message.stone, '6', 'opal, from the same history as the DNA');
+  const signer = await recoverTypedDataAddress({ domain: hatchDomain(h.contract), types: eggTypes, primaryType: 'Egg', message: await eggOf(h.state.eggs[18350]), signature: s.egg.signature });
+  assert.equal(signer, h.address);
+  assert.equal((await hatchOf(h.state.eggs[18350])).surname, second, 'it hatches with that same surname');
 });

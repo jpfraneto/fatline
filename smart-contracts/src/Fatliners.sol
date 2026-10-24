@@ -74,9 +74,11 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
 
     /// @dev The egg: who it belongs to, the server that keeps it warm (its hatchery key, which becomes an
     /// attester at hatching) and where that hatchery answers, the history commitment (DNA), its cutoff, and the
-    /// surname read from that DNA: its coin's ticker from the day it is laid, and its name when it hatches.
+    /// surname read from that DNA: its coin's ticker from the day it is laid, and its name when it hatches. No two
+    /// eggs share a surname (so no two coins share a ticker). And its stone, the material of its account's roots,
+    /// read from the same history: 0 ivory, 1 marble, 2 sandstone, 3 basalt, 4 moss, 5 gold, 6 opal.
     bytes32 public constant EGG_TYPEHASH = keccak256(
-        "Egg(uint256 fid,address to,address server,string url,bytes32 dna,uint64 laidAt,string surname,uint256 deadline)"
+        "Egg(uint256 fid,address to,address server,string url,bytes32 dna,uint64 laidAt,string surname,uint8 stone,uint256 deadline)"
     );
     /// @dev The hatching: which egg, and the surname read from its DNA (its coin's ticker).
     bytes32 public constant HATCH_TYPEHASH = keccak256("Hatch(uint256 fid,string surname,uint256 deadline)");
@@ -89,6 +91,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         bytes32 dna;
         uint64 laidAt;
         string surname;
+        uint8 stone;
         uint256 deadline;
     }
 
@@ -122,12 +125,19 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     mapping(uint256 fid => string) public serverUrlOf;
     mapping(address server => uint256 fid) public eggOfServer; // one server, one egg
     mapping(uint256 fid => string) public surnameOf; // set when the egg is taken; its coin's ticker
+    mapping(bytes32 surnameHash => uint256 fid) public fidOfSurname; // one egg per surname, one coin per ticker
+    mapping(uint256 fid => uint8) public stoneOf; // the egg's stone (see Egg)
+    /// @dev One node, one client, one contract: the smart contract that shapes how this Fatline's client works.
+    /// Its holder sets it (and can replace it), but there is only ever one. 0 = none yet.
+    mapping(uint256 fid => address) public appOf;
     mapping(uint256 fid => uint256) public linkedFidOf; // the keeper link
 
     event AttesterJoined(address indexed attester, uint256 indexed fid, string url);
     event UrlChanged(address indexed attester, string url);
     event EggTaken(uint256 indexed fid, address indexed to, address indexed server, bytes32 dna, uint64 laidAt);
     event EggMoved(uint256 indexed fid, address indexed server, string url);
+    event Stone(uint256 indexed fid, uint8 stone);
+    event AppSet(uint256 indexed fid, address indexed app);
     event Born(uint256 indexed fid, address indexed to, string surname, bytes32 dna, address server, uint256 signers);
     event FidLinked(uint256 indexed fatliner, uint256 indexed fid, address indexed holder);
 
@@ -143,40 +153,48 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
     error NotTheSameEgg(); // an egg's owner, DNA and cutoff never change
     error EggsDoNotMove();
     error BadSurname();
+    error SurnameTaken();
+    error BadStone();
+    error NotAContract();
     error SoldOut();
     error ZeroAddress();
 
-    /// @param genesis        the genesis server's hatchery key: the first attester
-    /// @param genesisUrl     where its hatchery answers
-    /// @param genesisFid_    the genesis Fatliner, born here to `genesisTo`
-    /// @param genesisSurname its surname and its coin's ticker (Aster's: FATLINE)
-    /// @param genesisDna     its history commitment, up to `genesisLaidAt`
+    /// @dev The genesis Fatliner, born with this contract.
+    struct Genesis {
+        address server; // the genesis server's hatchery key: the first attester
+        string url; // where its hatchery answers
+        uint256 fid; // the genesis Fatliner (Aster: 18350)
+        address to; // who it is born to
+        string surname; // its surname and its coin's ticker (Aster's: FATLINE)
+        bytes32 dna; // its history commitment, up to laidAt
+        uint64 laidAt;
+        uint8 stone; // its stone, read from that history (Aster's: 5, gold)
+    }
+
     constructor(
         uint256 maxSupply_,
-        address genesis,
-        string memory genesisUrl,
-        uint256 genesisFid_,
-        address genesisTo,
-        string memory genesisSurname,
-        bytes32 genesisDna,
-        uint64 genesisLaidAt,
+        Genesis memory g,
         string memory baseUri_,
         Clanker memory clanker_,
         AppVault.Tier[] memory tiers_
     ) ERC721("Fatliners", "FATLINER") EIP712("Fatliners", "1") FatlineLaunchpad(clanker_, tiers_) {
-        if (genesis == address(0) || genesisTo == address(0)) revert ZeroAddress();
-        if (!_validSurname(genesisSurname)) revert BadSurname();
+        if (g.server == address(0) || g.to == address(0)) revert ZeroAddress();
+        if (!_validSurname(g.surname)) revert BadSurname();
+        if (g.stone > 6) revert BadStone();
         maxSupply = maxSupply_;
         baseUri = baseUri_;
-        genesisFid = genesisFid_;
+        genesisFid = g.fid;
         eggCount = 1;
-        dnaOf[genesisFid_] = genesisDna;
-        laidAtOf[genesisFid_] = genesisLaidAt;
-        serverOf[genesisFid_] = genesis;
-        serverUrlOf[genesisFid_] = genesisUrl;
-        eggOfServer[genesis] = genesisFid_;
-        _mint(genesisTo, genesisFid_);
-        _born(genesisFid_, genesisTo, genesisSurname, 0);
+        dnaOf[g.fid] = g.dna;
+        laidAtOf[g.fid] = g.laidAt;
+        serverOf[g.fid] = g.server;
+        serverUrlOf[g.fid] = g.url;
+        eggOfServer[g.server] = g.fid;
+        fidOfSurname[keccak256(bytes(g.surname))] = g.fid; // FATLINE is Aster's
+        stoneOf[g.fid] = g.stone;
+        emit Stone(g.fid, g.stone);
+        _mint(g.to, g.fid);
+        _born(g.fid, g.to, g.surname, 0);
     }
 
     // ------------------------------------------------------------------ attesters
@@ -229,6 +247,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
                     e.dna,
                     e.laidAt,
                     keccak256(bytes(e.surname)),
+                    e.stone,
                     e.deadline
                 )
             )
@@ -245,6 +264,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         uint256 other = eggOfServer[e.server];
         if (other != 0 && other != e.fid) revert ServerKeepsAnotherEgg();
         if (!_validSurname(e.surname)) revert BadSurname();
+        if (e.stone > 6) revert BadStone();
         _checkSignatures(eggDigest(e), signatures);
 
         Stage s = stageOf[e.fid];
@@ -252,7 +272,7 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         if (s == Stage.Egg) {
             if (
                 _ownerOf(e.fid) != e.to || dnaOf[e.fid] != e.dna || laidAtOf[e.fid] != e.laidAt
-                    || keccak256(bytes(surnameOf[e.fid])) != keccak256(bytes(e.surname))
+                    || keccak256(bytes(surnameOf[e.fid])) != keccak256(bytes(e.surname)) || stoneOf[e.fid] != e.stone
             ) revert NotTheSameEgg();
             delete eggOfServer[serverOf[e.fid]];
         } else {
@@ -260,7 +280,13 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
             eggCount++;
             dnaOf[e.fid] = e.dna;
             laidAtOf[e.fid] = e.laidAt;
+            bytes32 h = keccak256(bytes(e.surname));
+            uint256 holder = fidOfSurname[h];
+            if (holder != 0 && holder != e.fid) revert SurnameTaken();
+            fidOfSurname[h] = e.fid;
             surnameOf[e.fid] = e.surname;
+            stoneOf[e.fid] = e.stone;
+            emit Stone(e.fid, e.stone);
             _mint(e.to, e.fid);
             emit EggTaken(e.fid, e.to, e.server, e.dna, e.laidAt);
         }
@@ -352,6 +378,16 @@ contract Fatliners is ERC721, IERC2981, EIP712, FatlineLaunchpad {
         if (ownerOf(fatliner) != msg.sender) revert NotHolder();
         linkedFidOf[fatliner] = fid;
         emit FidLinked(fatliner, fid, msg.sender);
+    }
+
+    /// @notice The holder of an egg or a Fatliner ties one smart contract to it: the one its client runs on.
+    /// Setting another replaces it; address(0) unties it.
+    function setApp(uint256 fid, address app) external {
+        if (stageOf[fid] == Stage.None) revert NoEgg();
+        if (_ownerOf(fid) != msg.sender) revert NotHolder();
+        if (app != address(0) && app.code.length == 0) revert NotAContract();
+        appOf[fid] = app;
+        emit AppSet(fid, app);
     }
 
     /// @dev Eggs stay with the account that laid them. Fatliners move freely; a new holder brings their own
