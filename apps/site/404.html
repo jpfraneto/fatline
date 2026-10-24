@@ -187,10 +187,11 @@ if (t) {
   const PROMPT = 'Help me run a Fatline: https://fatline.ink/skill.md';
   document.title = `Fatline #${fid}`;
   main.innerHTML = `<div><div class="kicker">Fatline #${fid}</div><h1>Reading…</h1></div>`;
-  const ud = (t) => fetch(`https://crackle.farcaster.xyz:3381/v1/userDataByFid?fid=${fid}&user_data_type=${t}`).then((r) => r.json()).then((j) => j?.data?.userDataBody?.value ?? null).catch(() => null);
+  const profile = fetch(`https://crackle.farcaster.xyz:3381/v1/userDataByFid?fid=${fid}`).then((r) => r.json()).catch(() => null);
+  const ud = (t) => profile.then((j) => (j?.messages ?? []).find((m) => m.data?.userDataBody?.type === t)?.data.userDataBody.value ?? null);
   Promise.all([
     fetch('https://raw.githubusercontent.com/jpfraneto/fatline/main/smart-contracts/deployments/base.json', { cache: 'no-store' }).then((r) => r.json()).catch(() => null),
-    fetch('/fatliners-art.json').then((r) => r.json()).catch(() => ({})), ud(6), ud(1),
+    fetch('/fatliners-art.json').then((r) => r.json()).catch(() => ({})), ud('USER_DATA_TYPE_USERNAME'), ud('USER_DATA_TYPE_PFP'),
   ]).then(async ([d, art, username, pfp]) => {
     const nft = d?.Fatliners?.address;
     const stage = nft ? Number(BigInt((await rpc(nft, '0xc7d25b15' + word(fid))) ?? '0x0')) : 0;
