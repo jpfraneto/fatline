@@ -51,3 +51,10 @@ nav.toc ol { padding-left: 22px; }
 nav.toc a { text-decoration: none; }
 
 footer { margin-top: 72px; text-align: center; font: 12.5px/1.6 var(--sans); color: var(--muted); }
+
+/* The main path is the agent; doing it by hand is a quieter fallback. */
+.big { font: 600 19px/1.4 Fraunces, Georgia, serif; margin: 6px 0 12px; }
+pre.ask { font-size: 15.5px; box-shadow: 0 0 0 2px rgba(255, 95, 168, .35), 0 10px 30px rgba(60, 40, 20, .18); }
+details.byhand { margin-top: 22px; padding: 2px 16px 10px; border: 1px solid rgba(90, 66, 40, .26); border-radius: 12px; }
+details.byhand summary { cursor: pointer; padding: 10px 0; font-weight: 600; opacity: .8; }
+details.byhand[open] summary { opacity: 1; }

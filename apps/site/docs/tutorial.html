@@ -38,17 +38,22 @@
 <!-- ============================================================ QUICKSTART -->
 <section lang="en">
   <h1>Your own Farcaster node and your own client.</h1>
-  <p class="lede">No API keys from anyone. Farcaster or Hypersnap: your choice, as equals. This page explains each step as you go.</p>
+  <p class="lede">Your agent does the work; you approve the money in your own wallet. Farcaster or Hypersnap: your choice, as equals. Then your node keeps an egg warm for three days, and it hatches into one of the 777.</p>
   <p><strong>Fatline</strong> is an open protocol for being on Farcaster on your own terms. You choose the network. You choose the node, and the client always says which one it reads from. And the client can pay for its own server from a USDC vault. This repository is its first implementation. <span class="muted">Formerly Infinicaster.</span></p>
 </section>
 <section lang="es">
   <h1>Tu propio nodo de Farcaster y tu propio cliente.</h1>
-  <p class="lede">Sin llaves de API de nadie. Farcaster o Hypersnap: tú eliges, en igualdad. Esta página explica cada paso mientras avanzas.</p>
+  <p class="lede">Tu agente hace el trabajo; tú apruebas el dinero en tu propia wallet. Farcaster o Hypersnap: tú eliges, en igualdad. Después tu nodo mantiene un huevo tibio por tres días, y nace uno de los 777.</p>
   <p><strong>Fatline</strong> es un protocolo abierto para estar en Farcaster en tus propios términos. Tú eliges la red. Tú eliges el nodo, y el cliente siempre dice desde cuál lee. Y el cliente puede pagar su propio servidor desde una bóveda de USDC. Este repositorio es su primera implementación. <span class="muted">Antes se llamaba Infinicaster.</span></p>
 </section>
 
 <div class="quick">
   <section lang="en">
+    <p class="eyebrow">Ask your agent</p>
+    <p class="big">Nobody wants to read a tutorial anymore. Open Claude Code, Codex or any agent that can run commands on your computer, paste this, and let it do the work:</p>
+    <pre class="ask"><code>Help me run my own Fatline: a Farcaster node and its client. Follow https://fatline.ink/skill.md</code></pre>
+    <p><a href="../skill.md">The skill</a> tells the agent what to do, in order, and its rules: show you every price and wait for your yes, have you approve money in your own wallet (a QR code on your phone), and never touch your seed phrase or keys. It chooses with you where your node lives, installs Snapchain or Hypersnap, connects your Farcaster account, opens your client and lays your egg. Claude Code users can also install it: copy <code>skills/fatline-setup</code> from the repository into <code>~/.claude/skills/</code>.</p>
+    <details class="byhand"><summary>Or do it yourself</summary>
     <p class="eyebrow">Before you start</p>
     <ul>
       <li><strong>git</strong>, <strong>Node.js 22.12 or newer</strong> and <strong>ssh</strong> on your computer.</li>
@@ -59,9 +64,6 @@
     <p class="eyebrow">The easy way</p>
     <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># downloads Fatline into ~/fatline and starts fatline setup</span></code></pre>
     <p><code>fatline setup</code> takes you through every step below, one at a time. Before each one it says what it does, what it costs and how long it takes, then asks: go, skip or stop. Run it again and it continues where you stopped. <a href="../install.sh">Read the script first</a>; it is short.</p>
-    <p class="eyebrow">With an agent</p>
-    <pre><code>Help me run my own Fatline. Follow https://fatline.ink/skill.md</code></pre>
-    <p>Paste it into Claude Code, Codex or any agent that can run commands. <a href="../skill.md">The skill</a> tells the agent to show you prices and wait for your yes, and never to touch your seed phrase or tokens. Claude Code users can also install it: copy <code>skills/fatline-setup</code> from the repository into <code>~/.claude/skills/</code>.</p>
     <p class="eyebrow">By hand</p>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 npm install -g .             <span class="c"># the fatline command, from anywhere</span>
@@ -70,9 +72,15 @@ fatline compute            <span class="c"># (0) rent a machine that can hold a 
 fatline node snapchain     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
 fatline client             <span class="c"># (2) your client, reading from your node, on http://localhost:8787</span></code></pre>
     <p class="note"><span class="tag no">untested end to end</span> Each step has been run on its own. A complete fresh run of all three, start to finish, has not been done yet. Our own node was built with an earlier one-step version of steps 0 and 1.</p>
+    </details>
     <p class="muted">No room for a node? <code>fatline follow</code> copies only the accounts you choose from one node you pick. It is <a href="#follow">not a node</a>.</p>
   </section>
   <section lang="es">
+    <p class="eyebrow">Pídeselo a tu agente</p>
+    <p class="big">Ya nadie quiere leer un tutorial. Abre Claude Code, Codex o cualquier agente que pueda correr comandos en tu computador, pega esto y deja que haga el trabajo:</p>
+    <pre class="ask"><code>Help me run my own Fatline: a Farcaster node and its client. Follow https://fatline.ink/skill.md</code></pre>
+    <p><a href="../skill.md">La skill</a> le dice al agente qué hacer, en orden, y sus reglas: mostrarte cada precio y esperar tu sí, que apruebes el dinero en tu propia wallet (un código QR en tu teléfono), y nunca tocar tu frase semilla ni tus llaves. Elige contigo dónde vive tu nodo, instala Snapchain o Hypersnap, conecta tu cuenta de Farcaster, abre tu cliente y pone tu huevo.</p>
+    <details class="byhand"><summary>O hazlo tú</summary>
     <p class="eyebrow">Antes de empezar</p>
     <ul>
       <li><strong>git</strong>, <strong>Node.js 22.12 o más nuevo</strong> y <strong>ssh</strong> en tu computador.</li>
@@ -83,9 +91,6 @@ fatline client             <span class="c"># (2) your client, reading from your 
     <p class="eyebrow">La forma fácil</p>
     <pre><code>curl -fsSL https://fatline.ink/install.sh | sh   <span class="c"># descarga Fatline en ~/fatline y empieza fatline setup</span></code></pre>
     <p><code>fatline setup</code> te lleva por cada paso de abajo, uno a la vez. Antes de cada uno dice qué hace, cuánto cuesta y cuánto demora, y pregunta: seguir, saltar o parar. Córrelo de nuevo y sigue donde quedaste. <a href="../install.sh">Lee el script primero</a>; es corto.</p>
-    <p class="eyebrow">Con un agente</p>
-    <pre><code>Ayúdame a correr mi propio Fatline. Sigue https://fatline.ink/skill.md</code></pre>
-    <p>Pégalo en Claude Code, Codex o cualquier agente que pueda correr comandos. <a href="../skill.md">La skill</a> le dice al agente que te muestre los precios y espere tu sí, y que nunca toque tu frase semilla ni tus tokens.</p>
     <p class="eyebrow">A mano</p>
     <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
 npm install -g .             <span class="c"># the fatline command, from anywhere</span>
@@ -94,6 +99,7 @@ fatline compute            <span class="c"># (0) arrienda una máquina capaz de 
 fatline node snapchain     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
 fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo, en http://localhost:8787</span></code></pre>
     <p class="note"><span class="tag no">sin probar de punta a punta</span> Cada paso se ha corrido por separado. Una corrida nueva y completa de los tres, de principio a fin, todavía no se ha hecho. Nuestro propio nodo se armó con una versión anterior que juntaba los pasos 0 y 1.</p>
+    </details>
     <p class="muted">¿No te cabe un nodo? <code>fatline follow</code> copia solo las cuentas que elijas desde un nodo que tú eliges. <a href="#follow">No es un nodo</a>.</p>
   </section>
 </div>
