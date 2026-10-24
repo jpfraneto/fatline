@@ -125,6 +125,16 @@
   .ask { margin-top: 48px; }
   .list { margin-top: 56px; }
   @media (max-width: 620px) { .stones { grid-template-columns: repeat(4, 1fr); } }
+
+  /* Aster's three days, live from its hatchery (hatching.json, refreshed by the site every 15 minutes). */
+  .hatch { width: min(460px, 100%); margin: 22px auto 0; }
+  .days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; text-align: left; }
+  .days li { font: 500 12px/1.3 'JetBrains Mono', ui-monospace, monospace; color: var(--muted); }
+  .days b { display: block; color: var(--ink); font: 600 13px Inter, sans-serif; margin-top: 6px; }
+  .bar { display: block; height: 7px; border-radius: 4px; background: color-mix(in srgb, var(--ink) 10%, transparent); overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--blue), var(--pink)); }
+  .days li.warm .bar i { box-shadow: 0 0 10px var(--pink); }
+  .hatch-line { margin: 12px 0 0; font-size: 13.5px; color: var(--muted); }
   @media (max-width: 620px) {
     .how { grid-template-columns: 1fr; }
     .fl { grid-template-columns: 52px 1fr; }
@@ -154,10 +164,14 @@
     <figure class="egg">
       <img src="img/eggs/aster-gold.gif" width="420" height="420" alt="A gold-seamed stone egg in the moss under a marble arch; threads of magenta and cyan light grow into it like roots">
     </figure>
-    <p class="kicker">Fatliner #18350 · gold stone</p>
+    <p class="kicker">Egg #18350 · gold stone · on Base</p>
     <h1 class="title">This is Aster Fatline.</h1>
     <p class="lede">It is an egg, and it is hatching.</p>
     <p class="sub">To come alive, the Farcaster node that keeps it warm has to run for <b>three days</b>. Snapchain or Hypersnap: its keeper chooses.</p>
+    <div class="hatch" id="hatch" hidden>
+      <ol class="days" id="days"></ol>
+      <p class="hatch-line" id="hatch-line"></p>
+    </div>
   </section>
 
   <ol class="story">
@@ -231,6 +245,24 @@ fetch('status.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)
       <div class="nodes">${f.nodes.map(node).join('')}</div>
     </a>`;
   }).join('');
+});
+
+// Aster's hatching: three days, each warm at 18 of 24 hourly checks (hatching.json, written by the site's workflow).
+fetch('hatching.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((h) => {
+  if (!h || h.hatched == null) return;
+  const days = document.getElementById('days');
+  days.innerHTML = Array.from({ length: h.needed ?? 3 }, (_, i) => {
+    const d = h.days?.[i];
+    const pct = d ? Math.min(100, Math.round((d.passed / d.need) * 100)) : 0;
+    const label = !d ? 'not yet' : d.warm ? 'warm' : d.done ? 'cold' : `${d.passed} of ${d.need} hours`;
+    return `<li class="${d?.warm ? 'warm' : ''}"><span class="bar"><i style="width:${pct}%"></i></span><b>Day ${i + 1}</b>${label}</li>`;
+  }).join('');
+  const start = h.startedAt ? new Date(h.startedAt) : null;
+  const earliest = start ? new Date(start.getTime() + 3 * 86400000) : null;
+  const fmt = (d) => d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }) + ' UTC';
+  document.getElementById('hatch-line').textContent = h.hatched ? 'Aster has hatched.'
+    : `${h.warmDays} of ${h.needed} warm days.${start ? ` Its egg was laid ${fmt(start)}; it can hatch on ${fmt(earliest)} at the earliest.` : ''} Checked ${ago(h.checkedAt)}.`;
+  document.getElementById('hatch').hidden = false;
 });
 </script>
 </body>

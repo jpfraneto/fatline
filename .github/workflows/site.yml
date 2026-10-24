@@ -30,6 +30,9 @@ jobs:
           node-version: 22
       - name: Check the nodes
         run: node apps/site/status.mjs apps/site/status.json
+      - name: Aster's hatching (hatching.json)
+        continue-on-error: true
+        run: node apps/site/hatching.mjs apps/site/hatching.json
       - name: Token metadata (tokenURI = fatline.ink/fatliners/<fid>)
         continue-on-error: true # if Base can't be read, the committed files stay
         run: node apps/site/fatliners.mjs apps/site/fatliners
