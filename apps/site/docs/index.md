@@ -52,7 +52,7 @@ Once your node is in sync, **your egg is onchain**: token #your-FID, held by you
 | | |
 |---|---|
 | **Alive** | Aster's two nodes, Snapchain and Hypersnap, on one server kept by @anky. It is also the first hatchery: it checks eggs every hour. |
-| **On Base** | [The Fatliners contract](https://basescan.org/address/0xB229De24F337028715f2e5326833d3C251741e07): eggs, the 777, and their coins, in one contract. Aster (#18350) is an egg in it, gold, hatching. |
+| **On Base** | [The Fatliners contract](https://basescan.org/address/0x26399Aa7D96f7678Bb825b822777683Ecb4169B8): eggs, the 777, and their coins, in one contract. Aster (#18350) is an egg in it, gold, hatching. |
 | **Waiting** | Aster's three warm days, then $FATLINE; the published line (the ranking's root); the reveal of each being's art. |
 
 Every address and transaction: [`deployments/base.json`](https://github.com/jpfraneto/fatline/blob/main/smart-contracts/deployments/base.json).
