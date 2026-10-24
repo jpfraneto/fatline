@@ -1,8 +1,34 @@
 {
-  "note": "The art each token's metadata points to, on Arweave. An egg: the egg coming alive in the moss under the Farcaster arch, its life force growing like mycelium (Seedance 2.5 on Sume, 2026-10-24). Once eggs carry their stone, eggs[stone] picks that stone's egg. A being, once its art is made: beings[fid].",
-  "egg": { "image": "https://arweave.net/mSdZFwP24DiFfz5n_CVxBOzrB7NUdj0BpxwBw1Q1Rcw" },
-  "eggs": {},
+  "note": "The art each token's metadata points to, on Arweave. An egg is made of its account's stone (stoneOf, from its history: ivory, marble, sandstone, basalt, moss, gold, opal), coming alive in the moss under the Farcaster arch as its life force grows into it like mycelium (Seedance 2.5 on Sume, 2026-10-24). egg is the fallback. A being, once its art is made: beings[fid].",
+  "egg": {
+    "image": "https://arweave.net/mSdZFwP24DiFfz5n_CVxBOzrB7NUdj0BpxwBw1Q1Rcw"
+  },
+  "eggs": {
+    "ivory": {
+      "image": "https://arweave.net/mSdZFwP24DiFfz5n_CVxBOzrB7NUdj0BpxwBw1Q1Rcw"
+    },
+    "marble": {
+      "image": "https://arweave.net/7RVqUSxKa1KAPRhRECd2hF3sqhiXJwGFHr1taHNflO4"
+    },
+    "sandstone": {
+      "image": "https://arweave.net/wJluZiKFMkVP8SuSdRRfaPtQsUBiH3DdcCDJkK-RF0E"
+    },
+    "basalt": {
+      "image": "https://arweave.net/kTiWpzd30A7VujdWhiiYKH0wMDTq6NHSqZy23109qu8"
+    },
+    "moss": {
+      "image": "https://arweave.net/tn1sJo8F2BLMkwf1VwAyS1nQ7pHX9ET9lFe8dfrEmag"
+    },
+    "gold": {
+      "image": "https://arweave.net/3SXU46X5qj_uWYJ5n_R8TATUHDXd9XM9WMLWmX2kC08"
+    },
+    "opal": {
+      "image": "https://arweave.net/8tZep0THiF6aYGlOv8LxxJs9xCbvwl6liWJvkBWApcw"
+    }
+  },
   "beings": {
-    "18350": { "image": "https://arweave.net/9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM" }
+    "18350": {
+      "image": "https://arweave.net/9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM"
+    }
   }
 }
