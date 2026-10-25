@@ -67,6 +67,17 @@
   table.cost tr.sum td { font-weight: 600; }
   .note { margin-top: 14px; color: var(--muted); font: 13px/1.6 var(--sans); }
   .warnline { color: var(--amber); }
+  .state { display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper2); margin: 6px 0 4px; }
+  .state .dot { width: 12px; height: 12px; margin-top: 9px; background: var(--muted); }
+  .state.live .dot { background: #2f9e57; box-shadow: 0 0 0 4px color-mix(in srgb, #2f9e57 22%, transparent); }
+  .state.syncing .dot { background: var(--amber); }
+  .state.down .dot { background: var(--red); }
+  .state b { font-size: 22px; font-weight: 700; }
+  .state p { margin: 2px 0 0; color: var(--muted); font: 15px/1.5 var(--sans); }
+  .checks { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 16px; }
+  .checks i { width: 12px; height: 24px; border-radius: 3px; background: #2f9e57; }
+  .checks i.syncing { background: var(--amber); }
+  .checks i.bad { background: var(--red); }
   .links { display: flex; flex-wrap: wrap; gap: 24px; margin-top: 48px; }
   .btn { font: 500 12.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; text-decoration: none; opacity: .75; }
   .btn:hover { opacity: 1; text-decoration: underline; text-underline-offset: 6px; }
@@ -80,6 +91,7 @@
   <a href="/f/FATLINE" id="nav-fatline">$FATLINE</a>
 </nav>
 <main id="main"><p class="muted">Loading…</p><p class="muted">Looking for the instructions for your agent? They are at https://fatline.ink/skill.md</p></main>
+<script src="/node-health.js"></script>
 <script>
 // A link to the skill that picked up a stray character when it was shared (a closing quote “ ” " or a dot):
 // send it to the real file.
@@ -179,23 +191,62 @@ if (t) {
       <div class="links"><a class="btn primary" href="/docs/">Run your own</a><a class="btn" href="/explore.html">The board</a></div></div>`;
   });
 } else if (fidPath) {
-  // Someone's Fatline: their egg or being, from the contract on Base; their name, from a Farcaster node; and right
-  // under it, what to do to run yours: one line for your agent.
+  // Someone's Fatline. First their node: is it live, is it in sync, when was it last checked (the hatchery checks
+  // it every hour). Then their egg or being, from the contract on Base. Then one line to run yours.
   const fid = Number(fidPath[1]);
   const RPC = 'https://mainnet.base.org';
+  const HATCHERY = 'https://46-225-208-199.sslip.io';
   const rpc = (to, data) => fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] }) }).then((r) => r.json()).then((j) => j.result).catch(() => null);
+  const getJson = (url) => fetch(url, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   const word = (n) => BigInt(n).toString(16).padStart(64, '0');
   const str = (hex) => { if (!hex || hex.length < 130) return ''; const b = hex.slice(2); const len = parseInt(b.slice(64, 128), 16); let o = ''; for (let i = 0; i < len; i++) o += String.fromCharCode(parseInt(b.slice(128 + i * 2, 130 + i * 2), 16)); return o; };
   const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
   const PROMPT = 'Help me run a Fatline: https://fatline.ink/skill.md';
+  const clock = (t) => new Date(t).toLocaleString([], { weekday: 'short', hour: '2-digit', minute: '2-digit' });
   document.title = `Fatline #${fid}`;
   main.innerHTML = `<div><div class="kicker">Fatline #${fid}</div><h1>Reading…</h1></div>`;
   const profile = fetch(`https://crackle.farcaster.xyz:3381/v1/userDataByFid?fid=${fid}`).then((r) => r.json()).catch(() => null);
   const ud = (t) => profile.then((j) => (j?.messages ?? []).find((m) => m.data?.userDataBody?.type === t)?.data.userDataBody.value ?? null);
+
+  // Their node, from the hatchery's checks.
+  function nodePanel(w) {
+    const h = window.nodeHealth(w);
+    if (!w) return `<h2>Their node</h2><p class="muted">${esc(h.detail)} ${'Once they lay an egg, the hatchery checks their node every hour and this page shows how it is doing.'}</p>`;
+    const strip = (w.recent ?? []).map((c) => `<i class="${c.ok ? (c.syncing ? 'syncing' : 'ok') : 'bad'}" title="${esc(clock(c.at))}: ${c.ok ? (c.syncing ? `passed, catching up (${c.behind} blocks behind)` : 'passed') : esc(c.reason ?? 'failed')}"></i>`).join('');
+    let host = '';
+    try { host = new URL(w.node).host; } catch {}
+    return `<h2>Their node</h2>
+      <div class="state ${h.state}"><span class="dot"></span><div><b>${esc(h.title)}</b><p>${esc(h.detail)}</p></div></div>
+      <table class="cost">
+        <tr><td>Network</td><td>${esc(h.network)}</td></tr>
+        ${host ? `<tr><td>Address</td><td><code>${esc(host)}</code></td></tr>` : ''}
+        ${h.lastAt ? `<tr><td>Last check</td><td>${esc(window.nodeHealthAgo(Date.now() - h.lastAt))}</td></tr>` : ''}
+        ${h.total ? `<tr><td>Recent checks passed</td><td>${h.passed} of ${h.total}</td></tr>` : ''}
+      </table>
+      ${strip ? `<div class="checks" aria-label="Recent checks, oldest first">${strip}</div><p class="note">Recent checks, oldest first (hover one for its time). Green passed, amber passed while catching up, red failed.</p>` : ''}
+      <p class="note">Every hour the hatchery asks this node for its block heights and for two messages picked at random from its own copy of Farcaster. A check passes when the node answers, is in sync or catching up, returns those messages, and runs its own hatchery.</p>`;
+  }
+
+  // Their egg: three warm days hatch it. A day is 24 hours from the laying; it is warm at 18 passed checks.
+  function warmPanel(w) {
+    if (!w || w.hatched) return '';
+    const days = [1, 2, 3].map((n) => {
+      const d = w.days?.find((x) => x.day === n);
+      const pct = d ? Math.min(100, Math.round(100 * d.passed / (d.need || 18))) : 0;
+      const label = !d ? 'not started' : d.warm ? 'warm ✓' : d.done ? `cold (${d.passed} of ${d.need})` : `${d.passed} of ${d.need} so far`;
+      return `<div class="meter"><div class="lbl"><span>Day ${n}</span><span>${label}</span></div><div class="bar"><i class="${d && d.done && !d.warm ? 'red' : ''}" style="width:${pct}%"></i></div></div>`;
+    }).join('');
+    const today = w.days?.at(-1);
+    const next = today && w.layingAt ? Math.max(0, Math.ceil((w.layingAt + today.day * 86400000 - Date.now()) / 3600000)) : null;
+    return `<p class="total"><b>${w.warmDays} of ${w.needed}</b> warm days${today && today.day < 3 && next !== null ? ` · day ${today.day + 1} starts in ${next} h` : ''}</p>${days}
+      <p class="note">A day counts as warm at 18 passed checks out of about 24. A cold day doesn't reset the egg, it just doesn't count. If the node stops for good, the egg dies.</p>`;
+  }
+
   Promise.all([
-    fetch('https://raw.githubusercontent.com/jpfraneto/fatline/main/smart-contracts/deployments/base.json', { cache: 'no-store' }).then((r) => r.json()).catch(() => null),
-    fetch('/fatliners-art.json').then((r) => r.json()).catch(() => ({})), ud('USER_DATA_TYPE_USERNAME'), ud('USER_DATA_TYPE_PFP'),
-  ]).then(async ([d, art, username, pfp]) => {
+    getJson('https://raw.githubusercontent.com/jpfraneto/fatline/main/smart-contracts/deployments/base.json'),
+    getJson('/fatliners-art.json').then((a) => a ?? {}), ud('USER_DATA_TYPE_USERNAME'), ud('USER_DATA_TYPE_PFP'),
+    getJson(`${HATCHERY}/eggs/${fid}`), getJson('/status.json'),
+  ]).then(async ([d, art, username, pfp, w, s]) => {
     const nft = d?.Fatliners?.address;
     const stage = nft ? Number(BigInt((await rpc(nft, '0xc7d25b15' + word(fid))) ?? '0x0')) : 0;
     const surname = stage && nft ? str(await rpc(nft, '0x8d967a78' + word(fid))) : '';
@@ -204,24 +255,31 @@ if (t) {
     const name = genesis ? (d.Fatliners.genesis.name ?? 'Aster') : surname ? surname.charAt(0) + surname.slice(1).toLowerCase() : '';
     const img = stage === 2 ? (art.beings?.[fid]?.image ?? art.eggs?.[stone]?.image) : stage === 1 ? (art.eggs?.[stone]?.image ?? art.egg?.image) : null;
     const who = username ? `@${esc(username)}` : `FID ${fid}`;
+    // A Fatline whose server we know (the master): its CPU, disks and what it costs.
+    const f = (s?.fatlines ?? []).find((x) => Number(x.fatliner?.id) === fid);
     const being = stage
-      ? `<div style="display:grid;place-items:center;gap:10px;margin:18px 0 6px">
-          <img src="${esc(img ?? '')}" alt="" style="width:min(320px,80vw);aspect-ratio:1;object-fit:cover;border-radius:50%;box-shadow:0 0 0 3px rgba(255,198,92,.35),0 0 60px 10px rgba(255,170,60,.25)">
+      ? `<h2>Their ${stage === 2 ? 'Fatliner' : 'egg'}</h2>
+        <div style="display:grid;place-items:center;gap:10px;margin:18px 0 6px">
+          <img src="${esc(img ?? '')}" alt="" style="width:min(260px,70vw);aspect-ratio:1;object-fit:cover;border-radius:50%;box-shadow:0 0 0 3px rgba(255,198,92,.35),0 0 60px 10px rgba(255,170,60,.25)">
           <div style="font:800 34px/1 Fraunces,Georgia,serif">${esc(name)}</div>
           <div class="muted" style="font:500 13px 'JetBrains Mono',monospace;letter-spacing:.2em">$${esc(surname)} · ${esc(stone.toUpperCase())} · ${stage === 2 ? 'HATCHED' : 'AN EGG, WARMING'}</div>
         </div>
-        <p>${who} runs a Fatline: their own Farcaster node, and a client that reads only from it. ${stage === 2 ? 'Their node kept this egg warm for three days, and it hatched.' : 'Their node keeps this egg warm. Three warm days and it hatches; if the node stops, it dies.'}</p>`
-      : `<p>${who} hasn't got an egg yet.</p>`;
+        <p>${stage === 2 ? 'Their node stayed live for three days, and this egg hatched into a Fatliner.' : 'Their node keeps this egg warm. Three warm days and it hatches into a Fatliner.'}</p>
+        ${warmPanel(w)}`
+      : `<p class="muted">${who} has no egg yet.</p>`;
     main.innerHTML = `<div><div class="kicker">Fatline #${fid}</div>
       <h1 style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">${pfp ? `<img src="${esc(pfp)}" alt="" style="width:44px;height:44px;border-radius:50%">` : ''}${who}</h1>
+      <p>${who} runs a Fatline: their own Farcaster node, and a client that reads only from it.</p>
+      ${nodePanel(w)}
       ${being}
-      <div style="margin-top:22px;padding:18px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.03)">
+      ${f ? `<h2>Its server</h2>${nodeRows(f)}${body(f).replace('<h2>Its body</h2>', '')}` : ''}
+      <div style="margin-top:40px;padding:18px;border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.03)">
         <div class="kicker">Run yours</div>
         <p style="margin:6px 0 10px">Open your agent (Claude Code, Codex…) in a new folder and paste this one line. It sets up your own Farcaster node and your client, step by step, and asks before anything costs money (about 11 USDC a day, in your own wallet).</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><code id="prompt" style="padding:10px 12px;border-radius:10px;font-size:15px;flex:1;min-width:0;overflow-wrap:anywhere">${esc(PROMPT)}</code><button class="btn primary" id="copy" type="button">Copy</button></div>
         <p class="muted" style="margin:10px 0 0;font-size:14px">No agent? In a terminal: <code>curl -fsSL https://fatline.ink/install.sh | sh</code></p>
       </div>
-      <div class="links"><a class="btn" href="/docs/">The story</a><a class="btn" href="/">All the Fatlines</a></div></div>`;
+      <div class="links"><a class="btn" href="/docs/">The docs</a><a class="btn" href="/">All the nodes</a></div></div>`;
     document.getElementById('copy').onclick = async (e) => { try { await navigator.clipboard.writeText(PROMPT); e.target.textContent = 'Copied'; } catch { const r = document.createRange(); r.selectNode(document.getElementById('prompt')); getSelection().removeAllRanges(); getSelection().addRange(r); } };
   });
 } else if (appPath) {

@@ -278,7 +278,9 @@ export class Hatchery {
     const egg = this.state.eggs[Number(fid)];
     if (!egg) return null;
     const w = this.warmth(egg);
-    const recent = egg.checks.slice(-6).map(({ at, ok, reason }) => ({ at, ok, ...(reason ? { reason } : {}) }));
+    // The last day of checks, so a page can say whether the node is live and in sync: how fast it answered, and how
+    // far behind it was if it was still catching up.
+    const recent = egg.checks.slice(-24).map(({ at, ok, reason, ms, syncing, behind }) => ({ at, ok, ...(reason ? { reason } : {}), ...(ms != null ? { ms } : {}), ...(syncing ? { syncing, behind } : {}) }));
     return {
       fid: egg.claim.fid, network: egg.claim.network, node: egg.claim.node, to: egg.claim.to, server: egg.claim.server, hatchery: egg.claim.hatchery,
       laidAt: egg.laidAt, layingAt: egg.claim.at, dna: egg.dna, dnaError: egg.dna ? undefined : egg.dnaError,

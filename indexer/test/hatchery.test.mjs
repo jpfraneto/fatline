@@ -205,6 +205,9 @@ test('warmth starts when the node starts syncing: a node that is catching up pas
   assert.ok(first.behind > 600);
   await tick(HOUR);
   assert.equal(h.state.eggs[18350].checks.at(-1).ok, true, 'still catching up an hour later: still warm');
+  const shown = h.status(18350).recent.at(-1);
+  assert.equal(shown.syncing, true, 'the public status says it is still catching up');
+  assert.ok(shown.behind > 0);
 });
 
 test('no two eggs share a surname: a taken name moves the egg to its next one, and the stone is signed in', async () => {

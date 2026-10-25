@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fatline</title>
-<meta name="description" content="The hatchery: eggs that hatch from their keepers' Farcaster history, kept warm by their own Farcaster nodes. Run yours with one line to your agent.">
+<meta name="description" content="Run your own Farcaster: a full node on a server you control, and a client that reads only from it. Keep it live for three days and it earns you one of 777 Fatliners.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Fatline">
 <meta property="og:title" content="Fatline">
-<meta property="og:description" content="The hatchery: eggs that hatch from their keepers' Farcaster history, kept warm by their own Farcaster nodes. Run yours with one line to your agent.">
+<meta property="og:description" content="Run your own Farcaster: a full node on a server you control, and a client that reads only from it. Keep it live for three days and it earns you one of 777 Fatliners.">
 <meta property="og:url" content="https://fatline.ink/">
 <meta property="og:image" content="https://fatline.ink/img/og/og.jpg">
 <meta property="og:image:width" content="1200">
@@ -16,14 +16,14 @@
 <meta property="og:image:alt" content="FATLINE, over six Fatliner figurines at golden hour">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://fatline.ink/img/og/og.jpg">
-<meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://fatline.ink/img/og/og.jpg","button":{"title":"Open the hatchery","action":{"type":"launch_miniapp","name":"Fatline","url":"https://fatline.ink/","splashImageUrl":"https://fatline.ink/img/fatline-app.png","splashBackgroundColor":"#1a120b"}}}'>
-<meta name="fc:frame" content='{"version":"1","imageUrl":"https://fatline.ink/img/og/og.jpg","button":{"title":"Open the hatchery","action":{"type":"launch_frame","name":"Fatline","url":"https://fatline.ink/","splashImageUrl":"https://fatline.ink/img/fatline-app.png","splashBackgroundColor":"#1a120b"}}}'>
+<meta name="fc:miniapp" content='{"version":"1","imageUrl":"https://fatline.ink/img/og/og.jpg","button":{"title":"Run your own node","action":{"type":"launch_miniapp","name":"Fatline","url":"https://fatline.ink/","splashImageUrl":"https://fatline.ink/img/fatline-app.png","splashBackgroundColor":"#1a120b"}}}'>
+<meta name="fc:frame" content='{"version":"1","imageUrl":"https://fatline.ink/img/og/og.jpg","button":{"title":"Run your own node","action":{"type":"launch_frame","name":"Fatline","url":"https://fatline.ink/","splashImageUrl":"https://fatline.ink/img/fatline-app.png","splashBackgroundColor":"#1a120b"}}}'>
 <link rel="icon" href="/img/fatline-app.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,300..900,0..100,0..1;1,9..144,300..900,0..100,0..1&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  /* One page: the line for your agent, then the hatchery. The network you choose tints everything. */
+  /* One page: what Fatline is, the line for your agent, then every node running it, live. The network you choose tints everything. */
   :root {
     --bg: #0f1420; --bg2: #161d2c; --glow: rgba(61, 139, 255, .22); --accent: #7aa8ff;
     --ink: #f3eadb; --muted: #a9a08f; --line: rgba(243, 234, 219, .14); --card: rgba(255, 255, 255, .035);
@@ -58,6 +58,22 @@
   .manual a { color: var(--ink); text-decoration-color: var(--accent); text-underline-offset: 4px; }
   .runner { margin-top: 10px; color: var(--muted); font-size: 14px; }
   .runner code { font: 13px var(--mono); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 3px 8px; overflow-wrap: anywhere; }
+  .kicker { font: 500 12px var(--mono); letter-spacing: .3em; text-transform: uppercase; color: var(--accent); margin: 0 0 16px; }
+  .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; max-width: 900px; margin: 0 auto 34px; text-align: left; counter-reset: step; }
+  .step { border: 1px solid var(--line); border-radius: 16px; background: var(--card); padding: 16px 16px 14px; }
+  .step b { display: block; font: 700 20px/1.2 var(--display); margin-bottom: 6px; }
+  .step b::before { counter-increment: step; content: counter(step); display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 8px; border-radius: 50%;
+    font: 600 12px var(--mono); background: var(--accent); color: #0b0b0b; transform: translateY(-2px); }
+  .step p { margin: 0; color: var(--muted); font-size: 14.5px; }
+  @media (max-width: 720px) { .steps { grid-template-columns: 1fr; } }
+  .start { font: 500 12px var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .health { display: flex; gap: 8px; align-items: baseline; font-size: 14px; }
+  .health .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; transform: translateY(-1px); background: var(--muted); }
+  .health .dot.live { background: #4ade80; box-shadow: 0 0 0 3px rgba(74, 222, 128, .18); }
+  .health .dot.syncing { background: var(--gold); }
+  .health .dot.down { background: #ff6b5a; }
+  .health .dot.quiet, .health .dot.unknown { opacity: .6; }
+  .health span { color: var(--muted); }
   .hatchery-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 40px 0 16px; border-top: 1px solid var(--line); padding-top: 22px; }
   .label { font: 500 12px var(--mono); letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
   .count { font: 500 13px var(--mono); color: var(--muted); }
@@ -93,20 +109,28 @@
   </header>
 
   <section class="hero">
-    <h1>Hatch your own.</h1>
-    <p class="lede">Your own Farcaster node, your own client, and an egg that hatches from your history. Paste this into your agent (Claude Code, Codex…):</p>
+    <p class="kicker">Farcaster, on your own machine</p>
+    <h1>Run your own Farcaster.</h1>
+    <p class="lede">Fatline puts a full copy of Farcaster on a server you control, with a client that reads only from it. Nobody in between can filter your feed or switch you off.</p>
+    <div class="steps">
+      <div class="step"><b>Your node</b><p>All of Farcaster (Snapchain or Hypersnap, your pick) streams into a server you rent. From about $2.60 a day.</p></div>
+      <div class="step"><b>Your client</b><p>Read and cast through your own node, with your own account. You can start before it finishes syncing.</p></div>
+      <div class="step"><b>Your Fatliner</b><p>Every hour, the network checks your node. Keep it live for three days and it can earn you one of 777 Fatliners, each with its own coin.</p></div>
+    </div>
+    <p class="start">Start: paste this into your agent (Claude Code, Codex…)</p>
     <div class="cta"><code id="prompt">Help me run a Fatline: https://fatline.ink/skill.md</code><button type="button" id="copy">Copy</button></div>
     <p class="manual">or do it by hand → <a href="/docs/">the docs</a></p>
     <p class="runner">Already run a Snapchain or Hypersnap node? One line on its server: <code>curl -fsSL https://fatline.ink/join.sh | sudo bash</code></p>
   </section>
 
-  <div class="hatchery-head"><span class="label">The hatchery</span><span class="count" id="count">reading the eggs…</span></div>
+  <div class="hatchery-head"><span class="label">Nodes running Fatline</span><span class="count" id="count">reading the nodes…</span></div>
   <div class="grid" id="grid"></div>
 
   <footer><a href="/docs/">Docs</a><a href="/manifesto.html">Manifesto</a><a href="https://github.com/jpfraneto/fatline">GitHub</a><a href="https://farcaster.xyz/fatline">@fatline</a></footer>
 </div>
 <div class="castbar" id="castbar" hidden><button type="button" id="cast">Cast</button></div>
 
+<script src="/node-health.js"></script>
 <script>
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 // The network you choose: it tints the page (and, in your client, where you read and cast).
@@ -176,13 +200,16 @@ async function live() {
     const w = await getJson(`${HATCHERY}/eggs/${e.fid}`);
     const today = w?.days?.at(-1);
     if (w) e.warmth = { warmDays: w.warmDays, needed: w.needed, day: today?.day ?? null, passed: today?.passed ?? null, need: today?.need ?? null, since: w.layingAt ?? null };
+    e.health = w ? window.nodeHealth(w) : { state: 'unknown', title: 'No word from the hatchery' };
   }));
   draw(await art);
 }
 
 function draw(art) {
   const warming = eggs.filter((e) => e.stage === 'egg').length, hatched = eggs.length - warming;
-  document.getElementById('count').textContent = `${warming} warming · ${hatched} hatched · ${777 - eggs.length} of 777 places open`;
+  const up = eggs.filter((e) => e.health?.state === 'live' || e.health?.state === 'syncing').length;
+  const checked = eggs.some((e) => e.health);
+  document.getElementById('count').textContent = `${checked ? `${up} of ${eggs.length} live now · ` : ''}${warming} warming · ${hatched} hatched · ${777 - eggs.length} of 777 places open`;
   const card = (e) => {
     const img = (e.stage === 'hatched' && art.beings?.[e.fid]?.image) || art.eggs?.[e.stone]?.image || `img/eggs/${e.stone}.jpg`;
     const w = e.warmth;
@@ -191,19 +218,23 @@ function draw(art) {
     const day = w?.day ?? 1, warmNow = w && (w.passed ?? 0) >= (w.need ?? 18);
     const nextIn = w?.since ? Math.max(0, Math.ceil((w.since + day * 86400000 - Date.now()) / 3600000)) : null;
     const status = e.stage === 'hatched' ? 'hatched'
-      : !w ? 'warming'
+      : !w ? 'egg warming'
       : warmNow ? `day ${day} of 3 is warm ✓${day < 3 && nextIn !== null ? ` · day ${day + 1} starts in ${nextIn} h` : ''}`
       : `day ${day} of 3 · ${w.passed ?? 0} of ${w.need ?? 18} warm checks so far`;
+    const h = e.health;
+    const health = h ? `<div class="health"><i class="dot ${h.state}"></i><div><b>${esc(h.title)}</b> <span>· ${esc(h.network ?? '')}${h.lastAt ? ` · checked ${esc(window.nodeHealthAgo(Date.now() - h.lastAt))}` : ''}</span></div></div>`
+      : `<div class="health"><i class="dot unknown"></i><span>reading its node…</span></div>`;
     const k = e.keeper ?? {};
     return `<a class="egg" href="/${e.fid}">
       <div class="art"><img src="${esc(img)}" alt="${esc(e.name ?? '')}'s egg, ${esc(e.stone)}" loading="lazy"></div>
       <div><div class="name">${esc(e.name ?? `#${e.fid}`)}</div><div class="tick">$${esc(e.surname)} · ${esc(String(e.stone).toUpperCase())} · #${e.fid}</div></div>
-      <div class="keeper">${k.pfp ? `<img src="${esc(k.pfp)}" alt="">` : ''}kept by ${k.username ? `@${esc(k.username)}` : `FID ${e.fid}`}</div>
+      <div class="keeper">${k.pfp ? `<img src="${esc(k.pfp)}" alt="">` : ''}node run by ${k.username ? `@${esc(k.username)}` : `FID ${e.fid}`}</div>
+      ${health}
       <div class="days">${bar}</div><div class="warm">${esc(status)}</div>
     </a>`;
   };
   document.getElementById('grid').innerHTML = eggs.map(card).join('') +
-    `<div class="empty"><div><div style="font:700 22px var(--display);color:var(--ink)">Your egg goes here.</div><p>One line to your agent, three warm days on your own node.</p></div></div>`;
+    `<div class="empty"><div><div style="font:700 22px var(--display);color:var(--ink)">Your node goes here.</div><p>One line to your agent. It shows up here once it passes its first check.</p></div></div>`;
 }
 
 getJson('status.json').then(async (s) => {
