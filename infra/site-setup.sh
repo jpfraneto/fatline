@@ -39,7 +39,7 @@ systemctl enable -q --now fatline-site.timer
 # With the names router (infra/names-setup.sh) holding ports 80 and 443, Caddy listens on 127.0.0.1:8080 and :8443.
 GLOBAL=""
 [ -f /etc/systemd/system/fatline-names.service ] && GLOBAL=$(printf '{\n\thttp_port 8080\n\thttps_port 8443\n\tdefault_bind 127.0.0.1\n}\n')
-# This server's own client at <its surname>.fatline.ink (apps/site/client.sh), if it has one.
+# This server's own client at <its surname>.fatline.ink (infra/serve-client.sh, run by fatline update), if it has one.
 CLIENT=""
 [ -f /etc/caddy/fatline-client.caddy ] && CLIENT="import /etc/caddy/fatline-client.caddy"
 cat > /etc/caddy/Caddyfile <<EOF

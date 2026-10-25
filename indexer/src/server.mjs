@@ -18,8 +18,8 @@ import { NodeMonitor } from './nodes.mjs';
 import { makeCockpit } from './cockpit.mjs';
 import { Coins } from './coin.mjs';
 import { Archive, TYPES as ARCHIVE_TYPES } from './archive.mjs';
-import { timingSafeEqual } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { ROOT } from './config.mjs';
 import { base, baseSepolia, foundry } from 'viem/chains';
 
@@ -35,15 +35,21 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
 
   // Posting signs with this client's app key, so only its owner may ask for it:
   // requests made on this machine directly, or (behind a proxy, on a server) with the write token.
-  const writeToken = process.env.FATLINE_WRITE_TOKEN
-    ?? (existsSync(join(config.dataDir, 'write.token')) ? readFileSync(join(config.dataDir, 'write.token'), 'utf8').trim() : null);
-  const mayWrite = (req) => {
+  // On a server that knows its owner (FATLINE_OWNER_FID), signing in as that account gives the browser the token.
+  const ownerFid = Number(process.env.FATLINE_OWNER_FID) || null;
+  const tokenPath = join(config.dataDir, 'write.token');
+  if (ownerFid && !process.env.FATLINE_WRITE_TOKEN && !existsSync(tokenPath)) writeFileSync(tokenPath, randomBytes(32).toString('hex'), { mode: 0o600 });
+  const writeToken = process.env.FATLINE_WRITE_TOKEN ?? (existsSync(tokenPath) ? readFileSync(tokenPath, 'utf8').trim() : null);
+  const sameSite = (req) => {
     // Other websites open in the same browser must not be able to post through this client.
     const origin = req.headers.origin;
     if (origin) { // "null" too: sandboxed frames, like the apps shown inside this one
       try { if (new URL(origin).host !== req.headers.host) return false; } catch { return false; }
     }
-    if (req.method === 'POST' && !/^application\/json/.test(req.headers['content-type'] ?? '')) return false;
+    return !(req.method === 'POST' && !/^application\/json/.test(req.headers['content-type'] ?? ''));
+  };
+  const mayWrite = (req) => {
+    if (!sameSite(req)) return false;
     const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress) && !req.headers['x-forwarded-for']
       && /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(req.headers.host ?? ''); // and not a rebound DNS name
     if (local) return true;
@@ -92,13 +98,15 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     return { ...out, syncing: { node: chosen.url, confirmedOn: other.url, because: `${behind}: it took your cast and passed it on; ${other.label ?? other.url} confirms it until yours catches up` } };
   };
 
-  // Log in with a wallet (the account's custody address): a QR code, one signature, an app key for this client.
-  const login = new WalletLogin({ config, networks, root: ROOT });
-  const owner = (fn) => (q, m, body, req) => {
-    if (!mayWrite(req)) throw Object.assign(new Error('Logging in is only allowed from this machine, or with its write token.'), { status: 401 });
-    return fn();
+  // Sign in from the Cast button (the Farcaster app, or the wallet that owns the account): a key for this client.
+  // Anyone may start one on a server with an owner; the key is kept only if the owner's account approves it.
+  const login = new WalletLogin({ config, networks, root: ROOT, owner: ownerFid });
+  const signIn = (fn, { fresh = false } = {}) => async (q, m, body, req) => {
+    if (!(mayWrite(req) || (ownerFid && sameSite(req)))) throw Object.assign(new Error('Signing in works only on this machine.'), { status: 401 });
+    if (!fresh && (q.get('session') ?? body?.session) !== login.session) throw Object.assign(new Error('This sign-in was replaced. Start again.'), { status: 409 });
+    const out = await fn(body);
+    return out.step === 'done' && writeToken ? { ...out, token: writeToken } : out; // only the browser that signed in
   };
-
   const cockpit = makeCockpit({ config, networks, api });
   const sel = (q) => ({ name: q.get('network'), node: q.get('node') });
   const routes = [
@@ -106,12 +114,10 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/cockpit$/, () => cockpit()],
     ['GET', /^\/api\/fatline$/, () => config.fatlineApp ?? null],
     ['GET', /^\/api\/lifeforce$/, () => lifeforce?.status() ?? null],
-    ['GET', /^\/api\/login$/, owner(() => login.status())],
-    ['POST', /^\/api\/login$/, owner(() => login.start())],
-    ['POST', /^\/api\/login\/wallet$/, (q, m, body, req) => owner(() => login.walletStart(body))(q, m, body, req)],
-    ['POST', /^\/api\/login\/wallet\/sign$/, (q, m, body, req) => owner(() => login.walletSign(body))(q, m, body, req)],
-    ['POST', /^\/api\/login\/wallet$/, (q, m, body, req) => owner(() => login.walletStart(body))(q, m, body, req)],
-    ['POST', /^\/api\/login\/wallet\/sign$/, (q, m, body, req) => owner(() => login.walletSign(body))(q, m, body, req)],
+    ['GET', /^\/api\/login$/, signIn(() => login.status())],
+    ['POST', /^\/api\/login$/, signIn(() => login.start(), { fresh: true })],
+    ['POST', /^\/api\/login\/wallet$/, signIn((b) => login.walletStart(b), { fresh: true })],
+    ['POST', /^\/api\/login\/wallet\/sign$/, signIn((b) => login.walletSign(b))],
     ['GET', /^\/api\/health$/, () => ({ ok: true, voices: voices.status(), launchpad: launchpad.status(), keeper: keeper?.status() ?? null })],
     ['GET', /^\/api\/apps$/, () => launchpad.list()],
     ['GET', /^\/api\/apps\/(0x[0-9a-fA-F]{40})$/, async (q, [, address]) => {

@@ -101,18 +101,16 @@ export function lifeForce(stage, readout) {
   }
 
   const words = (x) => {
-    if (!x) return 'Listening for your node…';
-    if (!x.alive) return stage.dataset.egg === '1'
-      ? `No life force: ${x.label ?? 'your node'} isn't answering. If it stays down, the egg dies.`
-      : 'No life force yet: your node is still being born. When it wakes up, its current flows here.';
+    if (!x) return '';
+    if (!x.alive) return stage.dataset.egg === '1' ? `${x.label ?? 'Your node'} isn't answering.` : 'Your node is starting.';
     const beat = `${(x.blocksPerSecond ?? 0).toFixed(1)} blocks a second`;
     const net = x.network === 'hypersnap' ? 'Hypersnap' : 'Snapchain';
     if ((x.behindSeconds ?? 0) > 200) {
       const left = x.catchUpRate > 0 ? x.behindSeconds / x.catchUpRate : null;
-      const eta = left == null ? 'Measuring how long until it is fully awake' : left < 5400 ? `Fully awake in about ${Math.max(1, Math.round(left / 60))} min` : `Fully awake in about ${Math.round(left / 3600)} h`;
-      return `Life force rising: your ${net} node takes in ${beat} as it catches up. ${eta}.`;
+      const eta = left == null ? '' : left < 5400 ? ` · ${Math.max(1, Math.round(left / 60))} min left` : ` · ${Math.round(left / 3600)} h left`;
+      return `${net} catching up: ${beat}${eta}`;
     }
-    return `Life force: ${beat} from your own ${net} node, flowing into your egg.`;
+    return `${net}: ${beat}`;
   };
 
   const refresh = async () => {

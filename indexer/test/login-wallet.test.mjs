@@ -105,3 +105,27 @@ test('wallet login: two signatures from the page, then the key is submitted, con
     assert.equal(key.publicKey, submitted);
   } finally { globalThis.fetch = real; }
 });
+
+test('a server with an owner keeps no key for another account', async () => {
+  const { mkdtempSync, existsSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { WalletLogin } = await import('../src/login.mjs');
+  const dataDir = mkdtempSync(join(tmpdir(), 'fl-owner-'));
+  const real = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const u = new URL(url);
+    const j = (b) => new Response(JSON.stringify(b), { status: 200 });
+    if (u.pathname === '/v1/onChainEventsByFid') return j({ events: [] });
+    if (u.pathname === '/v1/onChainIdRegistryEventByAddress') return j({ fid: 18350, idRegisterEventBody: { to: account.address.toLowerCase() } });
+    return new Response('{}', { status: 404 });
+  };
+  try {
+    const login = new WalletLogin({ owner: 16098, config: { dataDir, defaultNetwork: 'farcaster' }, networks: { farcaster: { node: async () => ({ url: 'http://node.test' }) } } });
+    await assert.rejects(login.walletStart({ address: account.address }), /FID 18350.*belongs to FID 16098/);
+    assert.equal(login.status().step, 'idle');
+    assert.equal(existsSync(join(dataDir, 'appkey.json')), false);
+    assert.throws(() => login.check(18350), /16098/);
+    login.check(16098);
+  } finally { globalThis.fetch = real; }
+});

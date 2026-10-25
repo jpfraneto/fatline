@@ -187,7 +187,9 @@ async function serve() {
     // Sign in with Farcaster: this server signs key requests as Fatline's app account (with its custody key, appCustodyKey).
     // The Farcaster app then shows the person what they approve, and adds the key itself.
     ['POST', /^\/signer-request$/, async (m, body) => {
-      const appFid = Number(process.env.FATLINE_APP_FID ?? hc.appFid ?? 0);
+      // Fatline's app account: from its key file on this server (app-account.mjs writes it), so no setting can lose it.
+      let appFid = Number(process.env.FATLINE_APP_FID || 0);
+      if (!appFid) try { appFid = Number(JSON.parse(readFileSync(join(config.dataDir, 'app-account.key.json'), 'utf8')).fid) || 0; } catch {}
       if (!appFid) throw Object.assign(new Error('Sign in with Farcaster is not set up on this server yet (no app account).'), { status: 503 });
       if (!/^0x[0-9a-fA-F]{64}$/.test(body?.key ?? '')) throw Object.assign(new Error('key: a 32-byte Ed25519 public key, 0x…'), { status: 400 });
       const { ViemLocalEip712Signer } = await import('@farcaster/core');

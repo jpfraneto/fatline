@@ -59,7 +59,8 @@ Setup (in this order on a new machine):
   fatline setup                 Guided: every step below, one at a time; stop anywhere, run again to continue
                                      --plan shows where you are and the command for each step
   fatline doctor                Check this machine and the networks; recommends full, light or rent
-  fatline update                Get the latest Fatline (git pull), reinstall and rebuild; then restart your client
+  fatline update                The latest Fatline. On your node's server it also restarts everything and serves
+                                     your client at <surname>.fatline.ink
   fatline init                  Choose the default network (Farcaster or Hypersnap)
   fatline compute [--quote]     Rent a machine that can hold a node, by the day, in USDC on Base (x402, AgentMetal,
                                      ~11 USDC/day). You approve with your own wallet: phone (QR) or browser.
@@ -132,17 +133,26 @@ cmd_update() { # the latest Fatline: pull, reinstall what changed, rebuild the c
   local before; before=$(git -C "$ROOT" rev-parse --short HEAD)
   bold "Updating Fatline in $ROOT"
   git -C "$ROOT" pull --ff-only --quiet || fail "Couldn't update: this copy has local changes (git -C $ROOT status). Keep them with git stash, then run fatline update again."
-  local after; after=$(git -C "$ROOT" rev-parse --short HEAD)
+  # The pull may have changed this very script: the rest runs from the new copy.
+  exec bash "$ROOT/fatline" _rebuild "$before"
+}
+
+cmd__rebuild() { # the second half of fatline update, from the freshly pulled script
+  need_node
+  local before="$1" after; after=$(git -C "$ROOT" rev-parse --short HEAD)
   install indexer
   install infra
   install apps/opinions
   bold "Building the client"
   (cd "$ROOT/apps/opinions" && npm run build --silent)
   if [ "$before" = "$after" ]; then echo "Already up to date ($after)."; else echo "Updated $before -> $after:"; git -C "$ROOT" log --oneline --no-decorate "$before..$after" | head -15 | sed 's/^/  /'; fi
-  echo
-  echo "If your client is running, restart it: stop it (Ctrl+C) and run fatline client. Then open http://localhost:8787"
-  if command -v systemctl >/dev/null && systemctl is-active --quiet fatline-hatchery 2>/dev/null; then
-    echo "This machine runs a hatchery: restarting it."; systemctl restart fatline-hatchery || true
+  # A node's server (root, with the hatchery): restart what runs here and serve its client at <surname>.fatline.ink.
+  if [ "$(id -u)" = 0 ] && command -v systemctl >/dev/null && systemctl cat fatline-hatchery >/dev/null 2>&1; then
+    systemctl restart fatline-hatchery || true
+    systemctl is-active --quiet fatline-names 2>/dev/null && systemctl restart fatline-names
+    bash "$ROOT/infra/serve-client.sh" || true
+  else
+    echo "Restart your client to use it: fatline client"
   fi
 }
 
@@ -402,6 +412,7 @@ cmd_contracts() {
 command="${1:-help}"; shift || true
 case "$command" in
   help|-h|--help) cmd_help ;;
+  _rebuild) cmd__rebuild "$@" ;;
   doctor|update|init|node|up|client|connect|dashboard|worker|dev|status|compute|test|contracts|identity|follow|feed|fatliners|setup|egg|hatch|hatchery|coin|genesis|app) "cmd_$command" "$@" ;;
   *) echo "Unknown command: $command"; cmd_help; exit 1 ;;
 esac

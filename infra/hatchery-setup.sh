@@ -9,6 +9,7 @@
 #   4. A systemd service, fatline-hatchery, that checks eggs every hour against this server's own node
 #      (127.0.0.1:3381, and 4381 for Hypersnap) and signs the ones that hatch. It restarts by itself.
 #   5. Port 8791 open, so other servers and clients can reach it.
+#   6. fatline update: this server's client at <surname>.fatline.ink, once its egg is laid.
 #
 # Env (optional): FATLINERS_ADDRESS (default: the one in smart-contracts/deployments/base.json), FATLINERS_CHAIN_ID,
 # FATLINERS_RPC, HATCHERY_RELAY=1 (submit mints for people, paying gas from this server's key), FATLINE_REPO, FATLINE_BRANCH.
@@ -34,6 +35,7 @@ if [ -d "$DIR/.git" ]; then git -C "$DIR" fetch -q origin "$BRANCH" && git -C "$
 else git clone -q --branch "$BRANCH" "$REPO" "$DIR"; fi
 (cd "$DIR/indexer" && npm ci --omit=dev --silent --no-audit --no-fund)
 echo "at $(git -C "$DIR" log -1 --format='%h %s' | cut -c1-80)"
+ln -sf "$DIR/fatline" /usr/local/bin/fatline # fatline update, from anywhere on this server
 
 say "3. This server's attester key"
 mkdir -p "$DATA"
@@ -81,3 +83,6 @@ if curl -fsS -m 3 http://127.0.0.1:8791/ >/dev/null 2>&1; then
 else
   echo "The hatchery did not answer. See: journalctl -u fatline-hatchery -n 50"; exit 1
 fi
+
+say "6. Your client at <surname>.fatline.ink (once your egg is laid; until then: later, with fatline update)"
+"$DIR/fatline" update < /dev/null 2>&1 | tail -5 || true

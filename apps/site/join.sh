@@ -86,6 +86,5 @@ say "                     fatline identity      (a key for your account: QR code
 say "                     fatline egg --node http://${ip:-<this server>}:$port"
 say "  Step by step: https://fatline.ink/docs/#bring-your-node"
 say "  The egg is minted to the wallet tied to your account (you scan a QR code). Three warm days, and it hatches."
-say "  Once your egg is laid, your client gets its own address, https://<your surname>.fatline.ink:"
-say "    on this server:  curl -fsSL https://fatline.ink/client.sh | sudo bash"
+say "  Once your egg is laid, run  fatline update  on this server: your client gets https://<your surname>.fatline.ink"
 say ""

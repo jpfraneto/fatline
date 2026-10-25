@@ -39,12 +39,13 @@ export async function startSignIn(config, { signer } = {}) {
   if (!token || !deeplinkUrl) throw new Error('Farcaster did not return a sign-in link.');
   return {
     url: deeplinkUrl,
-    async wait({ timeoutMs = 10 * 60_000, onState = () => {} } = {}) {
+    async wait({ timeoutMs = 10 * 60_000, onState = () => {}, accept = () => {} } = {}) {
       const end = Date.now() + timeoutMs;
       while (Date.now() < end) {
         const s = (await api(`/v2/signed-key-request?token=${encodeURIComponent(token)}`).catch(() => null))?.result?.signedKeyRequest;
         if (s?.state) onState(s.state);
         if (s?.state === 'completed' && s.userFid) {
+          accept(Number(s.userFid)); // throws for an account this client must not hold a key for: nothing is saved
           const record = { fid: Number(s.userFid), publicKey, privateKey: hex(privateKey), scopes: SCOPES.map((x) => MessageType[x]),
             network: config.defaultNetwork, via: 'farcaster app', addedAt: new Date().toISOString(), state: 'active' };
           saveAppKey(config.dataDir, record);

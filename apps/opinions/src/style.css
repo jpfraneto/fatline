@@ -412,3 +412,6 @@ h3 { font: 500 13px var(--sans); color: var(--muted); margin: 22px 0 6px; }
 .castpanel-alt { display: grid; gap: 4px; border-top: 1px solid var(--line); padding-top: 10px; }
 .castpanel [hidden] { display: none !important; }
 .castpanel { grid-auto-rows: max-content; }
+.castpanel a.ck-speak-btn { display: block; text-align: center; text-decoration: none; }
+a.castpanel-link { color: var(--accent); }
+.ck-signin { display: block; width: auto; min-width: 200px; margin: 14px auto 0; }

@@ -5,6 +5,7 @@
 //   - A browser wallet that owns the account (its custody address, e.g. MetaMask holding your Farcaster recovery
 //     phrase): one EIP-712 signature (a gasless KEY_ADD), no transaction, submitted to your node. No relay, no app.
 import { rmSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { qrSvg } from './qr.mjs';
 import { buildKeyAdd, fidOfCustody, savedFid, waitForKey } from './identity.mjs';
 import { appKeyPath, loadAppKey, saveAppKey, sendMessage } from './writer.mjs';
@@ -22,42 +23,51 @@ export function typedDataJson({ domain, types, primaryType, message }) {
 }
 
 export class WalletLogin {
-  constructor({ config, networks, root }) {
+  /** owner: the FID this Fatline belongs to (on a server). Only that account's key is kept; null = any (this machine). */
+  constructor({ config, networks, root, owner = null }) {
     this.config = config;
     this.networks = networks;
     this.root = root;
+    this.owner = owner ? Number(owner) : null;
     this.state = { step: 'idle' };
+    this.session = null; // the newest sign-in; only the browser that started it can follow it
+    this.gen = 0;
   }
 
-  status() {
-    const key = loadAppKey(this.config.dataDir);
-    if (key && key.state !== 'submitted') return { step: 'done', fid: key.fid };
-    return this.state;
+  status() { return this.state; }
+
+  /** Throws unless this FID may hold this client's key. */
+  check(fid) {
+    if (this.owner && Number(fid) !== this.owner) throw Object.assign(new Error(`That is FID ${fid}. This Fatline belongs to FID ${this.owner}.`), { status: 403 });
   }
 
-  /** Starts a Farcaster-app connection (or returns the one in progress). The page shows state.qr and polls status(). */
+  begin(state) {
+    this.walletWait?.reject(new Error('Replaced by a new sign-in.'));
+    this.walletWait = null;
+    this.session = randomBytes(16).toString('hex');
+    this.state = state;
+    return ++this.gen;
+  }
+
+  /** Starts a Farcaster-app sign-in. The page shows state.qr (or opens state.uri) and polls status(). */
   async start() {
-    if (this.status().step === 'done') return this.status();
-    if (['waiting', 'connected', 'submitting'].includes(this.state.step) && this.state.farcaster) return this.state;
-    this.state = { step: 'starting', farcaster: true };
+    const gen = this.begin({ step: 'starting', farcaster: true });
+    const set = (st) => { if (gen === this.gen) this.state = st; };
     let uriSeen;
     const gotUri = new Promise((r) => (uriSeen = r));
-    const say = (t) => { if (/^link: /.test(String(t))) uriSeen(); }; // run() has put the QR in this.state
-    this.run(say).catch((err) => { this.state = { step: 'error', error: friendly(err) }; uriSeen(); });
+    (async () => {
+      const { startSignIn } = await import('./siwf.mjs');
+      const s = await startSignIn(this.config);
+      // farcaster:// opens the app on this device; the https link redirects into the app (or its store page).
+      const token = /[?&]token=([^&]+)/.exec(s.url)?.[1];
+      const web = token ? `https://client.warpcast.com/deeplinks/signed-key-request?token=${token}` : s.url;
+      set({ step: 'waiting', uri: s.url, web, qr: qrSvg(s.url), farcaster: true });
+      uriSeen();
+      const record = await s.wait({ accept: (fid) => this.check(fid), onState: (st) => { if (st === 'approved') set({ step: 'submitting', farcaster: true }); } });
+      set({ step: 'done', fid: record.fid });
+    })().catch((err) => { set({ step: 'error', error: friendly(err) }); uriSeen(); });
     await gotUri;
-    return this.state;
-  }
-
-  async run(say) {
-    const { startSignIn } = await import('./siwf.mjs');
-    const s = await startSignIn(this.config);
-    say(`link: ${s.url}`);
-    // farcaster:// opens the app on this device; the https link (it redirects into the app) can be pasted anywhere.
-    const token = /[?&]token=([^&]+)/.exec(s.url)?.[1];
-    const web = token ? `https://client.warpcast.com/deeplinks/signed-key-request?token=${token}` : s.url;
-    this.state = { step: 'waiting', uri: s.url, web, qr: qrSvg(s.url), farcaster: true };
-    const record = await s.wait({ onState: (st) => { if (st === 'approved') this.state = { step: 'submitting', farcaster: true }; } });
-    this.state = { step: 'done', fid: record.fid };
+    return { ...this.state, session: this.session };
   }
 
   /**
@@ -65,17 +75,16 @@ export class WalletLogin {
    * sign. Then walletSign() gets the signature and the key goes to the node.
    */
   async walletStart({ address } = {}) {
-    if (this.status().step === 'done') return this.status();
     if (!/^0x[0-9a-fA-F]{40}$/.test(String(address ?? ''))) throw Object.assign(new Error('That is not a wallet address.'), { status: 400 });
-    this.walletWait?.reject(new Error('Replaced by a new request.'));
     const networkName = this.config.defaultNetwork;
     const node = await this.networks[networkName].node();
-    this.state = { step: 'finding', wallet: true };
-    const fid = await fidOfCustody(node, address, savedFid(this.config)); // fast when fatline connect saved the FID
+    this.begin({ step: 'finding', wallet: true });
+    const fid = await fidOfCustody(node, address, this.owner ?? savedFid(this.config)); // fast when the FID is known
     if (!fid) {
       this.state = { step: 'idle' };
-      throw Object.assign(new Error(`${address} does not own a Farcaster account (asked ${node.label ?? node.url}). Only the address that owns your FID (its custody address) can add a key. If your account lives in the Farcaster app, use the QR code instead.`), { status: 400 });
+      throw Object.assign(new Error(`This wallet doesn't own a Farcaster account. Use the wallet that holds your Farcaster recovery phrase, or the Farcaster app.`), { status: 400 });
     }
+    try { this.check(fid); } catch (err) { this.state = { step: 'idle' }; throw err; }
     // The library asks the custody wallet for two signatures: the key request (who asks for the key: the account
     // itself) and the KEY_ADD. Each one waits here until the page sends it (walletSign).
     let asked = 0;
@@ -105,7 +114,7 @@ export class WalletLogin {
     }).finally(() => nextTyped?.());
     this.walletNext = changed;
     await first;
-    return this.state;
+    return { ...this.state, session: this.session };
   }
 
   /** The page's signature for the request it was shown. Returns the next request to sign, or where it stands. */
