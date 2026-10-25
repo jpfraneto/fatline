@@ -1,8 +1,8 @@
 {
   "accountAssociation": {
-    "header": "eyJmaWQiOjMzNTY2NTMsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHgzNzc1N2ExRDBFMDExN0VCMTY5ZERBREJhMTBDMThjNzk2MzQzYkFFIn0",
+    "header": "eyJmaWQiOjMzNTY2NTMsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHhBRTBDMmNhMTE0MzkzMDY2MzAwMkQxM2M5N2Y2Mjg4MmQ1MDBjZThCIn0",
     "payload": "eyJkb21haW4iOiJmYXRsaW5lLmluayJ9",
-    "signature": "HXf_GU5OZIdO7wqDoiI-b969XhoCHEZzpjxRmpAxwvcMF5ktzF7Eg-2hdXku0X1IW1z0-FVNiKLMCie6GsSgUBw"
+    "signature": "3hEvFnBy2_VJkOZalR_fbLiNf44RzZFg62impEOtHMwyYVTjEtnOrvJ4npOE1IlR52gIziKIVeTicuxtMQZehBw"
   },
   "miniapp": {
     "version": "1",
@@ -16,7 +16,13 @@
     "subtitle": "Your own Farcaster node",
     "description": "Eggs that hatch from your history, kept warm by your own Farcaster node. Run yours with one line to your agent.",
     "primaryCategory": "social",
-    "tags": ["farcaster", "node", "snapchain", "hypersnap", "client"],
+    "tags": [
+      "farcaster",
+      "node",
+      "snapchain",
+      "hypersnap",
+      "client"
+    ],
     "heroImageUrl": "https://fatline.ink/img/og/og.jpg",
     "tagline": "Your own Farcaster node",
     "ogTitle": "Fatline",
