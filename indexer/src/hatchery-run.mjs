@@ -56,6 +56,13 @@ export function hatcheryConfig(config) {
 
 const chainOf = (id) => ({ 8453: base, 84532: baseSepolia, 31337: foundry })[id] ?? { ...base, id };
 const keyPath = (dataDir) => join(dataDir, 'attester.key');
+/** The key that owns Fatline's app account: app-custody.key once its custody moved off the attester key (so a person
+ *  can sign in to it with a recovery phrase), else the attester key itself. Read each time: dropping it in needs no restart. */
+export function appCustodyKey(dataDir) {
+  const p = join(dataDir, 'app-custody.key');
+  const k = existsSync(p) ? readFileSync(p, 'utf8').trim() : loadKey(dataDir);
+  return k.startsWith('0x') ? k : `0x${k}`;
+}
 
 function loadKey(dataDir) {
   const p = keyPath(dataDir);
@@ -177,7 +184,7 @@ async function serve() {
   const routes = [
     ['GET', /^\/$/, () => hatchery.info()],
     ['GET', /^\/eggs\/(\d{1,12})$/, (m) => hatchery.status(m[1]) ?? Promise.reject(Object.assign(new Error('No egg for that FID here.'), { status: 404 }))],
-    // Sign in with Farcaster: this server signs key requests as Fatline's app account (its custody is this key).
+    // Sign in with Farcaster: this server signs key requests as Fatline's app account (with its custody key, appCustodyKey).
     // The Farcaster app then shows the person what they approve, and adds the key itself.
     ['POST', /^\/signer-request$/, async (m, body) => {
       const appFid = Number(process.env.FATLINE_APP_FID ?? hc.appFid ?? 0);
@@ -185,7 +192,7 @@ async function serve() {
       if (!/^0x[0-9a-fA-F]{64}$/.test(body?.key ?? '')) throw Object.assign(new Error('key: a 32-byte Ed25519 public key, 0x…'), { status: 400 });
       const { ViemLocalEip712Signer } = await import('@farcaster/core');
       const deadline = Math.floor(Date.now() / 1000) + 3600;
-      const sig = await new ViemLocalEip712Signer(privateKeyToAccount(privateKey)).signKeyRequest({ requestFid: BigInt(appFid), key: Buffer.from(body.key.slice(2), 'hex'), deadline: BigInt(deadline) });
+      const sig = await new ViemLocalEip712Signer(privateKeyToAccount(appCustodyKey(config.dataDir))).signKeyRequest({ requestFid: BigInt(appFid), key: Buffer.from(body.key.slice(2), 'hex'), deadline: BigInt(deadline) });
       if (sig.isErr()) throw new Error(sig.error.message);
       return { requestFid: appFid, deadline, signature: `0x${Buffer.from(sig.value).toString('hex')}` };
     }],

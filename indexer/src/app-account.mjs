@@ -12,12 +12,13 @@ import { privateKeyToAccount } from 'viem/accounts';
 import { loadConfig } from './config.mjs';
 import { buildKeyAdd, waitForKey } from './identity.mjs';
 import { sendMessage } from './writer.mjs';
+import { appCustodyKey } from './hatchery-run.mjs';
 
 const config = loadConfig();
 const FID = Number(process.env.FATLINE_APP_FID ?? config.deployments?.appAccount?.fid);
 const NODE = { url: process.env.FATLINE_APP_NODE ?? 'http://127.0.0.1:3381' };
 const KEYFILE = join(config.dataDir, 'app-account.key.json');
-const custody = () => { const k = readFileSync(join(config.dataDir, 'attester.key'), 'utf8').trim(); return privateKeyToAccount(k.startsWith('0x') ? k : `0x${k}`); };
+const custody = () => privateKeyToAccount(appCustodyKey(config.dataDir)); // app-custody.key, else the attester key
 const appSigner = () => new NobleEd25519Signer(Buffer.from(JSON.parse(readFileSync(KEYFILE, 'utf8')).privateKey.slice(2), 'hex'));
 const opts = { fid: FID, network: FarcasterNetwork.MAINNET };
 const unwrap = (r, what) => { if (r.isErr()) throw new Error(`${what}: ${r.error.message}`); return r.value; };
