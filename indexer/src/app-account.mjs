@@ -5,6 +5,8 @@
 //   node src/app-account.mjs key                      give the account a posting key (.fatline/app-account.key.json)
 //   node src/app-account.mjs profile display=Fatline bio="…" pfp=https://… url=https://fatline.ink username=fatline
 //   node src/app-account.mjs cast "text" [url] [url]  cast as Fatline (up to two embeds)
+//   node src/app-account.mjs manifest fatline.ink     the mini app's accountAssociation (JSON), signed by the account's custody
+//                                                     (redo it whenever the custody changes; paste it into apps/site/.well-known/farcaster.json)
 import { readFileSync, existsSync, writeFileSync, chmodSync } from 'node:fs';
 import { join } from 'node:path';
 import { FarcasterNetwork, NobleEd25519Signer, UserDataType, ViemLocalEip712Signer, makeCastAdd, makeUserDataAdd, makeUserNameProofClaim, CastType } from '@farcaster/core';
@@ -58,6 +60,16 @@ async function cast(text, ...urls) {
   console.log(`cast 0x${Buffer.from(m.hash).toString('hex')}`);
 }
 
+// The mini app's domain claim (JSON Farcaster Signature): the custody signs "<header>.<payload>", all base64url.
+async function manifest(domain) {
+  const owner = custody();
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const header = b64({ fid: FID, type: 'custody', key: owner.address });
+  const payload = b64({ domain });
+  const sig = await owner.signMessage({ message: `${header}.${payload}` });
+  console.log(JSON.stringify({ accountAssociation: { header, payload, signature: Buffer.from(sig.slice(2), 'hex').toString('base64url') } }, null, 2));
+}
+
 const [cmd, ...rest] = process.argv.slice(2);
 if (!FID) throw new Error('No app account (FATLINE_APP_FID).');
-await ({ fname: () => fname(rest[0]), key, profile: () => profile(rest), cast: () => cast(rest[0], ...rest.slice(1)) }[cmd] ?? (() => { throw new Error('fname | key | profile | cast'); }))();
+await ({ fname: () => fname(rest[0]), key, profile: () => profile(rest), cast: () => cast(rest[0], ...rest.slice(1)), manifest: () => manifest(rest[0] ?? 'fatline.ink') }[cmd] ?? (() => { throw new Error('fname | key | profile | cast | manifest'); }))();
