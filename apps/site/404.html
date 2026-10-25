@@ -118,7 +118,7 @@ function body(f) {
   return `<h2>Its body</h2>
     <p class="total">Keeping it alive costs <b>${usd(c.dayUsd)} a day</b> (${usd(c.monthUsd)} a month), for ${f.nodes.length === 1 ? 'its one node' : f.nodes.length === 2 ? 'both its nodes' : `all ${f.nodes.length} of its nodes`}: ${f.nodes.map((n) => n.network === 'snapchain' ? 'Snapchain' : 'Hypersnap').join(' and ')}, on one server.</p>
     <div class="servers"><div class="server">
-      <h3>${f.nodes.map((n) => `<span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span>`).join('')} One server, ${f.nodes.length} networks</h3>
+      <h3>${f.nodes.map((n) => `<span class="dot ${n.state === 'offline' || n.state === 'paused' ? 'off' : n.network}"></span>`).join('')} One server, ${f.nodes.length} networks</h3>
       <div class="spec">${esc(s.provider)} ${esc(s.type)} · ${esc(s.location)}<br>${esc(s.cpu)} · ${s.ramGb} GB RAM</div>
       ${meters}${low}
       <table class="cost">
@@ -147,8 +147,8 @@ function being(f) {
 }
 
 function nodeRows(f) {
-  return f.nodes.map((n) => `<div class="row"><span class="dot ${n.state === 'offline' ? 'off' : n.network}"></span><b>${NAME[n.network]}</b>
-      <span class="muted">${n.state === 'alive' ? `alive · running ${since(n.since)}` : n.state === 'catching-up' ? `catching up · ${(b => b < 7200 ? `${Math.round(b / 60)} min` : `${Math.round(b / 3600)} h`)(Number(n.blocksBehind))} behind` : 'offline at the last check'} · ${esc(n.label)}</span></div>`).join('');
+  return f.nodes.map((n) => `<div class="row"><span class="dot ${n.state === 'offline' || n.state === 'paused' ? 'off' : n.network}"></span><b>${NAME[n.network]}</b>
+      <span class="muted">${n.state === 'alive' ? `alive · running ${since(n.since)}` : n.state === 'catching-up' ? `catching up · ${(b => b < 7200 ? `${Math.round(b / 60)} min` : `${Math.round(b / 3600)} h`)(Number(n.blocksBehind))} behind` : n.state === 'paused' ? `paused · ${esc(n.paused ?? '')}` : 'offline at the last check'} · ${esc(n.label)}</span></div>`).join('');
 }
 function owner(f) {
   const o = f.owner ?? {};

@@ -23,7 +23,8 @@ const ALERT_EVERY_H = 2;  // repeat a failed-grow alert at most this often
 // Both volumes are on the one server (since 2026-10-23).
 const NODES = [
   { name: 'Snapchain (FATLINE master)', ip: '46.225.208.199', volumeId: 107233477, mount: '/mnt/HC_Volume_107233477', base: 700 },
-  { name: 'Hypersnap', ip: '46.225.208.199', volumeId: 107234161, mount: '/mnt/HC_Volume_107234161', base: 685 },
+  { name: 'Hypersnap', ip: '46.225.208.199', volumeId: 107234161, mount: '/mnt/HC_Volume_107234161', base: 685,
+    paused: 'stopped on 2026-10-25, disk full, waiting for Hetzner to raise the volume limit (/root/hypersnap-paused.txt)' },
 ];
 const GROW_CAP = 200; // GB over `base`, the size each volume had when this was approved
 
@@ -49,6 +50,7 @@ async function check(n) {
   const vol = (await hz('GET', `/volumes/${n.volumeId}`)).volume;
   console.log(`${new Date().toISOString()} ${n.name}: ${avail} GB free of ${size} GB (volume ${vol.size} GB)`);
   if (avail >= MIN_FREE_GB) { delete state[n.volumeId]; return; }
+  if (n.paused) { console.log(`  paused: ${n.paused}; no alert`); return; } // a node stopped on purpose
   const target = vol.size + STEP_GB;
   let problem;
   if (target > n.base + GROW_CAP) problem = `already grown to the approved cap (${n.base + GROW_CAP} GB)`;

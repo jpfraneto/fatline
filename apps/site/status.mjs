@@ -61,7 +61,8 @@ for (const f of fatlines) {
     const behind = delays.length ? Math.max(...delays) : null;
     nodes.push({
       network: n.network, label: n.label, since: n.since, version: info?.version ?? null,
-      state: !info ? 'offline' : behind !== null && behind <= 200 ? 'alive' : 'catching-up',
+      state: !info ? (n.paused ? 'paused' : 'offline') : behind !== null && behind <= 200 ? 'alive' : 'catching-up',
+      paused: !info && n.paused ? n.paused : undefined,
       blocksBehind: behind, messages: info?.dbStats?.numMessages ?? null,
     });
   }

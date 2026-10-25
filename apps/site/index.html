@@ -56,6 +56,8 @@
   .cta button { font: 600 14px var(--body); border: 0; background: var(--ink); color: #111; padding: 0 22px; cursor: pointer; }
   .manual { margin-top: 14px; font: italic 400 18px var(--display); }
   .manual a { color: var(--ink); text-decoration-color: var(--accent); text-underline-offset: 4px; }
+  .runner { margin-top: 10px; color: var(--muted); font-size: 14px; }
+  .runner code { font: 13px var(--mono); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 3px 8px; overflow-wrap: anywhere; }
   .hatchery-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 40px 0 16px; border-top: 1px solid var(--line); padding-top: 22px; }
   .label { font: 500 12px var(--mono); letter-spacing: .3em; text-transform: uppercase; color: var(--muted); }
   .count { font: 500 13px var(--mono); color: var(--muted); }
@@ -95,6 +97,7 @@
     <p class="lede">Your own Farcaster node, your own client, and an egg that hatches from your history. Paste this into your agent (Claude Code, Codex…):</p>
     <div class="cta"><code id="prompt">Help me run a Fatline: https://fatline.ink/skill.md</code><button type="button" id="copy">Copy</button></div>
     <p class="manual">or do it by hand → <a href="/docs/">the docs</a></p>
+    <p class="runner">Already run a Snapchain or Hypersnap node? One line on its server: <code>curl -fsSL https://fatline.ink/join.sh | sudo bash</code></p>
   </section>
 
   <div class="hatchery-head"><span class="label">The hatchery</span><span class="count" id="count">reading the eggs…</span></div>

@@ -22,6 +22,16 @@ That's it. The agent reads [the skill](../skill.md) and walks you through it, as
 
 **To cast**, press **Cast** in your client. The first time it gives the client its own key for your account (not a new account): approve in the Farcaster app (QR code or link), or sign once with a browser wallet that owns your account. Your node doesn't have to be in sync; until it is, casts go out through Fatline's master node, and the client says so. [How it works](tutorial.html#post).
 
+## Already run a node?
+
+If you already run Snapchain or Hypersnap on a server, bring it in with one line on that server (Debian/Ubuntu, as root):
+
+```sh
+curl -fsSL https://fatline.ink/join.sh | sudo bash
+```
+
+It finds your node and shows its version and sync, then asks before it installs the hatchery next to it (port 8791): the small service that keeps eggs warm by checking nodes every hour. It offers Snapchain auto-upgrade too, and tells you how to lay your egg. Your node itself isn't touched. Add `-s -- --check` after `bash` to only look. [Read it first](https://github.com/jpfraneto/fatline/blob/main/apps/site/join.sh).
+
 ## Your window
 
 Your client opens on your Fatline: your egg in the middle, glowing over a fire.

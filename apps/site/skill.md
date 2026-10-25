@@ -55,6 +55,13 @@ The contract (the only one): Fatliners `0xb54CD4A4E56D2549557b1284AB0BEA2D076a30
   - **light**: no node at all. Copies only chosen accounts from a public node. Free, minutes. It is **not a node**: it trusts the node it reads from.
 - **Which network?** `farcaster` (Snapchain) or `hypersnap`. If they don't mind, `farcaster`.
 
+## Already runs a node?
+If the person already has a Snapchain or Hypersnap node on a server, skip renting and installing: on **that server**, as root, they run (or you run, over their SSH, after their yes):
+```sh
+curl -fsSL https://fatline.ink/join.sh | sudo bash        # --check first only looks: version, sync, ports
+```
+It finds the node, installs the hatchery next to it (port 8791; asks first), offers Snapchain auto-upgrade, and prints the egg command. Ports 3381 (or 4381) and 8791 must be open to the internet. Then go on with the client's key and `fatline egg --node http://<server>:3381` from their own computer.
+
 ## The steps
 
 Run everything from the Fatline folder. Many agent shells can't answer interactive prompts, so use the plain commands below rather than the guided `fatline setup` (that one is for people at a terminal; `fatline setup --plan` is safe for you and shows the same steps).
