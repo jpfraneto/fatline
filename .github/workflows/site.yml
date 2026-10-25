@@ -9,7 +9,7 @@ on:
     paths: ['apps/site/**', '.github/workflows/site.yml']
   workflow_dispatch:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/30 * * * *'
 permissions:
   contents: read
   pages: write

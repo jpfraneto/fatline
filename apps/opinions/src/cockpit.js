@@ -133,15 +133,13 @@ function lower(d) {
   ];
 }
 
-// Before this window has a key: the two ways to get one, right here by the fire.
+// Before this window has a key: one way in, the Cast button's sign-in (Farcaster app QR, or a browser wallet).
 function speak() {
   return el('div', { class: 'ck-speak' },
-    el('p', {}, el('b', {}, 'Give this window a voice. '), 'It needs its own key for your account, made once:'),
+    el('p', {}, el('b', {}, 'Give this window a voice. '), 'It needs its own key for your account (a second key, not a new account), made once:'),
     el('div', { class: 'ck-speak-ways' },
-      el('div', {}, el('button', { type: 'button', class: 'ck-speak-btn', onclick: () => document.querySelector('.castbutton')?.click() }, 'Sign in with your wallet'),
-        el('small', {}, 'If a wallet you use (Rainbow, MetaMask, Coinbase…) owns your Farcaster account.')),
-      el('div', {}, cmd('fatline identity'),
-        el('small', {}, "If your account lives in the Farcaster app: run this in your terminal and type its recovery phrase (Settings → Advanced). It's used once, on your machine, and never saved."))));
+      el('div', {}, el('button', { type: 'button', class: 'ck-speak-btn', onclick: () => document.querySelector('.castbutton')?.click() }, 'Sign in with Farcaster'),
+        el('small', {}, 'Scan a QR code with the Farcaster app and approve, or sign with a browser wallet that owns your account. No recovery phrase.'))));
 }
 
 // Around the fire: your voice and your people's, through this window.

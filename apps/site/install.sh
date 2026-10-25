@@ -2,7 +2,8 @@
 # Fatline installer:  curl -fsSL https://fatline.ink/install.sh | sh
 #
 # What it does, in order (read it before you run it; it is short):
-#   1. checks for git and Node.js 22.12+ (it never installs them for you; it says how)
+#   1. checks for git and Node.js 22.12+; if one is missing it shows the install command and asks before running it
+#      (Debian/Ubuntu: apt and NodeSource's Node 22; macOS: Homebrew). Without a terminal it only says how.
 #   2. downloads Fatline from github.com/jpfraneto/fatline into ~/fatline (or updates it there)
 #   3. puts the `fatline` command on your PATH (npm install -g, linked to that folder: git pull updates it)
 #   4. starts fatline setup, which asks before every step and never spends money without you typing "create"
@@ -21,10 +22,36 @@ say ""
 say "  FATLINE · your own Farcaster node and client"
 say ""
 
-command -v git >/dev/null 2>&1 || stop "git is missing. macOS: xcode-select --install   ·   Debian/Ubuntu: sudo apt install git"
-command -v node >/dev/null 2>&1 || stop "Node.js 22.12 or newer is missing. Get it from https://nodejs.org (or: brew install node), then run this line again."
-node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit(a>22||(a===22&&b>=12)?0:1)' \
-  || stop "Node.js $(node -v) is too old. Install 22.12 or newer from https://nodejs.org, then run this line again."
+# Asks a yes/no question on the terminal (we may be piped from curl). No terminal: no.
+yes_to() {
+  [ -r /dev/tty ] && { : < /dev/tty; } 2>/dev/null || return 1
+  printf '  %s [y/N] ' "$1" > /dev/tty; read -r ans < /dev/tty
+  case "$ans" in y|Y|yes) return 0 ;; *) return 1 ;; esac
+}
+SUDO=""; [ "$(id -u)" = 0 ] || SUDO="sudo"
+node_ok() { command -v node >/dev/null 2>&1 && node -e 'const [a,b]=process.versions.node.split(".").map(Number); process.exit(a>22||(a===22&&b>=12)?0:1)'; }
+# What would install a missing tool here, as one line to show and (after a yes) run.
+how() {
+  if command -v apt-get >/dev/null 2>&1; then
+    case "$1" in
+      git) echo "$SUDO apt-get update && $SUDO apt-get install -y -qq git" ;;
+      node) echo "curl -fsSL https://deb.nodesource.com/setup_22.x | $SUDO bash - && $SUDO apt-get install -y -qq nodejs" ;;
+    esac
+  elif [ "$(uname -s)" = Darwin ] && command -v brew >/dev/null 2>&1; then
+    case "$1" in git) echo "brew install git" ;; node) echo "brew install node" ;; esac
+  fi
+}
+need() { # need <git|node> <what it is>
+  line=$(how "$1")
+  [ -n "$line" ] || stop "$2 is missing. Install it (git: https://git-scm.com · Node.js 22.12+: https://nodejs.org), then run this line again."
+  say "  $2 is missing. It can be installed with:"
+  say "    $line"
+  yes_to "Install it now?" || stop "Not installed. Run that line yourself (or ask your agent to), then run this line again."
+  sh -c "$line" || stop "That didn't finish. Read the lines above, then run this line again."
+}
+command -v git >/dev/null 2>&1 || need git "git"
+node_ok || need node "Node.js 22.12 or newer$(command -v node >/dev/null 2>&1 && printf ' (you have %s)' "$(node -v)")"
+node_ok || stop "Node.js is still missing or older than 22.12 (open a new terminal if it was just installed), then run this line again."
 
 if [ -d "$DIR/.git" ]; then
   say "  Updating $DIR"

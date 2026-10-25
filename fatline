@@ -22,6 +22,33 @@ install() { # install <dir>: install exact locked dependencies once
   fi
 }
 
+# Docker for a node on this machine. On Linux, offer to install it with Docker's official script (asked first;
+# a tester on a fresh server had to stop and install it by hand). Elsewhere, say how.
+ensure_docker() {
+  docker info >/dev/null 2>&1 && return 0
+  if command -v docker >/dev/null 2>&1; then
+    fail "Docker is installed but not running. Start it (Linux: sudo systemctl start docker · macOS: open Docker Desktop), then run this again."
+  fi
+  [ "$(uname -s)" = Linux ] || fail "A node on this machine needs Docker. macOS: install Docker Desktop (https://docs.docker.com/desktop/), start it, then run this again."
+  local sudo=""; [ "$(id -u)" = 0 ] || sudo="sudo"
+  echo "A node on this machine needs Docker, and it isn't installed."
+  echo "  It can be installed with Docker's official script:  curl -fsSL https://get.docker.com | $sudo sh"
+  if [ -t 0 ]; then
+    read -r -p "  Install Docker now? [y/N] " ans
+    case "$ans" in y|Y|yes) ;; *) fail "Not installed. Run that line yourself, then run this again." ;; esac
+  else
+    fail "No terminal to ask in (an agent?). Ask the person, run that line, then run this again."
+  fi
+  curl -fsSL https://get.docker.com | $sudo sh
+  $sudo systemctl enable --now docker >/dev/null 2>&1 || true
+  docker info >/dev/null 2>&1 && return 0
+  if [ -n "$sudo" ] && sudo docker info >/dev/null 2>&1; then
+    sudo usermod -aG docker "$USER"
+    fail "Docker is installed. Your user was added to the docker group: log out and back in (or run: newgrp docker), then run this again."
+  fi
+  fail "Docker was installed but doesn't answer yet. Run this again in a minute."
+}
+
 config_exists() { [ -f "$ROOT/fatline.config.json" ]; }
 
 cmd_help() {
@@ -42,6 +69,7 @@ Setup (in this order on a new machine):
   fatline compute vps root@IP   A server you already have, any provider: checks it can hold a node
   fatline node <network>        Install a read node (farcaster or hypersnap) on that machine, wait until it
                                      answers, and use it. --local installs on this machine instead (16 GB RAM, Docker)
+  fatline node autoupgrade on    Snapchain checks for a new version once a day and upgrades itself (off / status too)
   fatline compute status        The rented machine, its disk and node sync. compute down: how it stops costing
   fatline dashboard             Your servers and nodes on http://localhost:8790, every 15 s (add <host> to watch more)
   fatline client                Start your client and open http://localhost:8787 (asks you to connect first, once)
@@ -125,6 +153,18 @@ cmd_setup() { need_node; install infra; node "$ROOT/infra/setup.mjs" "$@"; }
 cmd_init() { need_node; node "$ROOT/infra/config-tool.mjs" init "$@"; }
 
 cmd_node() {
+  # fatline node autoupgrade on|off|status: Snapchain checks for a new version once a day. On the rented server
+  # if there is one (over SSH), else on this machine.
+  if [ "${1:-}" = autoupgrade ]; then
+    need_node
+    local ip; ip=$(cd "$ROOT/infra" && node -e 'import("./node-remote.mjs").then((m) => console.log(m.pickServer("farcaster") ?? ""))' 2>/dev/null || true)
+    if [ -n "$ip" ] && [ "${3:-}" != "--local" ]; then
+      echo "Snapchain on $ip:"
+      exec ssh -i "$STATE/ssh_ed25519" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o "UserKnownHostsFile=$STATE/known_hosts" \
+        -o ConnectTimeout=15 -o LogLevel=ERROR "root@$ip" "bash -s ${2:-status}" < "$ROOT/infra/autoupgrade.sh"
+    fi
+    exec bash "$ROOT/infra/autoupgrade.sh" "${2:-status}"
+  fi
   # Both are Farcaster nodes: snapchain (Farcaster's own) or hypersnap. "farcaster" is the old name for snapchain.
   if [ "${1:-}" = snapchain ]; then set -- farcaster "${@:2}"; fi
   local network="${1:-}"
@@ -137,7 +177,7 @@ cmd_node() {
     hypersnap) URL="https://raw.githubusercontent.com/farcasterorg/hypersnap/@latest/scripts/hypersnap-bootstrap.sh"; DIR="$HOME/hypersnap" ;;
     *) fail "usage: fatline node snapchain|hypersnap" ;;
   esac
-  docker info >/dev/null 2>&1 || fail "Docker must be installed and running. See https://docs.docker.com/engine/install/"
+  ensure_docker
   local other; other=$([ "$network" = farcaster ] && echo hypersnap || echo farcaster)
   if docker ps --format '{{.Ports}}' | grep -q '3381'; then
     fail "Something already uses port 3381 (maybe a $other node). The upstream scripts run one network per machine."

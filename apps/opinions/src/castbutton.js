@@ -14,6 +14,14 @@ const STEPS = {
   submitting: 'Approved. Adding your key to the network…',
 };
 
+// Errors from Farcaster's sign-in, in words a person can act on.
+function friendly(text) {
+  const t = String(text ?? '');
+  if (/timeout|timed out|aborted/i.test(t)) return 'Farcaster took too long to answer. Try again (it usually works the second time), or sign with a browser wallet below.';
+  if (/unavailable/i.test(t)) return 'Farcaster\'s sign-in service says it is unavailable right now. Wait a minute and try again, or sign with a browser wallet below.';
+  return t;
+}
+
 async function loginCall(method, path = '/api/login', body) {
   const token = store.get('writeToken', '');
   const res = await fetch(new URL(path, location.origin), {
@@ -49,7 +57,7 @@ export function castButton() {
     polling = true;
     while (polling && mine === run) {
       if (s.step === 'done') { await loadMe(); return showComposer(); }
-      if (s.step === 'error') { msg.textContent = s.error; msg.classList.add('warn'); retry.hidden = false; return; }
+      if (s.step === 'error') { msg.textContent = friendly(s.error); msg.classList.add('warn'); retry.hidden = false; return; }
       if (s.qr && !qr.firstChild) qr.innerHTML = s.qr; // our own server's SVG
       if (s.uri && link) { link.hidden = false; link.querySelector('a').href = s.uri; link.dataset.web = s.web ?? ''; }
       if (s.step !== 'waiting') { qr.replaceChildren(); if (link) link.hidden = true; }
@@ -100,15 +108,17 @@ export function castButton() {
     const retry = el('button', { type: 'button', class: 'quiet', hidden: true, onclick: () => showLogin() }, 'Try again');
     const ui = { msg, qr, link, retry };
     const wallet = el('button', { type: 'button', class: 'quiet', onclick: () => withWallet(ui) }, 'Use a browser wallet instead');
-    panel.replaceChildren(head('Sign in with Farcaster'), qr, link, msg, retry,
-      el('p', { class: 'muted small' }, 'No recovery phrase here. The Farcaster app shows what you approve and pays for it. The key can cast, like and follow, never move your account.'),
+    panel.replaceChildren(head('Sign in with Farcaster'),
+      el('p', { class: 'small' }, 'This gives this client a key for your own account. It does not create a new account. The key can cast, like and follow, never move your account.'),
+      qr, link, msg, retry,
       el('div', { class: 'castpanel-alt' }, wallet,
         el('p', { class: 'muted small' }, 'Only if a wallet in this browser owns your Farcaster account (its custody address). Two signatures, no transaction, no gas.')),
-      el('p', { class: 'muted small' }, 'Farcaster says "unavailable"? That is their sign-in service: wait a minute and try again, or use the wallet. Or in a terminal: fatline identity --phrase.'));
+      el('details', { class: 'muted small' }, el('summary', {}, 'Other ways'),
+        el('p', {}, 'In a terminal on the machine this client runs on: fatline identity (the same QR code). Last resort: fatline identity --phrase, with your recovery phrase typed into a hidden prompt there, used once and never saved. Never paste it into a chat.')));
     try {
       await follow(await loginCall('POST'), ui);
     } catch (err) {
-      msg.textContent = err.message;
+      msg.textContent = friendly(err.message);
       msg.classList.add('warn');
       retry.hidden = false;
     }

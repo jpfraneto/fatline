@@ -121,16 +121,76 @@ document.getElementById('copy').onclick = async (e) => {
   catch { const r = document.createRange(); r.selectNodeContents(document.getElementById('prompt')); getSelection().removeAllRanges(); getSelection().addRange(r); }
 };
 
-// The hatchery: every egg onchain, who keeps it, its stone, how warm it is (status.json, refreshed every 15 minutes).
-Promise.all([fetch('status.json', { cache: 'no-store' }).then((r) => r.json()).catch(() => null), fetch('fatliners-art.json').then((r) => r.json()).catch(() => ({}))]).then(([s, art]) => {
-  const eggs = s?.eggs ?? [];
+// The hatchery: every egg onchain, who keeps it, its stone, how warm it is. It draws at once from status.json
+// (written by the site's workflow, which GitHub runs only every few hours), then reads live: the eggs from the
+// contract on Base, and each egg's warm checks from the genesis hatchery (https through sslip.io, no DNS needed).
+// Again every 30 minutes while the page is open.
+const HATCHERY = 'https://46-225-208-199.sslip.io';
+const RPCS = ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'];
+const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
+const EGG_TAKEN = '0x8c16cbfb788ff0014645f2e619d6e70982930d43a1a53fcbb22ff48ab6eb0af0';
+const rpc = async (method, params) => {
+  for (const url of RPCS) {
+    const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) }).then((x) => x.json()).catch(() => null);
+    if (r && r.result !== undefined && !r.error) return r.result;
+  }
+  return null;
+};
+const word = (n) => BigInt(n).toString(16).padStart(64, '0');
+const str = (hex) => { if (!hex || hex.length < 130) return ''; const b = hex.slice(2); const len = parseInt(b.slice(64, 128), 16); let o = ''; for (let i = 0; i < len; i++) o += String.fromCharCode(parseInt(b.slice(128 + i * 2, 130 + i * 2), 16)); return o; };
+const getJson = (url) => fetch(url, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+const art = getJson('fatliners-art.json').then((a) => a ?? {});
+let eggs = [];
+
+async function live() {
+  const d = await getJson('https://raw.githubusercontent.com/jpfraneto/fatline/main/smart-contracts/deployments/base.json');
+  const nft = d?.Fatliners?.address;
+  if (!nft) return;
+  const logs = await rpc('eth_getLogs', [{ address: nft, fromBlock: '0x' + Number(d.fromBlock).toString(16), toBlock: 'latest', topics: [EGG_TAKEN] }]);
+  if (logs) {
+    const known = new Map(eggs.map((e) => [e.fid, e]));
+    const next = [];
+    for (const fid of [...new Set(logs.map((l) => Number(BigInt(l.topics[1]))))]) {
+      const stage = Number(BigInt((await rpc('eth_call', [{ to: nft, data: '0xc7d25b15' + word(fid) }, 'latest'])) ?? '0x0'));
+      if (!stage) continue; // died
+      const e = known.get(fid) ?? { fid, genesis: fid === Number(d.Fatliners.genesis?.fid) };
+      e.stage = stage === 2 ? 'hatched' : 'egg';
+      if (!e.surname) {
+        e.surname = str(await rpc('eth_call', [{ to: nft, data: '0x8d967a78' + word(fid) }, 'latest']));
+        e.name = e.genesis ? (d.Fatliners.genesis?.name ?? null) : e.surname ? e.surname[0] + e.surname.slice(1).toLowerCase() : null;
+        e.stone = STONES[Number(BigInt((await rpc('eth_call', [{ to: nft, data: '0xeed0951e' + word(fid) }, 'latest'])) ?? '0x0'))] ?? 'ivory';
+      }
+      if (!e.keeper?.username) {
+        const ud = await getJson(`https://crackle.farcaster.xyz:3381/v1/userDataByFid?fid=${fid}`);
+        const v = (t) => (ud?.messages ?? []).find((m) => m.data?.userDataBody?.type === t)?.data.userDataBody.value ?? null;
+        e.keeper = { username: v('USER_DATA_TYPE_USERNAME'), pfp: v('USER_DATA_TYPE_PFP') };
+      }
+      next.push(e);
+    }
+    eggs = next;
+  }
+  await Promise.all(eggs.map(async (e) => {
+    const w = await getJson(`${HATCHERY}/eggs/${e.fid}`);
+    const today = w?.days?.at(-1);
+    if (w) e.warmth = { warmDays: w.warmDays, needed: w.needed, day: today?.day ?? null, passed: today?.passed ?? null, need: today?.need ?? null, since: w.layingAt ?? null };
+  }));
+  draw(await art);
+}
+
+function draw(art) {
   const warming = eggs.filter((e) => e.stage === 'egg').length, hatched = eggs.length - warming;
   document.getElementById('count').textContent = `${warming} warming · ${hatched} hatched · ${777 - eggs.length} of 777 places open`;
   const card = (e) => {
     const img = (e.stage === 'hatched' && art.beings?.[e.fid]?.image) || art.eggs?.[e.stone]?.image || `img/eggs/${e.stone}.jpg`;
     const w = e.warmth;
     const bar = [1, 2, 3].map((d) => { const done = w && (d <= w.warmDays); const now = w && d === w.day && !done; const pct = done ? 100 : now ? Math.min(100, Math.round(100 * (w.passed ?? 0) / (w.need ?? 18))) : 0; return `<i><b style="width:${pct}%"></b></i>`; }).join('');
-    const status = e.stage === 'hatched' ? 'hatched' : w ? `day ${w.day ?? 1} of 3 · ${w.passed ?? 0} of ${w.need ?? 18} warm checks today` : 'warming';
+    // A day is 24 hours from the laying; it is warm at 18 good checks (one an hour), and checks go on after that.
+    const day = w?.day ?? 1, warmNow = w && (w.passed ?? 0) >= (w.need ?? 18);
+    const nextIn = w?.since ? Math.max(0, Math.ceil((w.since + day * 86400000 - Date.now()) / 3600000)) : null;
+    const status = e.stage === 'hatched' ? 'hatched'
+      : !w ? 'warming'
+      : warmNow ? `day ${day} of 3 is warm ✓${day < 3 && nextIn !== null ? ` · day ${day + 1} starts in ${nextIn} h` : ''}`
+      : `day ${day} of 3 · ${w.passed ?? 0} of ${w.need ?? 18} warm checks so far`;
     const k = e.keeper ?? {};
     return `<a class="egg" href="/${e.fid}">
       <div class="art"><img src="${esc(img)}" alt="${esc(e.name ?? '')}'s egg, ${esc(e.stone)}" loading="lazy"></div>
@@ -141,6 +201,13 @@ Promise.all([fetch('status.json', { cache: 'no-store' }).then((r) => r.json()).c
   };
   document.getElementById('grid').innerHTML = eggs.map(card).join('') +
     `<div class="empty"><div><div style="font:700 22px var(--display);color:var(--ink)">Your egg goes here.</div><p>One line to your agent, three warm days on your own node.</p></div></div>`;
+}
+
+getJson('status.json').then(async (s) => {
+  eggs = s?.eggs ?? [];
+  draw(await art);
+  await live();
+  setInterval(live, 30 * 60 * 1000);
 });
 
 // Inside Farcaster: a mini app. Your identity at the top, and a Cast button for the vouch.

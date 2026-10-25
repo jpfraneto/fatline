@@ -121,7 +121,10 @@ The contract (the only one): Fatliners `0xb54CD4A4E56D2549557b1284AB0BEA2D076a30
 Run everything from the Fatline folder. Many agent shells can&#39;t answer interactive prompts, so use the plain commands below rather than the guided `fatline setup` (that one is for people at a terminal; `fatline setup --plan` is safe for you and shows the same steps).
 
 ### 1. Get Fatline
-Needs `git` and Node.js 22.12+ (`node -v`). If Node is missing or old, tell the person to install it from https://nodejs.org (or `brew install node`); don&#39;t install system software without asking.
+Needs `git` and Node.js 22.12+ (`node -v`). On a fresh server they are often missing (a tester&#39;s Ubuntu on AWS had neither Node nor Docker). If one is missing, tell the person, show the line, and run it **after their yes**:
+- Debian/Ubuntu: `curl -fsSL https://deb.nodesource.com/setup_22.x | sudo bash - &amp;&amp; sudo apt-get install -y nodejs git` (drop `sudo` as root)
+- macOS: `brew install node git`
+Run in a terminal, the installer offers the same itself. A node **on this machine** (local path) also needs Docker: `fatline node snapchain --local` offers to install it on Linux (asked in a terminal); from your shell it stops and prints the line (`curl -fsSL https://get.docker.com | sh`): ask, then run it. Rented servers (cloud, hetzner, vps) get Docker on their own.
 ```sh
 FATLINE_NO_SETUP=1 sh -c &quot;$(curl -fsSL https://fatline.ink/install.sh)&quot;   # clones into ~/fatline, nothing else
 cd ~/fatline
@@ -193,9 +196,10 @@ fatline client                       # serves http://localhost:8787 and opens it
 Tell them to open http://localhost:8787. The source line in the app says which node it reads from.
 
 ### 9. Optional, by the person: post as themselves
-The easiest way: the **Cast** button at the bottom right of their client (http://localhost:8787). It shows a QR code to scan with their phone (it opens the Farcaster app; they approve), plus *Open the Farcaster app on this device* and *Copy the link*. Or *Use a browser wallet instead*: one signature (no gas) from a wallet extension that holds their custody address; the wallet asks to switch to Ethereum for it, nothing is sent onchain. Either way the client gets its own key for their account (not a new account): casts, reactions, follows and profile only. `fatline identity` in a terminal does the same (QR and link). Last resort: `fatline identity --phrase`, **in their own terminal**, recovery phrase in a hidden prompt, never saved. If the Farcaster app says &quot;Sign in with Farcaster is unavailable&quot;, that is Farcaster&#39;s service: wait a minute and retry, or use the wallet. Their node does not need to be in sync to cast. `fatline connect` is optional (it only shows who they are).
+The easiest way: the **Cast** button at the bottom right of their client (http://localhost:8787). It shows a QR code to scan with their phone (it opens the Farcaster app; they approve), plus *Open the Farcaster app on this device* and *Copy the link*. Or *Use a browser wallet instead*: one signature (no gas) from a wallet extension that holds their custody address; the wallet asks to switch to Ethereum for it, nothing is sent onchain. Either way the client gets its own key for their account (not a new account): casts, reactions, follows and profile only. `fatline identity` in a terminal does the same (QR and link). Last resort: `fatline identity --phrase`, **in their own terminal**, recovery phrase in a hidden prompt, never saved. If the Farcaster app says &quot;Sign in with Farcaster is unavailable&quot;, or the sign-in times out, that is Farcaster&#39;s service, not their setup: wait a minute and press *Try again* (it usually works the second time), or use the wallet. Testers asked &quot;do I make a new account?&quot;: no, never; say it plainly before they sign in. Their node does not need to be in sync to cast. `fatline connect` is optional (it only shows who they are).
 
 ## When you finish, tell the person
+- To invite a friend, share **https://fatline.ink/skill** (it has a preview image) or their own **https://fatline.ink/&lt;their FID&gt;**. Write the link bare, not inside quotes: a quote glued to the end breaks it.
 - What runs where (server IP and network, or &quot;light, reading from &lt;node&gt;&quot;).
 - What it costs per day, and the exact command to stop paying.
 - How to come back: `cd ~/fatline &amp;&amp; fatline up`.
