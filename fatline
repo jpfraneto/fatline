@@ -2,7 +2,7 @@
 # Fatline: one command to check, build and run the whole system.
 # Run fatline help for the list of commands.
 set -euo pipefail
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")")" && pwd)" # through a link too
 STATE="$ROOT/.fatline"
 mkdir -p "$STATE"
 
