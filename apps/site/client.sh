@@ -18,7 +18,8 @@ PORT=8787
 
 say() { printf '%s\n' "$*"; }
 stop() { say ""; say "  $*"; exit 1; }
-ask() { # ask "question": yes only with a terminal and a y
+ask() { # ask "question": yes only with a terminal and a y (or FATLINE_YES=1: the person already said yes)
+  [ "${FATLINE_YES:-}" = 1 ] && { printf '  %s yes (FATLINE_YES=1)\n' "$1"; return 0; }
   [ -r /dev/tty ] && { : < /dev/tty; } 2>/dev/null || return 1
   printf '  %s [y/N] ' "$1" > /dev/tty; read -r ans < /dev/tty
   case "$ans" in y|Y|yes) return 0 ;; *) return 1 ;; esac
