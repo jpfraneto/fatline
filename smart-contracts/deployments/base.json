@@ -77,7 +77,8 @@
  },
  "appAccount": {
   "fid": 3356653,
-  "custody": "0x37757a1D0E0117EB169dDADBa10C18c796343bAE",
+  "custody": "0xAE0C2ca1143930663002D13c97f62882d500ce8B",
+  "custodyNote": "Since 2026-10-25: a recovery phrase the owner holds (was the genesis attester key until tx 0x71f329fec85cf8ff282ee643dcf78cf241f02d6ce609485c7218674806a68a74 on Optimism). The genesis server keeps its key as app-custody.key to sign Sign in with Farcaster requests.",
   "recovery": "0xf2fe4dd9a86ecafe22424bfb6085036bca7835a8",
   "registeredTx": "0x95a5901b5fc78cf64444987cbd9ff5d9e35abf044c3170f60c82b30f318639e0",
   "chain": "Optimism",
