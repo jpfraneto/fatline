@@ -74,7 +74,7 @@ npm install -g .             <span class="c"># the fatline command, from anywher
 fatline compute            <span class="c"># (0) rent a machine that can hold a node, in USDC: price first, then you type "pay"</span>
 fatline node snapchain     <span class="c"># (1) your read node on it, no API keys (or: node hypersnap)</span>
 fatline client             <span class="c"># (2) your client, reading from your node, on http://localhost:8787</span></code></pre>
-    <p class="note"><span class="tag no">untested end to end</span> Each step has been run on its own. A complete fresh run of all three, start to finish, has not been done yet. Our own node was built with an earlier one-step version of steps 0 and 1.</p>
+    <p class="note"><span class="tag ok">works end to end</span> All three have been run fresh, start to finish, including by people on their own servers: <a href="https://farcaster.xyz/jmsaulnier/0xd6405f86">@jmsaulnier</a>, <a href="https://farcaster.xyz/jvaleska.eth/0xccf2d0eb">@jvaleska.eth</a>.</p>
     </details>
     <p class="muted">No room for a node? <code>fatline follow</code> copies only the accounts you choose from one node you pick. It is <a href="#follow">not a node</a>.</p>
   </section>
@@ -104,7 +104,7 @@ npm install -g .             <span class="c"># the fatline command, from anywher
 fatline compute            <span class="c"># (0) arrienda una máquina capaz de tener un nodo: primero el precio, luego escribes "create"</span>
 fatline node snapchain     <span class="c"># (1) tu nodo de lectura ahí, sin llaves de API (o: node hypersnap)</span>
 fatline client             <span class="c"># (2) tu cliente, leyendo de tu nodo, en http://localhost:8787</span></code></pre>
-    <p class="note"><span class="tag no">sin probar de punta a punta</span> Cada paso se ha corrido por separado. Una corrida nueva y completa de los tres, de principio a fin, todavía no se ha hecho. Nuestro propio nodo se armó con una versión anterior que juntaba los pasos 0 y 1.</p>
+    <p class="note"><span class="tag ok">funciona de punta a punta</span> Los tres se han corrido desde cero, de principio a fin, también por otras personas en sus propios servidores: <a href="https://farcaster.xyz/jmsaulnier/0xd6405f86">@jmsaulnier</a>, <a href="https://farcaster.xyz/jvaleska.eth/0xccf2d0eb">@jvaleska.eth</a>.</p>
     </details>
     <p class="muted">¿No te cabe un nodo? <code>fatline follow</code> copia solo las cuentas que elijas desde un nodo que tú eliges. <a href="#follow">No es un nodo</a>.</p>
   </section>
@@ -420,13 +420,13 @@ fatline coin launch        <span class="c"># después, si quieres: su coin, tick
     <tr><td>Choosing a node; a clear error when it is down</td><td><span class="tag ok">works</span> against real nodes</td></tr>
     <tr><td>Showing or hiding casts by app</td><td><span class="tag ok">works</span> on real data</td></tr>
     <tr><td>Renting the node's server on Hetzner</td><td><span class="tag ok">done once</span>, our own node, 2026-10-22</td></tr>
-    <tr><td>All three commands, fresh, start to finish</td><td><span class="tag no">untested</span></td></tr>
+    <tr><td>All three commands, fresh, start to finish</td><td><span class="tag ok">works</span></td></tr>
     <tr><td>Our own nodes answering, shown as "behind" until in sync</td><td><span class="tag ok">works</span>, both networks, 2026-10-22</td></tr>
     <tr><td>A read node fully in sync</td><td><span class="tag ok">works</span> Farcaster: 5 h 43 min after it answered, back in sync 62 s after a reboot. Hypersnap: in sync too; both run on one server since 2026-10-23</td></tr>
     <tr><td>Copying only chosen accounts (<code>follow</code>, not a node)</td><td><span class="tag ok">works</span> on real nodes, both networks</td></tr>
-    <tr><td>Registering an app key and posting with a real account</td><td><span class="tag no">untested</span></td></tr>
+    <tr><td>Registering an app key and posting with a real account</td><td><span class="tag ok">works</span>, recovery-phrase way, 2026-10-24</td></tr>
     <tr><td>A replicating (lighter) node</td><td><span class="tag no">not possible today</span>: both networks' replicators refuse key messages</td></tr>
-    <tr><td>A stranger following this page from scratch</td><td><span class="tag no">not yet</span>; could it be you?</td></tr>
+    <tr><td>Other people running it on their own servers</td><td><span class="tag ok">done</span>: @jmsaulnier, @jvaleska.eth; could you be next?</td></tr>
   </table></div>
 </section>
 <section id="tested" lang="es">
@@ -437,13 +437,13 @@ fatline coin launch        <span class="c"># después, si quieres: su coin, tick
     <tr><td>Elegir un nodo; un error claro si se cae</td><td><span class="tag ok">funciona</span> contra nodos reales</td></tr>
     <tr><td>Mostrar u ocultar casts según la app</td><td><span class="tag ok">funciona</span> con datos reales</td></tr>
     <tr><td>Arrendar el servidor del nodo en Hetzner</td><td><span class="tag ok">hecho una vez</span>, nuestro nodo, 2026-10-22</td></tr>
-    <tr><td>Los tres comandos, desde cero, de principio a fin</td><td><span class="tag no">sin probar</span></td></tr>
+    <tr><td>Los tres comandos, desde cero, de principio a fin</td><td><span class="tag ok">funciona</span></td></tr>
     <tr><td>Nuestros nodos respondiendo, marcados "atrasado" hasta sincronizar</td><td><span class="tag ok">funciona</span>, ambas redes, 2026-10-22</td></tr>
     <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag ok">funciona</span> Farcaster: 5 h 43 min después de responder, sincronizado de nuevo 62 s después de un reinicio. Hypersnap: también sincronizado; los dos corren en un solo servidor desde el 2026-10-23</td></tr>
     <tr><td>Copiar solo algunas cuentas (<code>follow</code>, no es un nodo)</td><td><span class="tag ok">funciona</span> con nodos reales, ambas redes</td></tr>
-    <tr><td>Registrar una llave y publicar con una cuenta real</td><td><span class="tag no">sin probar</span></td></tr>
+    <tr><td>Registrar una llave y publicar con una cuenta real</td><td><span class="tag ok">funciona</span>, con la frase de recuperación, 2026-10-24</td></tr>
     <tr><td>Un nodo replicador (más liviano)</td><td><span class="tag no">no es posible hoy</span>: los replicadores de ambas redes rechazan los mensajes de llaves</td></tr>
-    <tr><td>Una persona nueva siguiendo esta página desde cero</td><td><span class="tag no">todavía no</span>; ¿podrías ser tú?</td></tr>
+    <tr><td>Otras personas corriéndolo en sus propios servidores</td><td><span class="tag ok">hecho</span>: @jmsaulnier, @jvaleska.eth; ¿te sumas?</td></tr>
   </table></div>
 </section>
 

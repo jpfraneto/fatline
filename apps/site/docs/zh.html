@@ -55,7 +55,7 @@ npm install -g .             <span class="c"># the fatline command, from anywher
 fatline compute            <span class="c"># (0) 用 USDC 租一台能装下节点的机器：先报价，你输入 "pay" 才会付款</span>
 fatline node snapchain     <span class="c"># (1) 在上面装你的读取节点，不需要 API 密钥（或：node hypersnap）</span>
 fatline client             <span class="c"># (2) 你的客户端，从你的节点读取，在 http://localhost:8787</span></code></pre>
-  <p class="note"><span class="tag no">尚未完整测试</span> 每一步都单独运行过。从零开始、一口气跑完三条命令的完整流程还没有做过。我们自己的节点是用更早的一步式版本搭建的。</p>
+  <p class="note"><span class="tag ok">已完整跑通</span> 三条命令已从零开始完整跑通，也有其他人在自己的服务器上跑过：<a href="https://farcaster.xyz/jmsaulnier/0xd6405f86">@jmsaulnier</a>、<a href="https://farcaster.xyz/jvaleska.eth/0xccf2d0eb">@jvaleska.eth</a>。</p>
   <p class="muted">放不下一个节点？<code>fatline follow</code> 只从你选的一个节点复制你选的账户。它<a href="#follow">不是节点</a>。</p>
 </div>
 
@@ -131,13 +131,13 @@ fatline identity --fid &lt;你的 FID&gt;             <span class="c"># 注册�
   <tr><td>通过公共节点读取 Farcaster 和 Hypersnap</td><td><span class="tag ok">可用</span></td></tr>
   <tr><td>选择节点；节点宕机时给出明确错误</td><td><span class="tag ok">可用</span></td></tr>
   <tr><td>按应用显示或隐藏 cast</td><td><span class="tag ok">可用</span>（真实数据：20 条中 20 条识别出应用）</td></tr>
-  <tr><td>三条命令从零开始完整跑通</td><td><span class="tag no">未测试</span></td></tr>
+  <tr><td>三条命令从零开始完整跑通</td><td><span class="tag ok">可用</span></td></tr>
   <tr><td>我们自己的节点应答，同步前标为"落后"</td><td><span class="tag ok">可用</span>，两个网络，2026-10-22</td></tr>
   <tr><td>读取节点完全同步</td><td><span class="tag ok">可用</span>，Farcaster：应答后 5 小时 43 分完成同步，重启后 62 秒恢复同步。Hypersnap：也已同步；自 2026-10-23 起两者运行在同一台服务器上</td></tr>
   <tr><td>只复制选定账户（<code>follow</code>，不是节点）</td><td><span class="tag ok">可用</span>，真实节点，两个网络</td></tr>
   <tr><td>复制型（轻）节点</td><td><span class="tag no">目前不可行</span>：两个网络的复制器都拒绝密钥消息</td></tr>
-  <tr><td>用真实账户注册密钥并发帖</td><td><span class="tag no">未测试</span></td></tr>
-  <tr><td>一位新用户从零照着本页完成</td><td><span class="tag no">还没有</span>；会是你吗？</td></tr>
+  <tr><td>用真实账户注册密钥并发帖</td><td><span class="tag ok">可用</span>，助记词方式，2026-10-24</td></tr>
+  <tr><td>其他人在自己的服务器上运行</td><td><span class="tag ok">已完成</span>：@jmsaulnier、@jvaleska.eth；下一个会是你吗？</td></tr>
 </table></div>
 
 <h2 id="hatch">孵化一个 Fatliner：你的节点为一枚蛋保温</h2>

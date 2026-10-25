@@ -66,6 +66,12 @@
     font: 600 12px var(--mono); background: var(--accent); color: #0b0b0b; transform: translateY(-2px); }
   .step p { margin: 0; color: var(--muted); font-size: 14.5px; }
   @media (max-width: 720px) { .steps { grid-template-columns: 1fr; } }
+  .three { max-width: 720px; margin: 0 auto; border: 1px solid var(--line); border-radius: 14px; background: rgba(0, 0, 0, .35); text-align: left; overflow-x: auto;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .03) inset, 0 20px 60px rgba(0, 0, 0, .35); }
+  .three pre { margin: 0; padding: 16px 18px; font: 500 14px/1.7 var(--mono); }
+  .three .c { color: var(--muted); }
+  .start.agent { margin-top: 30px; }
+  .steps.after { margin: 40px auto 0; }
   .start { font: 500 12px var(--mono); letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
   .health { display: flex; gap: 8px; align-items: baseline; font-size: 14px; }
   .health .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; transform: translateY(-1px); background: var(--muted); }
@@ -112,15 +118,24 @@
     <p class="kicker">Farcaster, on your own machine</p>
     <h1>Run your own Farcaster.</h1>
     <p class="lede">Fatline puts a full copy of Farcaster on a server you control, with a client that reads only from it. Nobody in between can filter your feed or switch you off.</p>
-    <div class="steps">
+    <p class="start">Three commands, no API keys</p>
+    <div class="three">
+      <pre><code><span class="c"># install the fatline command; it then offers to walk you through the three below</span>
+curl -fsSL https://fatline.ink/install.sh | sh
+
+fatline compute          <span class="c"># (0) rent a machine that can hold a node</span>
+fatline node snapchain   <span class="c"># (1) your own read node on it  (or: node hypersnap)</span>
+fatline client           <span class="c"># (2) your client, reading only from your node</span></code></pre>
+    </div>
+    <p class="manual">The tutorial explains each step and the protocol behind it → <a href="/docs/tutorial.html">English</a> · <a href="/docs/tutorial.html?lang=es">Español</a> · <a href="/docs/zh.html">中文</a></p>
+    <p class="start agent">Or paste this into your agent (Claude Code, Codex…) and it runs them with you</p>
+    <div class="cta"><code id="prompt">Help me run a Fatline: https://fatline.ink/skill.md</code><button type="button" id="copy">Copy</button></div>
+    <p class="runner">Already run a Snapchain or Hypersnap node? One line on its server: <code>curl -fsSL https://fatline.ink/join.sh | sudo bash</code></p>
+    <div class="steps after">
       <div class="step"><b>Your node</b><p>All of Farcaster (Snapchain or Hypersnap, your pick) streams into a server you rent. From about $2.60 a day.</p></div>
       <div class="step"><b>Your client</b><p>Read and cast through your own node, with your own account. You can start before it finishes syncing.</p></div>
       <div class="step"><b>Your Fatliner</b><p>Every hour, the network checks your node. Keep it live for three days and it can earn you one of 777 Fatliners, each with its own coin.</p></div>
     </div>
-    <p class="start">Start: paste this into your agent (Claude Code, Codex…)</p>
-    <div class="cta"><code id="prompt">Help me run a Fatline: https://fatline.ink/skill.md</code><button type="button" id="copy">Copy</button></div>
-    <p class="manual">or do it by hand → <a href="/docs/">the docs</a></p>
-    <p class="runner">Already run a Snapchain or Hypersnap node? One line on its server: <code>curl -fsSL https://fatline.ink/join.sh | sudo bash</code></p>
   </section>
 
   <div class="hatchery-head"><span class="label">Nodes running Fatline</span><span class="count" id="count">reading the nodes…</span></div>
