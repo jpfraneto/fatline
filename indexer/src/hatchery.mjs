@@ -21,6 +21,8 @@ import {
   CHECK_EVERY_MS, CLAIM_SKEW_MS, DAY_MS, eggOf, eggTypes, surnameCandidate, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, normalizeUrl, sameHost, verifyClaim, warmth,
 } from './egg.mjs';
 
+// Names under fatline.ink that no Fatliner can take (surnames are 1–12 letters and digits).
+export const RESERVED_NAMES = new Set(['www', 'api', 'docs', 'mail', 'app', 'apps', 'site', 'status', 'admin', 'eggs', 'names', 'hatchery', 'master', 'node', 'nodes']);
 export const MAX_LAG_BLOCKS = 600; // ~10 minutes of blocks
 export const SYNC_PROBE_MS = 15_000; // how long to wait before reading a lagging node again
 const FC_EPOCH_S = 1_609_459_200; // Farcaster timestamps count seconds from 2021-01-01
@@ -287,6 +289,22 @@ export class Hatchery {
       warmDays: w.warmDays, needed: w.needed, days: w.days.map(({ day, checks, passed, need, warm, done }) => ({ day, checks, passed, need, warm, done })),
       recent, egg: egg.egg ?? null, hatched: Boolean(egg.hatch), hatch: egg.hatch, attester: this.address,
     };
+  }
+
+  /**
+   * Names under fatline.ink: <surname>.fatline.ink for every egg here that has a surname, pointing at the server
+   * that runs its node. The master's router reads this to send each name's traffic, still encrypted, to that server.
+   */
+  names() {
+    const out = [];
+    for (const egg of Object.values(this.state.eggs)) {
+      const label = String(egg.surname ?? egg.egg?.message?.surname ?? '').toLowerCase();
+      if (!/^[a-z0-9]{1,12}$/.test(label) || RESERVED_NAMES.has(label)) continue;
+      let host = null;
+      try { host = new URL(egg.claim.node).hostname; } catch { continue; }
+      out.push({ label, fid: Number(egg.claim.fid), host, hatched: Boolean(egg.hatch) });
+    }
+    return out.sort((a, b) => a.label.localeCompare(b.label));
   }
 
   info() {

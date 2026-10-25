@@ -36,7 +36,14 @@ systemctl start fatline-site.service   # the first build, now
 systemctl enable -q --now fatline-site.timer
 
 # Pages GitHub Pages served from 404.html (it reads the path in the browser): here they answer 200.
+# With the names router (infra/names-setup.sh) holding ports 80 and 443, Caddy listens on 127.0.0.1:8080 and :8443.
+GLOBAL=""
+[ -f /etc/systemd/system/fatline-names.service ] && GLOBAL=$(printf '{\n\thttp_port 8080\n\thttps_port 8443\n\tdefault_bind 127.0.0.1\n}\n')
+# This server's own client at <its surname>.fatline.ink (apps/site/client.sh), if it has one.
+CLIENT=""
+[ -f /etc/caddy/fatline-client.caddy ] && CLIENT="import /etc/caddy/fatline-client.caddy"
 cat > /etc/caddy/Caddyfile <<EOF
+$GLOBAL
 # Written by Fatline (infra/site-setup.sh): this server is fatline.ink.
 (fatline) {
 	encode gzip
@@ -68,6 +75,7 @@ cat > /etc/caddy/Caddyfile <<EOF
 	}
 }
 $(for h in $HOSTS; do printf '%s {\n\timport fatline\n}\n' "$h"; done)
+$CLIENT
 EOF
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
 systemctl reload caddy

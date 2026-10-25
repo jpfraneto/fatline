@@ -250,7 +250,8 @@ export async function start(config = loadConfig()) {
   const lifeforce = new LifeForce(networks[config.defaultNetwork]);
   lifeforce.start();
   const server = buildServer({ config, networks, voices, launchpad, keeper, nodes, archive, lifeforce });
-  server.listen(config.port, async () => {
+  // FATLINE_BIND=127.0.0.1 on a server, where Caddy serves the client over https and nothing else should reach it.
+  server.listen(config.port, process.env.FATLINE_BIND || undefined, async () => {
     const url = `http://localhost:${config.port}`;
     console.log(`\n  \x1b[1mYour Fatline client is running. Open ${url} in your browser.\x1b[0m`);
     console.log(`  \x1b[2m(It is one program: the client you open, and the indexer behind it that reads your node. Stop it with Ctrl+C.)\x1b[0m\n`);

@@ -7,6 +7,14 @@ import { loadMe } from './post.js';
 import { castButton } from './castbutton.js';
 import { cockpitPage, leaveCockpit } from './cockpit.js';
 
+// A link from the server's setup, https://<name>.fatline.ink/#key=<write token>: keep the token in this browser (so it
+// can cast through this client), then take it out of the address bar and history.
+const keyLink = location.hash.match(/^#key=([A-Za-z0-9_-]{16,128})$/);
+if (keyLink) {
+  store.set('writeToken', keyLink[1]);
+  history.replaceState(null, '', `${location.pathname}${location.search}#/`);
+}
+
 function renderChrome() {
   document.documentElement.lang = state.lang;
   document.querySelectorAll('[data-t]').forEach((n) => { n.textContent = t(n.dataset.t); });

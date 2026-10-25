@@ -225,3 +225,17 @@ test('no two eggs share a surname: a taken name moves the egg to its next one, a
   assert.equal(signer, h.address);
   assert.equal((await hatchOf(h.state.eggs[18350])).surname, second, 'it hatches with that same surname');
 });
+
+test('names: <surname>.fatline.ink points at the server that runs the egg\'s node; reserved and odd names are left out', () => {
+  const { h } = setup();
+  h.state.eggs = {
+    1: { claim: { fid: 1, node: 'http://5.161.241.24:3381' }, surname: 'THAITUMA', checks: [] },
+    2: { claim: { fid: 2, node: 'http://178.156.213.112:3381' }, egg: { message: { surname: 'AENON' } }, checks: [], hatch: { at: 1 } },
+    3: { claim: { fid: 3, node: 'http://9.9.9.9:3381' }, surname: 'WWW', checks: [] },
+    4: { claim: { fid: 4, node: 'http://8.8.8.8:3381' }, checks: [] }, // no surname yet
+  };
+  assert.deepEqual(h.names(), [
+    { label: 'aenon', fid: 2, host: '178.156.213.112', hatched: true },
+    { label: 'thaituma', fid: 1, host: '5.161.241.24', hatched: false },
+  ]);
+});

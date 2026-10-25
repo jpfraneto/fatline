@@ -196,6 +196,15 @@ async function serve() {
       if (sig.isErr()) throw new Error(sig.error.message);
       return { requestFid: appFid, deadline, signature: `0x${Buffer.from(sig.value).toString('hex')}` };
     }],
+    // <surname>.fatline.ink → the server that runs that egg's node (read by the master's router, infra/names-router.mjs).
+    ['GET', /^\/names$/, () => ({ domain: 'fatline.ink', names: hatchery.names() })],
+    // Which name is mine? Matched against the address the request comes from, so ask this port directly (not through a proxy).
+    ['GET', /^\/names\/mine$/, (m, body, req) => {
+      const ip = String(req.socket.remoteAddress ?? '').replace(/^::ffff:/, '');
+      const mine = hatchery.names().filter((n) => n.host === ip);
+      if (!mine.length) throw Object.assign(new Error(`No egg here has its node at ${ip}. Lay your egg first (fatline egg), then ask again.`), { status: 404 });
+      return { ip, names: mine.map((n) => ({ ...n, url: `https://${n.label}.fatline.ink` })) };
+    }],
     ['POST', /^\/eggs$/, (m, body) => hatchery.lay(body)],
     ['POST', /^\/eggs\/(\d{1,12})\/take$/, (m, body) => relay(Number(m[1]), body, 'Egg')],
     ['POST', /^\/eggs\/(\d{1,12})\/hatch$/, (m, body) => relay(Number(m[1]), body, 'Hatch')],
@@ -215,7 +224,7 @@ async function serve() {
         for await (const chunk of req) { raw += chunk; if (raw.length > 20_000) throw Object.assign(new Error('Too big.'), { status: 413 }); }
         body = raw ? JSON.parse(raw) : {};
       }
-      send(200, await route[2](path.match(route[1]), body));
+      send(200, await route[2](path.match(route[1]), body, req));
     } catch (err) {
       send(err.status ?? 500, { error: err.message });
     }
