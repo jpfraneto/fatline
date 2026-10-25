@@ -34,6 +34,9 @@
 
   article { max-width: 680px; margin: 0 auto; padding: 48px 16px 80px; }
   article h1 { margin: 0 0 28px; font-weight: 800; font-size: clamp(52px, 11vw, 96px); line-height: .95; letter-spacing: -.02em; font-variation-settings: 'opsz' 144, 'SOFT' 100, 'WONK' 1; }
+  article h2, article h3 { scroll-margin-top: 24px; transition: background-color .8s; }
+  article img { max-width: 100%; height: auto; border-radius: 12px; display: block; }
+  .linked { background: rgba(61, 139, 255, .16); border-radius: 8px; }
   article h2 { position: relative; margin: 64px 0 14px; font-weight: 700; font-size: 30px; line-height: 1.15; font-variation-settings: 'opsz' 96, 'SOFT' 100, 'WONK' 1; }
   /* every section opens with the line of light */
   article h2::before { content: ""; display: block; width: 56px; height: 2px; margin-bottom: 18px; border-radius: 2px; background: linear-gradient(90deg, var(--blue), var(--pink)); }
@@ -87,6 +90,18 @@
   } catch {
     doc.innerHTML = '<p>Could not load this page. <a href="index.md">Read the Markdown</a> or <a href="tutorial.html">the tutorial</a>.</p>';
     return;
+  }
+  // Every heading gets an id from its words, so any part of this page can be linked (#…). After the Markdown is
+  // drawn, go to the part the link names (the browser looked for it before it existed) and light it up briefly.
+  doc.querySelectorAll('h2, h3').forEach((h) => { if (!h.id) h.id = h.textContent.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); });
+  const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (target) {
+    const h = target.matches('h2, h3') ? target : target.nextElementSibling?.matches('h2, h3') ? target.nextElementSibling : target;
+    const go = () => h.scrollIntoView({ block: 'start' });
+    requestAnimationFrame(() => { go(); h.classList.add('linked'); setTimeout(() => h.classList.remove('linked'), 2600); });
+    // Images above it can push it down as they load: follow it until they are all in (or the reader scrolls).
+    let moved = false; addEventListener('wheel', () => (moved = true), { once: true }); addEventListener('touchmove', () => (moved = true), { once: true });
+    Promise.all([...doc.querySelectorAll('img')].map((i) => i.complete ? 0 : new Promise((r) => { i.onload = i.onerror = r; }))).then(() => { if (!moved) go(); });
   }
   // Until the demo is recorded, its frame says so instead of showing a broken player.
   const v = doc.querySelector('video.demo');

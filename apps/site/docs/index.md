@@ -22,17 +22,33 @@ That's it. The agent reads [the skill](../skill.md) and walks you through it, as
 
 **To cast**, press **Cast** in your client. The first time it gives the client its own key for your account (not a new account): approve in the Farcaster app (QR code or link), or sign once with a browser wallet that owns your account. Your node doesn't have to be in sync; until it is, casts go out through Fatline's master node, and the client says so. [How it works](tutorial.html#post).
 
-## Already run a node?
+<a id="bring-your-node"></a>
 
-If you already run Snapchain or Hypersnap on a server, bring it in with one line on that server (Debian/Ubuntu, as root):
+## Already run a node? Bring it in
+
+Snapchain or Hypersnap, on any server you run: it can join the Fatline network as it is. Two steps, and nothing to pay.
+
+![Bring your own node: one line on its server, and your node keeps an egg warm](../img/join/join.gif)
+
+**1. On your node's server** (Debian or Ubuntu, as root):
 
 ```sh
 curl -fsSL https://fatline.ink/join.sh | sudo bash
 ```
 
-![Bring your own node: one line on its server, and your node keeps an egg warm](../img/join/join.gif)
+It finds your node and shows its version and sync, then asks before it installs the hatchery next to it (port 8791): the small service that keeps eggs warm. Servers in the network check each other's nodes every hour, and once your egg hatches, yours checks theirs. It offers Snapchain auto-upgrade too. Your node itself isn't touched. Ports 3381 (Snapchain) or 4381 (Hypersnap) and 8791 must be open to the internet. Only want to look? `curl -fsSL https://fatline.ink/join.sh | sudo bash -s -- --check`. [Read the script first](https://github.com/jpfraneto/fatline/blob/main/apps/site/join.sh).
 
-It finds your node and shows its version and sync, then asks before it installs the hatchery next to it (port 8791): the small service that keeps eggs warm by checking nodes every hour. It offers Snapchain auto-upgrade too, and tells you how to lay your egg. Your node itself isn't touched. Add `-s -- --check` after `bash` to only look. [Read it first](https://github.com/jpfraneto/fatline/blob/main/apps/site/join.sh).
+**2. On your own computer**, lay your egg on that node (put your server's address in):
+
+```sh
+curl -fsSL https://fatline.ink/install.sh | sh
+fatline identity
+fatline egg --node http://<your server>:3381
+```
+
+`fatline identity` gives Fatline a key for your account (a QR code for the Farcaster app; no app? use the Cast button's wallet sign-in in `fatline client`). `fatline egg` shows the rules, then a QR code: you approve with the wallet tied to your Farcaster account, and the egg is yours. Three warm days and it hatches. Watch it on [the hatchery](https://fatline.ink/).
+
+Or hand both steps to your agent: `Help me run a Fatline: https://fatline.ink/skill.md` and tell it your node's address.
 
 ## Your window
 
