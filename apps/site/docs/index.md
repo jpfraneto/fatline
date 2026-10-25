@@ -30,6 +30,8 @@ If you already run Snapchain or Hypersnap on a server, bring it in with one line
 curl -fsSL https://fatline.ink/join.sh | sudo bash
 ```
 
+![Bring your own node: one line on its server, and your node keeps an egg warm](../img/join/join.gif)
+
 It finds your node and shows its version and sync, then asks before it installs the hatchery next to it (port 8791): the small service that keeps eggs warm by checking nodes every hour. It offers Snapchain auto-upgrade too, and tells you how to lay your egg. Your node itself isn't touched. Add `-s -- --check` after `bash` to only look. [Read it first](https://github.com/jpfraneto/fatline/blob/main/apps/site/join.sh).
 
 ## Your window

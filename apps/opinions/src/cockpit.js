@@ -139,7 +139,7 @@ function speak() {
     el('p', {}, el('b', {}, 'Give this window a voice. '), 'It needs its own key for your account (a second key, not a new account), made once:'),
     el('div', { class: 'ck-speak-ways' },
       el('div', {}, el('button', { type: 'button', class: 'ck-speak-btn', onclick: () => document.querySelector('.castbutton')?.click() }, 'Sign in with Farcaster'),
-        el('small', {}, 'Scan a QR code with the Farcaster app and approve, or sign with a browser wallet that owns your account. No recovery phrase.'))));
+        el('small', {}, 'Scan a QR code with the Farcaster app, or sign with the wallet that owns your account (no app needed: put your recovery phrase into MetaMask or Rabby once). Nothing is typed here.'))));
 }
 
 // Around the fire: your voice and your people's, through this window.

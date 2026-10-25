@@ -17,8 +17,8 @@ const STEPS = {
 // Errors from Farcaster's sign-in, in words a person can act on.
 function friendly(text) {
   const t = String(text ?? '');
-  if (/timeout|timed out|aborted/i.test(t)) return 'Farcaster took too long to answer. Try again (it usually works the second time), or sign with a browser wallet below.';
-  if (/unavailable/i.test(t)) return 'Farcaster\'s sign-in service says it is unavailable right now. Wait a minute and try again, or sign with a browser wallet below.';
+  if (/timeout|timed out|aborted/i.test(t)) return 'Farcaster took too long to answer. Try again (it usually works the second time), or sign with your own wallet below.';
+  if (/unavailable/i.test(t)) return 'Farcaster\'s sign-in service says it is unavailable right now. Wait a minute and try again, or sign with your own wallet below.';
   return t;
 }
 
@@ -107,12 +107,12 @@ export function castButton() {
     copy.addEventListener('click', async () => { await navigator.clipboard?.writeText(link.dataset.web || link.querySelector('a').href).catch(() => {}); copy.textContent = 'Copied: paste it on your phone'; });
     const retry = el('button', { type: 'button', class: 'quiet', hidden: true, onclick: () => showLogin() }, 'Try again');
     const ui = { msg, qr, link, retry };
-    const wallet = el('button', { type: 'button', class: 'quiet', onclick: () => withWallet(ui) }, 'Use a browser wallet instead');
+    const wallet = el('button', { type: 'button', class: 'quiet', onclick: () => withWallet(ui) }, 'Sign with your own wallet');
     panel.replaceChildren(head('Sign in with Farcaster'),
-      el('p', { class: 'small' }, 'This gives this client a key for your own account. It does not create a new account. The key can cast, like and follow, never move your account.'),
+      el('p', { class: 'small' }, 'This gives this client a key for your own account. It does not create a new account. The key can cast, like and follow, never move your account. Two ways: the Farcaster app (scan below), or your own wallet (no app at all).'),
       qr, link, msg, retry,
       el('div', { class: 'castpanel-alt' }, wallet,
-        el('p', { class: 'muted small' }, 'Only if a wallet in this browser owns your Farcaster account (its custody address). Two signatures, no transaction, no gas.')),
+        el('p', { class: 'muted small' }, 'No Farcaster app needed, nothing in between: you sign here and the key goes straight to your node. For the wallet that owns your account: put your Farcaster recovery phrase into a wallet like MetaMask or Rabby once, then sign. Two signatures, no transaction, no gas.')),
       el('details', { class: 'muted small' }, el('summary', {}, 'Other ways'),
         el('p', {}, 'In a terminal on the machine this client runs on: fatline identity (the same QR code). Last resort: fatline identity --phrase, with your recovery phrase typed into a hidden prompt there, used once and never saved. Never paste it into a chat.')));
     try {
