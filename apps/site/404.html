@@ -79,8 +79,11 @@
   <a href="/manifesto.html">MANIFESTO</a>
   <a href="/f/FATLINE" id="nav-fatline">$FATLINE</a>
 </nav>
-<main id="main"><p class="muted">Loading…</p></main>
+<main id="main"><p class="muted">Loading…</p><p class="muted">Looking for the instructions for your agent? They are at https://fatline.ink/skill.md</p></main>
 <script>
+// A link to the skill that picked up a stray character when it was shared (a closing quote “ ” " or a dot):
+// send it to the real file.
+if (/^\/skill\.md./i.test(location.pathname)) location.replace('/skill.md');
 // GitHub Pages serves this page for every path it has no file for. /f/<TICKER> is a Fatline's page,
 // /base/0x<address> is its coin's page (the same page, once the coin exists); anything else is "not found".
 const NAME = { snapchain: 'Snapchain', hypersnap: 'Hypersnap' };

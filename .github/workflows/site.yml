@@ -36,6 +36,8 @@ jobs:
       - name: Token metadata (tokenURI = fatline.ink/fatliners/<fid>)
         continue-on-error: true # if Base can't be read, the committed files stay
         run: node apps/site/fatliners.mjs apps/site/fatliners
+      - name: The shareable skill page (skill/index.html, from skill.md)
+        run: node apps/site/skill-page.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

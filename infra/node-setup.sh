@@ -105,13 +105,17 @@ curl -fsSL "https://raw.githubusercontent.com/farcasterxyz/snapchain/@latest/scr
 chmod +x snapchain.sh
 touch .env
 grep -q '^AGREE_NO_REWARDS_FOR_ME=' .env || echo 'AGREE_NO_REWARDS_FOR_ME=true' >> .env
-# Snapchain's weekly auto-upgrade picks its day from the operator's FID. Without one it stops, so skip it
-# (re-run ./snapchain.sh upgrade by hand) unless FATLINE_OPERATOR_FID is given.
-if [ -n "${FATLINE_OPERATOR_FID:-}" ]; then
-  grep -q '^HUB_OPERATOR_FID=' .env || echo "HUB_OPERATOR_FID=$FATLINE_OPERATOR_FID" >> .env
-else
-  grep -q '^HUB_OPERATOR_FID=' .env || echo 'HUB_OPERATOR_FID=0' >> .env
-  grep -q '^SKIP_CRONTAB=' .env || echo 'SKIP_CRONTAB=true' >> .env
+# Snapchain's own weekly auto-upgrade needs an operator FID, and weekly is too slow anyway: v0.15.0 shipped
+# on 2026-10-23 with a protocol change active the same day, and our own node stuck on 0.14.3 until upgraded
+# by hand. So Fatline skips Snapchain's crontab and adds its own: ./snapchain.sh upgrade once a day, at a
+# random time (so nodes don't all restart together). It only restarts the node when there is a new version.
+# FATLINE_NO_AUTOUPGRADE=1 turns it off.
+grep -q '^HUB_OPERATOR_FID=' .env || echo "HUB_OPERATOR_FID=${FATLINE_OPERATOR_FID:-0}" >> .env
+grep -q '^SKIP_CRONTAB=' .env || echo 'SKIP_CRONTAB=true' >> .env
+if [ "${FATLINE_NO_AUTOUPGRADE:-}" != 1 ] && command -v crontab >/dev/null; then
+  line="$((RANDOM % 60)) $((RANDOM % 24)) * * * cd $PWD && ./snapchain.sh upgrade >> $PWD/autoupgrade.log 2>&1 # fatline-autoupgrade"
+  { crontab -l 2>/dev/null | grep -v 'fatline-autoupgrade'; echo "$line"; } | crontab -
+  say "Auto-upgrade on: Snapchain checks for a new version once a day (crontab: fatline-autoupgrade)"
 fi
 
 # A replicated copy that didn't finish can't be resumed: Snapchain keeps it in .rocks/.snapshot, and it only

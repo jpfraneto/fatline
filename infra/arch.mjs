@@ -9,7 +9,8 @@
 //   2. the arch rises from the ground, each pixel sparking blue (Snapchain) or pink (Hypersnap) before it settles,
 //   3. a shine crosses the tile,
 //   4. the name types itself out underneath.
-// Any key skips it. FATLINE_NO_ANIMATION=1 or NO_COLOR turns it off; it never runs without a terminal.
+// Any key skips it. FATLINE_NO_ANIMATION=1 or NO_COLOR turns it off; it never runs without a terminal, nor over
+// SSH (a tester on a server saw it crawl at ~5 frames a second).
 
 const PURPLE_TOP = [143, 104, 216];
 const PURPLE_BOTTOM = [118, 82, 196];
@@ -125,7 +126,7 @@ export function paint(w, h, colorAt, indent = '  ') {
 
 // ---------------------------------------------------------------- play
 export function animationAllowed(out = process.stdout) {
-  return Boolean(out.isTTY) && !process.env.NO_COLOR && !process.env.FATLINE_NO_ANIMATION && (out.columns ?? 80) >= 40 && (out.rows ?? 24) >= 20;
+  return Boolean(out.isTTY) && !process.env.NO_COLOR && !process.env.FATLINE_NO_ANIMATION && !process.env.SSH_CONNECTION && !process.env.SSH_TTY && (out.columns ?? 80) >= 40 && (out.rows ?? 24) >= 20;
 }
 
 /** Plays the arch, then the name. Resolves when done or skipped. */
