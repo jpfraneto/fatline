@@ -14,8 +14,11 @@ skip() { say "  Your client: $*"; exit 0; }
 stop() { say "  Your client: $*"; exit 1; }
 
 # Which name is mine? The master matches the address this request comes from against the eggs it checks.
-mine=$(curl -sS -m 15 "http://$MASTER:8791/names/mine" || true)
-read -r name fid < <(printf '%s' "$mine" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const n=JSON.parse(s).names?.[0];if(n)console.log(n.label,n.fid)}catch{}})' || true)
+# (Right after fatline update restarts a hatchery, it takes a few seconds to answer: on the master, this is it.)
+mine=""
+for i in $(seq 1 20); do mine=$(curl -fsS -m 15 "http://$MASTER:8791/names/mine" 2>/dev/null) && break; sleep 2; done
+name=""; fid=""
+read -r name fid < <(printf '%s' "$mine" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const n=JSON.parse(s).names?.[0];if(n)console.log(n.label,n.fid)}catch{}})') || true
 [ -n "${name:-}" ] || skip "not yet (it gets an address once its egg is laid)."
 host="$name.fatline.ink"
 
