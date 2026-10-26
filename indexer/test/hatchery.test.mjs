@@ -239,3 +239,28 @@ test('names: <surname>.fatline.ink points at the server that runs the egg\'s nod
     { label: 'thaituma', fid: 1, host: '5.161.241.24', hatched: false },
   ]);
 });
+
+test('an egg can only point at public addresses: no private ranges, no metadata, no redirects', async () => {
+  const { isPublicAddress, outsideFetch } = await import('../src/outside-fetch.mjs');
+  for (const ip of ['10.0.0.1', '172.16.3.4', '192.168.1.1', '169.254.169.254', '127.0.0.1', '0.0.0.0', '100.64.0.1', '::1', '::ffff:10.0.0.1', '::ffff:127.0.0.1', 'fd00::1', 'fe80::1']) {
+    assert.equal(isPublicAddress(ip), false, ip);
+  }
+  for (const ip of ['1.2.3.4', '46.225.208.199', '8.8.8.8', '2a01:4f8::1']) assert.equal(isPublicAddress(ip), true, ip);
+  // Refused before any connection: private literals, and names that resolve to localhost.
+  await assert.rejects(outsideFetch('http://169.254.169.254/hetzner/v1/metadata'), /not a public address/);
+  await assert.rejects(outsideFetch('http://[::ffff:127.0.0.1]:3381/v1/info'), /not a public address/);
+  await assert.rejects(outsideFetch('http://localhost:3381/v1/info'), /not a public address/);
+  await assert.rejects(outsideFetch('http://localtest.me:3381/v1/info'), /not a public address|ENOTFOUND|EAI_AGAIN/);
+  const { h, claim } = setup();
+  await assert.rejects(h.lay(claim({ node: 'http://10.0.0.5:3381' })), /public address, not a private one/);
+  await assert.rejects(h.lay(claim({ node: 'http://169.254.169.254:3381' })), /public address, not a private one/);
+});
+
+test('a hatchery started without a test fetch sends egg URLs through the public-only fetch', async () => {
+  const { outsideFetch } = await import('../src/outside-fetch.mjs');
+  const { privateKeyToAccount, generatePrivateKey } = await import('viem/accounts');
+  const h = new Hatchery({ config: {}, privateKey: generatePrivateKey(), contract: {}, reference: {}, dataDir: mkdtempSync(join(tmpdir(), 'hatch-')), computeDna: async () => '0x' });
+  assert.equal(h.outside, outsideFetch);
+  assert.equal(h.fetch, fetch);
+  void privateKeyToAccount;
+});

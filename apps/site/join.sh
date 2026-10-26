@@ -1,19 +1,30 @@
 #!/usr/bin/env bash
 # Bring a Farcaster node you already run into Fatline:   curl -fsSL https://fatline.ink/join.sh | sudo bash
 #
+# Look first, change nothing:  curl -fsSL https://fatline.ink/join.sh | bash -s -- --check
+# Undo everything it did:      curl -fsSL https://fatline.ink/join.sh | sudo bash -s -- --remove
+# No script at all: run the hatchery as a locked-down container instead (infra/hatchery.compose.yml).
+#
 # Run it on the server where your Snapchain or Hypersnap node runs (Debian/Ubuntu, root). What it does, in order,
 # asking before it changes anything:
 #   1. finds your node on this machine (Snapchain on port 3381, Hypersnap on 4381) and shows its version and sync;
-#   2. installs the hatchery next to it (infra/hatchery-setup.sh: Node 22, Fatline in /root/fatline, a key of
-#      this server's own, a service on port 8791). The hatchery is what keeps an egg warm: other servers check
-#      your node every hour, and once your egg hatches, your server checks theirs;
+#   2. installs the hatchery next to it (infra/hatchery-setup.sh, from the exact commit named below: Node 22 checked
+#      against a pinned hash, Fatline in /root/fatline, a new key of this server's own, a service on port 8791).
+#      The service is locked down: no root powers, it writes only /root/.fatline, the rest of the disk is read-only
+#      to it. The hatchery is what keeps an egg warm: other servers check your node every hour, and once your
+#      egg hatches, your server checks theirs;
 #   3. Snapchain only: offers auto-upgrade (a daily ./snapchain.sh upgrade);
 #   4. prints how to lay your egg, from any computer, with the wallet tied to your Farcaster account.
-# Your node itself is not touched. --check only looks (step 1) and changes nothing.
+# Your node itself is not touched: not its files, not its keys, not its config. The hatchery only asks it
+# questions over HTTP. Updates happen only when you run fatline update, which shows what changed first.
 # Source: https://github.com/jpfraneto/fatline/blob/main/apps/site/join.sh · MIT
 set -euo pipefail
-RAW="${FATLINE_RAW:-https://raw.githubusercontent.com/jpfraneto/fatline/main}"
-CHECK=0; [ "${1:-}" = "--check" ] && CHECK=1
+# The commit this script installs. fatline.ink writes its own commit here when it builds the site, so what you
+# read is what runs; FATLINE_REF=<commit> picks another one (it must be on main).
+REF="${FATLINE_REF:-main}"
+REPO="https://github.com/jpfraneto/fatline"
+RAW="${FATLINE_RAW:-https://raw.githubusercontent.com/jpfraneto/fatline/$REF}"
+MODE="${1:-}"
 
 say() { printf '%s\n' "$*"; }
 stop() { say ""; say "  $*"; exit 1; }
@@ -25,8 +36,35 @@ ask() { # ask "question": yes only with a terminal and a y
 command -v curl >/dev/null || stop "curl is missing: apt-get install -y curl"
 
 say ""
-say "  FATLINE · bring your node"
+say "  FATLINE · bring your node   (commit $REF)"
 say ""
+
+# --remove: everything join.sh and fatline update put on this server, except the key and the code (it says where).
+if [ "$MODE" = "--remove" ]; then
+  [ "$(id -u)" = 0 ] || stop "Removing system services needs root: curl -fsSL https://fatline.ink/join.sh | sudo bash -s -- --remove"
+  say "  This stops the hatchery (your egg is no longer kept warm here) and your client at <surname>.fatline.ink."
+  ask "Remove Fatline's services from this server?" || stop "Nothing was changed."
+  for u in fatline-client-https fatline-client fatline-hatchery; do
+    systemctl disable --now -q "$u" 2>/dev/null || true
+    rm -rf "/etc/systemd/system/$u.service" "/etc/systemd/system/$u.service.d"
+  done
+  systemctl daemon-reload
+  if [ -f /etc/caddy/fatline-client.caddy ]; then
+    rm -f /etc/caddy/fatline-client.caddy
+    sed -i '\|^import /etc/caddy/fatline-client.caddy$|d' /etc/caddy/Caddyfile 2>/dev/null || true
+    systemctl reload caddy 2>/dev/null || true
+  fi
+  crontab -l 2>/dev/null | grep -q fatline-autoupgrade && { crontab -l | grep -v fatline-autoupgrade | crontab - || true; say "  Snapchain auto-upgrade: off"; }
+  command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q "8791/tcp" && ufw delete allow 8791/tcp >/dev/null || true
+  [ "$(readlink /usr/local/bin/fatline 2>/dev/null)" = /root/fatline/fatline ] && rm -f /usr/local/bin/fatline
+  say "  Removed: the fatline-hatchery, fatline-client and fatline-client-https services, the fatline command link."
+  say "  Kept, delete them yourself if you want:"
+  say "    /root/.fatline         this server's hatchery key and eggs (keep it to come back with the same key)"
+  say "    /root/.fatline-client  your client's data       /root/fatline   the code"
+  [ -x /usr/local/bin/caddy ] && say "    /usr/local/bin/caddy   (installed for your client's https)"
+  say "  Your node was not touched."
+  exit 0
+fi
 
 # 1. The node(s) on this machine.
 found=""
@@ -51,7 +89,16 @@ ip=$(curl -fsS -m 8 https://api.ipify.org 2>/dev/null || true)
 say ""
 say "  Other servers check your node from outside, so these must be open to the internet:"
 say "    tcp 3381 (Snapchain) or tcp 4381 (Hypersnap), and tcp 8791 (the hatchery)."
-if [ "$CHECK" = 1 ]; then
+say ""
+say "  Joining changes this server like this, and nothing else:"
+say "    + Node.js 22 in /usr/local, if it has no Node 22 yet (pinned release, hash checked)"
+say "    + /root/fatline         the code, at commit $REF"
+say "    + /root/.fatline        a new key for this server's hatchery (not your Farcaster key, holds no money)"
+say "    + fatline-hatchery      a service on port 8791, locked down: writes only /root/.fatline, no root powers"
+say "    + port 8791 in ufw, if ufw is on"
+say "  Later, once your egg is laid, fatline update adds your client at https://<surname>.fatline.ink (port 80/443)."
+say "  Undo it all: curl -fsSL https://fatline.ink/join.sh | sudo bash -s -- --remove"
+if [ "$MODE" = "--check" ]; then
   say ""; say "  --check: nothing was changed. Run without it to join."; exit 0
 fi
 if systemctl is-active --quiet fatline-hatchery 2>/dev/null; then
@@ -59,13 +106,17 @@ if systemctl is-active --quiet fatline-hatchery 2>/dev/null; then
 fi
 
 [ "$(id -u)" = 0 ] || stop "The hatchery installs a system service: run this as root (curl -fsSL https://fatline.ink/join.sh | sudo bash)."
-command -v apt-get >/dev/null || stop "The hatchery's setup needs Debian or Ubuntu (apt). Other systems: open an issue at https://github.com/jpfraneto/fatline/issues"
+command -v apt-get >/dev/null || stop "The hatchery's setup needs Debian or Ubuntu (apt). Other systems: the container (https://fatline.ink/docs/#bring-your-node), or open an issue at $REPO/issues"
 
-# 2. The hatchery.
+# 2. The hatchery: its setup script at this same commit, downloaded first and shown, then run (not piped).
 say ""
-ask "Install the hatchery next to your node (Node 22, Fatline in /root/fatline, port 8791)?" \
-  || stop "Nothing was changed. Read what it runs first: $RAW/infra/hatchery-setup.sh"
-curl -fsSL "$RAW/infra/hatchery-setup.sh" | bash
+ask "Install the hatchery next to your node?" \
+  || stop "Nothing was changed. Read what it would run: $RAW/infra/hatchery-setup.sh"
+setup=$(mktemp)
+trap 'rm -f "$setup"' EXIT
+curl -fsSL "$RAW/infra/hatchery-setup.sh" -o "$setup" || stop "Could not download $RAW/infra/hatchery-setup.sh"
+say "  Running infra/hatchery-setup.sh at $REF (sha256 $(sha256sum "$setup" | cut -c1-16)…)"
+FATLINE_REF="$REF" FATLINE_OWN_SERVER=1 bash "$setup"
 
 # 3. Auto-upgrade, for Snapchain.
 case "$found" in *snapchain*)

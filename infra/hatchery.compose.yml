@@ -1,0 +1,38 @@
+# The Fatline hatchery next to a node you already run, without running any script as root.
+#
+#   mkdir -p ~/fatline-hatchery && cd ~/fatline-hatchery
+#   curl -fsSLO https://raw.githubusercontent.com/jpfraneto/fatline/main/infra/hatchery.compose.yml
+#   mkdir -p data && sudo chown 1000:1000 data     # the only folder it writes: its key and its eggs
+#   docker compose -f hatchery.compose.yml up -d
+#   curl -s localhost:8791/                         # its attester address
+#
+# What it can do: read your node over HTTP (port 3381 or 4381 on this machine), reach the internet to check other
+# nodes (public addresses only), write ./data, and answer on port 8791. What it can't: run as root, gain privileges,
+# write anywhere else, see your node's files or keys, or touch Docker. Your node is not changed.
+# Update: change the image line to a newer version, then up -d again. Remove: docker compose down (./data keeps the key).
+# Source: https://github.com/jpfraneto/fatline/blob/main/infra/hatchery.compose.yml · MIT
+services:
+  fatline-hatchery:
+    # Pin one version. Check it was built from the public repository before you run it:
+    #   gh attestation verify oci://ghcr.io/jpfraneto/fatline-hatchery:<version> --owner jpfraneto
+    image: ghcr.io/jpfraneto/fatline-hatchery:${FATLINE_VERSION:-latest}
+    container_name: fatline-hatchery
+    restart: unless-stopped
+    user: "1000:1000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    tmpfs: ["/tmp:size=16m,noexec,nosuid,nodev"]
+    pids_limit: 128
+    mem_limit: 512m
+    cpus: 1.0
+    ports: ["8791:8791"]
+    # Your node, from inside the container. Snapchain publishes 3381 on the host; Hypersnap 4381.
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    environment:
+      HATCHERY_FARCASTER_NODE: ${HATCHERY_FARCASTER_NODE:-http://host.docker.internal:3381}
+      HATCHERY_HYPERSNAP_NODE: ${HATCHERY_HYPERSNAP_NODE:-http://host.docker.internal:4381}
+    volumes: ["./data:/data"]
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }

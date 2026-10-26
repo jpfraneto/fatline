@@ -30,13 +30,38 @@ Snapchain or Hypersnap, on any server you run: it can join the Fatline network a
 
 ![Bring your own node: one line on its server, and your node keeps an egg warm](../img/join/join.gif)
 
-**1. On your node's server** (Debian or Ubuntu, as root):
+**1. On your node's server.** Look first; this changes nothing:
+
+```sh
+curl -fsSL https://fatline.ink/join.sh | bash -s -- --check
+```
+
+It finds your node, shows its version and sync, and lists everything joining would change. Then join (Debian or Ubuntu, as root):
 
 ```sh
 curl -fsSL https://fatline.ink/join.sh | sudo bash
 ```
 
-It finds your node and shows its version and sync, then asks before it installs the hatchery next to it (port 8791): the small service that keeps eggs warm. Servers in the network check each other's nodes every hour, and once your egg hatches, yours checks theirs. It offers Snapchain auto-upgrade too. Your node itself isn't touched. Ports 3381 (Snapchain) or 4381 (Hypersnap) and 8791 must be open to the internet. Only want to look? `curl -fsSL https://fatline.ink/join.sh | sudo bash -s -- --check`. [Read the script first](https://github.com/jpfraneto/fatline/blob/main/apps/site/join.sh).
+It asks before it installs the hatchery next to your node (port 8791): the small service that keeps eggs warm. Servers in the network check each other's nodes every hour, and once your egg hatches, yours checks theirs. Ports 3381 (Snapchain) or 4381 (Hypersnap) and 8791 must be open to the internet. [Read the script first](https://github.com/jpfraneto/fatline/blob/main/apps/site/join.sh).
+
+What it does to your server, and what it doesn't:
+
+- **Your node isn't touched**: not its files, keys or config. The hatchery only asks it questions over HTTP.
+- **One exact version.** The script on fatline.ink names the commit it installs, and installs only that one. Node.js comes from a pinned release, checked against a hash.
+- **Locked down.** The hatchery runs with no root powers and can write only `/root/.fatline`; the rest of the disk is read-only to it (`systemd-analyze security fatline-hatchery`). It reaches only public addresses on the internet, never your private network.
+- **A new key**, made on your server for its hatchery. It isn't your Farcaster key and holds no money.
+- **Updates only when you say so**: `fatline update` shows what's new and asks first.
+- **Undo it all**: `curl -fsSL https://fatline.ink/join.sh | sudo bash -s -- --remove`
+
+**No script at all?** Run the hatchery as a container instead: non-root, read-only, no capabilities, one folder, one port. Get [hatchery.compose.yml](https://github.com/jpfraneto/fatline/blob/main/infra/hatchery.compose.yml), then:
+
+```sh
+gh attestation verify oci://ghcr.io/jpfraneto/fatline-hatchery:<commit> --owner jpfraneto   # built here, from this repository
+mkdir -p data && sudo chown 1000:1000 data
+FATLINE_VERSION=<commit> docker compose -f hatchery.compose.yml up -d
+```
+
+The container keeps eggs warm; your client at `<surname>.fatline.ink` comes with the script, not the container.
 
 **2. On your own computer**, lay your egg on that node (put your server's address in):
 

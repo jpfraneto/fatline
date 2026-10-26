@@ -58,6 +58,8 @@ systemctl enable -q fatline-client
 systemctl restart fatline-client
 for i in $(seq 1 30); do curl -fsS -m 3 "http://127.0.0.1:$PORT/api/health" >/dev/null 2>&1 && break; sleep 2; done
 curl -fsS -m 3 "http://127.0.0.1:$PORT/api/health" >/dev/null || stop "Your client didn't start: journalctl -u fatline-client -n 50"
+# Locked down (infra/harden.sh): writes only $DATA, no root powers.
+bash "$DIR/infra/harden.sh" fatline-client "http://127.0.0.1:$PORT/api/health" - "$DATA"
 
 # https at <name>.fatline.ink.
 if [ -f /etc/caddy/Caddyfile ] && systemctl is-active --quiet caddy; then
@@ -68,10 +70,19 @@ if [ -f /etc/caddy/Caddyfile ] && systemctl is-active --quiet caddy; then
   systemctl reload caddy
 else
   if [ ! -x /usr/local/bin/caddy ]; then
-    case "$(uname -m)" in x86_64) arch=amd64 ;; aarch64|arm64) arch=arm64 ;; *) stop "No Caddy build for $(uname -m)." ;; esac
-    curl -fsSL "https://caddyserver.com/api/download?os=linux&arch=$arch" -o /usr/local/bin/caddy
-    chmod +x /usr/local/bin/caddy
+    # One pinned Caddy release from its GitHub page, checked against the hash written here.
+    CADDY_V=2.11.7
+    case "$(uname -m)" in
+      x86_64) arch=amd64; sum=a7a433a1b133efc3c8d10eb0b99d52a24b5ef5c322dc77f5282182b1c0402139ab83f3a99f0c52409df77d20123fb0b523edad8a66d8f5e49136197bf61ef0e7 ;;
+      aarch64|arm64) arch=arm64; sum=3db36ba90c7a6e8dda40ee3dd71fa08844c76b5fb08f61b31e5e78d2ed38e71c51dc7baed875e50d1ca1279196e84302967237386ae87c91ae9f2aaceada682e ;;
+      *) stop "No Caddy build for $(uname -m)." ;;
+    esac
+    t="/tmp/caddy_${CADDY_V}_linux_$arch.tar.gz"
+    curl -fsSL "https://github.com/caddyserver/caddy/releases/download/v$CADDY_V/caddy_${CADDY_V}_linux_$arch.tar.gz" -o "$t"
+    echo "$sum  $t" | sha512sum -c --quiet - || { rm -f "$t"; stop "the Caddy download did not match its hash."; }
+    tar -xzf "$t" -C /usr/local/bin caddy && chmod 755 /usr/local/bin/caddy && rm -f "$t"
   fi
+  mkdir -p /root/.local/share/caddy /root/.config/caddy
   cat > /etc/systemd/system/fatline-client-https.service <<EOF
 [Unit]
 Description=https for the Fatline client at $host
@@ -89,6 +100,8 @@ EOF
   systemctl daemon-reload
   systemctl enable -q fatline-client-https
   systemctl is-active --quiet fatline-client-https || systemctl restart fatline-client-https
+  # Locked down: it may bind ports 80 and 443 and keep its certificates, nothing more.
+  bash "$DIR/infra/harden.sh" fatline-client-https - CAP_NET_BIND_SERVICE /root/.local/share/caddy /root/.config/caddy
 fi
 command -v ufw >/dev/null && ufw status 2>/dev/null | grep -q "Status: active" && { ufw allow 80/tcp >/dev/null; ufw allow 443/tcp >/dev/null; }
 

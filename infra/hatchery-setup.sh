@@ -12,7 +12,12 @@
 #   6. fatline update: this server's client at <surname>.fatline.ink, once its egg is laid.
 #
 # Env (optional): FATLINERS_ADDRESS (default: the one in smart-contracts/deployments/base.json), FATLINERS_CHAIN_ID,
-# FATLINERS_RPC, HATCHERY_RELAY=1 (submit mints for people, paying gas from this server's key), FATLINE_REPO, FATLINE_BRANCH.
+# FATLINERS_RPC, HATCHERY_RELAY=1 (submit mints for people, paying gas from this server's key), FATLINE_REPO, FATLINE_BRANCH,
+# FATLINE_REF (a commit on that branch: install exactly that one; join.sh passes the commit it was built from).
+#
+# The service runs locked down (infra/harden.sh, a systemd drop-in): no root powers, no new privileges, the whole
+# filesystem read-only except /root/.fatline, private /tmp and /dev, internet sockets only.
+# Check it: systemd-analyze security fatline-hatchery
 set -euo pipefail
 say() { printf '\n== %s\n' "$*"; }
 
@@ -25,15 +30,30 @@ say "1. Tools"
 command -v git >/dev/null || { apt-get update -qq && apt-get install -y -qq git >/dev/null; }
 command -v jq >/dev/null || { apt-get update -qq && apt-get install -y -qq jq >/dev/null; }
 if ! command -v node >/dev/null || [ "$(node -p 'process.versions.node.split(".")[0]')" -lt 22 ]; then
-  curl -fsSL https://deb.nodesource.com/setup_22.x | bash - >/dev/null
-  apt-get install -y -qq nodejs >/dev/null
+  # One pinned Node.js release, checked against the hash written here (not one fetched next to the file).
+  NODE_V=22.23.4
+  case "$(uname -m)" in
+    x86_64) f="node-v$NODE_V-linux-x64.tar.xz"; sum=1805bcd35e6815559bd2eb97db438d3fdb0eb3a5e6a977b7c1badca76337e9ce ;;
+    aarch64|arm64) f="node-v$NODE_V-linux-arm64.tar.xz"; sum=6287aa46b6c375d816e63ae66d024fbbfd70404825aabdfdf898a970871d2f4b ;;
+    *) echo "No Node.js build here for $(uname -m)."; exit 1 ;;
+  esac
+  command -v xz >/dev/null || apt-get install -y -qq xz-utils >/dev/null
+  curl -fsSL "https://nodejs.org/dist/v$NODE_V/$f" -o "/tmp/$f"
+  echo "$sum  /tmp/$f" | sha256sum -c --quiet - || { echo "Node.js download did not match its hash. Stopping."; rm -f "/tmp/$f"; exit 1; }
+  tar -xJf "/tmp/$f" -C /usr/local --strip-components=1 && rm -f "/tmp/$f"
+  hash -r
 fi
 echo "node $(node -v)"
 
 say "2. Fatline"
-if [ -d "$DIR/.git" ]; then git -C "$DIR" fetch -q origin "$BRANCH" && git -C "$DIR" reset -q --hard "origin/$BRANCH"
+if [ -d "$DIR/.git" ]; then git -C "$DIR" fetch -q origin "$BRANCH"
 else git clone -q --branch "$BRANCH" "$REPO" "$DIR"; fi
-(cd "$DIR/indexer" && npm ci --omit=dev --silent --no-audit --no-fund)
+# A pinned commit must be one that is on the branch: nothing from anywhere else.
+REF="${FATLINE_REF:-origin/$BRANCH}"
+git -C "$DIR" merge-base --is-ancestor "$REF" "origin/$BRANCH" 2>/dev/null \
+  || { echo "FATLINE_REF=$REF is not a commit on $BRANCH of $REPO. Stopping."; exit 1; }
+git -C "$DIR" reset -q --hard "$REF" # stays on the branch, so a later fatline update moves forward from here
+(cd "$DIR/indexer" && npm ci --omit=dev --ignore-scripts --silent --no-audit --no-fund) # the locked versions; no package runs an install script as root
 echo "at $(git -C "$DIR" log -1 --format='%h %s' | cut -c1-80)"
 ln -sf "$DIR/fatline" /usr/local/bin/fatline # fatline update, from anywhere on this server
 
@@ -64,11 +84,15 @@ EOF
 systemctl daemon-reload
 systemctl enable -q fatline-hatchery
 systemctl restart fatline-hatchery
+# Locked down with a drop-in next to the unit: writes only $DATA, no root powers (infra/harden.sh).
+bash "$DIR/infra/harden.sh" fatline-hatchery http://127.0.0.1:8791/ - "$DATA"
 
 say "5. Port 8791"
 if command -v ufw >/dev/null && ufw status | grep -q "Status: active"; then ufw allow 8791/tcp >/dev/null && echo "ufw: 8791/tcp open"; fi
-# Sellers with their own firewall (AgentMetal boots with only SSH open).
-self=$(curl -fsS -m 10 https://api.agentmetal.dev/v1/self 2>/dev/null || true)
+# Sellers with their own firewall (AgentMetal boots with only SSH open). Only for servers Fatline rented:
+# join.sh sets FATLINE_OWN_SERVER=1, so a server you run yourself never calls a seller's API.
+self=""
+[ "${FATLINE_OWN_SERVER:-}" = 1 ] || self=$(curl -fsS -m 10 https://api.agentmetal.dev/v1/self 2>/dev/null || true)
 id=$(printf '%s' "$self" | jq -r '.server_id // empty' 2>/dev/null || true)
 if [ -n "$id" ] && [ "$(echo "$self" | jq -r '.firewall.managed // false')" = true ] \
    && ! echo "$self" | jq -e '.firewall.rules[]? | select(.protocol == "tcp" and .port == "8791")' >/dev/null; then
@@ -85,4 +109,5 @@ else
 fi
 
 say "6. Your client at <surname>.fatline.ink (once your egg is laid; until then: later, with fatline update)"
-"$DIR/fatline" update < /dev/null 2>&1 | tail -5 || true
+# The client from this same commit (no pull: a pinned install stays pinned until you run fatline update).
+"$DIR/fatline" _rebuild "$(git -C "$DIR" rev-parse --short HEAD)" < /dev/null 2>&1 | tail -5 || true

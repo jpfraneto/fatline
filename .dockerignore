@@ -1,0 +1,12 @@
+# Only what infra/hatchery.Dockerfile copies. Everything else (keys, .fatline, node_modules, fatliners/out) stays out.
+*
+!indexer/package.json
+!indexer/package-lock.json
+!indexer/src
+!fatliners/package.json
+!fatliners/src
+!fatliners/calibration
+!smart-contracts/deployments/base.json
+!fatline.config.example.json
+!LICENSE
+!infra/hatchery-entry.mjs

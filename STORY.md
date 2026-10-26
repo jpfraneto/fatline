@@ -159,6 +159,12 @@ More decisions that day:
 - Every place he got stuck was wording or a timeout, not the node: "indexer" sounded like another program, the client didn't say its address, `connect` gave up after 15 seconds on a lookup that takes 20-30, and the Farcaster app said its sign-in was unavailable. He also asked the right question: is an app key a new account? (No: a second key for yours.)
 - Fixed the same day: a fast ownership check, plain messages, the client opens itself, and the Cast button gained the link and a browser-wallet way in.
 
+## 11. Bring your node, without being scared (Oct 25)
+
+- The question: would someone who already runs a node trust `curl | sudo bash` on their node's server? Read as they would read it, no. It ran as root, piped a second script straight from main, followed main forever, installed Node through another `curl | bash`, downloaded an unverified Caddy binary, and asked a seller's API about every server.
+- One finding was a real bug: anyone with a Farcaster app key could lay an egg naming a private address, and the hatchery would fetch it. Now egg URLs reach only public addresses.
+- What changed: one pinned commit, pinned hashes, services that can't do anything but their job, an update that asks, an undo, and a container for people who won't run a script at all. Nothing that already ran had to move: the lockdown is a separate file next to each service.
+
 ## Start from scratch
 
 1. Read the bounty post, then [MASTER-PROMPT.md](MASTER-PROMPT.md), then this file.

@@ -28,6 +28,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: join.sh installs exactly this commit (not whatever main is when someone runs it)
+        run: |
+          sed -i "s|^REF=\"\${FATLINE_REF:-main}\"|REF=\"\${FATLINE_REF:-$GITHUB_SHA}\"|" apps/site/join.sh
+          grep -q "FATLINE_REF:-$GITHUB_SHA" apps/site/join.sh
       - name: Check the nodes
         run: node apps/site/status.mjs apps/site/status.json
       - name: Aster's hatching (hatching.json)

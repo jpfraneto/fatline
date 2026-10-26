@@ -19,6 +19,10 @@ prev=$(readlink -f "$ROOT/current" 2>/dev/null || true)
 node "$SITE/skill-page.mjs" >/dev/null
 cp -a "$SITE" "$next"
 rm -f "$next/CNAME"
+# join.sh installs exactly the commit this site was built from (not whatever main is when someone runs it).
+sha=$(git -C "$REPO" rev-parse HEAD)
+sed -i "s|^REF=\"\${FATLINE_REF:-main}\"|REF=\"\${FATLINE_REF:-$sha}\"|" "$next/join.sh"
+grep -q "FATLINE_REF:-$sha" "$next/join.sh" || log "join.sh: could not pin the commit"
 # Start from the last build's generated files, so a failed read keeps them.
 if [ -n "$prev" ] && [ -d "$prev" ]; then
   for f in status.json hatching.json; do [ -f "$prev/$f" ] && cp -a "$prev/$f" "$next/$f"; done

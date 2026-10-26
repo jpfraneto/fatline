@@ -15,8 +15,10 @@
 // This cannot prove the node isn't forwarding to someone else's node, but one machine can warm only one
 // egg, and machines that already host an attester, and the well-known public nodes, are refused.
 import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
+import { isIP } from 'node:net';
 import { join } from 'node:path';
 import { privateKeyToAccount } from 'viem/accounts';
+import { isPublicAddress, outsideFetch } from './outside-fetch.mjs';
 import {
   CHECK_EVERY_MS, CLAIM_SKEW_MS, DAY_MS, eggOf, eggTypes, surnameCandidate, hatchDomain, hatchOf, hatchTypes, laidAtOf, normalizeNode, normalizeUrl, sameHost, verifyClaim, warmth,
 } from './egg.mjs';
@@ -40,7 +42,7 @@ export class Hatchery {
    * @param computeDna  async (fid, snapshotAtMs) => '0x' + 64 hex: the history commitment
    * @param listAttesters async () => [{ address, url }]: every attester, from the contract
    */
-  constructor({ config, privateKey, contract, reference, dataDir, computeDna, listAttesters = async () => [], isBorn = async () => false, fetchImpl = fetch, now = () => Date.now(),
+  constructor({ config, privateKey, contract, reference, dataDir, computeDna, listAttesters = async () => [], isBorn = async () => false, fetchImpl = fetch, outsideFetchImpl, now = () => Date.now(),
     dayMs = DAY_MS, checkEveryMs = CHECK_EVERY_MS, random = Math.random, log = console.log, sleep = (ms) => new Promise((r) => setTimeout(r, ms)), surnameTaken = async () => 0 }) {
     this.config = config;
     this.account = privateKeyToAccount(privateKey);
@@ -51,6 +53,9 @@ export class Hatchery {
     this.listAttesters = listAttesters;
     this.isBorn = isBorn;
     this.fetch = fetchImpl;
+    // URLs an egg names (its node, its hatchery) are someone else's: public addresses only, no redirects.
+    // (Tests that pass their own fetch use it for both.)
+    this.outside = outsideFetchImpl ?? (fetchImpl === fetch ? outsideFetch : fetchImpl);
     this.now = now;
     this.dayMs = dayMs;
     this.checkEveryMs = checkEveryMs;
@@ -69,9 +74,10 @@ export class Hatchery {
     renameSync(`${this.file}.tmp`, this.file);
   }
 
-  async json(url, timeoutMs = 8_000) {
+  /** GET a JSON answer. outside: the URL came from an egg, so it goes through the public-only fetch. */
+  async json(url, timeoutMs = 8_000, { outside = false } = {}) {
     const t0 = Date.now();
-    const res = await this.fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    const res = await (outside ? this.outside : this.fetch)(url, { signal: AbortSignal.timeout(timeoutMs), redirect: 'manual' });
     const body = await res.json().catch(() => null);
     return { status: res.status, ok: res.ok, body, ms: Date.now() - t0 };
   }
@@ -101,6 +107,8 @@ export class Hatchery {
     if (!ref) throw fail(`This attester has no node on ${c.network}.`);
     const node = normalizeNode(c.node);
     if (isLocal(node)) throw fail('The node must be reachable from the internet, not localhost.');
+    const literal = new URL(node).hostname.replace(/^\[|\]$/g, '');
+    if (isIP(literal) && !isPublicAddress(literal)) throw fail('The node must be reachable from the internet: a public address, not a private one.');
     if (!/^0x[0-9a-f]{40}$/.test(c.server ?? '')) throw fail('The claim needs the server\'s hatchery key.');
     let hatcheryUrl;
     try { hatcheryUrl = normalizeUrl(c.hatchery); } catch { throw fail('The claim needs the server\'s hatchery URL.'); }
@@ -186,7 +194,7 @@ export class Hatchery {
     const ref = arguments[0].reference ?? this.reference[network]; // the genesis egg is checked against an outside node
     const [mine, theirs] = await Promise.all([
       this.json(`${ref}/v1/info`, 15_000).catch(() => null),
-      this.json(`${node}/v1/info`).catch((e) => ({ error: String(e.message ?? e) })),
+      this.json(`${node}/v1/info`, 8_000, { outside: true }).catch((e) => ({ error: String(e.message ?? e) })),
     ]);
     if (!mine?.ok) return { at, ok: null, reason: 'the attester\'s own node did not answer; this hour does not count' };
     if (!theirs?.ok) return { at, ok: false, reason: `no answer from /v1/info (${theirs?.error ?? `HTTP ${theirs?.status}`})` };
@@ -198,7 +206,7 @@ export class Hatchery {
     if (lagging.length) {
       // Behind: it counts if it is catching up. Read both nodes again a little later; every lagging shard must be closer.
       await this.sleep(SYNC_PROBE_MS);
-      const [mine2, theirs2] = await Promise.all([this.json(`${ref}/v1/info`, 15_000).catch(() => null), this.json(`${node}/v1/info`).catch(() => null)]);
+      const [mine2, theirs2] = await Promise.all([this.json(`${ref}/v1/info`, 15_000).catch(() => null), this.json(`${node}/v1/info`, 8_000, { outside: true }).catch(() => null)]);
       const want2 = heights(mine2?.body), got2 = heights(theirs2?.body);
       for (const shard of lagging) {
         const before = want[shard] - got[shard], after = want2[shard] - got2[shard];
@@ -209,10 +217,10 @@ export class Hatchery {
     for (let i = 0; i < 2 && !behind; i++) {
       const m = await this.pick(ref);
       if (!m) return { at, ok: null, reason: 'the attester could not pick a message to ask for; this hour does not count' };
-      const r = await this.json(`${node}/v1/castById?fid=${m.fid}&hash=${m.hash}`, 5_000).catch(() => null);
+      const r = await this.json(`${node}/v1/castById?fid=${m.fid}&hash=${m.hash}`, 5_000, { outside: true }).catch(() => null);
       if (!r?.ok || r.body?.hash !== m.hash) return { at, ok: false, reason: `it did not return message ${m.hash.slice(0, 10)}… (FID ${m.fid}) within 5 s` };
     }
-    const h = await this.json(`${hatchery}/`).catch(() => null);
+    const h = await this.json(`${hatchery}/`, 8_000, { outside: true }).catch(() => null);
     if (!h?.ok) return { at, ok: false, reason: `its hatchery did not answer at ${hatchery}` };
     if (String(h.body?.attester).toLowerCase() !== server) return { at, ok: false, reason: `its hatchery answers with key ${h.body?.attester}, not ${server}` };
     return { at, ok: true, ms: theirs.ms, ...(behind ? { syncing: true, behind } : {}) };

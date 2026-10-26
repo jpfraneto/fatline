@@ -132,6 +132,17 @@ cmd_update() { # the latest Fatline: pull, reinstall what changed, rebuild the c
   [ -d "$ROOT/.git" ] || fail "$ROOT is not a git copy of Fatline. Reinstall: curl -fsSL https://fatline.ink/install.sh | sh"
   local before; before=$(git -C "$ROOT" rev-parse --short HEAD)
   bold "Updating Fatline in $ROOT"
+  # On a node's server (root, with the hatchery) and at a terminal: show what is new and ask first.
+  if [ "$(id -u)" = 0 ] && [ -t 0 ] && command -v systemctl >/dev/null && systemctl cat fatline-hatchery >/dev/null 2>&1; then
+    git -C "$ROOT" fetch -q || fail "Couldn't reach GitHub to check for a new version."
+    local incoming; incoming=$(git -C "$ROOT" log --oneline --no-decorate 'HEAD..@{u}')
+    if [ -n "$incoming" ]; then
+      echo "New since $before:"; echo "$incoming" | head -20 | sed 's/^/  /'
+      echo "  Every line that changes: git -C $ROOT diff HEAD..@{u}"
+      local yes; read -r -p "Update this server? [y/N] " yes
+      case "$yes" in y|Y|yes) ;; *) echo "Nothing changed."; return 0 ;; esac
+    fi
+  fi
   git -C "$ROOT" pull --ff-only --quiet || fail "Couldn't update: this copy has local changes (git -C $ROOT status). Keep them with git stash, then run fatline update again."
   # The pull may have changed this very script: the rest runs from the new copy.
   exec bash "$ROOT/fatline" _rebuild "$before"
@@ -149,6 +160,9 @@ cmd__rebuild() { # the second half of fatline update, from the freshly pulled sc
   # A node's server (root, with the hatchery): restart what runs here and serve its client at <surname>.fatline.ink.
   if [ "$(id -u)" = 0 ] && command -v systemctl >/dev/null && systemctl cat fatline-hatchery >/dev/null 2>&1; then
     systemctl restart fatline-hatchery || true
+    # Locked down with a drop-in (its unit is left as it is): writes only its data folder, no root powers.
+    local hdata; hdata=$(systemctl show -p Environment --value fatline-hatchery | tr ' ' '\n' | sed -n 's/^FATLINE_DATA=//p')
+    bash "$ROOT/infra/harden.sh" fatline-hatchery http://127.0.0.1:8791/ - "${hdata:-/root/.fatline}" || true
     systemctl is-active --quiet fatline-names 2>/dev/null && systemctl restart fatline-names
     bash "$ROOT/infra/serve-client.sh" || true
   else

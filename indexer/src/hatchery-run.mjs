@@ -10,7 +10,8 @@
 //   contract    the Fatliners address (Hatches are signed for it; null until it is deployed)
 //   rpc         for the relay: https://mainnet.base.org
 //   relay       true: submit mints for people, paying the gas from the attester's key
-//   reference   { farcaster: url, hypersnap: url }: this attester's own nodes (default: localhost 3381 / 4381)
+//   reference   { farcaster: url, hypersnap: url }: this attester's own nodes (default: localhost 3381 / 4381;
+//               env HATCHERY_FARCASTER_NODE / HATCHERY_HYPERSNAP_NODE override)
 import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
@@ -47,7 +48,12 @@ export function hatcheryConfig(config) {
     contract: process.env.FATLINERS_ADDRESS || h.contract || null,
     rpc: process.env.FATLINERS_RPC || h.rpc || 'https://mainnet.base.org',
     relay: process.env.HATCHERY_RELAY ? process.env.HATCHERY_RELAY === '1' : Boolean(h.relay),
-    reference: h.reference ?? { farcaster: 'http://127.0.0.1:3381', hypersnap: 'http://127.0.0.1:4381' },
+    // In a container, this server's nodes are not on 127.0.0.1: HATCHERY_FARCASTER_NODE / HATCHERY_HYPERSNAP_NODE.
+    reference: {
+      ...(h.reference ?? { farcaster: 'http://127.0.0.1:3381', hypersnap: 'http://127.0.0.1:4381' }),
+      ...(process.env.HATCHERY_FARCASTER_NODE ? { farcaster: process.env.HATCHERY_FARCASTER_NODE } : {}),
+      ...(process.env.HATCHERY_HYPERSNAP_NODE ? { hypersnap: process.env.HATCHERY_HYPERSNAP_NODE } : {}),
+    },
     attesters: h.attesters ?? [],
     dayMs: Number(process.env.HATCHERY_DAY_MS ?? h.dayMs ?? 24 * 3_600_000), // shorter only for tests
     checkEveryMs: Number(process.env.HATCHERY_CHECK_MS ?? h.checkEveryMs ?? 3_600_000),
