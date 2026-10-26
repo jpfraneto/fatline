@@ -292,6 +292,8 @@ getJson('status.json').then(async (s) => {
       const me = document.getElementById('me');
       me.innerHTML = `${u.pfpUrl ? `<img src="${esc(u.pfpUrl)}" alt="">` : ''}<b>@${esc(u.username ?? u.fid)}</b>`;
       me.hidden = false;
+      // It knows who you are: your egg, your Fatliner, your story (companion.js).
+      import('/companion.js').then((m) => m.startCompanion(sdk, u)).catch(() => {});
       const bar = document.getElementById('castbar'); bar.hidden = false;
       document.getElementById('cast').onclick = () => sdk.actions.composeCast({
         text: `this is the fatline im running to secure the farcaster network\n\nrun yours here:`,

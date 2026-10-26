@@ -33,6 +33,15 @@ systemctl is-active --quiet fatline-names 2>/dev/null || busy=$(ss -ltnpH '( spo
 [ -z "$busy" ] || skip "ports 80/443 are taken by another program. Point $host at 127.0.0.1:$PORT in your web server."
 
 mkdir -p "$DATA"; chmod 700 "$DATA"
+# The genesis server (it holds @fatline's key) also answers fatline.ink's companion: the viewer's egg, story, talk
+# and premium (indexer/src/companion.mjs). Its voice key is $DATA/bankr.key; cards need STRIPE_SECRET_KEY in
+# $DATA/stripe.env (both mode 600, put there by the owner, never in the repository).
+companion=""
+if [ -f /root/.fatline/app-custody.key ]; then
+  companion="Environment=FATLINE_COMPANION=1"
+  [ -f "$DATA/stripe.env" ] && companion="$companion
+EnvironmentFile=$DATA/stripe.env"
+fi
 
 cat > /etc/systemd/system/fatline-client.service <<EOF
 [Unit]
@@ -47,6 +56,7 @@ Environment=PORT=$PORT
 Environment=FATLINE_BIND=127.0.0.1
 Environment=FATLINE_DATA=$DATA
 Environment=FATLINE_OWNER_FID=$fid
+$companion
 Restart=always
 RestartSec=3
 

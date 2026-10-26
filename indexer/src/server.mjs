@@ -17,6 +17,7 @@ import { attesterList, hatcheryConfig } from './hatchery-run.mjs';
 import { NodeMonitor } from './nodes.mjs';
 import { makeCockpit } from './cockpit.mjs';
 import { embedTags, makePlace, manifest } from './miniapp.mjs';
+import { makeCompanion } from './companion.mjs';
 import { Coins } from './coin.mjs';
 import { Archive, TYPES as ARCHIVE_TYPES } from './archive.mjs';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
@@ -112,7 +113,11 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
   const hc = hatcheryConfig(config);
   const place = makePlace({ cockpit, contract: hc.contract, rpc: hc.rpc, ownerFid });
   const sel = (q) => ({ name: q.get('network'), node: q.get('node') });
+  // fatline.ink's companion (whoever opens it inside Farcaster): only where it is turned on, the genesis server.
+  const companion = process.env.FATLINE_COMPANION === '1' ? makeCompanion({ config, networks, api, contract: hc.contract, rpc: hc.rpc,
+    payTo: process.env.FATLINE_PAY_TO ?? config.deployments?.Fatliners?.royaltyTo ?? null, hatcheries: attesterList(hc) }) : null;
   const routes = [
+    ...(companion?.routes ?? []),
     // The cockpit: you, your nodes, your egg or Fatliner, and its hatching, in one answer (the client's home).
     ['GET', /^\/api\/cockpit$/, () => cockpit()],
     ['GET', /^\/api\/fatline$/, () => config.fatlineApp ?? null],
@@ -192,7 +197,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
   return createServer(async (req, res) => {
     const url = new URL(req.url, 'http://local');
     res.setHeader('access-control-allow-origin', '*');
-    if (req.method === 'OPTIONS') return res.writeHead(204).end();
+    if (req.method === 'OPTIONS') return res.writeHead(204, { 'access-control-allow-headers': 'authorization, content-type', 'access-control-allow-methods': 'GET, POST' }).end();
 
     if (url.pathname.startsWith('/api/')) {
       const route = routes.find(([m, re]) => m === req.method && re.test(url.pathname));

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fatline</title>
+<style>
+  :root { --bg: #0f1420; --ink: #f3eadb; --muted: #a9a08f; color-scheme: dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--ink); font: 17px/1.5 system-ui, sans-serif; text-align: center; padding: 16px; }
+  p { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="t">Paid. Thank you.</h1>
+  <p id="s">Go back to Farcaster: your egg is waiting there.</p>
+</main>
+<script>
+  if (new URLSearchParams(location.search).has('cancel')) {
+    document.getElementById('t').textContent = 'No payment made.';
+    document.getElementById('s').textContent = 'Nothing was charged. You can go back to Farcaster.';
+  }
+</script>
+</body>
+</html>

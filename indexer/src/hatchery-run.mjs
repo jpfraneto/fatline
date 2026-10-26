@@ -151,8 +151,8 @@ async function serve() {
   const wallet = createWalletClient({ account: privateKeyToAccount(privateKey), chain, transport: http(hc.rpc) });
 
   /** Submits a takeEgg ('Egg') or a hatch ('Hatch'): this attester's signature plus those sent, sorted. */
-  async function relay(fid, body, kind) {
-    if (!hc.relay) throw Object.assign(new Error('This attester does not submit transactions.'), { status: 404 });
+  async function relay(fid, body, kind, { self = false } = {}) {
+    if (!hc.relay && !self) throw Object.assign(new Error('This attester does not submit transactions.'), { status: 404 });
     if (!hc.contract) throw Object.assign(new Error('Fatliners is not deployed yet.'), { status: 409 });
     const own = hatchery.status(fid);
     const mine = kind === 'Egg' ? own?.egg : own?.hatch;
@@ -260,9 +260,26 @@ async function serve() {
     hatchery.save();
     console.log(`[hatchery] FID ${fid}: the genesis egg is onchain (held by ${to}); keeping it warm from now`);
   };
+  // Aster's birth needs no one at a keyboard (owner's go, 2026-10-26): once this attester has signed its Hatch,
+  // this server sends the hatch transaction itself (a little of the attester key's ETH), even with the relay off. Only the genesis egg.
+  let born = false;
+  const birth = async () => {
+    if (born || !hc.contract) return;
+    const fid = Number(await reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'genesisFid' }));
+    if (!hatchery.state.eggs[fid]?.claim?.genesis || !hatchery.state.eggs[fid]?.hatch) return; // only on the genesis server
+    try {
+      const r = await relay(fid, {}, 'Hatch', { self: true });
+      born = r.status === 'success';
+      console.log(`[hatchery] FID ${fid}: hatch sent, ${r.tx} (${r.status})`);
+    } catch (err) {
+      if (/Already born/.test(err.message)) { born = true; return; }
+      throw err;
+    }
+  };
   const loop = async () => {
     try { await genesis(); } catch (err) { console.log(`[hatchery] genesis: ${err.shortMessage ?? err.message}`); }
     try { await hatchery.tick(); } catch (err) { console.log(`[hatchery] tick failed: ${err.message}`); }
+    try { await birth(); } catch (err) { console.log(`[hatchery] birth: ${err.shortMessage ?? err.message}`); }
   };
   loop();
   setInterval(loop, Math.min(5 * 60_000, hc.checkEveryMs / 4));
