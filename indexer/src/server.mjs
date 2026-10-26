@@ -18,6 +18,7 @@ import { NodeMonitor } from './nodes.mjs';
 import { makeCockpit } from './cockpit.mjs';
 import { embedTags, makePlace, manifest } from './miniapp.mjs';
 import { makeCompanion } from './companion.mjs';
+import { makeHome } from './home.mjs';
 import { Coins } from './coin.mjs';
 import { Archive, TYPES as ARCHIVE_TYPES } from './archive.mjs';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
@@ -114,10 +115,25 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
   const place = makePlace({ cockpit, contract: hc.contract, rpc: hc.rpc, ownerFid });
   const sel = (q) => ({ name: q.get('network'), node: q.get('node') });
   // fatline.ink's companion (whoever opens it inside Farcaster): only where it is turned on, the genesis server.
-  const companion = process.env.FATLINE_COMPANION === '1' ? makeCompanion({ config, networks, api, contract: hc.contract, rpc: hc.rpc,
-    payTo: process.env.FATLINE_PAY_TO ?? config.deployments?.Fatliners?.royaltyTo ?? null, hatcheries: attesterList(hc) }) : null;
+  const companion = makeCompanion({ config, networks, api, contract: hc.contract, rpc: hc.rpc,
+    payTo: process.env.FATLINE_PAY_TO ?? config.deployments?.Fatliners?.royaltyTo ?? null, hatcheries: attesterList(hc) });
+  const companionOn = process.env.FATLINE_COMPANION === '1';
+  // Whoever opens this client: what they have (egg, Fatliner, nothing), and their home feed from this server's node.
+  const homeNet = networks[config.defaultNetwork] ?? Object.values(networks)[0];
+  const home = homeNet ? makeHome({ api, network: homeNet }) : null;
   const routes = [
-    ...(companion?.routes ?? []),
+    ...(companionOn ? companion.routes : []),
+    // Every Fatline's address (<name>.fatline.ink) and FID, as the attesters' hatcheries list them: fatline.ink sends
+    // people with an egg to their own client.
+    ['GET', /^\/api\/names$/, async () => {
+      for (const a of await attesterList(hc)().catch(() => [])) {
+        const r = await fetch(`${a.url.replace(/\/$/, '')}/names`, { signal: AbortSignal.timeout(6_000) }).catch(() => null);
+        if (r?.ok) return r.json();
+      }
+      throw Object.assign(new Error('No hatchery answered.'), { status: 503 });
+    }],
+    ['GET', /^\/api\/viewer\/(\d{1,12})$/, (q, [, fid]) => companion.viewer(fid)],
+    ['GET', /^\/api\/home\/(\d{1,12})$/, (q, [, fid]) => { if (!home) throw Object.assign(new Error('No node here.'), { status: 503 }); return home(fid, { before: q.get('before'), limit: q.get('limit') }); }],
     // The cockpit: you, your nodes, your egg or Fatliner, and its hatching, in one answer (the client's home).
     ['GET', /^\/api\/cockpit$/, () => cockpit()],
     ['GET', /^\/api\/fatline$/, () => config.fatlineApp ?? null],

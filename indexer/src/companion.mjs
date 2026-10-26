@@ -377,6 +377,20 @@ export function makeCompanion({
     };
   }
 
+  /** Public, and writes nothing: what a viewer has, for the client to choose what to show them. */
+  async function viewerOf(fid) {
+    fid = Number(fid);
+    if (!Number.isInteger(fid) || fid <= 0) throw fail('Which account?');
+    const [prof, b, w] = await Promise.all([profile(fid), being(fid), warmth(fid)]);
+    const last = w?.recent?.at(-1) ?? null;
+    return {
+      fid, username: prof?.username ?? null, pfp: prof?.pfp ?? null, stage: b.stage, surname: b.surname ?? null, stone: b.stone ?? null,
+      egg: w ? { warmDays: w.warmDays, needed: w.needed, days: w.days, hatched: w.hatched, eta: b.stage === 'egg' ? hatchEta(w, { now: now() }) : null, network: w.network } : null,
+      // Their node, as their hatchery last saw it: answering and in sync (null when no hatchery checks it).
+      node: last ? { live: Boolean(last.ok) && !last.syncing, syncing: Boolean(last.syncing), checkedAt: last.at } : null,
+    };
+  }
+
   /** The oldest cast the node holds (free), and with premium one chapter per day so far. */
   async function story(fid) {
     const p = store.person(fid);
@@ -427,7 +441,7 @@ export function makeCompanion({
       ['POST', /^\/api\/companion\/pay\/card$/, async (q, m, b, req) => cardStart(await viewer(req))],
       ['GET', /^\/api\/companion\/pay\/card\/(cs_[\w]{1,200})$/, async (q, [, id], b, req) => cardCheck(await viewer(req), id)],
     ],
-    me, story, price, talk, payCrypto, cardStart, cardCheck, store,
+    me, viewer: viewerOf, story, price, talk, payCrypto, cardStart, cardCheck, store,
   };
 }
 

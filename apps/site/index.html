@@ -272,8 +272,16 @@ getJson('status.json').then(async (s) => {
       const me = document.getElementById('me');
       me.innerHTML = `${u.pfpUrl ? `<img src="${esc(u.pfpUrl)}" alt="">` : ''}<b>@${esc(u.username ?? u.fid)}</b>`;
       me.hidden = false;
-      // It knows who you are: your egg, your Fatliner, your story (companion.js).
-      import('/companion.js').then((m) => m.startCompanion(sdk, u)).catch(() => {});
+      // You have an egg or a Fatliner: your own client, served by your own server, is where you live.
+      try {
+        const { names } = await (await fetch('https://fatline.fatline.ink/api/names', { signal: AbortSignal.timeout(6000) })).json();
+        const mine = names.find((n) => n.fid === u.fid);
+        if (mine) {
+          const home = `https://${mine.label}.fatline.ink`;
+          const up = await fetch(`${home}/api/health`, { signal: AbortSignal.timeout(5000) }).then((r) => r.ok).catch(() => false);
+          if (up) { location.replace(`${home}/`); return; }
+        }
+      } catch {}
       const bar = document.getElementById('castbar'); bar.hidden = false;
       document.getElementById('cast').onclick = () => sdk.actions.composeCast({
         text: `this is the fatline im running to secure the farcaster network\n\nrun yours here:`,

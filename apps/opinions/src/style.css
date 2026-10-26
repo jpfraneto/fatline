@@ -436,3 +436,16 @@ a.castpanel-link { color: var(--accent); }
 .pl .list { align-self: stretch; min-width: 0; text-align: left; }
 .pl-foot { font-size: 12px; }
 .in-miniapp #settings-link { display: none; }
+
+/* The client inside Farcaster (place.js): how to get an egg, the egg's status over the feed, or just the feed. */
+.vw-how { text-align: center; padding: 18px 0 8px; }
+.vw-steps { text-align: left; width: min(440px, 100%); margin: 20px auto 6px; padding-left: 22px; display: grid; gap: 8px; }
+.vw-label { margin: 18px 0 -8px; color: var(--muted); font-size: 14px; }
+.vw-egg { display: flex; gap: 14px; align-items: center; padding: 14px; margin: 6px 0 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--raise); }
+.vw-egg > img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex: none; }
+.vw-egg > div { flex: 1; min-width: 0; }
+.vw-egg b small { color: var(--muted); font-weight: 400; }
+.vw-days { margin: 10px 0 6px; width: 100%; }
+.vw-when { color: var(--muted); }
+.vw-node { margin: 6px 0 12px; padding: 10px 12px; border-radius: 10px; background: var(--raise); color: var(--muted); font-size: 14px; }
+.in-miniapp #tabs { display: none; } /* inside Farcaster the client is one page: the feed, or how to get an egg */
