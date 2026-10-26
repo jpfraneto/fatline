@@ -1,0 +1,37 @@
+name: Fatline
+options:
+  bundleIdPrefix: ink.fatline
+  deploymentTarget: { iOS: "18.0" }
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    DEVELOPMENT_TEAM: 84V63LKV45
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  Fatline:
+    type: application
+    platform: iOS
+    sources: [Fatline]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ink.fatline.phone
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        GENERATE_INFOPLIST_FILE: YES
+    info:
+      path: Fatline/Info.plist
+      properties:
+        CFBundleDisplayName: Fatline
+        UILaunchScreen: { UIColorName: "" }
+        UIUserInterfaceStyle: Dark
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIRequiresFullScreen: true
+        ITSAppUsesNonExemptEncryption: false
+        # The Fatline nodes and the hatchery answer on plain http at an IP address (no name, no certificate).
+        NSAppTransportSecurity: { NSAllowsArbitraryLoads: true }
+        LSApplicationQueriesSchemes: [farcaster]
+        CFBundleURLTypes:
+          - CFBundleURLName: ink.fatline.phone
+            CFBundleURLSchemes: [fatline]
