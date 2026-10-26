@@ -58,6 +58,9 @@ systemctl enable -q fatline-client
 systemctl restart fatline-client
 for i in $(seq 1 30); do curl -fsS -m 3 "http://127.0.0.1:$PORT/api/health" >/dev/null 2>&1 && break; sleep 2; done
 curl -fsS -m 3 "http://127.0.0.1:$PORT/api/health" >/dev/null || stop "Your client didn't start: journalctl -u fatline-client -n 50"
+# A Farcaster mini app at that address (indexer/src/miniapp.mjs). On the genesis server, @fatline signs that the
+# domain is Fatline's; anywhere else the card opens without it.
+[ -f "$DATA/miniapp-association.json" ] || (cd "$DIR/indexer" && node src/miniapp.mjs associate "$host" "$DATA") || true
 # Locked down (infra/harden.sh): writes only $DATA, no root powers.
 bash "$DIR/infra/harden.sh" fatline-client "http://127.0.0.1:$PORT/api/health" - "$DATA"
 

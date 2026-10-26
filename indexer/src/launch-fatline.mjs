@@ -65,12 +65,14 @@ export async function planFatlineLaunch(config, opts = {}) {
   // The keeper: the server that keeps it alive (for an egg, the one keeping it warm), paid from the vault.
   const keeper = opts.keeper ?? (isGenesis ? g.server : await nft('serverOf'));
   if (!keeper || keeper === ZERO) throw new Error('Which server keeps it alive? Pass --keeper 0x… (that server\'s wallet pays itself from the vault).');
-  // The coin points at its Fatline's app: the smart contract its client runs on (appOf), at fatline.ink/<address>.
+  // The coin points at its place: https://<surname>.fatline.ink, its own client and node, which opens as a Farcaster
+  // mini app (indexer/src/miniapp.mjs). Its vault's uri says so onchain; the holder can change it later (setUri).
   const app = await nft('appOf').catch(() => ZERO);
-  const url = `https://fatline.ink/${app !== ZERO ? app : d.Fatliners.address}`;
+  const url = `https://${ticker.toLowerCase()}.fatline.ink`;
+  const contractPage = `https://fatline.ink/${app !== ZERO ? app : d.Fatliners.address}`;
   const launch = await buildLaunch({
     vault, tokenAdmin: holder, name, symbol: ticker, image, url, chainId: 8453, startMarketCapUsd: Number(opts.mcap ?? 25_000),
-    description: `${name}: Fatliner #${fid}${(await nft('isFatliner')) ? '' : ' (still an egg)'}. 100% of this coin's trading fees go to its vault, in USDC: the fuel of its Farcaster node and its client. ${url}`,
+    description: `${name}: Fatliner #${fid}${(await nft('isFatliner')) ? '' : ' (still an egg)'}. 100% of this coin's trading fees go to its vault, in USDC: the fuel of its Farcaster node and its client. ${url} · ${contractPage}`,
   });
   const params = { owner: holder, keeper, billingPeriod: 30n * 86_400n, uri: url, salt: `0x${'0'.repeat(64)}` };
   return { client, fid, ticker, name, image, holder, vault, keeper, launch, params, url, factory: d.AppFactory.address };

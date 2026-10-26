@@ -7,14 +7,14 @@ import { lifeForce } from './lifeforce.js';
 
 const POLL_MS = 15_000;
 // Each stone's egg, alive under the arch (the same art the token's metadata shows; on Arweave).
-const AR = 'https://arweave.net/';
-const EGGS = {
+export const AR = 'https://arweave.net/';
+export const EGGS = {
   ivory: 'mSdZFwP24DiFfz5n_CVxBOzrB7NUdj0BpxwBw1Q1Rcw', marble: '7RVqUSxKa1KAPRhRECd2hF3sqhiXJwGFHr1taHNflO4',
   sandstone: 'wJluZiKFMkVP8SuSdRRfaPtQsUBiH3DdcCDJkK-RF0E', basalt: 'kTiWpzd30A7VujdWhiiYKH0wMDTq6NHSqZy23109qu8',
   moss: 'tn1sJo8F2BLMkwf1VwAyS1nQ7pHX9ET9lFe8dfrEmag', gold: '3SXU46X5qj_uWYJ5n_R8TATUHDXd9XM9WMLWmX2kC08',
   opal: '8tZep0THiF6aYGlOv8LxxJs9xCbvwl6liWJvkBWApcw',
 };
-const BEINGS = { 16098: '9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM' };
+export const BEINGS = { 16098: '9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM' };
 const NET = { farcaster: 'Snapchain', hypersnap: 'Hypersnap' };
 
 const n = (x) => Number(x).toLocaleString('en-US');

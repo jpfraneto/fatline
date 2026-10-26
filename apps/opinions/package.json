@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@farcaster/miniapp-sdk": "0.3.0",
     "viem": "2.57.7"
   },
   "devDependencies": {

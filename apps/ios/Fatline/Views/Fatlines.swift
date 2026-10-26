@@ -152,10 +152,18 @@ private struct BeingCard: View {
                     if let l = s.latencyMs { row("answers in", "\(l) ms") }
                     if let e = s.error { row("says", e) }
                     row("egg", being.hatched ? "hatched" : "\(being.warmDays ?? 0) of \(being.needed ?? 3) warm days")
-                    Button { go(.person(being.fid)) } label: {
-                        HStack(spacing: 6) { Text("Open \(store.profiles[being.fid]?.handle ?? "profile")"); Image(systemName: "chevron.right").font(.system(size: 11)) }
-                            .font(.serif(14)).foregroundStyle(Ink.peach)
+                    HStack(spacing: 18) {
+                        Button { go(.person(being.fid)) } label: {
+                            HStack(spacing: 6) { Text("Open \(store.profiles[being.fid]?.handle ?? "profile")"); Image(systemName: "chevron.right").font(.system(size: 11)) }
+                        }
+                        if let place = URL(string: "https://\(being.label).fatline.ink") {
+                            Link(destination: place) {
+                                HStack(spacing: 6) { Text("\(being.label).fatline.ink"); Image(systemName: "arrow.up.right").font(.system(size: 11)) }
+                            }
+                            .simultaneousGesture(TapGesture().onEnded { Haptic.light() })
+                        }
                     }
+                    .font(.serif(14)).foregroundStyle(Ink.peach)
                     .padding(.top, 6)
                 }
                 .padding(.top, 4)

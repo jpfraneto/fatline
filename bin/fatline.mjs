@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// `fatline` on your PATH. Two ways to get it:
+// `fatline` on your PATH. Ways to get it:
+//   npx fatlines                   the same as curl -fsSL https://fatline.ink/install.sh | sh: downloads, then setup
 //   npm install -g fatlines        from npm
 //   npm install -g .               inside a clone of github.com/jpfraneto/fatline (links that clone)
 // It runs fatline in your copy of the repository, so `fatline compute` = `fatline compute`.
@@ -27,5 +28,7 @@ if (!isCopy(dir)) {
   }
 }
 
-const r = spawnSync(join(dir, 'fatline'), process.argv.slice(2), { stdio: 'inherit' });
+// Nothing asked for (npx fatlines): start at the beginning, like the one-line installer.
+const args = process.argv.slice(2);
+const r = spawnSync(join(dir, 'fatline'), args.length ? args : ['setup'], { stdio: 'inherit' });
 process.exit(r.status ?? 1);

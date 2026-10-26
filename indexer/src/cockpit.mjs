@@ -47,10 +47,10 @@ export function makeCockpit({ config, networks, api, fetchImpl = fetch }) {
   const attesters = attesterList(hc);
   let tokenCache = { at: 0, fid: null, value: null };
 
-  async function who() {
+  async function who(fallbackFid) {
     const key = loadAppKey(config.dataDir);
     const id = loadIdentity(config);
-    const fid = Number(key?.fid ?? id?.fid ?? 0) || null;
+    const fid = Number(key?.fid ?? id?.fid ?? fallbackFid ?? 0) || null;
     if (!fid) return { fid: null, canWrite: false };
     let profile = null;
     for (const n of Object.values(networks)) {
@@ -116,8 +116,9 @@ export function makeCockpit({ config, networks, api, fetchImpl = fetch }) {
     return { hatchery: null, warmDays: 0, needed: 3, days: [], today: null, recent: [], none: true, attesters: list.length };
   }
 
-  return async function cockpit() {
-    const me = await who();
+  // fallbackFid: whose place this is when this client has no key yet (FATLINE_OWNER_FID on a server).
+  return async function cockpit(fallbackFid = null) {
+    const me = await who(fallbackFid);
     const [ns, tk, ht] = await Promise.all([nodes().catch((e) => ({ error: e.message })), token(me.fid).catch((e) => ({ error: e.message })), hatch(me.fid).catch(() => null)]);
     return { me, nodes: ns, token: tk, hatch: ht, at: Date.now() };
   };

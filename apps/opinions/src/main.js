@@ -6,6 +6,8 @@ import { archivePage, coinPage, leaveLive, nodePage } from './fatline.js';
 import { loadMe } from './post.js';
 import { castButton } from './castbutton.js';
 import { cockpitPage, leaveCockpit } from './cockpit.js';
+import { placePage } from './place.js';
+import { enterMiniApp, inMiniApp } from './miniapp.js';
 
 // A link from the server's setup, https://<name>.fatline.ink/#key=<write token>: keep the token in this browser (so it
 // can cast through this client), then take it out of the address bar and history.
@@ -50,15 +52,18 @@ function route() {
   if (hash.startsWith('/people')) return peoplePage({ route });
   if (hash.startsWith('/settings')) return settingsPage({ onChange: () => { renderChrome(); route(); } }).catch(fail);
   if (hash.startsWith('/apps')) return appsPage().catch(fail);
+  // Opened from a cast inside Farcaster, or at #/place: the place as a visitor sees it.
+  if (hash.startsWith('/place') || inMiniApp()) return placePage().catch(fail);
   return cockpitPage().catch(fail);
 }
 
 async function boot() {
+  await enterMiniApp();
   state.config = await api('/api/config');
   const saved = store.get('network', null);
   state.network = state.config.networks.some((n) => n.name === saved) ? saved : state.config.defaultNetwork;
   await loadMe();
-  document.body.append(castButton());
+  if (!inMiniApp() || state.me?.canWrite) document.body.append(castButton()); // visitors only look
   renderChrome();
   window.addEventListener('hashchange', route);
   route();

@@ -16,6 +16,7 @@ import { Writer, loadAppKey } from './writer.mjs';
 import { attesterList, hatcheryConfig } from './hatchery-run.mjs';
 import { NodeMonitor } from './nodes.mjs';
 import { makeCockpit } from './cockpit.mjs';
+import { embedTags, makePlace, manifest } from './miniapp.mjs';
 import { Coins } from './coin.mjs';
 import { Archive, TYPES as ARCHIVE_TYPES } from './archive.mjs';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
@@ -25,7 +26,7 @@ import { base, baseSepolia, foundry } from 'viem/chains';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml',
-  '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
 };
 
 export function buildServer({ config, networks, voices, launchpad, keeper = null, nodes = null, coins = null, archive = null, lifeforce = null }) {
@@ -108,11 +109,15 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     return out.step === 'done' && writeToken ? { ...out, token: writeToken } : out; // only the browser that signed in
   };
   const cockpit = makeCockpit({ config, networks, api });
+  const hc = hatcheryConfig(config);
+  const place = makePlace({ cockpit, contract: hc.contract, rpc: hc.rpc, ownerFid });
   const sel = (q) => ({ name: q.get('network'), node: q.get('node') });
   const routes = [
     // The cockpit: you, your nodes, your egg or Fatliner, and its hatching, in one answer (the client's home).
     ['GET', /^\/api\/cockpit$/, () => cockpit()],
     ['GET', /^\/api\/fatline$/, () => config.fatlineApp ?? null],
+    // This place, for anyone (the mini app's visitors): whose it is, its egg or Fatliner, its node, its coin.
+    ['GET', /^\/api\/place$/, (q, m, b, req) => place(req.headers['x-forwarded-host'] ?? req.headers.host)],
     ['GET', /^\/api\/lifeforce$/, () => lifeforce?.status() ?? null],
     ['GET', /^\/api\/login$/, signIn(() => login.status())],
     ['POST', /^\/api\/login$/, signIn(() => login.start(), { fresh: true })],
@@ -200,7 +205,12 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
       }
       return;
     }
-    serveApp(config.appDir, url.pathname, res);
+    const host = String(req.headers['x-forwarded-host'] ?? req.headers.host ?? '');
+    if (url.pathname === '/.well-known/farcaster.json') {
+      const m = manifest(host, config.dataDir);
+      return m ? json(res, 200, m) : json(res, 404, { error: 'Not a Fatline place' });
+    }
+    serveApp(config.appDir, url.pathname, res, embedTags(host));
   });
 }
 
@@ -218,7 +228,7 @@ function json(res, status, body) {
   res.end(JSON.stringify(body, (_, v) => (typeof v === 'bigint' ? v.toString() : v)));
 }
 
-function serveApp(dir, pathname, res) {
+function serveApp(dir, pathname, res, headTags = '') {
   if (!existsSync(dir)) {
     res.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
     return res.end('The indexer is running. The app is not built yet: run fatline up\nAPI: /api/networks, /api/feed\n');
@@ -228,6 +238,8 @@ function serveApp(dir, pathname, res) {
   if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
   if (!existsSync(file)) file = join(dir, 'index.html'); // single-page app routes
   res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
+  // The page itself carries this place's card for Farcaster (fc:miniapp), so a cast of its address opens it.
+  if (headTags && file === join(dir, 'index.html')) return res.end(readFileSync(file, 'utf8').replace('</head>', `    ${headTags}  </head>`));
   createReadStream(file).pipe(res);
 }
 
