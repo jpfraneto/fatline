@@ -54,6 +54,20 @@
   .cta code { flex: 1; min-width: 0; font: 500 15px/1.4 var(--mono); padding: 16px 18px; text-align: left; overflow-wrap: anywhere; }
   .cta code::before { content: "› "; color: var(--accent); }
   .cta button { font: 600 14px var(--body); border: 0; background: var(--ink); color: #111; padding: 0 22px; cursor: pointer; }
+  /* The agent prompt, on a billboard the Fatliners point at (img/billboard.jpg; its blank face is 20.2–80.1% wide, 10.6–41.8% high). */
+  .billboard { position: relative; max-width: 900px; margin: 30px auto 0; aspect-ratio: 3 / 2; container-type: inline-size; }
+  .billboard img { display: block; width: 100%; height: 100%;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 5%, #000 82%, transparent);
+    -webkit-mask-composite: source-in; mask-image: linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 5%, #000 82%, transparent); mask-composite: intersect; }
+  .board { position: absolute; left: 20.2%; top: 10.6%; width: 59.9%; height: 31.2%; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1.6cqi; padding: 0 2.6cqi; text-align: center; }
+  .board-kicker { font: 600 clamp(8px, 1.45cqi, 13px) var(--mono); letter-spacing: .22em; text-transform: uppercase; color: var(--gold); text-shadow: 0 0 18px rgba(255, 198, 92, .45); }
+  .board-note { font: 400 clamp(8px, 1.4cqi, 13px) var(--body); color: var(--muted); }
+  .board .cta { width: 100%; max-width: none; border-radius: 1.4cqi; background: rgba(0, 0, 0, .3); box-shadow: 0 0 40px rgba(255, 198, 92, .12); }
+  .board .cta code { font-size: clamp(10px, 1.9cqi, 16px); padding: 1.6cqi 1.8cqi; }
+  .board .cta button { font-size: clamp(11px, 1.7cqi, 15px); padding: 0 2.2cqi; }
+  @container (max-width: 560px) { .board-note { display: none; } .board { gap: 1.2cqi; padding: 0 2cqi; } .board .cta code { padding: 1.4cqi 1.6cqi; } }
+  @media (max-width: 600px) { .billboard { width: 100vw; max-width: none; margin-left: calc(50% - 50vw); } }
   .manual { margin-top: 14px; font: italic 400 18px var(--display); }
   .manual a { color: var(--ink); text-decoration-color: var(--accent); text-underline-offset: 4px; }
   .runner { margin-top: 10px; color: var(--muted); font-size: 14px; }
@@ -128,8 +142,15 @@ fatline node snapchain   <span class="c"># (1) your own read node on it  (or: no
 fatline client           <span class="c"># (2) your client, reading only from your node</span></code></pre>
     </div>
     <p class="manual">The tutorial explains each step and the protocol behind it → <a href="/docs/tutorial.html">English</a> · <a href="/docs/tutorial.html?lang=es">Español</a> · <a href="/docs/zh.html">中文</a></p>
-    <p class="start agent">Or paste this into your agent (Claude Code, Codex…) and it runs them with you</p>
-    <div class="cta"><code id="prompt">Help me run a Fatline: https://fatline.ink/skill.md</code><button type="button" id="copy">Copy</button></div>
+    <figure class="billboard">
+      <img src="/img/billboard.jpg" srcset="/img/billboard-768.jpg 768w, /img/billboard.jpg 1536w" sizes="(max-width: 900px) 100vw, 900px"
+        width="1536" height="1024" alt="Three small Fatliners on a hill at dusk, one holding a sign that says Recommended, pointing at a billboard">
+      <figcaption class="board">
+        <span class="board-kicker">Paste this into your agent</span>
+        <span class="cta"><code id="prompt">Help me run a Fatline: https://fatline.ink/skill.md</code><button type="button" id="copy">Copy</button></span>
+        <span class="board-note">Claude Code, Codex… it runs the commands with you</span>
+      </figcaption>
+    </figure>
     <p class="runner">Already run a Snapchain or Hypersnap node? One line on its server: <code>curl -fsSL https://fatline.ink/join.sh | sudo bash</code></p>
     <div class="steps after">
       <div class="step"><b>Your node</b><p>All of Farcaster (Snapchain or Hypersnap, your pick) streams into a server you rent. From about $2.60 a day.</p></div>
