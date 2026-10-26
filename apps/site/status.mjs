@@ -68,43 +68,20 @@ for (const f of fatlines) {
   }
   result.fatlines.push({ ticker: f.ticker, name: f.name, image: f.image, page: f.page, notice: f.notice, coin: f.coin, fatliner: f.fatliner ?? null, server: f.server ? await server(f.server) : null, owner: await profile(f.ownerFid, f.nodes), nodes });
 }
-// Every other Fatline: the eggs onchain. Each names the server that keeps it warm (serverUrlOf: its hatchery);
-// its node is on the same host. Nobody has to be listed by hand.
+// Every other Fatline: the eggs onchain, from the master hatchery's own copy of the Fatliners contract (GET /world,
+// read from Base once an hour; indexer/src/world.mjs). Each names the server that keeps it warm (its hatchery);
+// its node is on the same host. Nobody has to be listed by hand. null: the world couldn't be read (keep the last).
+const STONE_INDEX = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
+let genesisName = 'Aster';
+try { genesisName = JSON.parse(readFileSync(join(here, '../../smart-contracts/deployments/base.json'), 'utf8')).Fatliners.genesis.name ?? genesisName; } catch {}
 async function eggs() {
-  const RPC = 'https://mainnet.base.org';
-  const call = async (method, params) => {
-    for (const url of [RPC, 'https://base-rpc.publicnode.com', 'https://base.llamarpc.com']) {
-      const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(20000) }).then((x) => x.json()).catch(() => null);
-      if (r && r.result !== undefined && !r.error) return r.result;
-    }
-    return null;
-  };
-  const word = (n) => BigInt(n).toString(16).padStart(64, '0');
-  const str = (hex) => { if (!hex || hex.length < 130) return ''; const b = hex.slice(2); const len = parseInt(b.slice(64, 128), 16); return Buffer.from(b.slice(128, 128 + len * 2), 'hex').toString(); };
-  let d; try { d = JSON.parse(readFileSync(join(here, '../../smart-contracts/deployments/base.json'), 'utf8')); } catch { return []; }
-  const nft = d.Fatliners.address;
-  // Public RPCs refuse long ranges (publicnode: 50,000 blocks), so read the logs in windows.
-  const head = Number(BigInt((await call('eth_blockNumber', [])) ?? '0x0'));
-  if (!head) return null;
-  const logs = [];
-  for (let from = Number(d.fromBlock); from <= head; from += 10_000) {
-    const to = Math.min(from + 9_999, head);
-    const got = await call('eth_getLogs', [{ address: nft, fromBlock: '0x' + from.toString(16), toBlock: '0x' + to.toString(16), topics: ['0x8c16cbfb788ff0014645f2e619d6e70982930d43a1a53fcbb22ff48ab6eb0af0'] }]);
-    if (!got) return null; // unknown, not "no eggs"
-    logs.push(...got);
-  }
-  const fids = [...new Set(logs.map((l) => Number(BigInt(l.topics[1]))))];
-  const out = [];
-  for (const fid of fids) {
-    const stage = Number(BigInt((await call('eth_call', [{ to: nft, data: '0xc7d25b15' + word(fid) }, 'latest'])) ?? '0x0'));
-    if (!stage) continue; // died
-    const url = str(await call('eth_call', [{ to: nft, data: '0x60f2ba1d' + word(fid) }, 'latest']));
-    const surname = str(await call('eth_call', [{ to: nft, data: '0x8d967a78' + word(fid) }, 'latest']));
-    let host = null; try { host = new URL(url).hostname; } catch {}
-    const stone = Number(BigInt((await call('eth_call', [{ to: nft, data: '0xeed0951e' + word(fid) }, 'latest'])) ?? '0x0'));
-    out.push({ fid, surname, stage, stone, host, hatchery: url, genesis: fid === Number(d.Fatliners.genesis?.fid), name: fid === Number(d.Fatliners.genesis?.fid) ? (d.Fatliners.genesis?.name ?? null) : null });
-  }
-  return out;
+  const world = await get('http://46.225.208.199:8791/world');
+  if (!world?.tokens) return null;
+  return world.tokens.map((t) => {
+    let host = null; try { host = new URL(t.hatchery).hostname; } catch {}
+    const genesis = t.fid === world.genesisFid;
+    return { fid: t.fid, surname: t.surname, stage: t.stage === 'fatliner' ? 2 : 1, stone: Math.max(0, STONE_INDEX.indexOf(t.stone)), host, hatchery: t.hatchery, genesis, name: genesis ? genesisName : null };
+  });
 }
 const listed = new Set(fatlines.map((f) => Number(f.ownerFid)));
 // If Base couldn't be read, keep the last known eggs instead of showing none.

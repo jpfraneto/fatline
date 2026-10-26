@@ -2,11 +2,13 @@
 # Makes the master serve fatline.ink itself (run as root on the master; safe to re-run):
 #   1. its own copy of Fatline for the site, /root/fatline-site (the hatchery's /root/fatline is not touched);
 #   2. a timer that builds the site every hour (infra/site-build.sh) from this server's nodes and hatchery;
-#   3. Caddy serving /srv/fatline-site/current over https, with the hatchery at /eggs/* on the same name.
+#   3. Caddy serving /srv/fatline-site/current over https, with the hatchery at /eggs/* and /world on the same name.
 # Names: SITE_HOSTS (default 46-225-208-199.sslip.io, which works with no DNS record). Once fatline.ink's DNS
 # points here (A record → this server's IP), run again with SITE_HOSTS="fatline.ink 46-225-208-199.sslip.io".
 set -euo pipefail
-HOSTS="${SITE_HOSTS:-46-225-208-199.sslip.io}"
+# fatline update runs this again on the master: it keeps the names it was last given (/etc/fatline-site.hosts).
+HOSTS="${SITE_HOSTS:-$(cat /etc/fatline-site.hosts 2>/dev/null || echo 46-225-208-199.sslip.io)}"
+echo "$HOSTS" > /etc/fatline-site.hosts
 REPO=/root/fatline-site
 
 command -v caddy >/dev/null || { echo "Caddy is missing (apt: https://caddyserver.com/docs/install#debian-ubuntu-raspbian)"; exit 1; }
@@ -49,6 +51,11 @@ $GLOBAL
 	encode gzip
 	# The genesis hatchery, on the site's own name (the home page reads each egg's warm checks here).
 	handle /eggs/* {
+		reverse_proxy localhost:8791
+	}
+	# The world: the hatchery's own copy of the Fatliners contract (indexer/src/world.mjs), read once an hour.
+	@world path /world /world/*
+	handle @world {
 		reverse_proxy localhost:8791
 	}
 	handle {

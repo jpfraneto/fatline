@@ -165,6 +165,8 @@ cmd__rebuild() { # the second half of fatline update, from the freshly pulled sc
     bash "$ROOT/infra/harden.sh" fatline-hatchery http://127.0.0.1:8791/ - "${hdata:-/root/.fatline}" || true
     systemctl is-active --quiet fatline-names 2>/dev/null && systemctl restart fatline-names
     bash "$ROOT/infra/serve-client.sh" || true
+    # The master also serves fatline.ink: its site setup again (the hatchery's /world on the site's name, the hourly build).
+    [ -f /etc/systemd/system/fatline-site.timer ] && { bash "$ROOT/infra/site-setup.sh" || true; }
   else
     echo "Restart your client to use it: fatline client"
   fi

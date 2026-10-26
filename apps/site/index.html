@@ -184,59 +184,33 @@ document.getElementById('copy').onclick = async (e) => {
   catch { const r = document.createRange(); r.selectNodeContents(document.getElementById('prompt')); getSelection().removeAllRanges(); getSelection().addRange(r); }
 };
 
-// The hatchery: every egg onchain, who keeps it, its stone, how warm it is. It draws at once from status.json
-// (written by the site's workflow, which GitHub runs only every few hours), then reads live: the eggs from the
-// contract on Base, and each egg's warm checks from the genesis hatchery (https through sslip.io, no DNS needed).
-// Again every hour while the page is open: the Fatline moves at the pace of its hourly checks.
+// The hatchery: every egg onchain, who keeps it, its stone, how warm it is. It draws at once from status.json, then
+// reads the world from the master: its hatchery's own copy of the Fatliners contract (GET /world, read from Base once
+// an hour; indexer/src/world.mjs), and each egg's warm checks (https through sslip.io, no DNS needed). No chain reads
+// here. Again every hour while the page is open: the Fatline moves at the pace of its hourly checks.
 const HATCHERY = 'https://46-225-208-199.sslip.io';
-const RPCS = ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'];
-const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
-const EGG_TAKEN = '0x8c16cbfb788ff0014645f2e619d6e70982930d43a1a53fcbb22ff48ab6eb0af0';
-const rpc = async (method, params) => {
-  for (const url of RPCS) {
-    const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) }).then((x) => x.json()).catch(() => null);
-    if (r && r.result !== undefined && !r.error) return r.result;
-  }
-  return null;
-};
-const word = (n) => BigInt(n).toString(16).padStart(64, '0');
-const str = (hex) => { if (!hex || hex.length < 130) return ''; const b = hex.slice(2); const len = parseInt(b.slice(64, 128), 16); let o = ''; for (let i = 0; i < len; i++) o += String.fromCharCode(parseInt(b.slice(128 + i * 2, 130 + i * 2), 16)); return o; };
 const getJson = (url) => fetch(url, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 const art = getJson('fatliners-art.json').then((a) => a ?? {});
 let eggs = [];
 
 async function live() {
-  const d = await getJson('https://raw.githubusercontent.com/jpfraneto/fatline/main/smart-contracts/deployments/base.json');
-  const nft = d?.Fatliners?.address;
-  if (!nft) return;
-  // Public RPCs refuse long ranges (publicnode: 50,000 blocks), so read the logs in windows.
-  const head = Number(BigInt((await rpc('eth_blockNumber', [])) ?? '0x0'));
-  let logs = head ? [] : null;
-  for (let from = Number(d.fromBlock); logs && from <= head; from += 10_000) {
-    const got = await rpc('eth_getLogs', [{ address: nft, fromBlock: '0x' + from.toString(16), toBlock: '0x' + Math.min(from + 9_999, head).toString(16), topics: [EGG_TAKEN] }]);
-    logs = got ? logs.concat(got) : null; // a failed window: keep what is drawn
-  }
-  if (logs) {
+  const world = await getJson(`${HATCHERY}/world`);
+  if (world?.tokens) {
     const known = new Map(eggs.map((e) => [e.fid, e]));
-    const next = [];
-    for (const fid of [...new Set(logs.map((l) => Number(BigInt(l.topics[1]))))]) {
-      const stage = Number(BigInt((await rpc('eth_call', [{ to: nft, data: '0xc7d25b15' + word(fid) }, 'latest'])) ?? '0x0'));
-      if (!stage) continue; // died
-      const e = known.get(fid) ?? { fid, genesis: fid === Number(d.Fatliners.genesis?.fid) };
-      e.stage = stage === 2 ? 'hatched' : 'egg';
-      if (!e.surname) {
-        e.surname = str(await rpc('eth_call', [{ to: nft, data: '0x8d967a78' + word(fid) }, 'latest']));
-        e.name = e.genesis ? (d.Fatliners.genesis?.name ?? null) : e.surname ? e.surname[0] + e.surname.slice(1).toLowerCase() : null;
-        e.stone = STONES[Number(BigInt((await rpc('eth_call', [{ to: nft, data: '0xeed0951e' + word(fid) }, 'latest'])) ?? '0x0'))] ?? 'ivory';
-      }
+    eggs = await Promise.all(world.tokens.map(async (t) => {
+      const e = known.get(t.fid) ?? { fid: t.fid };
+      e.genesis = t.fid === world.genesisFid;
+      e.stage = t.stage === 'fatliner' ? 'hatched' : 'egg';
+      e.surname = t.surname;
+      e.stone = t.stone ?? 'ivory';
+      e.name = e.name ?? (e.genesis ? 'Aster' : t.surname ? t.surname[0] + t.surname.slice(1).toLowerCase() : null);
       if (!e.keeper?.username) {
-        const ud = await getJson(`https://crackle.farcaster.xyz:3381/v1/userDataByFid?fid=${fid}`);
-        const v = (t) => (ud?.messages ?? []).find((m) => m.data?.userDataBody?.type === t)?.data.userDataBody.value ?? null;
+        const ud = await getJson(`https://crackle.farcaster.xyz:3381/v1/userDataByFid?fid=${t.fid}`);
+        const v = (k) => (ud?.messages ?? []).find((m) => m.data?.userDataBody?.type === k)?.data.userDataBody.value ?? null;
         e.keeper = { username: v('USER_DATA_TYPE_USERNAME'), pfp: v('USER_DATA_TYPE_PFP') };
       }
-      next.push(e);
-    }
-    eggs = next;
+      return e;
+    }));
   }
   await Promise.all(eggs.map(async (e) => {
     const w = await getJson(`${HATCHERY}/eggs/${e.fid}`);

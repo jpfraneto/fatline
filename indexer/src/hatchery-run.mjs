@@ -15,12 +15,13 @@
 import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
-import { createPublicClient, createWalletClient, http, parseAbi, recoverTypedDataAddress, keccak256, toBytes } from 'viem';
+import { createPublicClient, createWalletClient, fallback, http, parseAbi, recoverTypedDataAddress, keccak256, toBytes } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia, foundry } from 'viem/chains';
 import { loadConfig } from './config.mjs';
 import { eggTypes, hatchDomain, hatchTypes } from './egg.mjs';
 import { Hatchery } from './hatchery.mjs';
+import { EVERY_MS, World } from './world.mjs';
 
 export const fatlinersAbi = parseAbi([
   'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, string surname, uint8 stone, uint256 deadline) e, bytes[] signatures, uint256 position, bytes32[] proof)',
@@ -187,8 +188,24 @@ async function serve() {
     return { tx: hash, status: receipt.status, signers: ordered.map(([a]) => a) };
   }
 
+  // The world: this server's own copy of the Fatliners contract, read once an hour (indexer/src/world.mjs).
+  const world = hc.contract ? new World({
+    client: createPublicClient({ chain, transport: fallback([http(hc.rpc), ...(hc.chainId === 8453 ? [http('https://base-rpc.publicnode.com')] : [])]) }),
+    address: hc.contract, chainId: hc.chainId, dataDir: config.dataDir,
+    fromBlock: config.hatchery?.fromBlock ?? (config.deployments?.Fatliners?.address?.toLowerCase() === hc.contract.toLowerCase() ? config.deployments.fromBlock : 0),
+  }) : null;
+  const warmthOf = (fid) => {
+    const w = hatchery.status(fid);
+    if (!w) return null;
+    const today = w.days?.at(-1);
+    return { warmDays: w.warmDays, needed: w.needed, day: today?.day ?? null, passed: today?.passed ?? null, need: today?.need ?? null, since: w.layingAt ?? null, lastCheck: w.recent?.at(-1) ?? null, network: w.network, hatched: w.hatched ?? false };
+  };
+  const noWorld = () => Promise.reject(Object.assign(new Error('This hatchery has no contract to read.'), { status: 404 }));
+
   const routes = [
     ['GET', /^\/$/, () => hatchery.info()],
+    ['GET', /^\/world$/, () => (world ? world.view(warmthOf) : noWorld())],
+    ['GET', /^\/world\/events$/, (m, body, req) => (world ? { events: world.events(new URL(req.url, 'http://x').searchParams.get('limit')) } : noWorld())],
     ['GET', /^\/eggs\/(\d{1,12})$/, (m) => hatchery.status(m[1]) ?? Promise.reject(Object.assign(new Error('No egg for that FID here.'), { status: 404 }))],
     // Sign in with Farcaster: this server signs key requests as Fatline's app account (with its custody key, appCustodyKey).
     // The Farcaster app then shows the person what they approve, and adds the key itself.
@@ -283,6 +300,16 @@ async function serve() {
   };
   loop();
   setInterval(loop, Math.min(5 * 60_000, hc.checkEveryMs / 4));
+  const read = async () => {
+    try {
+      const n = await world.sync();
+      console.log(`[world] read to block ${world.get('block')}${n ? `: ${n} new events` : ''}`);
+    } catch (err) {
+      world.lastError = String(err.shortMessage ?? err.message).slice(0, 200);
+      console.log(`[world] read failed, next hour again: ${world.lastError}`);
+    }
+  };
+  if (world) { read(); setInterval(read, EVERY_MS); }
 }
 
 async function init() {
