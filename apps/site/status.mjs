@@ -83,7 +83,16 @@ async function eggs() {
   const str = (hex) => { if (!hex || hex.length < 130) return ''; const b = hex.slice(2); const len = parseInt(b.slice(64, 128), 16); return Buffer.from(b.slice(128, 128 + len * 2), 'hex').toString(); };
   let d; try { d = JSON.parse(readFileSync(join(here, '../../smart-contracts/deployments/base.json'), 'utf8')); } catch { return []; }
   const nft = d.Fatliners.address;
-  const logs = (await call('eth_getLogs', [{ address: nft, fromBlock: '0x' + Number(d.fromBlock).toString(16), toBlock: 'latest', topics: ['0x8c16cbfb788ff0014645f2e619d6e70982930d43a1a53fcbb22ff48ab6eb0af0'] }])) ?? [];
+  // Public RPCs refuse long ranges (publicnode: 50,000 blocks), so read the logs in windows.
+  const head = Number(BigInt((await call('eth_blockNumber', [])) ?? '0x0'));
+  if (!head) return null;
+  const logs = [];
+  for (let from = Number(d.fromBlock); from <= head; from += 10_000) {
+    const to = Math.min(from + 9_999, head);
+    const got = await call('eth_getLogs', [{ address: nft, fromBlock: '0x' + from.toString(16), toBlock: '0x' + to.toString(16), topics: ['0x8c16cbfb788ff0014645f2e619d6e70982930d43a1a53fcbb22ff48ab6eb0af0'] }]);
+    if (!got) return null; // unknown, not "no eggs"
+    logs.push(...got);
+  }
   const fids = [...new Set(logs.map((l) => Number(BigInt(l.topics[1]))))];
   const out = [];
   for (const fid of fids) {
@@ -98,12 +107,15 @@ async function eggs() {
   return out;
 }
 const listed = new Set(fatlines.map((f) => Number(f.ownerFid)));
+// If Base couldn't be read, keep the last known eggs instead of showing none.
+let lastEggs = [];
+try { lastEggs = JSON.parse(readFileSync(out, 'utf8')).eggs ?? []; } catch {}
 const allEggs = await eggs();
 // The hatchery: every egg onchain, who keeps it, its stone, and how warm it is (from the attester that checks it).
 const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
 const attester = 'http://46.225.208.199:8791';
-result.eggs = [];
-for (const e of allEggs) {
+result.eggs = allEggs ? [] : lastEggs;
+for (const e of allEggs ?? []) {
   const w = (await get(`${attester}/eggs/${e.fid}`)) ?? (e.hatchery ? await get(`${e.hatchery.replace(/\/$/, '')}/eggs/${e.fid}`) : null);
   const today = w?.days?.at(-1);
   result.eggs.push({ fid: e.fid, name: e.name ?? (e.surname ? e.surname.charAt(0) + e.surname.slice(1).toLowerCase() : null), surname: e.surname,
@@ -111,7 +123,7 @@ for (const e of allEggs) {
     keeper: await profile(e.fid, [{ url: 'https://crackle.farcaster.xyz:3381', network: 'snapchain' }]),
     warmth: w ? { warmDays: w.warmDays, needed: w.needed, day: today?.day ?? null, passed: today?.passed ?? null, need: today?.need ?? null, since: w.layingAt ?? null } : null });
 }
-for (const e of allEggs) {
+for (const e of allEggs ?? []) {
   if (e.genesis || listed.has(e.fid) || !e.host) continue;
   const nodes = [];
   for (const [network, port, label] of [['snapchain', 3381, 'Snapchain'], ['hypersnap', 4381, 'Hypersnap']]) {

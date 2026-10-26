@@ -187,7 +187,7 @@ document.getElementById('copy').onclick = async (e) => {
 // The hatchery: every egg onchain, who keeps it, its stone, how warm it is. It draws at once from status.json
 // (written by the site's workflow, which GitHub runs only every few hours), then reads live: the eggs from the
 // contract on Base, and each egg's warm checks from the genesis hatchery (https through sslip.io, no DNS needed).
-// Again every 30 minutes while the page is open.
+// Again every hour while the page is open: the Fatline moves at the pace of its hourly checks.
 const HATCHERY = 'https://46-225-208-199.sslip.io';
 const RPCS = ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'];
 const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
@@ -209,7 +209,13 @@ async function live() {
   const d = await getJson('https://raw.githubusercontent.com/jpfraneto/fatline/main/smart-contracts/deployments/base.json');
   const nft = d?.Fatliners?.address;
   if (!nft) return;
-  const logs = await rpc('eth_getLogs', [{ address: nft, fromBlock: '0x' + Number(d.fromBlock).toString(16), toBlock: 'latest', topics: [EGG_TAKEN] }]);
+  // Public RPCs refuse long ranges (publicnode: 50,000 blocks), so read the logs in windows.
+  const head = Number(BigInt((await rpc('eth_blockNumber', [])) ?? '0x0'));
+  let logs = head ? [] : null;
+  for (let from = Number(d.fromBlock); logs && from <= head; from += 10_000) {
+    const got = await rpc('eth_getLogs', [{ address: nft, fromBlock: '0x' + from.toString(16), toBlock: '0x' + Math.min(from + 9_999, head).toString(16), topics: [EGG_TAKEN] }]);
+    logs = got ? logs.concat(got) : null; // a failed window: keep what is drawn
+  }
   if (logs) {
     const known = new Map(eggs.map((e) => [e.fid, e]));
     const next = [];
@@ -277,7 +283,7 @@ getJson('status.json').then(async (s) => {
   eggs = s?.eggs ?? [];
   draw(await art);
   await live();
-  setInterval(live, 30 * 60 * 1000);
+  setInterval(live, 60 * 60 * 1000);
 });
 
 // Inside Farcaster: a mini app. Your identity at the top, and a Cast button for the vouch.

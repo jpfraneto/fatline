@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Builds fatline.ink on the master, from its own nodes and hatchery: the server is the site. Run every 10 minutes
+# Builds fatline.ink on the master, from its own nodes and hatchery: the server is the site. Run every hour
 # by the fatline-site timer (infra/site-setup.sh). It does what the GitHub workflow did, without GitHub:
-#   1. the latest code (git pull in /root/fatline-site; a push to main deploys within 10 minutes);
+#   1. the latest code (git pull in /root/fatline-site; a push to main deploys within the hour);
 #   2. the skill page, every node's status, Aster's hatching, and each token's metadata (fatline.ink/fatliners/<fid>);
 #   3. a new folder with all of it, swapped in at once (/srv/fatline-site/current), so a visitor never sees half a build.
 # If a step that reads the network fails, the last good file is kept.

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Makes the master serve fatline.ink itself (run as root on the master; safe to re-run):
 #   1. its own copy of Fatline for the site, /root/fatline-site (the hatchery's /root/fatline is not touched);
-#   2. a timer that builds the site every 10 minutes (infra/site-build.sh) from this server's nodes and hatchery;
+#   2. a timer that builds the site every hour (infra/site-build.sh) from this server's nodes and hatchery;
 #   3. Caddy serving /srv/fatline-site/current over https, with the hatchery at /eggs/* on the same name.
 # Names: SITE_HOSTS (default 46-225-208-199.sslip.io, which works with no DNS record). Once fatline.ink's DNS
 # points here (A record → this server's IP), run again with SITE_HOSTS="fatline.ink 46-225-208-199.sslip.io".
@@ -24,10 +24,10 @@ ExecStart=/bin/bash $REPO/infra/site-build.sh
 EOF
 cat > /etc/systemd/system/fatline-site.timer <<EOF
 [Unit]
-Description=Build fatline.ink every 10 minutes
+Description=Build fatline.ink every hour
 [Timer]
 OnBootSec=1min
-OnUnitActiveSec=10min
+OnUnitActiveSec=1h
 [Install]
 WantedBy=timers.target
 EOF

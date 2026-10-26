@@ -9,7 +9,7 @@ on:
     paths: ['apps/site/**', '.github/workflows/site.yml']
   workflow_dispatch:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '7 * * * *' # once an hour: the pace of the Fatline
 permissions:
   contents: read
   pages: write
