@@ -61,14 +61,14 @@
     "vault": null
   },
   "pay": {
-    "note": "Where the vault pays the node's rent (the card that pays the server). payCompute only: USDC only, capped by the billing period. Live only with payeeVerified true and mode live.",
-    "payee": null,
-    "payeeVerified": false,
+    "note": "Aster's (#16098) rent goes to the keeper's RedotPay card deposit address (USDC on Base, confirmed by the owner 2026-10-27). Applies only to pay.fid. payCompute only: USDC only, capped by the billing period. Live only with mode live.",
+    "payee": "0x7802a6Bec9Fb4b04B779Bd1d8785C2661C1c8C4c",
+    "payeeVerified": true,
     "mode": "dry-run",
     "reserveUsdc": 50,
     "maxPerTransferUsdc": 10,
     "periodDays": 1,
-    "fid": null
+    "fid": 16098
   },
   "masterNodes": [
     {
