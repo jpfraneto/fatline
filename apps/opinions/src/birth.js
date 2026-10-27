@@ -99,6 +99,7 @@ const fake = async (say) => { say('Approve it in your wallet.'); await wait(1600
 export async function birthPage(fid, { demo = false } = {}) {
   const main = $('#main');
   main.classList.add('birth-page');
+  main.replaceChildren(el('section', { class: 'bt' }, el('p', { class: 'bt-line on' }, '…')));
   let b;
   try { b = await api(`/api/birth/${fid}`); } catch (err) { main.replaceChildren(el('p', { class: 'warn' }, err.message)); return; }
   if (demo) b = demoState(b);
