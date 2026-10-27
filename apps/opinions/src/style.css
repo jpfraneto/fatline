@@ -471,7 +471,8 @@ a.castpanel-link { color: var(--accent); }
 .bt-art.open .bt-being { opacity: 1; transform: scale(1); filter: none; }
 .bt-art.open:not(:has(.bt-being)) .bt-egg { opacity: 1; filter: sepia(.4) brightness(1.15); }
 .bt-art.coining .bt-being { animation: bt-spin 1.6s cubic-bezier(.5,0,.5,1) infinite; }
-.bt-art.coined .bt-being { animation: bt-coin 1.4s cubic-bezier(.2,.9,.3,1) both; box-shadow: 0 0 0 6px var(--gold), 0 0 0 9px #8a5a14, 0 0 110px 30px rgba(255,198,92,.45); }
+.bt-art.egg.coining .bt-egg { animation: bt-spin 1.6s cubic-bezier(.5,0,.5,1) infinite; }
+.bt-art.egg.coined .bt-egg, .bt-art.coined .bt-being { animation: bt-coin 1.4s cubic-bezier(.2,.9,.3,1) both; box-shadow: 0 0 0 6px var(--gold), 0 0 0 9px #8a5a14, 0 0 110px 30px rgba(255,198,92,.45); }
 .bt-line { position: relative; margin: 28px 16px 0; min-height: 2.4em; text-align: center; font: 600 clamp(20px, 5vw, 28px)/1.2 Fraunces, Georgia, serif; opacity: 0; transition: opacity .6s; text-shadow: 0 0 30px rgba(255,170,60,.4); }
 .bt-line.on { opacity: 1; }
 .bt-name { position: relative; text-align: center; opacity: 0; transform: translateY(10px); transition: opacity 1.2s, transform 1.2s; }

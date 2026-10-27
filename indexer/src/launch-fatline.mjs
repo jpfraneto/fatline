@@ -44,7 +44,7 @@ const ZERO = '0x0000000000000000000000000000000000000000';
 function args() {
   const a = process.argv.slice(2);
   const get = (n) => { const i = a.indexOf(`--${n}`); return i >= 0 ? a[i + 1] : undefined; };
-  return { print: a.includes('--print'), go: a.includes('--go'), pay: get('pay') ?? 'phone', fid: get('fid'), name: get('name'), image: get('image'), keeper: get('keeper'), payee: get('payee'), mcap: get('mcap') };
+  return { print: a.includes('--print'), go: a.includes('--go'), pay: get('pay') ?? 'phone', fid: get('fid'), name: get('name'), image: get('image'), keeper: get('keeper'), payee: get('payee'), periodDays: get('period-days'), mcap: get('mcap') };
 }
 
 export async function planFatlineLaunch(config, opts = {}) {
@@ -66,7 +66,10 @@ export async function planFatlineLaunch(config, opts = {}) {
   // The payee (the vault's "keeper"): where the node's rent goes, a month ahead. Never the node itself: the server
   // only triggers payCompute (gas) and must not hold the treasury. Default: the holder; better, the USDC top-up
   // address of the card that pays the server's bills (--payee 0x…). The holder can change it later (setKeeper).
-  const keeper = (opts.payee ?? opts.keeper ?? holder);
+  // The config's payee only once it is verified (fatline.config.json → pay.payeeVerified); else the holder, who can
+  // point the vault at the card later with setKeeper.
+  const pay = config.pay ?? {};
+  const keeper = (opts.payee ?? opts.keeper ?? (pay.payeeVerified === true && pay.payee ? pay.payee : holder));
   const servers = [g.server, await nft('serverOf').catch(() => ZERO)].filter((a) => a && a !== ZERO).map((a) => a.toLowerCase());
   if (!/^0x[0-9a-fA-F]{40}$/.test(keeper) || keeper === ZERO) throw new Error('--payee must be an address (0x…).');
   if (servers.includes(keeper.toLowerCase())) throw new Error(`${keeper} is a node's own key. The node triggers payments; the money goes elsewhere: pass --payee (your card's USDC top-up address) or leave it out to use the holder.`);
@@ -79,7 +82,9 @@ export async function planFatlineLaunch(config, opts = {}) {
     vault, tokenAdmin: holder, name, symbol: ticker, image, url, chainId: 8453, startMarketCapUsd: Number(opts.mcap ?? 25_000),
     description: `${name}: Fatliner #${fid}${(await nft('isFatliner')) ? '' : ' (still an egg)'}. 100% of this coin's trading fees go to its vault, in USDC: the fuel of its Farcaster node and its client. ${url} · ${contractPage}`,
   });
-  const params = { owner: holder, keeper, billingPeriod: 30n * 86_400n, uri: url, salt: `0x${'0'.repeat(64)}` };
+  // The billing period caps every payment onchain: rate × period. One day: small daily payments (about 4.32 USDC).
+  const periodDays = Math.min(31, Math.max(1, Number(opts.periodDays ?? pay.periodDays ?? 1)));
+  const params = { owner: holder, keeper, billingPeriod: BigInt(periodDays) * 86_400n, uri: url, salt: `0x${'0'.repeat(64)}` };
   return { client, fid, ticker, name, image, holder, vault, keeper, launch, params, url, factory: d.AppFactory.address };
 }
 
@@ -90,7 +95,7 @@ async function main() {
   console.log(`\n$${p.ticker} · ${p.name} · #${p.fid}`);
   console.log(`  holder (signs)   ${p.holder}`);
   console.log(`  its vault        ${p.vault} (100% of the coin's fees, in USDC; every Fatliner's resale royalty too, if this is Aster)`);
-  console.log(`  payee            ${p.keeper} (gets the node's rent, up to 30 days ahead; the node only triggers it)`);
+  console.log(`  payee            ${p.keeper} (gets the node's rent, at most ${Number(p.params.billingPeriod) / 86_400} day(s) ahead per payment; the node only triggers it)`);
   console.log(`  app              ${p.url}`);
   console.log(`  pair             USDC on Base, Clanker v4, starting market cap ~$${Number(opts.mcap ?? 25_000).toLocaleString('en')}`);
   console.log(`  coin will be     ${p.launch.expectedToken ?? '(known after the transaction)'}`);

@@ -23,7 +23,7 @@ import { eggTypes, hatchDomain, hatchOf, hatchTypes } from './egg.mjs';
 import { Hatchery } from './hatchery.mjs';
 import { EVERY_MS, World } from './world.mjs';
 import { readCast } from './cast-page.mjs';
-import { triggerPayments } from './pay-trigger.mjs';
+import { payPolicy, triggerPayments } from './pay-trigger.mjs';
 
 export const fatlinersAbi = parseAbi([
   'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, string surname, uint8 stone, uint256 deadline) e, bytes[] signatures, uint256 position, bytes32[] proof)',
@@ -372,7 +372,7 @@ async function serve() {
   const pay = async () => {
     if (!world) return;
     const mine = world.view(() => null).tokens.filter((t) => t.vault && String(t.server).toLowerCase() === hatchery.address.toLowerCase()).map((t) => t.vault);
-    if (mine.length) payments = await triggerPayments({ client: reader, wallet, vaults: mine });
+    if (mine.length) payments = await triggerPayments({ client: reader, wallet, vaults: mine, policy: payPolicy(config.pay) });
   };
   routes.push(['GET', /^\/pay$/, () => ({ server: hatchery.address, payments })]);
   if (world) { read().then(() => pay().catch(() => {})); setInterval(() => read().then(() => pay().catch(() => {})), EVERY_MS); }

@@ -104,7 +104,8 @@ export function makeBirth({ config, client, contract, hatcheries, plan, fetchImp
     const out = { fid, stage, name, holder, surname, stone, vault, chainId: client.chain?.id ?? 8453, art: artOf(fid, stone), images: coinImages(surname) };
     if (stage === 'egg') {
       const h = await hatchOf(fid);
-      return { ...out, hatch: { ready: Boolean(h.ready), signatures: h.signatures ?? 0, threshold: h.threshold ?? null, attesters: h.attesters ?? [], tx: h.tx ?? null, error: h.error ?? null } };
+      out.hatch = { ready: Boolean(h.ready), signatures: h.signatures ?? 0, threshold: h.threshold ?? null, attesters: h.attesters ?? [], tx: h.tx ?? null, error: h.error ?? null };
+      if (out.hatch.ready) return out; // hatch first when it can; an egg can also launch its coin before (below)
     }
     const coin = await read('coinOfFatliner', fid).catch(() => ZERO);
     if (coin !== ZERO) return { ...out, coin: { address: coin, vault: await read('vaultOfFatliner', fid) } };

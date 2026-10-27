@@ -60,6 +60,15 @@
   "keeper": {
     "vault": null
   },
+  "pay": {
+    "note": "Where the vault pays the node's rent (the card that pays the server). payCompute only: USDC only, capped by the billing period. Live only with payeeVerified true and mode live.",
+    "payee": null,
+    "payeeVerified": false,
+    "mode": "dry-run",
+    "reserveUsdc": 50,
+    "maxPerTransferUsdc": 10,
+    "periodDays": 1
+  },
   "masterNodes": [
     {
       "id": "master",

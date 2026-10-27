@@ -122,6 +122,8 @@ export async function birthPage(fid, { demo = false } = {}) {
   async function hatchStep() {
     art.className = 'bt-art egg';
     if (!b.hatch?.ready) {
+      // Not ready to hatch: its coin can still come first (an egg has the right to its coin).
+      if (b.coin || b.launch) return coinStep();
       const signed = (b.hatch?.attesters ?? []).filter((a) => a.signed).length;
       await say(`${(b.name ?? surname).split(' ')[0]} is warming. ${signed} of ${b.hatch?.threshold ?? '…'} nodes have signed its birth.`);
       return;
@@ -153,7 +155,7 @@ export async function birthPage(fid, { demo = false } = {}) {
 
   // 3. Its coin
   async function coinStep() {
-    art.className = 'bt-art open';
+    art.className = b.stage === 'egg' ? 'bt-art egg' : 'bt-art open';
     if (!name.firstChild) name.replaceChildren(el('b', {}, b.name ?? surname), el('small', {}, `$${b.surname} · #${b.fid}`));
     name.classList.add('on');
     if (b.coin) return done(b.coin.address, b.coin.vault);
