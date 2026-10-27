@@ -67,7 +67,8 @@
     "mode": "dry-run",
     "reserveUsdc": 50,
     "maxPerTransferUsdc": 10,
-    "periodDays": 1
+    "periodDays": 1,
+    "fid": null
   },
   "masterNodes": [
     {

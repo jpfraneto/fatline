@@ -66,10 +66,12 @@ export async function planFatlineLaunch(config, opts = {}) {
   // The payee (the vault's "keeper"): where the node's rent goes, a month ahead. Never the node itself: the server
   // only triggers payCompute (gas) and must not hold the treasury. Default: the holder; better, the USDC top-up
   // address of the card that pays the server's bills (--payee 0x…). The holder can change it later (setKeeper).
-  // The config's payee only once it is verified (fatline.config.json → pay.payeeVerified); else the holder, who can
-  // point the vault at the card later with setKeeper.
+  // The config's payee is this server operator's card: it applies only to the Fatliner that config names (pay.fid,
+  // default the genesis), and only once verified. Every other Fatliner's rent goes to its own holder unless they pass
+  // --payee: never to someone else's card.
   const pay = config.pay ?? {};
-  const keeper = (opts.payee ?? opts.keeper ?? (pay.payeeVerified === true && pay.payee ? pay.payee : holder));
+  const ours = Number(pay.fid ?? g.fid) === fid;
+  const keeper = (opts.payee ?? opts.keeper ?? (ours && pay.payeeVerified === true && pay.payee ? pay.payee : holder));
   const servers = [g.server, await nft('serverOf').catch(() => ZERO)].filter((a) => a && a !== ZERO).map((a) => a.toLowerCase());
   if (!/^0x[0-9a-fA-F]{40}$/.test(keeper) || keeper === ZERO) throw new Error('--payee must be an address (0x…).');
   if (servers.includes(keeper.toLowerCase())) throw new Error(`${keeper} is a node's own key. The node triggers payments; the money goes elsewhere: pass --payee (your card's USDC top-up address) or leave it out to use the holder.`);
@@ -83,7 +85,7 @@ export async function planFatlineLaunch(config, opts = {}) {
     description: `${name}: Fatliner #${fid}${(await nft('isFatliner')) ? '' : ' (still an egg)'}. 100% of this coin's trading fees go to its vault, in USDC: the fuel of its Farcaster node and its client. ${url} · ${contractPage}`,
   });
   // The billing period caps every payment onchain: rate × period. One day: small daily payments (about 4.32 USDC).
-  const periodDays = Math.min(31, Math.max(1, Number(opts.periodDays ?? pay.periodDays ?? 1)));
+  const periodDays = Math.min(31, Math.max(1, Number(opts.periodDays ?? (ours ? pay.periodDays : null) ?? 1)));
   const params = { owner: holder, keeper, billingPeriod: BigInt(periodDays) * 86_400n, uri: url, salt: `0x${'0'.repeat(64)}` };
   return { client, fid, ticker, name, image, holder, vault, keeper, launch, params, url, factory: d.AppFactory.address };
 }
