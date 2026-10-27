@@ -87,6 +87,9 @@ export async function placePage() {
   let v;
   try { v = await api(`/api/viewer/${fid}`); } catch (err) { main.replaceChildren(el('p', { class: 'warn' }, err.message)); return; }
   if (v.stage === 'none') { main.replaceChildren(howToGetOne(v)); return; }
-  main.replaceChildren(...[v.stage === 'egg' ? eggStatus(v) : nodeLine(v), feed(fid)].filter(Boolean));
+  // Warm enough to hatch: the birth (hatch, then its coin).
+  if (v.stage === 'egg' && v.egg?.hatched) { location.hash = `#/birth/${fid}`; return; }
+  const coinLine = v.stage === 'fatliner' ? el('p', { class: 'vw-node' }, el('a', { href: `#/birth/${fid}` }, `$${v.surname ?? ''} →`)) : null;
+  main.replaceChildren(...[v.stage === 'egg' ? eggStatus(v) : nodeLine(v), coinLine, feed(fid)].filter(Boolean));
 }
 

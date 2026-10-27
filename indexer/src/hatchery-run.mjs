@@ -15,14 +15,15 @@
 import { chmodSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
-import { createPublicClient, createWalletClient, fallback, http, parseAbi, recoverTypedDataAddress, keccak256, toBytes } from 'viem';
+import { createPublicClient, createWalletClient, encodeFunctionData, fallback, http, parseAbi, recoverTypedDataAddress, keccak256, toBytes } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia, foundry } from 'viem/chains';
 import { loadConfig } from './config.mjs';
-import { eggTypes, hatchDomain, hatchTypes } from './egg.mjs';
+import { eggTypes, hatchDomain, hatchOf, hatchTypes } from './egg.mjs';
 import { Hatchery } from './hatchery.mjs';
 import { EVERY_MS, World } from './world.mjs';
 import { readCast } from './cast-page.mjs';
+import { triggerPayments } from './pay-trigger.mjs';
 
 export const fatlinersAbi = parseAbi([
   'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, string surname, uint8 stone, uint256 deadline) e, bytes[] signatures, uint256 position, bytes32[] proof)',
@@ -203,6 +204,38 @@ async function serve() {
   };
   const noWorld = () => Promise.reject(Object.assign(new Error('This hatchery has no contract to read.'), { status: 404 }));
 
+  async function gatherHatch(fid) {
+    if (!hc.contract) throw Object.assign(new Error('Fatliners is not deployed yet.'), { status: 409 });
+    const read = (functionName, args = []) => reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName, args });
+    const [stage, attesters, threshold, list] = await Promise.all([read('stageOf', [BigInt(fid)]), read('attesters'), read('threshold'), attesterList(hc)()]);
+    if (Number(stage) === 2) return { fid, born: true, surname: await read('surnameOf', [BigInt(fid)]) };
+    if (Number(stage) !== 1) throw Object.assign(new Error(`Egg #${fid} is not onchain.`), { status: 409 });
+    const own = hatchery.status(fid)?.hatch ?? null;
+    const others = await Promise.all(list.filter((a) => a.address.toLowerCase() !== hatchery.address.toLowerCase()).map(async (a) => {
+      const r = await hatchery.json(`${String(a.url).replace(/\/$/, '')}/eggs/${fid}`, 8_000, { outside: true }).catch(() => null);
+      return { attester: a.address, hatch: r?.ok ? r.body?.hatch ?? null : null, warmDays: r?.ok ? r.body?.warmDays ?? null : null, answered: Boolean(r?.ok) };
+    }));
+    const signed = [own, ...others.map((o) => o.hatch)].filter(Boolean);
+    // Only signatures over the very same message count; take the one most attesters signed.
+    const groups = new Map();
+    for (const h of signed) {
+      const key = JSON.stringify(h.message);
+      groups.set(key, [...(groups.get(key) ?? []), { signature: h.signature }]);
+    }
+    const [key, sigs] = [...groups.entries()].sort((a, b) => b[1].length - a[1].length)[0] ?? [null, []];
+    const message = key ? toHatch(JSON.parse(key)) : null;
+    const ordered = message ? await orderSignatures(message, contract, sigs, attesters, 'Hatch') : [];
+    const ready = BigInt(ordered.length) >= threshold;
+    const attesterView = [{ attester: hatchery.address, signed: Boolean(own), warmDays: hatchery.status(fid)?.warmDays ?? null, answered: true },
+      ...others.map((o) => ({ attester: o.attester, signed: Boolean(o.hatch && JSON.stringify(o.hatch.message) === key), warmDays: o.warmDays, answered: o.answered }))];
+    const isAttester = new Set(attesters.map((a) => a.toLowerCase()));
+    return {
+      fid, born: false, ready, signatures: ordered.length, threshold: Number(threshold), attesters: attesterView.filter((a) => isAttester.has(a.attester.toLowerCase())),
+      message: message ? { fid: String(message.fid), surname: message.surname, deadline: String(message.deadline) } : null,
+      tx: ready ? { to: hc.contract, chainId: hc.chainId, data: encodeFunctionData({ abi: fatlinersAbi, functionName: 'hatch', args: [message, ordered.map(([, sig]) => sig)] }) } : null,
+    };
+  }
+
   const routes = [
     ['GET', /^\/$/, () => hatchery.info()],
     ['GET', /^\/world$/, () => (world ? world.view(warmthOf) : noWorld())],
@@ -214,6 +247,9 @@ async function serve() {
       return readCast({ node, network: hyper ? 'hypersnap' : 'snapchain', label: `the ${hyper ? 'Hypersnap' : 'Snapchain'} node on the server ${String(req.headers.host ?? '').replace(/:\d+$/, '') || 'that answered'}` }, decodeURIComponent(m[1]), m[2]);
     }],
     ['GET', /^\/eggs\/(\d{1,12})$/, (m) => hatchery.status(m[1]) ?? Promise.reject(Object.assign(new Error('No egg for that FID here.'), { status: 404 }))],
+    // Everything needed to hatch this egg from any wallet: every attester's signature on the same Hatch, in order, and
+    // the transaction. hatch() can be sent by anyone; the holder sends it from their own wallet and watches it happen.
+    ['GET', /^\/eggs\/(\d{1,12})\/hatch$/, (m) => gatherHatch(Number(m[1]))],
     // Sign in with Farcaster: this server signs key requests as Fatline's app account (with its custody key, appCustodyKey).
     // The Farcaster app then shows the person what they approve, and adds the key itself.
     ['POST', /^\/signer-request$/, async (m, body) => {
@@ -272,12 +308,24 @@ async function serve() {
     if (!hc.contract) return;
     const read = (functionName, args = []) => reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName, args });
     const fid = Number(await read('genesisFid'));
-    if (hatchery.state.eggs[fid] || Number(await read('stageOf', [BigInt(fid)])) !== 1) return;
     const d = config.deployments?.Fatliners?.genesis ?? {};
+    // The genesis server is the one named in the deployment, not whichever hatchery runs this.
+    const keeperServer = String(d.server ?? hatchery.address).toLowerCase();
+    const had = hatchery.state.eggs[fid];
+    if (had?.claim?.genesis) {
+      // Older code named this hatchery as Aster's server (every check here failed), and signed a Hatch whose deadline
+      // came from this hatchery's own clock, so no two attesters' signatures matched. Both now come from the deployment.
+      let fixed = false;
+      if (had.claim.server !== keeperServer) { had.claim.server = keeperServer; fixed = true; }
+      if (d.laidAt && had.laidAt !== Number(d.laidAt)) { had.laidAt = Number(d.laidAt); fixed = true; }
+      if (had.hatch && had.hatch.message.deadline !== String((await hatchOf(had)).deadline)) { had.hatch = null; fixed = true; }
+      if (fixed) { hatchery.save(); console.log(`[hatchery] FID ${fid}: genesis egg record corrected (server ${keeperServer})`); }
+    }
+    if (had || Number(await read('stageOf', [BigInt(fid)])) !== 1) return;
     const to = (await read('ownerOf', [BigInt(fid)])).toLowerCase();
     const url = `http://${String(d.hatchery ?? 'http://46.225.208.199:8791').replace(/^https?:\/\//, '').split(':')[0]}`;
     hatchery.state.eggs[fid] = {
-      claim: { fid, network: 'farcaster', node: `${url}:3381`, to, server: hatchery.address.toLowerCase(), hatchery: `${url}:8791`, at: Date.now(), reference: 'https://crackle.farcaster.xyz:3381', genesis: true },
+      claim: { fid, network: 'farcaster', node: `${url}:3381`, to, server: keeperServer, hatchery: `${url}:8791`, at: Date.now(), reference: 'https://crackle.farcaster.xyz:3381', genesis: true },
       publicKey: null, signature: null, laidAt: Number(d.laidAt), dna: d.dna, surname: d.surname ?? 'FATLINE', stone: 5,
       egg: { genesis: true, onchain: true }, checks: [], hatch: null,
     };
@@ -286,7 +334,9 @@ async function serve() {
   };
   // Aster's birth needs no one at a keyboard (owner's go, 2026-10-26): once this attester has signed its Hatch,
   // this server sends the hatch transaction itself (a little of the attester key's ETH), even with the relay off. Only the genesis egg.
-  let born = false;
+  // Off by default since 2026-10-27 (owner: hatch, then coin, in one sitting): the holder hatches from the app with
+  // GET /eggs/<fid>/hatch. HATCHERY_AUTO_HATCH=1 brings back the server sending it by itself.
+  let born = process.env.HATCHERY_AUTO_HATCH !== '1';
   const birth = async () => {
     if (born || !hc.contract) return;
     const fid = Number(await reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName: 'genesisFid' }));
@@ -316,7 +366,16 @@ async function serve() {
       console.log(`[world] read failed, next hour again: ${world.lastError}`);
     }
   };
-  if (world) { read(); setInterval(read, EVERY_MS); }
+  // The bills: once an hour, each vault of a Fatline this server keeps is asked to pay its payee (pay-trigger.mjs).
+  // Gas only, from the attester key; the USDC goes to the payee its holder chose, never to this server.
+  let payments = [];
+  const pay = async () => {
+    if (!world) return;
+    const mine = world.view(() => null).tokens.filter((t) => t.vault && String(t.server).toLowerCase() === hatchery.address.toLowerCase()).map((t) => t.vault);
+    if (mine.length) payments = await triggerPayments({ client: reader, wallet, vaults: mine });
+  };
+  routes.push(['GET', /^\/pay$/, () => ({ server: hatchery.address, payments })]);
+  if (world) { read().then(() => pay().catch(() => {})); setInterval(() => read().then(() => pay().catch(() => {})), EVERY_MS); }
 }
 
 async function init() {

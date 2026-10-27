@@ -41,3 +41,9 @@ export async function openUrl(url) {
   if (sdk) { try { await sdk.actions.openUrl(url); return; } catch { /* below */ } }
   window.open(url, '_blank', 'noopener');
 }
+
+/** An EIP-1193 wallet: the Farcaster app's own inside Farcaster, the browser's elsewhere. null if none. */
+export async function ethProvider() {
+  if (sdk) { try { const p = await sdk.wallet.getEthereumProvider(); if (p) return p; } catch { /* below */ } }
+  return window.ethereum ?? null;
+}

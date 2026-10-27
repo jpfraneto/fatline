@@ -5,7 +5,7 @@
 //   fatline coin launch --go             do it: the holder approves it in their own wallet. A QR code to scan with a
 //                                        phone wallet (Rainbow, MetaMask…; --pay phone, the default) or a browser
 //                                        wallet extension (--pay browser). No seed phrase, no key file.
-//   options: --fid N --name "…" --image URL --keeper 0x… --mcap 25000
+//   options: --fid N --name "…" --image URL --payee 0x… (where the rent goes; default the holder) --mcap 25000
 //
 // The ticker is not an option: it is the Fatliner's surname, read from its DNA when it hatched
 // (Fatliners.surnameOf), and the launchpad refuses any other. $FATLINE (Aster) launches first.
@@ -44,7 +44,7 @@ const ZERO = '0x0000000000000000000000000000000000000000';
 function args() {
   const a = process.argv.slice(2);
   const get = (n) => { const i = a.indexOf(`--${n}`); return i >= 0 ? a[i + 1] : undefined; };
-  return { print: a.includes('--print'), go: a.includes('--go'), pay: get('pay') ?? 'phone', fid: get('fid'), name: get('name'), image: get('image'), keeper: get('keeper'), mcap: get('mcap') };
+  return { print: a.includes('--print'), go: a.includes('--go'), pay: get('pay') ?? 'phone', fid: get('fid'), name: get('name'), image: get('image'), keeper: get('keeper'), payee: get('payee'), mcap: get('mcap') };
 }
 
 export async function planFatlineLaunch(config, opts = {}) {
@@ -61,10 +61,15 @@ export async function planFatlineLaunch(config, opts = {}) {
   if (launched === 0n && !isGenesis) throw new Error(`$${g.ticker} (Aster) launches first. Then every other Fatliner can.`);
   const titled = ticker.charAt(0) + ticker.slice(1).toLowerCase();
   const name = opts.name ?? (isGenesis ? `${g.name} Fatline` : titled);
-  const image = opts.image ?? (isGenesis ? 'https://fatline.ink/img/world/aster.jpg' : '');
-  // The keeper: the server that keeps it alive (for an egg, the one keeping it warm), paid from the vault.
-  const keeper = opts.keeper ?? (isGenesis ? g.server : await nft('serverOf'));
-  if (!keeper || keeper === ZERO) throw new Error('Which server keeps it alive? Pass --keeper 0x… (that server\'s wallet pays itself from the vault).');
+  // Aster's being, on Arweave (the same picture as fatline.ink/img/world/aster.jpg, which can change).
+  const image = opts.image ?? (isGenesis ? 'https://arweave.net/9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM' : '');
+  // The payee (the vault's "keeper"): where the node's rent goes, a month ahead. Never the node itself: the server
+  // only triggers payCompute (gas) and must not hold the treasury. Default: the holder; better, the USDC top-up
+  // address of the card that pays the server's bills (--payee 0x…). The holder can change it later (setKeeper).
+  const keeper = (opts.payee ?? opts.keeper ?? holder);
+  const servers = [g.server, await nft('serverOf').catch(() => ZERO)].filter((a) => a && a !== ZERO).map((a) => a.toLowerCase());
+  if (!/^0x[0-9a-fA-F]{40}$/.test(keeper) || keeper === ZERO) throw new Error('--payee must be an address (0x…).');
+  if (servers.includes(keeper.toLowerCase())) throw new Error(`${keeper} is a node's own key. The node triggers payments; the money goes elsewhere: pass --payee (your card's USDC top-up address) or leave it out to use the holder.`);
   // The coin points at its place: https://<surname>.fatline.ink, its own client and node, which opens as a Farcaster
   // mini app (indexer/src/miniapp.mjs). Its vault's uri says so onchain; the holder can change it later (setUri).
   const app = await nft('appOf').catch(() => ZERO);
@@ -85,7 +90,7 @@ async function main() {
   console.log(`\n$${p.ticker} · ${p.name} · #${p.fid}`);
   console.log(`  holder (signs)   ${p.holder}`);
   console.log(`  its vault        ${p.vault} (100% of the coin's fees, in USDC; every Fatliner's resale royalty too, if this is Aster)`);
-  console.log(`  keeper (server)  ${p.keeper}`);
+  console.log(`  payee            ${p.keeper} (gets the node's rent, up to 30 days ahead; the node only triggers it)`);
   console.log(`  app              ${p.url}`);
   console.log(`  pair             USDC on Base, Clanker v4, starting market cap ~$${Number(opts.mcap ?? 25_000).toLocaleString('en')}`);
   console.log(`  coin will be     ${p.launch.expectedToken ?? '(known after the transaction)'}`);

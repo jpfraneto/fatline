@@ -130,7 +130,7 @@ export async function surnameCandidate(fid, dna, k) {
 
 /** The Hatch for an egg: which egg and its surname. */
 export async function hatchOf(egg) {
-  return { fid: BigInt(egg.claim.fid), surname: egg.surname ?? await surnameOf(egg.claim.fid, egg.dna), deadline: BigInt(laidAtOf(egg.claim.at) + HATCH_VALID_S) };
+  return { fid: BigInt(egg.claim.fid), surname: egg.surname ?? await surnameOf(egg.claim.fid, egg.dna), deadline: BigInt((egg.laidAt ?? laidAtOf(egg.claim.at)) + HATCH_VALID_S) };
 }
 
 /**

@@ -7,6 +7,7 @@ import { loadMe } from './post.js';
 import { castButton } from './castbutton.js';
 import { cockpitPage, leaveCockpit } from './cockpit.js';
 import { placePage } from './place.js';
+import { birthPage } from './birth.js';
 import { enterMiniApp, inMiniApp } from './miniapp.js';
 
 // A link from the server's setup, https://<name>.fatline.ink/#key=<write token>: keep the token in this browser (so it
@@ -33,7 +34,7 @@ function route() {
   window.scrollTo(0, 0);
   leaveLive();
   leaveCockpit();
-  $('#main').classList.remove('fatline-page');
+  $('#main').classList.remove('fatline-page', 'birth-page');
 
   // The canonical page of a coin (or of a coinless app's vault): #/coin/<chainId>/<address>.
   const coin = hash.match(/^\/coin\/([^/]+)\/([^/?#]+)/);
@@ -47,6 +48,9 @@ function route() {
   if (app) { location.replace(`#/coin/${state.config.launchpad?.chainId ?? 8453}/${app[1]}`); return; }
   const voice = hash.match(/^\/voice\/(\d+)/);
   if (voice) return voicePage(voice[1]).catch(fail);
+  // The birth: hatch, then the coin, from the holder's wallet. #/birth/<fid>, or #/birth/<fid>/demo to walk through it.
+  const birth = hash.match(/^\/birth\/(\d{1,12})(\/demo)?/);
+  if (birth) return birthPage(birth[1], { demo: Boolean(birth[2]) }).catch(fail);
   if (hash.startsWith('/launch')) return launchPage();
   if (hash.startsWith('/voices')) return feedPage({ route }).catch(fail);
   if (hash.startsWith('/people')) return peoplePage({ route });
