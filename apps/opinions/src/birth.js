@@ -187,7 +187,8 @@ export async function birthPage(fid, { demo = false } = {}) {
         coin && !demo ? el('button', { type: 'button', class: 'bt-main', onclick: () => viewCoin(b.chainId, coin) }, `See $${b.surname}`) : null,
         img.icon ? link('Icon', img.icon) : link('Icon', b.art.being ?? b.art.egg),
         img.banner ? link('Banner 3:1', img.banner) : null,
-        img['banner-3x2'] ? link('Banner 3:2', img['banner-3x2']) : null));
+        img['banner-3x2'] ? link('Banner 3:2', img['banner-3x2']) : null,
+        img.launch ? link('Art', img.launch) : null));
     card.classList.add('on');
   }
 

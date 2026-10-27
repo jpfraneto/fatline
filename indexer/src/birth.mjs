@@ -67,7 +67,7 @@ export function makeArt({ dataDir, fetchImpl = fetch }) {
 export function coinImages(surname) {
   const name = String(surname).toLowerCase();
   const out = {};
-  for (const kind of ['icon', 'banner', 'banner-3x2']) {
+  for (const kind of ['icon', 'banner', 'banner-3x2', 'launch']) {
     try { readFileSync(join(ROOT, `apps/site/img/coin/${name}-${kind}.jpg`)); out[kind] = `https://fatline.ink/img/coin/${name}-${kind}.jpg`; } catch { /* not made yet */ }
   }
   return out;
