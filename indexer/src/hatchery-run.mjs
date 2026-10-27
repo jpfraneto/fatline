@@ -22,6 +22,7 @@ import { loadConfig } from './config.mjs';
 import { eggTypes, hatchDomain, hatchTypes } from './egg.mjs';
 import { Hatchery } from './hatchery.mjs';
 import { EVERY_MS, World } from './world.mjs';
+import { readCast } from './cast-page.mjs';
 
 export const fatlinersAbi = parseAbi([
   'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, string surname, uint8 stone, uint256 deadline) e, bytes[] signatures, uint256 position, bytes32[] proof)',
@@ -206,6 +207,12 @@ async function serve() {
     ['GET', /^\/$/, () => hatchery.info()],
     ['GET', /^\/world$/, () => (world ? world.view(warmthOf) : noWorld())],
     ['GET', /^\/world\/events$/, (m, body, req) => (world ? { events: world.events(new URL(req.url, 'http://x').searchParams.get('limit')) } : noWorld())],
+    // One cast, read from this server's own node (fatline.ink/c/<who>/<hash> shows it). ?network=hypersnap for the other one.
+    ['GET', /^\/cast\/([^/]{1,41})\/(0x[0-9a-fA-F]{8,40})$/, (m, body, req) => {
+      const hyper = new URL(req.url, 'http://x').searchParams.get('network') === 'hypersnap';
+      const node = hyper ? hc.reference.hypersnap : hc.reference.farcaster;
+      return readCast({ node, network: hyper ? 'hypersnap' : 'snapchain', label: `the ${hyper ? 'Hypersnap' : 'Snapchain'} node on the server ${String(req.headers.host ?? '').replace(/:\d+$/, '') || 'that answered'}` }, decodeURIComponent(m[1]), m[2]);
+    }],
     ['GET', /^\/eggs\/(\d{1,12})$/, (m) => hatchery.status(m[1]) ?? Promise.reject(Object.assign(new Error('No egg for that FID here.'), { status: 404 }))],
     // Sign in with Farcaster: this server signs key requests as Fatline's app account (with its custody key, appCustodyKey).
     // The Farcaster app then shows the person what they approve, and adds the key itself.

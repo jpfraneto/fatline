@@ -58,6 +58,10 @@ $GLOBAL
 	handle @world {
 		reverse_proxy localhost:8791
 	}
+	# One cast, read from this server's own node (indexer/src/cast-page.mjs): fatline.ink/c/<who>/<hash> asks here.
+	handle /cast/* {
+		reverse_proxy localhost:8791
+	}
 	handle {
 		root * /srv/fatline-site/current
 		@md path *.md
@@ -70,7 +74,7 @@ $GLOBAL
 		header /.well-known/* Access-Control-Allow-Origin "*"
 		header /status.json Cache-Control "no-cache"
 		header /hatching.json Cache-Control "no-cache"
-		@app path_regexp ^/([0-9]{1,9}|0x[0-9a-fA-F]{40}|f/[A-Za-z0-9]{1,12}|base/0x[0-9a-fA-F]{40})/?$
+		@app path_regexp ^/([0-9]{1,9}|0x[0-9a-fA-F]{40}|f/[A-Za-z0-9]{1,12}|base/0x[0-9a-fA-F]{40}|c/[^/]{1,41}/0x[0-9a-fA-F]{8,40})/?$
 		rewrite @app /404.html
 		try_files {path} {path}/index.html {path}.html
 		file_server

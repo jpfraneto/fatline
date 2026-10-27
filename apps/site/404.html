@@ -82,6 +82,12 @@
   .btn { font: 500 12.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; text-decoration: none; opacity: .75; }
   .btn:hover { opacity: 1; text-decoration: underline; text-underline-offset: 6px; }
   .btn.primary { opacity: 1; }
+  .cast .kicker { display: flex; align-items: center; gap: 8px; }
+  .cast .text { margin: 18px 0; font-size: clamp(20px, 4.4vw, 24px); line-height: 1.5; overflow-wrap: anywhere; }
+  .cast .media { display: block; width: 100%; max-height: 80vh; margin: 14px 0; border-radius: 14px; background: #000; object-fit: contain; }
+  .cast img.media { background: none; }
+  .cast .linkcard { display: block; margin: 10px 0; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; font: 14px var(--mono); overflow-wrap: anywhere; text-decoration: none; }
+  .cast .quote { display: block; margin: 14px 0; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper2); text-decoration: none; overflow-wrap: anywhere; }
 </style>
 </head>
 <body>
@@ -104,6 +110,7 @@ const main = document.getElementById('main');
 const m = location.pathname.match(/^\/base\/(0x[0-9a-fA-F]{40})\/?$/);
 const t = location.pathname.match(/^\/f\/([A-Za-z0-9]{1,12})\/?$/);
 const appPath = location.pathname.match(/^\/(0x[0-9a-fA-F]{40})\/?$/); // fatline.ink/<an app contract>
+const castPath = location.pathname.match(/^\/c\/([^/]{1,41})\/(0x[0-9a-fA-F]{8,40})\/?$/); // fatline.ink/c/<username or FID>/<hash>: one cast
 const fidPath = location.pathname.match(/^\/(\d{1,9})\/?$/); // fatline.ink/<FID>: someone's Fatline, and how to run yours
 const usd = (x) => `$${Number(x).toFixed(2)}`;
 const gb = (mb) => `${Math.round(mb / 1024)} GB`;
@@ -282,6 +289,52 @@ if (t) {
       <div class="links"><a class="btn" href="/docs/">The docs</a><a class="btn" href="/">All the nodes</a></div></div>`;
     document.getElementById('copy').onclick = async (e) => { try { await navigator.clipboard.writeText(PROMPT); e.target.textContent = 'Copied'; } catch { const r = document.createRange(); r.selectNode(document.getElementById('prompt')); getSelection().removeAllRanges(); getSelection().addRange(r); } };
   });
+} else if (castPath) {
+  // One cast, read by the genesis server from its own node (indexer/src/cast-page.mjs): no hosted API in between.
+  const [, who, hash] = castPath;
+  const net = new URLSearchParams(location.search).get('network') === 'hypersnap' ? 'hypersnap' : 'snapchain';
+  const HATCHERY = 'https://46-225-208-199.sslip.io';
+  const kicker = `<div class="kicker"><span class="dot ${net}"></span> A cast · read from Fatline's own ${NAME[net]} node</div>`;
+  main.innerHTML = `<div>${kicker}<p class="muted">Reading…</p></div>`;
+  const ago = (ms) => new Date(ms).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+  const linkify = (s) => esc(s).replace(/https?:\/\/[^\s<]+[^\s<.,;:!?)\]'"]/g, (u) => `<a href="${u}" rel="noopener">${u.replace(/^https?:\/\//, '')}</a>`).replace(/\n/g, '<br>');
+  const isVideo = (u) => /\.(mp4|webm|mov|m3u8)(\?|#|$)/i.test(u);
+  const isImage = (u) => /\.(png|jpe?g|gif|webp|avif)(\?|#|$)/i.test(u) || /^https:\/\/(imagedelivery\.net|i\.imgur\.com)\//.test(u);
+  const embed = (u) => isVideo(u)
+    ? `<video class="media" controls playsinline preload="metadata" src="${/\.m3u8/i.test(u) ? '' : esc(u) + (u.includes('#') ? '' : '#t=1')}" data-hls="${/\.m3u8/i.test(u) ? esc(u) : ''}"></video>`
+    : isImage(u) ? `<a href="${esc(u)}" rel="noopener"><img class="media" src="${esc(u)}" alt="" loading="lazy" referrerpolicy="no-referrer"></a>`
+    : `<a class="linkcard" href="${esc(u)}" rel="noopener">${esc(u.replace(/^https?:\/\//, ''))} ↗</a>`;
+  const byline = (u, ts) => `<div class="row who">${u.pfp ? `<img src="${esc(u.pfp)}" alt="" referrerpolicy="no-referrer">` : ''}<span><b style="color:var(--ink)">${esc(u.displayName || u.username || `FID ${u.fid}`)}</b> · @${esc(u.username ?? `fid:${u.fid}`)} · ${esc(ago(ts))}</span></div>`;
+  fetch(`${HATCHERY}/cast/${encodeURIComponent(who)}/${hash}${net === 'hypersnap' ? '?network=hypersnap' : ''}`, { cache: 'no-store' })
+    .then(async (r) => ({ ok: r.ok, j: await r.json().catch(() => ({})) }))
+    .then(({ ok, j }) => {
+      if (!ok) throw new Error(j.error || 'The node did not answer.');
+      const { cast: c, author: a, quotes, source: s } = j;
+      document.title = `@${a.username ?? a.fid}: ${c.text.slice(0, 60)}${c.text.length > 60 ? '…' : ''} · Fatline`;
+      const urls = c.embeds.filter((e) => typeof e === 'string');
+      const short = c.id.slice(0, 10);
+      main.innerHTML = `<article class="cast">${kicker}${byline(a, c.timestamp)}
+        ${c.parent ? `<p class="note">A reply to <a href="/c/${c.parent.fid}/${esc(c.parent.hash)}${location.search}">a cast by FID ${c.parent.fid}</a></p>` : ''}
+        <div class="text">${linkify(c.text)}</div>
+        ${urls.map(embed).join('')}
+        ${quotes.map((q) => `<a class="quote" href="/c/${q.fid}/${esc(q.id)}${location.search}">${byline(q.author, q.timestamp)}<div>${linkify(q.text)}</div></a>`).join('')}
+        <p class="note">Read just now from ${esc(s.label)}${s.version ? ` (${NAME[s.network]} v${esc(s.version)}` : ''}${s.messages ? `, ${Number(s.messages).toLocaleString('en-US')} messages)` : s.version ? ')' : ''}, not from a hosted API.
+          Hash <code>${esc(c.id)}</code>, FID ${c.fid}.</p>
+        <div class="links"><a class="btn" href="https://farcaster.xyz/${esc(a.username ?? '')}/${short}">On farcaster.xyz ↗</a><a class="btn primary" href="/docs/">Run your own node</a></div></article>`;
+      const v = main.querySelector('video[data-hls]:not([data-hls=""])');
+      if (v && !v.canPlayType('application/vnd.apple.mpegurl')) {
+        const sc = document.createElement('script');
+        sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/hls.js/1.5.13/hls.min.js';
+        sc.onload = () => { const h = new window.Hls(); h.loadSource(v.dataset.hls); h.attachMedia(v); };
+        document.head.appendChild(sc);
+      } else if (v) v.src = v.dataset.hls;
+    })
+    .catch((e) => {
+      document.title = 'Cast not found · Fatline';
+      main.innerHTML = `<div>${kicker}<h1>No cast here</h1><p class="muted">${esc(e.message)}</p>
+        <p class="muted">A cast's page is <code>/c/&lt;username or FID&gt;/&lt;hash&gt;</code>. The hash can be the short one from a farcaster.xyz link.</p>
+        <div class="links"><a class="btn primary" href="/docs/">Run your own node</a></div></div>`;
+    });
 } else if (appPath) {
   // One node, one client, one contract: which Fatline runs on this contract (Fatliners.appOf, its AppSet events).
   const app = appPath[1].toLowerCase();
@@ -317,7 +370,7 @@ if (t) {
 } else if (!m) {
   document.title = 'Not found · Fatline';
   main.innerHTML = `<div><div class="kicker">404</div><h1>Nothing here</h1>
-    <p class="muted">No page at <code>${esc(location.pathname)}</code>. A coin's page is <code>/base/0x…</code>, its contract address on Base.</p>
+    <p class="muted">No page at <code>${esc(location.pathname)}</code>. A coin's page is <code>/base/0x…</code>, its contract address on Base. A cast's page is <code>/c/&lt;username&gt;/&lt;hash&gt;</code>.</p>
     <div class="links"><a class="btn primary" href="/explore.html">The board</a></div></div>`;
 } else {
   const address = m[1];
