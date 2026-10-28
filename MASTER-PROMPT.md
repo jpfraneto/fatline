@@ -247,3 +247,9 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 2. Pick the first unfinished item above and say which one.
 3. Build it, test it (automated, then for real where possible), and update the README and this file's "Where we are" section.
 4. Report in a few lines: what works now, what was proven and how, and what still needs a human, such as a wallet, an account or a tester.
+
+### ~19:50 UTC 2026-10-28 — Log in with Fatline; no seed phrase anywhere
+- `POST /api/auth/verify` on every node (indexer/src/fatline-login.mjs): an EIP-4361 message naming `farcaster://fid/N`, signed by the FID's custody address or an address it verified (smart wallets via Base). Stateless; the app checks domain/nonce or passes them. Tested live with @fatline's custody key: good login 200, wrong domain 401, forged 401.
+- `fatline.ink/login.js` (any app: `FatlineLogin.button(el, {onLogin})`), `fatline.ink/login` (try it + docs). The client's People tab: log in → your follows' feed (/api/home/<fid>).
+- `fatline identity --phrase/--seed-file` removed; tutorial (en/es/zh) and skill no longer ask anyone to type or move a recovery phrase (owner: "horrible ux", "cruel").
+- Cast via @fatline: 0xdcdd1e44cf1e05c0bed86fcc7b87c4fb14a85af3.
