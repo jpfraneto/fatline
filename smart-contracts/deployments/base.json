@@ -12,7 +12,8 @@
   "clanker": "0xE85A59c628F7d27878ACeB4bf3b35733630083a9",
   "locker": "0xffA37784D619F228D8B379d287a4D7282e500762",
   "feeLocker": "0xF3622742b1E446D92e45E22923Ef11C2fcD55D68",
-  "vaultImplementation": "0x9EcCAA0dB17d863C341dC5a8f34ac85406175D44"
+  "vaultImplementation": "0x9EcCAA0dB17d863C341dC5a8f34ac85406175D44",
+  "verified": "Basescan, 2026-10-28: Fatliners and the vault implementation (solc 0.8.28, optimizer 1 run, cancun); the build from this commit matches the deployed bytecode byte for byte"
  },
  "Fatliners": {
   "address": "0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016",

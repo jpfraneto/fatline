@@ -65,6 +65,8 @@ If two of them disagree, the higher one wins. Fix the lower one, or say so. Neve
 
 If a secret shows up in output, stop, tell the owner, and don't repeat it.
 
+**Every deployed contract is verified on Basescan** in the same sitting: `forge verify-contract <address> <src:Name> --chain 8453 --compiler-version 0.8.28 --optimizer-runs 1 --evm-version cancun --constructor-args <hex>`, with the key in `ETHERSCAN_API_KEY` (never in a file or commit). An unverified contract is not done.
+
 **Before anything is signed or sent onchain:**
 
 1. The chain id is 8453 and the contract is the one in `deployments/base.json`.
