@@ -44,6 +44,12 @@ GLOBAL=""
 # This server's own client at <its surname>.fatline.ink (infra/serve-client.sh, run by fatline update), if it has one.
 CLIENT=""
 [ -f /etc/caddy/fatline-client.caddy ] && CLIENT="import /etc/caddy/fatline-client.caddy"
+# With a client here, fatline.ink is that client (the genesis Fatline's short name): its home, its API, its mini app
+# card and manifest. Every other page of the site stays; the old home page is /about.
+APP=""
+if [ -n "$CLIENT" ]; then
+  APP=$(printf '\t@app_client path / /api/* /assets/* /miniapp/* /manifest.webmanifest /icon.svg /.well-known/farcaster.json\n\thandle @app_client {\n\t\treverse_proxy 127.0.0.1:8787\n\t}\n\trewrite /about /index.html\n')
+fi
 cat > /etc/caddy/Caddyfile <<EOF
 $GLOBAL
 # Written by Fatline (infra/site-setup.sh): this server is fatline.ink.
@@ -62,6 +68,7 @@ $GLOBAL
 	handle /cast/* {
 		reverse_proxy localhost:8791
 	}
+$APP
 	handle {
 		root * /srv/fatline-site/current
 		@md path *.md

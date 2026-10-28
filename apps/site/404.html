@@ -286,7 +286,7 @@ if (t) {
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><code id="prompt" style="padding:10px 12px;border-radius:10px;font-size:15px;flex:1;min-width:0;overflow-wrap:anywhere">${esc(PROMPT)}</code><button class="btn primary" id="copy" type="button">Copy</button></div>
         <p class="muted" style="margin:10px 0 0;font-size:14px">No agent? In a terminal: <code>curl -fsSL https://fatline.ink/install.sh | sh</code></p>
       </div>
-      <div class="links"><a class="btn" href="/docs/">The docs</a><a class="btn" href="/">All the nodes</a></div></div>`;
+      <div class="links"><a class="btn" href="/docs/">The docs</a><a class="btn" href="/about">All the nodes</a></div></div>`;
     document.getElementById('copy').onclick = async (e) => { try { await navigator.clipboard.writeText(PROMPT); e.target.textContent = 'Copied'; } catch { const r = document.createRange(); r.selectNode(document.getElementById('prompt')); getSelection().removeAllRanges(); getSelection().addRange(r); } };
   });
 } else if (castPath) {

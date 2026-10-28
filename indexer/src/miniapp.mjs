@@ -3,6 +3,7 @@
 // (on the same machine), its egg or Fatliner, and its coin. Nothing here asks another server.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createPublicClient, http, parseAbi } from 'viem';
 import { base } from 'viem/chains';
 import { privateKeyToAccount } from 'viem/accounts';
@@ -10,9 +11,10 @@ import { privateKeyToAccount } from 'viem/accounts';
 export const DOMAIN = 'fatline.ink';
 const SPLASH = '#0b0d1a';
 
-/** "fatline" for fatline.fatline.ink; null for any other host. */
+/** "fatline" for fatline.fatline.ink and for fatline.ink itself (the genesis Fatline's short name); null for any other host. */
 export function labelOf(host) {
   const h = String(host ?? '').toLowerCase().replace(/:\d+$/, '');
+  if (h === DOMAIN) return 'fatline';
   const m = h.match(/^([a-z0-9-]{1,63})\.fatline\.ink$/);
   return m ? m[1] : null;
 }
@@ -68,15 +70,22 @@ export function manifest(host, dataDir) {
 
 const file = (dataDir) => join(dataDir, 'miniapp-association.json');
 
-function readAssociation(dataDir, host) {
-  try {
-    if (!dataDir || !existsSync(file(dataDir))) return null;
-    const a = JSON.parse(readFileSync(file(dataDir), 'utf8'));
-    const payload = JSON.parse(Buffer.from(a.payload, 'base64url').toString('utf8'));
-    return payload.domain === host.replace(/:\d+$/, '') ? a : null;
-  } catch {
-    return null;
+// The one this server signed (<name>.fatline.ink), or fatline.ink's own, signed by @fatline and kept in the site.
+const SITE_MANIFEST = fileURLToPath(new URL('../../apps/site/.well-known/farcaster.json', import.meta.url));
+
+function readAssociation(dataDir, host, siteManifest = SITE_MANIFEST) {
+  const domain = host.replace(/:\d+$/, '').toLowerCase();
+  const candidates = [
+    () => JSON.parse(readFileSync(file(dataDir), 'utf8')),
+    () => JSON.parse(readFileSync(siteManifest, 'utf8')).accountAssociation,
+  ];
+  for (const read of candidates) {
+    try {
+      const a = read();
+      if (JSON.parse(Buffer.from(a.payload, 'base64url').toString('utf8')).domain === domain) return a;
+    } catch { /* not there */ }
   }
+  return null;
 }
 
 /**

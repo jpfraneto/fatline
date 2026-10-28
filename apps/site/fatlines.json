@@ -22,8 +22,7 @@
      "network": "hypersnap",
      "label": "Fatline master (Hetzner, Nuremberg)",
      "url": "http://46.225.208.199:4381",
-     "since": "2026-10-22T10:21:00Z",
-     "paused": "Paused on 2026-10-25: its disk is full (Hypersnap keeps all history) and Hetzner can't add more space to this account yet. Hypersnap reads go through haatz, labelled, until it's back."
+     "since": "2026-10-22T10:21:00Z"
     }
    ],
    "page": "/f/FATLINE",

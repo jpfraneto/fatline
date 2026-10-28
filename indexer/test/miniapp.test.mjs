@@ -10,7 +10,7 @@ import { embed, embedTags, labelOf, manifest, saveAssociation, signAssociation }
 test('a place is <label>.fatline.ink and nothing else', () => {
   assert.equal(labelOf('fatline.fatline.ink'), 'fatline');
   assert.equal(labelOf('Thaituma.fatline.ink:443'), 'thaituma');
-  assert.equal(labelOf('fatline.ink'), null);
+  assert.equal(labelOf('fatline.ink'), 'fatline'); // the genesis Fatline's short name
   assert.equal(labelOf('evil.com'), null);
   assert.equal(labelOf('a.b.fatline.ink'), null);
   assert.equal(manifest('localhost:8787', null), null);
@@ -40,4 +40,12 @@ test('the domain association is a JSON Farcaster Signature by the custody key, u
   saveAssociation(dir, a);
   assert.deepEqual(manifest('fatline.fatline.ink', dir).accountAssociation, a);
   assert.equal(manifest('aenon.fatline.ink', dir).accountAssociation, undefined); // another place doesn't borrow it
+});
+
+test('fatline.ink itself is the genesis Fatline: its card, and the association signed for fatline.ink', () => {
+  const m = manifest('fatline.ink', mkdtempSync(join(tmpdir(), 'miniapp-')));
+  assert.equal(m.miniapp.homeUrl, 'https://fatline.ink/');
+  assert.equal(m.miniapp.canonicalDomain, 'fatline.ink');
+  assert.deepEqual(JSON.parse(Buffer.from(m.accountAssociation.payload, 'base64url').toString()), { domain: 'fatline.ink' });
+  assert.match(embedTags('fatline.ink'), /"url":"https:\/\/fatline\.ink\/"/);
 });
