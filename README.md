@@ -234,7 +234,7 @@ See [`test/fork/LaunchOnBase.t.sol`](smart-contracts/test/fork/LaunchOnBase.t.so
 ```
 fatline                      one command for everything (fatline help; fatline setup guides you)
 bin/fatline.mjs              the `fatline` command on your PATH (npm install -g . here, or the npm package fatlines)
-skills/fatline-setup/        the agent skill (same file as fatline.ink/skill.md)
+skills/fatline-setup/        the agent skill (copied from apps/site/skill.md by apps/site/skill-page.mjs)
 fatline.config.example.json   networks, nodes, contract addresses
 smart-contracts/             Foundry: AppFactory, AppVault, Voices, PrizeSplit
 indexer/                     the backend: apps + vaults, Farcaster/Hypersnap reads, launch builder, keeper

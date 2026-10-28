@@ -104,4 +104,7 @@ try {
 `;
 mkdirSync(join(here, 'skill'), { recursive: true });
 writeFileSync(join(here, 'skill', 'index.html'), html);
+// The agent skill in skills/fatline-setup is a plain copy, not a symlink: MENLO (and some skill installers)
+// refuse symlinks in a repository, so this keeps the two files identical instead.
+writeFileSync(join(here, '..', '..', 'skills', 'fatline-setup', 'SKILL.md'), md);
 console.log(`wrote ${join(here, 'skill', 'index.html')}`);
