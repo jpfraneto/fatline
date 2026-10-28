@@ -92,7 +92,7 @@
     return out;
   }
 
-  var CSS = '.fl-login{font:500 15px/1.2 system-ui,sans-serif;display:inline-flex;flex-direction:column;gap:8px;max-width:340px}' +
+  var CSS = '.fl-login{font:500 15px/1.2 system-ui,sans-serif;display:inline-flex;flex-direction:column;align-items:flex-start;gap:8px;max-width:340px}' +
     '.fl-login button{display:inline-flex;align-items:center;justify-content:center;gap:9px;padding:11px 18px;border:0;border-radius:999px;background:#7c65c1;color:#fff;font:inherit;font-weight:600;cursor:pointer}' +
     '.fl-login button:hover{background:#6a54b0}.fl-login button[disabled]{opacity:.6;cursor:wait}' +
     '.fl-login form{display:flex;gap:6px}.fl-login input{flex:1;min-width:0;padding:10px 12px;border:1px solid #7c65c155;border-radius:999px;font:inherit;background:transparent;color:inherit}' +
