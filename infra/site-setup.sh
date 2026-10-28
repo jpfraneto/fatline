@@ -79,6 +79,8 @@ $APP
 		header @meta Content-Type "application/json"
 		header @meta Access-Control-Allow-Origin "*"
 		header /.well-known/* Access-Control-Allow-Origin "*"
+		# Every place's client reads the art list (the Fatline tab, apps/opinions/src/directory.js).
+		header /fatliners-art.json Access-Control-Allow-Origin "*"
 		header /status.json Cache-Control "no-cache"
 		header /hatching.json Cache-Control "no-cache"
 		@app path_regexp ^/([0-9]{1,9}|0x[0-9a-fA-F]{40}|f/[A-Za-z0-9]{1,12}|base/0x[0-9a-fA-F]{40}|c/[^/]{1,41}/0x[0-9a-fA-F]{8,40})/?$
