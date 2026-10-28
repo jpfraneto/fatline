@@ -258,3 +258,7 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 - Client home is now Today (apps/opinions/src/day.js): the last 24 h of the people someone follows (logged in with Fatline: you; else this place's runner, "through @x's eyes"), from /api/home, kept in localStorage and drawn page by page. No counts, no like/recast buttons unless you tap a cast and can post here; consecutive casts by one person gather into one moment; it ends ("That's the day. N people spoke.").
 - Fatline tab = the directory (directory.js): fatline.ink/world tokens → <surname>.fatline.ink, art, runner, live awake check (<place>/api/health), last cast; tap opens it (openMiniApp inside Farcaster). The cockpit moved to #/here. fatliners-art.json now has CORS.
 - Cast via @fatline: 0xa445d6e570bc7e565aed68d654151e5e4b88db02.
+
+### ~21:05 UTC 2026-10-28 — The whitepaper
+- fatline.ink/whitepaper.pdf (14 A5 pages, rendered with headless Chrome from apps/site/whitepaper/index.html, also served at /whitepaper). "The Keeper's Tale": fan fiction, a lost chapter of Hyperion's pilgrimage, then field notes (every rule with its constant, the addresses, what is not true yet, how to start). Re-render after edits: Chrome --headless=new --no-pdf-header-footer --print-to-pdf.
+- Cast via @fatline: 0x9df099edb1c25c84b2195f46c9888f8227ccd7be.
