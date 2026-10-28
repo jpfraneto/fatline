@@ -3,6 +3,8 @@ import { feedPage, peoplePage, voicePage } from './feed.js';
 import { $, api, el, showSource, state, store, t } from './lib.js';
 import { settingsPage } from './settings.js';
 import { archivePage, coinPage, leaveLive, nodePage } from './fatline.js';
+import { dayPage } from './day.js';
+import { directoryPage } from './directory.js';
 import { loadMe } from './post.js';
 import { castButton } from './castbutton.js';
 import { cockpitPage, leaveCockpit } from './cockpit.js';
@@ -39,7 +41,7 @@ const fail = (err) => $('#main').replaceChildren(el('p', { class: 'warn' }, err.
 
 function route() {
   const hash = location.hash.slice(1) || '/';
-  const tab = hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'people' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') ? 'apps' : 'home';
+  const tab = hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'people' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/fatline') || hash.startsWith('/here') || hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') ? 'fatline' : 'home';
   document.querySelectorAll('#tabs a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.tab === tab)));
   if (tab !== 'voices' && tab !== 'people') showSource(null);
   window.scrollTo(0, 0);
@@ -70,9 +72,12 @@ function route() {
   if (hash.startsWith('/people')) return peoplePage({ route });
   if (hash.startsWith('/settings')) return settingsPage({ onChange: () => { renderChrome(); route(); } }).catch(fail);
   if (hash.startsWith('/apps')) return appsPage().catch(fail);
+  if (hash.startsWith('/fatline')) return directoryPage().catch(fail);
+  if (hash.startsWith('/here')) return cockpitPage().catch(fail);
   // Opened from a cast inside Farcaster, or at #/place: the place as a visitor sees it.
   if (hash.startsWith('/place') || inMiniApp()) return placePage().catch(fail);
-  return cockpitPage().catch(fail);
+  // Home: today's feed, through someone's eyes (day.js).
+  return dayPage().catch(fail);
 }
 
 async function boot() {

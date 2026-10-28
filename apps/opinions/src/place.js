@@ -5,9 +5,9 @@
 //   A Fatliner     the being and its coin on top, then their feed (one line about the node while it is not in sync).
 // The same layout on every Fatline, so it is predictable. Everything comes from this server: /api/viewer and /api/home.
 import { $, api, el } from './lib.js';
-import { card } from './feed.js';
 import { openUrl, viewer } from './miniapp.js';
 import { birthPanel } from './birth.js';
+import { dayFeed } from './day.js';
 
 const copy = (text) => el('div', { class: 'ck-cmd' }, el('code', {}, text), el('button', { type: 'button', onclick: async (e) => {
   try { await navigator.clipboard.writeText(text); e.target.textContent = 'Copied'; } catch { e.target.textContent = 'Select it'; }
@@ -36,28 +36,6 @@ function nodeLine(v) {
   return el('p', { class: 'vw-node' }, v.node.syncing ? 'Your node is catching up. The feed fills in as it does.' : 'Your node did not answer the last check.');
 }
 
-export function homeFeed(fid) {
-  const list = el('div', { class: 'list' }, el('p', { class: 'muted' }, 'Reading the people you follow from this node…'));
-  const more = el('button', { type: 'button', class: 'more', hidden: true }, 'More');
-  let next = null;
-  const load = async () => {
-    more.disabled = true;
-    try {
-      const page = await api(`/api/home/${fid}`, next ? { before: next } : {});
-      if (!next) list.replaceChildren();
-      list.append(...page.items.map((i) => card(i, page.users)));
-      if (!list.children.length) list.append(el('p', { class: 'muted' }, 'Quiet so far.'));
-      next = page.next; more.hidden = !next;
-    } catch (err) {
-      if (!next) list.replaceChildren(el('p', { class: 'muted' }, err.message));
-    }
-    more.disabled = false;
-  };
-  more.onclick = load;
-  load();
-  return el('div', {}, list, more);
-}
-
 export async function placePage() {
   const main = $('#main');
   main.replaceChildren(el('p', { class: 'ck-loading' }, '…'));
@@ -70,6 +48,6 @@ export async function placePage() {
   if (v.stage === 'none') { main.replaceChildren(howToGetOne(v)); return; }
   // Their token on top, as it is now (egg, ready to hatch, Fatliner, its coin), and what they can do with it, right here.
   const warm = v.egg ? { warmDays: v.egg.warmDays ?? 0, needed: v.egg.needed ?? 3 } : null;
-  main.replaceChildren(...[birthPanel(fid, { warm }), nodeLine(v), homeFeed(fid)].filter(Boolean));
+  main.replaceChildren(...[birthPanel(fid, { warm }), nodeLine(v), dayFeed(fid, 'The people you follow, read from this node.')].filter(Boolean));
 }
 

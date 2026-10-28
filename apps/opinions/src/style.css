@@ -595,3 +595,44 @@ button[type="submit"], .more { border-radius: 18px 7px 18px 7px; }
 .fl-invite p { margin: 0 0 12px; }
 .fl-who { margin: 6px 0 14px; opacity: .85; }
 .linkish { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; }
+
+/* ---- Today (day.js): one day, nobody's numbers. And the directory of places (directory.js). */
+.day, .dir { max-width: 620px; margin: 0 auto; }
+.day-head { margin: 8px 0 26px; }
+.day-date { margin: 0; font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--pole); }
+.day-title { margin: 4px 0 6px; font: 600 clamp(34px, 9vw, 46px)/1.05 var(--serif); color: var(--text); }
+.day-whose { margin: 0; color: var(--muted); font-size: 15px; }
+.mo { margin: 0 0 14px; padding: 16px 18px 6px; border-radius: var(--veil); background: var(--surface); border: 1px solid var(--line); }
+.mo-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+.mo-pfp { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: var(--raise); flex: none; box-shadow: 0 0 0 2px rgba(237, 186, 84, .25); }
+.mo-name { font-weight: 600; color: var(--text); }
+.mo-user { color: var(--faint); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mo-part { padding: 8px 0 10px; }
+.mo-part + .mo-part { border-top: 1px solid var(--line); }
+.mo-when { display: flex; gap: 10px; font-size: 12px; letter-spacing: .08em; color: var(--faint); }
+.mo-ch { color: var(--pole); opacity: .8; }
+.mo-text { margin: 6px 0 0; font: 19px/1.5 var(--serif); color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.mo-pics { display: grid; gap: 6px; margin-top: 10px; }
+.mo-pics.n2, .mo-pics.n4 { grid-template-columns: 1fr 1fr; }
+.mo-pics.n3 { grid-template-columns: 1fr 1fr 1fr; }
+.mo-pics img { width: 100%; max-height: 460px; object-fit: cover; border-radius: 16px 6px 16px 6px; display: block; }
+.mo-pics.n2 img, .mo-pics.n3 img, .mo-pics.n4 img { aspect-ratio: 1; }
+.mo-link { display: block; margin-top: 8px; color: var(--pole); font-size: 14px; text-decoration: none; overflow-wrap: anywhere; }
+.mo-quote { margin: 8px 0 0; padding-left: 10px; border-left: 2px solid var(--line); color: var(--muted); font-size: 14px; }
+.mo-acts { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: 14px; }
+.day-end { text-align: center; padding: 30px 0 120px; color: var(--muted); }
+.day-end p { margin: 4px 0; }
+.day-end p:first-of-type { font: 20px/1.4 var(--serif); color: var(--text); }
+.day-seal { display: block; font-size: 22px; color: var(--pole); margin-bottom: 8px; }
+.pl { display: flex; gap: 16px; margin: 0 0 14px; padding: 14px; border-radius: var(--veil); background: var(--surface); border: 1px solid var(--line); cursor: pointer; transition: transform .15s, border-color .15s; }
+.pl:hover { transform: translateY(-1px); border-color: rgba(237, 186, 84, .4); }
+.pl.here { border-color: rgba(237, 186, 84, .55); }
+.pl-art { width: 92px; height: 92px; flex: none; object-fit: cover; border-radius: 20px 7px 20px 7px; background: var(--raise); }
+.pl-body { min-width: 0; flex: 1; }
+.pl-host { margin: 0; font-size: 12px; letter-spacing: .08em; color: var(--pole); }
+.pl-here { color: var(--faint); }
+.pl-name { margin: 2px 0 2px; font: 600 24px/1.15 var(--serif); color: var(--text); }
+.pl-who { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+.pl-state.on { color: var(--ok); } .pl-state.off { color: var(--faint); }
+.pl-said { margin: 0; font: 15px/1.45 var(--serif); color: var(--text); opacity: .9; overflow-wrap: anywhere; }
+.pl-said cite { display: block; margin-top: 4px; font: 12px/1 system-ui, sans-serif; font-style: normal; color: var(--faint); }

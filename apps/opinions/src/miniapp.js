@@ -61,3 +61,9 @@ export function noWalletReason() {
     ? 'Farcaster did not hand this app a wallet. Open it from its own card (fatline.fatline.ink), or update the Farcaster app.'
     : 'No wallet here. Open this inside Farcaster, or in a browser with a wallet.';
 }
+
+/** Another Fatline place (<surname>.fatline.ink): inside Farcaster as its own mini app (its own domain, its own wallet). */
+export async function openPlace(url) {
+  if (sdk) { try { await sdk.actions.openMiniApp({ url }); return; } catch { /* below */ } }
+  location.assign(url);
+}

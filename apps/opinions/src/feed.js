@@ -2,7 +2,7 @@
 import { parseAbi } from 'viem';
 import { $, api, el, label, short, showSource, state, store, t, timeAgo, wallet } from './lib.js';
 import { castActions, castComposer, followButton } from './post.js';
-import { homeFeed } from './place.js';
+import { dayFeed } from './day.js';
 import { loggedIn, logOut, loginButton } from './fatline-login.js';
 
 const voicesAbi = parseAbi(['function say(string text, uint256 parentId, uint256 fid) returns (uint256)']);
@@ -185,7 +185,7 @@ export function peoplePage({ route }) {
     return main.replaceChildren(castComposer({ onDone: () => setTimeout(route, 1500) }),
       el('p', { class: 'fl-who' }, t('youAre', who.username ? `@${who.username}` : `FID ${who.fid}`), ' ',
         el('button', { type: 'button', class: 'linkish', onclick: () => { logOut(); route(); } }, t('logOut'))),
-      homeFeed(who.fid));
+      dayFeed(who.fid, 'The people you follow, read from this node.'));
   }
   const header = [castComposer({ onDone: () => setTimeout(route, 1500) }),
     el('div', { class: 'fl-invite' }, el('p', {}, t('loginInvite')), loginButton(() => route())),
