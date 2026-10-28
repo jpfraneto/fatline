@@ -276,11 +276,10 @@ fatline feed --limit 20                                              <span class
 <!-- ============================================================ POSTING -->
 <section id="post" lang="en">
   <h2>Casting: your client's own app key</h2>
-  <p><strong>The short way:</strong> run <code>fatline client</code>, open <code>http://localhost:8787</code>, press <strong>Cast</strong> (bottom right). The first time, it gives this client its own <em>app key</em>, in one of three ways:</p>
+  <p><strong>The short way:</strong> run <code>fatline client</code>, open <code>http://localhost:8787</code>, press <strong>Cast</strong> (bottom right). The first time, it gives this client its own <em>app key</em>, in one of two ways. Never with your recovery phrase: Fatline never asks for it.</p>
   <ul>
     <li><strong>The Farcaster app.</strong> Scan the QR code with your phone, or use <em>Open the Farcaster app on this device</em> / <em>Copy the link</em>. Approve in the app; it adds the key and pays for it.</li>
-    <li><strong>A browser wallet</strong> (MetaMask, Rabby, Coinbase Wallet…), only if it holds the address that owns your FID (your custody address, the one from your Farcaster recovery phrase). One signature, no transaction, no gas. The wallet asks to switch to Ethereum for it: that is the format of Farcaster's key message, nothing is sent onchain.</li>
-    <li><strong>Your recovery phrase, in a terminal:</strong> <code>fatline identity --phrase</code>. A hidden prompt, used once, never saved.</li>
+    <li><strong>A browser wallet</strong> (MetaMask, Rabby, Coinbase Wallet…), only if it holds the address that owns your FID (your custody address), because it already does: nobody should move a recovery phrase to make this work. One signature, no transaction, no gas. The wallet asks to switch to Ethereum for it: that is the format of Farcaster's key message, nothing is sent onchain.</li>
   </ul>
   <p>An app key is <strong>not a new account</strong>. It is a second key for <em>your</em> account, like the ones Warpcast or Firefly hold. It can cast, react, follow and edit your profile; it can never move the account or add keys. It stays on this machine (<code>.fatline/appkey.json</code>). <code>fatline identity</code> in a terminal does the same as the Cast button (QR code and link).</p>
   <p><strong>Your node does not have to be in sync.</strong> While it catches up it can't check new casts yet, so they go out through Fatline's master node, and the client says so. Once it is in sync, they leave through yours.</p>
@@ -288,15 +287,14 @@ fatline feed --limit 20                                              <span class
   <pre><code>fatline identity show     <span class="c"># is the key active?</span>
 fatline identity revoke   <span class="c"># remove it from the network and from this machine</span></code></pre>
   <div class="concept"><strong>Storage rent and server bills are different things.</strong> Storage rent is paid onchain, per account, and sets how many messages the network keeps for you. It does not pay for any server. Your node's server is a separate bill, paid to whoever hosts it.</div>
-  <p class="note"><span class="tag ok">tested</span> with a real account on 2026-10-24 (@anky, FID 18350), recovery-phrase way: key registered, then a cast, a reply, a like, a recast and a follow, each confirmed on our node and seen on crackle, then all undone. <span class="tag">untested</span> the browser-wallet way, with a real account.</p>
+  <p class="note"><span class="tag ok">tested</span> with a real account on 2026-10-24 (@anky, FID 18350), with the account's own key: key registered, then a cast, a reply, a like, a recast and a follow, each confirmed on our node and seen on crackle, then all undone. <span class="tag">untested</span> the browser-wallet way, with a real account.</p>
 </section>
 <section id="post" lang="es">
   <h2>Castear: la llave propia de tu cliente</h2>
-  <p><strong>Lo corto:</strong> corre <code>fatline client</code>, abre <code>http://localhost:8787</code> y aprieta <strong>Cast</strong> (abajo a la derecha). La primera vez le da a este cliente su propia <em>llave de app</em>, de una de tres formas:</p>
+  <p><strong>Lo corto:</strong> corre <code>fatline client</code>, abre <code>http://localhost:8787</code> y aprieta <strong>Cast</strong> (abajo a la derecha). La primera vez le da a este cliente su propia <em>llave de app</em>, de una de dos formas. Nunca con tu frase de recuperación: Fatline nunca la pide.</p>
   <ul>
     <li><strong>La app de Farcaster.</strong> Escanea el QR con tu teléfono, o usa <em>Open the Farcaster app on this device</em> / <em>Copy the link</em>. Apruebas en la app; ella agrega la llave y la paga.</li>
-    <li><strong>Una wallet del navegador</strong> (MetaMask, Rabby, Coinbase Wallet…), solo si tiene la dirección dueña de tu FID (tu dirección custodia, la de tu frase de recuperación de Farcaster). Una firma, sin transacción, sin gas. La wallet pide cambiar a Ethereum para firmar: es el formato del mensaje de llaves de Farcaster, no se envía nada onchain.</li>
-    <li><strong>Tu frase de recuperación, en una terminal:</strong> <code>fatline identity --phrase</code>. Un campo oculto, se usa una vez, nunca se guarda.</li>
+    <li><strong>Una wallet del navegador</strong> (MetaMask, Rabby, Coinbase Wallet…), solo si tiene la dirección dueña de tu FID (tu dirección custodia), porque ya la tiene: nadie debería mover su frase de recuperación para esto. Una firma, sin transacción, sin gas. La wallet pide cambiar a Ethereum para firmar: es el formato del mensaje de llaves de Farcaster, no se envía nada onchain.</li>
   </ul>
   <p>Una llave de app <strong>no es una cuenta nueva</strong>. Es una segunda llave de <em>tu</em> cuenta, como las que tienen Warpcast o Firefly. Puede castear, reaccionar, seguir y editar tu perfil; nunca puede mover la cuenta ni agregar llaves. Se queda en esta máquina (<code>.fatline/appkey.json</code>). <code>fatline identity</code> en una terminal hace lo mismo que el botón Cast (QR y link).</p>
   <p><strong>Tu nodo no necesita estar sincronizado.</strong> Mientras se pone al día no puede revisar casts nuevos, así que salen por el nodo maestro de Fatline, y el cliente lo dice. Cuando está al día, salen por el tuyo.</p>
@@ -304,7 +302,7 @@ fatline identity revoke   <span class="c"># remove it from the network and from 
   <pre><code>fatline identity show     <span class="c"># ¿está activa la llave?</span>
 fatline identity revoke   <span class="c"># la quita de la red y de esta máquina</span></code></pre>
   <div class="concept"><strong>El arriendo de almacenamiento y la cuenta del servidor son cosas distintas.</strong> El arriendo de almacenamiento se paga onchain, por cuenta, y define cuántos mensajes guarda la red para ti. No paga ningún servidor. El servidor de tu nodo es otra cuenta, que se le paga a quien lo hospeda.</div>
-  <p class="note"><span class="tag ok">probado</span> con una cuenta real el 2026-10-24 (@anky, FID 18350), con la frase de recuperación: llave registrada, luego un cast, una respuesta, un like, un recast y un follow, cada uno confirmado en nuestro nodo y visto en crackle, y después todo deshecho. <span class="tag">sin probar</span> la forma con wallet del navegador, con una cuenta real.</p>
+  <p class="note"><span class="tag ok">probado</span> con una cuenta real el 2026-10-24 (@anky, FID 18350), con la llave propia de la cuenta: llave registrada, luego un cast, una respuesta, un like, un recast y un follow, cada uno confirmado en nuestro nodo y visto en crackle, y después todo deshecho. <span class="tag">sin probar</span> la forma con wallet del navegador, con una cuenta real.</p>
 </section>
 
 <!-- ============================================================ FILTER -->
@@ -445,7 +443,7 @@ fatline coin launch        <span class="c"># después, si quieres: su coin, tick
     <tr><td>Fatliners (el NFT y el launchpad) en Base</td><td><span class="tag ok">vivo</span>, verificado en Basescan; primer huevo nacido: Thaituma (#13505)</td></tr>
     <tr><td>Una moneda lanzada con dinero real</td><td><span class="tag no">todavía no</span>: $FATLINE va primero. Sin auditoría externa</td></tr>
     <tr><td>Copiar solo algunas cuentas (<code>follow</code>, no es un nodo)</td><td><span class="tag ok">funciona</span> con nodos reales, ambas redes</td></tr>
-    <tr><td>Registrar una llave y publicar con una cuenta real</td><td><span class="tag ok">funciona</span>, con la frase de recuperación, 2026-10-24</td></tr>
+    <tr><td>Registrar una llave y publicar con una cuenta real</td><td><span class="tag ok">funciona</span>, 2026-10-24</td></tr>
     <tr><td>Un nodo replicador (más liviano)</td><td><span class="tag no">no es posible hoy</span>: los replicadores de ambas redes rechazan los mensajes de llaves</td></tr>
     <tr><td>Otras personas corriéndolo en sus propios servidores</td><td><span class="tag ok">hecho</span>: @jmsaulnier, @jvaleska.eth; ¿te sumas?</td></tr>
   </table></div>

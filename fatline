@@ -89,7 +89,6 @@ Posting (your client's own app key, no gas). An app key is a second key for YOUR
 can cast, like, follow and edit your profile, never move the account or add keys. It stays on this machine.
   fatline identity              Add one: a QR code for the Farcaster app (or its link). Same as the Cast button in the client,
                                      which also offers a browser wallet that owns your account.
-                                     --phrase [--fid N]: type your recovery phrase in a hidden prompt instead (never saved)
   fatline identity show         Is the key active?
   fatline identity revoke       Remove the key from the network and from this machine
 

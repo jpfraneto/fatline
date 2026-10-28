@@ -1,23 +1,18 @@
-// fatline identity [--fid 18350] [--network farcaster] [--dry-run]
+// fatline identity [--network farcaster]
 // fatline identity show
 // fatline identity revoke
 //
 // Gives this client its own app key for your Farcaster account, with no transaction and no gas:
-//   1. You type your seed phrase into a hidden prompt. It is used once, here, and never saved or logged.
-//   2. It derives your custody address (the account's owner) and checks it owns the FID.
-//   3. It creates a new Ed25519 app key and signs a KEY_ADD with the custody key (EIP-712).
-//      The key can only cast, react, follow and edit your profile; it can never add or remove keys.
-//   4. It submits the KEY_ADD to your node and waits until the node shows the key.
-// After that, the client signs with the app key. The seed phrase is not needed again.
+//   a QR code (or its link) opens the Farcaster app; you approve there; the app adds the key (siwf.mjs).
+// The key can only cast, react, follow and edit your profile; it can never add or remove keys.
+// Never a recovery phrase: asking people to type or move theirs is a trap. The other way in is the client's Cast
+// button with a wallet that already holds the account (login.mjs), one EIP-712 signature (buildKeyAdd below).
 import { randomBytes } from 'node:crypto';
-import readline from 'node:readline';
 import fs from 'node:fs';
-import os from 'node:os';
 import {
   FarcasterNetwork, MessageType, NobleEd25519Signer, ViemLocalEip712Signer,
   getFarcasterTime, makeKeyAdd, makeKeyAddBody, makeKeyRemove, makeKeyRemoveBodySelfRevoke,
 } from '@farcaster/core';
-import { mnemonicToAccount } from 'viem/accounts';
 import { loadConfig } from './config.mjs';
 import { Network } from './hub.mjs';
 import { appKeyPath, loadAppKey, saveAppKey, sendMessage } from './writer.mjs';
@@ -35,14 +30,6 @@ function args() {
   const a = process.argv.slice(2);
   const get = (n) => { const i = a.indexOf(`--${n}`); return i >= 0 ? a[i + 1] : undefined; };
   return { command: a[0] && !a[0].startsWith('--') ? a[0] : 'add', fid: get('fid'), network: get('network'), seedFile: get('seed-file'), dryRun: a.includes('--dry-run'), phrase: a.includes('--phrase') };
-}
-
-function askHidden(question) {
-  return new Promise((done) => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
-    rl._writeToOutput = (s) => { if (s.includes(question)) process.stdout.write(s); };
-    rl.question(question, (answer) => { rl.close(); process.stdout.write('\n'); done(answer); });
-  });
 }
 
 async function get(node, path, params, timeoutMs = 15_000) {
@@ -87,11 +74,6 @@ export async function fidOfCustody(node, address, fid) {
 /** The FID fatline connect proved and saved (.fatline/identity.json), if any. */
 export function savedFid(config) {
   try { return Number(JSON.parse(fs.readFileSync(`${config.dataDir}/identity.json`, 'utf8')).fid) || undefined; } catch { return undefined; }
-}
-
-async function username(node, fid) {
-  const res = await get(node, '/v1/userDataByFid', { fid, user_data_type: 6 }).catch(() => null);
-  return res?.data?.userDataBody?.value ?? null;
 }
 
 export async function waitForKey(node, fid, key, timeoutMs = 90_000) {
@@ -141,8 +123,12 @@ async function add(opts, config) {
     return;
   }
 
-  // The default: Sign in with Farcaster. A QR code opens the Farcaster app; you approve; the app adds the key.
-  if (!opts.seedFile && !opts.phrase && !opts.dryRun) {
+  // Never a seed phrase: asking people to type or move theirs is a trap. The Farcaster app (a QR code), or the
+  // Cast button in the client with the wallet that already holds the account.
+  if (opts.seedFile || opts.phrase) {
+    console.log('\nFatline never asks for a recovery phrase. Scan the QR code below with the Farcaster app, or press Cast in your client.');
+  }
+  {
     const { startSignIn } = await import('./siwf.mjs');
     const s = await startSignIn(config);
     const { showQr } = await import('./qr.mjs');
@@ -158,63 +144,9 @@ async function add(opts, config) {
     const record = await s.wait({ onState: (st) => page?.status(st === 'approved' ? 'Approved. Adding the key onchain…' : 'Waiting for your approval in the Farcaster app…') });
     page?.status(`Done: this client can post as FID ${record.fid}.`, true); page?.close();
     console.log(`\nDone. This client can now post as FID ${record.fid}. The key is in ${appKeyPath(config.dataDir)} (mode 600).`);
-    console.log('(Prefer your recovery phrase in a hidden prompt instead? fatline identity --phrase)');
     return;
   }
 
-  let phrase;
-  if (opts.seedFile) {
-    // A private file the owner filled in. Lines starting with # are ignored. It is read, never printed or copied.
-    const file = opts.seedFile.replace(/^~(?=\/)/, os.homedir());
-    if ((fs.statSync(file).mode & 0o077) !== 0) throw new Error(`${file} can be read by other users. Run: chmod 600 ${file}. Nothing was sent.`);
-    phrase = fs.readFileSync(file, 'utf8').split('\n').filter((l) => !l.trim().startsWith('#')).join(' ');
-    if (!phrase.trim()) throw new Error(`${file} has no seed phrase in it yet. Nothing was sent.`);
-    console.log(`\nReading the seed phrase from ${file} (not printed, not saved anywhere else).`);
-  } else {
-    console.log('\nType your seed phrase (12 or 24 words). It is hidden, used once on this machine, and never saved.');
-    phrase = await askHidden('Seed phrase: ');
-  }
-  let custody;
-  try {
-    custody = mnemonicToAccount(phrase.trim().toLowerCase().split(/\s+/).join(' '));
-  } catch {
-    throw new Error('That is not a valid seed phrase. Nothing was sent.');
-  } finally {
-    phrase = null;
-  }
-  console.log(`Custody address (derivation m/44'/60'/0'/0/0): ${custody.address}`);
-
-  // The FID to check first (fast): --fid, or the one fatline connect saved. Without it, the node's lookup by address
-  // can take a long time.
-  const hint = opts.fid ?? savedFid(config);
-  console.log(`Asking ${node.label ?? node.url} which account this address owns${hint ? ` (checking FID ${hint} first)` : ' (this can take up to a minute; --fid <your FID> makes it instant)'}…`);
-  const fid = await fidOfCustody(node, custody.address, hint).catch((err) => {
-    throw new Error(`${err.message} Nothing was sent. Run it again with your FID, which is instant: fatline identity --phrase --fid <your FID>`);
-  });
-  if (!fid) throw new Error(`${custody.address} does not own a Farcaster account on this network. Check the phrase. Nothing was sent.`);
-  if (opts.fid && Number(opts.fid) !== fid) throw new Error(`This phrase owns FID ${fid}, not ${opts.fid}. Nothing was sent.`);
-  console.log(`It owns FID ${fid}${(await username(node, fid)) ? ` (@${await username(node, fid)})` : ''}.`);
-
-  const { message, record } = await buildKeyAdd({ node, fid, custody, networkName });
-  custody = null; // the custody key is not needed past this point
-
-  if (opts.dryRun) {
-    const check = await sendMessage(node, message, '/v1/validateMessage');
-    console.log(`Dry run: the node says this KEY_ADD is ${check.valid ? 'well-formed' : 'NOT valid'}. Nothing was submitted or saved.`);
-    return;
-  }
-
-  // Save before submitting, so the key is never registered without this machine holding it.
-  saveAppKey(config.dataDir, record);
-  await sendMessage(node, message);
-  console.log(`Submitted the app key ${record.publicKey.slice(0, 12)}… Waiting for the node to show it…`);
-  if (await waitForKey(node, fid, record.publicKey)) {
-    saveAppKey(config.dataDir, { ...record, state: 'active', confirmedAt: new Date().toISOString() });
-    console.log(`\nDone. This client can now post as FID ${fid}. The app key is in ${appKeyPath(config.dataDir)} (mode 600).`);
-    console.log('It expires after 90 days without use. To remove it: fatline identity revoke');
-  } else {
-    console.log('\nThe node accepted it but does not show it yet. Check again with: fatline identity show');
-  }
 }
 
 async function show(opts, config) {
@@ -256,7 +188,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const config = loadConfig();
   const commands = { add, show, revoke };
   if (!commands[opts.command]) {
-    console.error('Usage: fatline identity [--fid N] [--dry-run] | identity show | identity revoke');
+    console.error('Usage: fatline identity | identity show | identity revoke');
     process.exit(1);
   }
   commands[opts.command](opts, config).catch((err) => { console.error(`\n${err.message}`); process.exit(1); });

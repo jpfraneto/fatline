@@ -2,6 +2,8 @@
 import { parseAbi } from 'viem';
 import { $, api, el, label, short, showSource, state, store, t, timeAgo, wallet } from './lib.js';
 import { castActions, castComposer, followButton } from './post.js';
+import { homeFeed } from './place.js';
+import { loggedIn, logOut, loginButton } from './fatline-login.js';
 
 const voicesAbi = parseAbi(['function say(string text, uint256 parentId, uint256 fid) returns (uint256)']);
 const MAX_BYTES = 16_384;
@@ -177,7 +179,17 @@ export function peoplePage({ route }) {
       }
     },
   }, input, el('button', { type: 'submit' }, t('add')));
-  const header = [castComposer({ onDone: () => setTimeout(route, 1500) }), el('p', { class: 'muted' }, t('peopleHelp')), form, status, chips];
+  // Logged in with Fatline: your people are the people you follow on Farcaster, read from this node.
+  const who = loggedIn();
+  if (who) {
+    return main.replaceChildren(castComposer({ onDone: () => setTimeout(route, 1500) }),
+      el('p', { class: 'fl-who' }, t('youAre', who.username ? `@${who.username}` : `FID ${who.fid}`), ' ',
+        el('button', { type: 'button', class: 'linkish', onclick: () => { logOut(); route(); } }, t('logOut'))),
+      homeFeed(who.fid));
+  }
+  const header = [castComposer({ onDone: () => setTimeout(route, 1500) }),
+    el('div', { class: 'fl-invite' }, el('p', {}, t('loginInvite')), loginButton(() => route())),
+    el('p', { class: 'muted' }, t('peopleHelp')), form, status, chips];
   // Your own casts show up among your people, so you can see what you posted.
   const fids = [...new Set([...state.people.map((p) => p.fid), ...(state.me?.fid ? [state.me.fid] : [])])];
   if (!fids.length) return main.replaceChildren(...header);

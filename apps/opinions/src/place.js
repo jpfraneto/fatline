@@ -36,7 +36,7 @@ function nodeLine(v) {
   return el('p', { class: 'vw-node' }, v.node.syncing ? 'Your node is catching up. The feed fills in as it does.' : 'Your node did not answer the last check.');
 }
 
-function feed(fid) {
+export function homeFeed(fid) {
   const list = el('div', { class: 'list' }, el('p', { class: 'muted' }, 'Reading the people you follow from this node…'));
   const more = el('button', { type: 'button', class: 'more', hidden: true }, 'More');
   let next = null;
@@ -70,6 +70,6 @@ export async function placePage() {
   if (v.stage === 'none') { main.replaceChildren(howToGetOne(v)); return; }
   // Their token on top, as it is now (egg, ready to hatch, Fatliner, its coin), and what they can do with it, right here.
   const warm = v.egg ? { warmDays: v.egg.warmDays ?? 0, needed: v.egg.needed ?? 3 } : null;
-  main.replaceChildren(...[birthPanel(fid, { warm }), nodeLine(v), feed(fid)].filter(Boolean));
+  main.replaceChildren(...[birthPanel(fid, { warm }), nodeLine(v), homeFeed(fid)].filter(Boolean));
 }
 

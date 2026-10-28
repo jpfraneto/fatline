@@ -589,3 +589,9 @@ h2, .ck-h, .label, .vw-label, .kind { font: 500 11px var(--serif); letter-spacin
 textarea, input, select { border-radius: 18px 7px 18px 7px; background: rgba(255, 255, 255, .05); }
 button[type="submit"], .more { border-radius: 18px 7px 18px 7px; }
 .bt-home { border-radius: var(--veil); }
+
+/* Log in with Fatline, on the People tab */
+.fl-invite { margin: 4px 0 18px; padding: 16px 18px; border-radius: var(--veil, 18px); background: rgba(124, 101, 193, .12); border: 1px solid rgba(124, 101, 193, .3); }
+.fl-invite p { margin: 0 0 12px; }
+.fl-who { margin: 6px 0 14px; opacity: .85; }
+.linkish { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; font: inherit; }

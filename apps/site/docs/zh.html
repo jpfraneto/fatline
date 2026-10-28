@@ -46,7 +46,7 @@
     <li>电脑上需要 <strong>git</strong>、<strong>Node.js 22.12 或更新版本</strong>和 <strong>ssh</strong>。</li>
     <li>一个在 Base 上有约 <strong>12 USDC</strong> 的钱包。不需要银行卡、账户或 ETH：服务器用签名付款（x402）。你在自己的钱包里批准付款：用手机钱包扫二维码，或在浏览器钱包里批准。如果你更想用自己的 Hetzner 账户（银行卡，按小时计费）：<code>fatline compute hetzner</code>。</li>
     <li>新的 Hetzner 账户有额度限制（我们的是：卷总共 1,385 GB，14 个 vCPU）。一个节点需要 700 GB 的卷，所以一个新账户大约每个卷只够<strong>一个</strong>完整节点。我们在一台服务器（8 个 Arm 核心，16 GB）上用两个卷同时运行两个网络，正好在这个额度上：Hypersnap 最小的分片（44 GB）放在服务器自带的磁盘上。两个网络合计每月 131.82 美元。</li>
-    <li>发帖需要你 Farcaster 账户的助记词，只在你自己的终端里输入。</li>
+    <li>发帖不需要助记词：Fatline 从不索要助记词。用 Farcaster 应用扫二维码批准即可。</li>
   </ul>
   <p><strong>最简单的方式：</strong><code>curl -fsSL https://fatline.ink/install.sh | sh</code> 会把 Fatline 下载到 <code>~/fatline</code> 并启动 <code>fatline setup</code>：逐步引导，每一步之前说明它做什么、花多少钱、要多久，然后问你：继续、跳过或停止。再运行一次就从停下的地方继续。<br><strong>用 AI 助手：</strong>把这句话发给 Claude Code、Codex 或任何能运行命令的助手：<code>Help me run a Fatline: https://fatline.ink/skill.md</code>。它会先给你看价格并等你同意，绝不碰你的助记词或令牌。</p>
 <pre><code>git clone https://github.com/jpfraneto/fatline && cd fatline
@@ -107,9 +107,8 @@ fatline follow list</code></pre>
 </table></div>
 
 <h2>发帖：客户端自己的应用密钥</h2>
-<pre><code>fatline identity --fid &lt;你的 FID&gt; --dry-run   <span class="c"># 检查一切，不注册</span>
-fatline identity --fid &lt;你的 FID&gt;             <span class="c"># 注册本客户端的密钥</span></code></pre>
-<p>在你自己的终端运行。助记词在隐藏输入框中输入，密钥注册后立即遗忘，从不保存。不需要交易，不需要 gas。这个密钥只能发帖、互动、关注和修改资料。</p>
+<pre><code>fatline identity   <span class="c"># 二维码：用 Farcaster 应用扫描并批准</span></code></pre>
+<p>或者在客户端里按 <strong>Cast</strong>。Farcaster 应用会为本客户端添加一个密钥并支付费用。从不需要助记词，不需要交易，不需要 gas。这个密钥只能发帖、互动、关注和修改资料。</p>
 <div class="concept"><strong>存储租金和服务器账单是两回事。</strong>存储租金在链上按账户支付，决定网络为你保留多少消息，不支付任何服务器。节点服务器是另一笔账单，付给托管它的人。</div>
 <p class="note"><span class="tag ok">已测试</span> 2026-10-24 用真实账户（@anky，FID 18350）测试：注册密钥，然后发帖、回复、点赞、转发、关注，每一项都在我们的节点上确认，并在 crackle 上看到。</p>
 
@@ -136,7 +135,7 @@ fatline identity --fid &lt;你的 FID&gt;             <span class="c"># 注册�
   <tr><td>读取节点完全同步</td><td><span class="tag ok">可用</span>，Farcaster：应答后 5 小时 43 分完成同步，重启后 62 秒恢复同步。Hypersnap：也已同步；自 2026-10-23 起两者运行在同一台服务器上。Hypersnap 在 2026-10-24 至 28 日因旧版本停滞；2026-10-28 升级到 0.15.0 并从快照重新同步。两者现在每天自动升级</td></tr>
   <tr><td>只复制选定账户（<code>follow</code>，不是节点）</td><td><span class="tag ok">可用</span>，真实节点，两个网络</td></tr>
   <tr><td>复制型（轻）节点</td><td><span class="tag no">目前不可行</span>：两个网络的复制器都拒绝密钥消息</td></tr>
-  <tr><td>用真实账户注册密钥并发帖</td><td><span class="tag ok">可用</span>，助记词方式，2026-10-24</td></tr>
+  <tr><td>用真实账户注册密钥并发帖</td><td><span class="tag ok">可用</span>，2026-10-24</td></tr>
   <tr><td>其他人在自己的服务器上运行</td><td><span class="tag ok">已完成</span>：@jmsaulnier、@jvaleska.eth；下一个会是你吗？</td></tr>
 </table></div>
 

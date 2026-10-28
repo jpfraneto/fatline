@@ -20,6 +20,7 @@ import { embedTags, makePlace, manifest } from './miniapp.mjs';
 import { makeCompanion } from './companion.mjs';
 import { makeHome } from './home.mjs';
 import { makeArt, makeBirth, makeCoins } from './birth.mjs';
+import { verifyLogin } from './fatline-login.mjs';
 import { planFatlineLaunch } from './launch-fatline.mjs';
 import { Coins } from './coin.mjs';
 import { Archive, TYPES as ARCHIVE_TYPES } from './archive.mjs';
@@ -143,6 +144,8 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     // The birth: hatch the egg, then launch its coin, from the holder's own wallet (indexer/src/birth.mjs).
     ['GET', /^\/api\/birth\/(\d{1,12})$/, (q, [, fid]) => birth(fid)],
     ['GET', /^\/api\/coins$/, (q) => coinsLive(q.get('fids'))],
+    // Log in with Fatline (fatline-login.mjs): any app, any origin, asks this node who signed. No keys involved.
+    ['POST', /^\/api\/auth\/verify$/, (q, m, b) => verifyLogin({ message: b?.message, signature: b?.signature, domain: b?.domain, nonce: b?.nonce, network: (Object.hasOwn(networks, String(b?.network)) && networks[b.network]) || homeNet, client: chainClient })],
     ['GET', /^\/api\/home\/(\d{1,12})$/, (q, [, fid]) => { if (!home) throw Object.assign(new Error('No node here.'), { status: 503 }); return home(fid, { before: q.get('before'), limit: q.get('limit') }); }],
     // The cockpit: you, your nodes, your egg or Fatliner, and its hatching, in one answer (the client's home).
     ['GET', /^\/api\/cockpit$/, () => cockpit()],

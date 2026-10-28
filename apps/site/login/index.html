@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Log in with Fatline</title>
+<meta name="description" content="Prove which Farcaster account someone is with one wallet signature. No seed phrase, no gas, no central server.">
+<style>
+  :root { --bg: #0f0d24; --ink: #f1ecff; --muted: #b3abd0; --purple: #7c65c1; --line: rgba(255,255,255,.12); color-scheme: dark; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 system-ui, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 40px 16px 80px; }
+  h1 { font: 600 clamp(32px, 7vw, 48px)/1.1 Georgia, serif; margin: 0 0 14px; }
+  h2 { font: 600 22px/1.3 Georgia, serif; margin: 40px 0 10px; }
+  p, li { color: var(--muted); }
+  b, strong { color: var(--ink); }
+  .try { margin: 28px 0; padding: 22px; border: 1px solid rgba(124,101,193,.4); border-radius: 22px 8px 22px 8px; background: rgba(124,101,193,.1); }
+  .result { margin: 14px 0 0; font: 14px/1.5 ui-monospace, monospace; white-space: pre-wrap; color: var(--ink); }
+  pre { overflow-x: auto; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.3); font-size: 13.5px; line-height: 1.5; }
+  code { font-family: ui-monospace, monospace; }
+  ol { padding-left: 22px; }
+  a { color: #b9a8f0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Log in with Fatline</h1>
+  <p>Any app can know which Farcaster account its visitor is, from <strong>one signature</strong> in their wallet. No seed phrase, no gas, nothing moves. No company in the middle either: a Fatline node checks it against the Farcaster network, and anyone can check it again with another node.</p>
+
+  <div class="try">
+    <div id="login"></div>
+    <p class="result" id="result" hidden></p>
+  </div>
+
+  <h2>How it works</h2>
+  <ol>
+    <li>You say which account is yours: a Farcaster name or an FID. Inside Farcaster, the app already knows.</li>
+    <li>Your wallet signs a short message: this site, this account, a code, the time. It's the standard "Sign in with Ethereum" message.</li>
+    <li>A Fatline node checks two things against the network: that your wallet made the signature, and that the wallet is this account's. That means its owner (custody) address, or an address the account verified on Farcaster.</li>
+  </ol>
+  <p>Logging in proves who you are. It doesn't let the app post as you. Posting needs a key that you approve in the Farcaster app, and that doesn't need a recovery phrase either.</p>
+
+  <h2>Add it to your app</h2>
+<pre><code>&lt;script src="https://fatline.ink/login.js"&gt;&lt;/script&gt;
+&lt;div id="login"&gt;&lt;/div&gt;
+&lt;script&gt;
+  FatlineLogin.button(document.getElementById('login'), {
+    onLogin: (who) =&gt; console.log(who.fid, who.address, who.how),
+  });
+&lt;/script&gt;</code></pre>
+  <p>Options: <code>node</code> (any Fatline node; default <code>https://fatline.fatline.ink</code>), <code>provider</code> (a wallet; inside a Farcaster mini app, <code>sdk.wallet.ethProvider</code>), <code>fid</code>, <code>nonce</code>, <code>network</code> (<code>farcaster</code> or <code>hypersnap</code>).</p>
+
+  <h2>Check it on your server</h2>
+<pre><code>POST https://fatline.fatline.ink/api/auth/verify
+{ "message": "…", "signature": "0x…", "domain": "your.app", "nonce": "your nonce" }
+
+→ { "fid": 16098, "address": "0x…", "how": "verified", "expiresAt": "…" }</code></pre>
+  <p>Every Fatline node answers this, so you can ask yours, ours, or several. A login lasts ten minutes by default, and a day at most. It only works for the domain and nonce it names.</p>
+</main>
+<script src="/login.js"></script>
+<script>
+  (async function () {
+    var opts = {
+      onLogin: function (who) {
+        var r = document.getElementById('result');
+        r.hidden = false;
+        r.textContent = 'You are ' + (who.user && who.user.username ? '@' + who.user.username + ', ' : '') + 'FID ' + who.fid + '.\nWallet ' + who.address + ' (' + (who.how === 'custody' ? 'the account\'s owner' : 'verified by the account') + ').\nChecked by ' + who.node + '.';
+      },
+    };
+    // Inside Farcaster: its own wallet, and it already knows who you are.
+    if (window.parent !== window || window.ReactNativeWebView) {
+      try {
+        var m = await import('/vendor/miniapp-sdk-0.3.0.mjs');
+        if (await m.sdk.isInMiniApp()) {
+          opts.provider = await m.sdk.wallet.getEthereumProvider().catch(function () { return m.sdk.wallet.ethProvider; });
+          opts.fid = (await m.sdk.context).user.fid;
+        }
+      } catch (e) { /* a plain browser */ }
+    }
+    FatlineLogin.button(document.getElementById('login'), opts);
+  })();
+</script>
+<script src="/nav.js"></script>
+</body>
+</html>
