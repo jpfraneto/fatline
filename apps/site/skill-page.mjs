@@ -100,6 +100,7 @@ try {
 // Inside Farcaster this page is a mini app: tell the host it is ready.
 try { const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.1.9'); if (await sdk.isInMiniApp()) sdk.actions.ready(); } catch {}
 </script>
+<script src="/nav.js"></script>
 </body>
 </html>
 `;
