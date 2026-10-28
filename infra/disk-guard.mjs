@@ -1,4 +1,6 @@
-// Disk watch for the node servers: when a node's volume runs low, grow it, and shout on Telegram.
+// Disk and sync watch for the node servers: when a node's volume runs low, grow it; when a node stops answering, a
+// shard stops moving, or it falls behind without catching up, shout on Telegram. (Hypersnap stood still for four
+// days, 2026-10-24..28, answering every request, before anyone saw it.)
 //
 //   node infra/disk-guard.mjs            check now (launchd runs this every 30 min)
 //   node infra/disk-guard.mjs --dry-run  check and say what it would do, change nothing
@@ -22,9 +24,11 @@ const ALERT_EVERY_H = 2;  // repeat a failed-grow alert at most this often
 
 // Both volumes are on the one server (since 2026-10-23).
 const NODES = [
-  { name: 'Snapchain (FATLINE master)', ip: '46.225.208.199', volumeId: 107233477, mount: '/mnt/HC_Volume_107233477', base: 700 },
+  { name: 'Snapchain (FATLINE master)', ip: '46.225.208.199', volumeId: 107233477, mount: '/mnt/HC_Volume_107233477', base: 700, port: 3381 },
   // Grown to 1,000 GB on 2026-10-28 once Hetzner raised the account's limit (owner's go); running again.
-  { name: 'Hypersnap', ip: '46.225.208.199', volumeId: 107234161, mount: '/mnt/HC_Volume_107234161', base: 1000 },
+  // `ready`: no sync alerts until this file exists (the setup writes it when the snapshot is unpacked).
+  { name: 'Hypersnap', ip: '46.225.208.199', volumeId: 107234161, mount: '/mnt/HC_Volume_107234161', base: 1000, port: 4381,
+    ready: '/mnt/HC_Volume_107234161/hypersnap/.snapshot-done' },
 ];
 const GROW_CAP = 200; // GB over `base`, the size each volume had when this was approved
 
@@ -79,10 +83,60 @@ async function check(n) {
   state[n.volumeId] = { alertAt: Date.now() }; save();
 }
 
-for (const n of NODES) {
-  try { await check(n); } catch (err) {
-    console.error(`${n.name}: ${err.message}`);
-    try { await telegram(`⚠️ Disk watch for ${n.name} failed: ${err.message}`); } catch {}
-  }
+// Sync: read /v1/info on the server itself (so a firewall can't fake an outage). A problem is a node that doesn't
+// answer, a shard whose height hasn't moved since the last check (~30 min), or a node more than BEHIND blocks behind
+// that isn't closing the gap. Catching up after a restart or a new snapshot is not a problem. Shard 0 (the block
+// shard) is left out, as everywhere in Fatline: messages live in shards 1 and 2, and a read node's shard 0 often lags.
+const BEHIND = 1800; // blocks, about 30 minutes
+const msgShards = (info) => (info?.shardInfos ?? []).filter((x) => x.shardId !== 0);
+export function syncProblem(info, prev) {
+  if (!msgShards(info).length) return 'not answering';
+  info = { shardInfos: msgShards(info) };
+  const heights = Object.fromEntries(info.shardInfos.map((x) => [x.shardId, x.maxHeight]));
+  const worst = Math.max(...info.shardInfos.map((x) => x.blockDelay ?? 0));
+  const still = prev?.heights ? Object.keys(heights).filter((k) => prev.heights[k] !== undefined && heights[k] <= prev.heights[k]) : [];
+  if (still.length) return `shard ${still.join(', ')} has not moved since the last check (height ${still.map((k) => heights[k]).join(', ')})`;
+  if (worst > BEHIND && prev?.worst !== undefined && worst >= prev.worst) return `${worst.toLocaleString('en-US')} blocks behind and not catching up`;
+  return null;
 }
-save();
+async function checkSync(n) {
+  if (n.ready && ssh(n.ip, `[ -f ${n.ready} ] && echo yes || echo no`).trim() !== 'yes') { console.log(`  ${n.name}: still setting up; no sync alerts`); return; }
+  let info = null;
+  try { info = JSON.parse(ssh(n.ip, `curl -s -m 10 localhost:${n.port}/v1/info`)); } catch {}
+  const key = `sync:${n.port}`, prev = state[key];
+  const problem = syncProblem(info, prev);
+  const now = { at: Date.now(), alertAt: prev?.alertAt ?? 0, alerting: prev?.alerting ?? false };
+  if (msgShards(info).length) {
+    now.heights = Object.fromEntries(msgShards(info).map((x) => [x.shardId, x.maxHeight]));
+    now.worst = Math.max(...msgShards(info).map((x) => x.blockDelay ?? 0));
+  }
+  console.log(`  ${n.name} ${info?.version ?? ''}: ${problem ?? `ok, worst shard ${now.worst} blocks behind`}`);
+  if (problem) {
+    if (Date.now() - now.alertAt >= ALERT_EVERY_H * 3600_000) {
+      const msg = `🚨 ${n.name} (${n.ip}:${n.port}) ${problem}. Check: curl -s ${n.ip}:${n.port}/v1/info`;
+      if (dry) console.log(`  would send: ${msg}`); else { await telegram(msg); now.alertAt = Date.now(); }
+    }
+    now.alerting = true;
+  } else if (now.alerting) {
+    const msg = `✅ ${n.name} is moving again (worst shard ${now.worst} blocks behind).`;
+    if (dry) console.log(`  would send: ${msg}`); else await telegram(msg);
+    now.alerting = false; now.alertAt = 0;
+  }
+  // Heights from a node that didn't answer are kept, so "not moved" still compares against the last real reading.
+  if (!msgShards(info).length) { now.heights = prev?.heights; now.worst = prev?.worst; }
+  if (!dry) state[key] = now;
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  for (const n of NODES) {
+    try { await check(n); } catch (err) {
+      console.error(`${n.name}: ${err.message}`);
+      try { await telegram(`⚠️ Disk watch for ${n.name} failed: ${err.message}`); } catch {}
+    }
+    try { await checkSync(n); } catch (err) {
+      console.error(`${n.name} sync: ${err.message}`);
+      try { await telegram(`⚠️ Sync watch for ${n.name} failed: ${err.message}`); } catch {}
+    }
+  }
+  save();
+}

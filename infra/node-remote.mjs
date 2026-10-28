@@ -107,6 +107,8 @@ Open TCP ${net.port}, UDP ${net.port + 1} and TCP ${net.port + 2} for inbound tr
 
   const i = await info(url);
   spawnSync('node', [join(ROOT, 'infra/config-tool.mjs'), 'own-node', network, url], { stdio: 'inherit' });
+  // Daily upgrades for the nodes on that server (Snapchain's own setup already adds its line; this adds Hypersnap's).
+  if (!process.env.FATLINE_NO_AUTOUPGRADE) ssh(ip, 'bash -s ensure', readFileSync(join(ROOT, 'infra/autoupgrade.sh')));
   console.log(`\n${net.label} ${i.version} answers at ${url}.`);
   for (const s of i.shardInfos ?? []) console.log(`  shard ${s.shardId}: height ${s.maxHeight}, ${ago(s.blockDelay)} behind`);
   console.log('It is healthy when every shard is only a few seconds behind. Check again with: fatline status');
