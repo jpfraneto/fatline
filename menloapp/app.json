@@ -1,14 +1,22 @@
 {
   "version": 1,
   "name": "Fatline",
-  "subtitle": "",
-  "description": "Your own Farcaster/Hypersnap node and client in three commands, plus a USDC launchpad where apps pay for their own servers. MIT.",
+  "subtitle": "Farcaster, read straight from a node",
+  "description": "Fatline is a Farcaster client with no hosted API in between. It reads straight from a node: your feed is the newest casts from everyone you follow, kept live from the node’s own event stream.\n\nThe infinity sign at the top always names the node you are reading, Snapchain or Hypersnap, and Settings can pin your own. Fatlines shows every node the hatchery knows and whether each one is awake and in step. Your profile shows your casts and your Fatline.\n\nTo cast, the phone makes its own signing key, kept in this device’s Keychain. You approve it once in the Farcaster app; after that, casts, replies, likes and recasts are signed on the phone. Casting is new and not yet tested end to end.",
   "website": null,
   "tokenAddress": null,
   "githubRepo": "https://github.com/jpfraneto/fatline",
   "menloLink": "https://menloapp.lol/fatline",
   "icon": "menloapp/icon.png",
   "ogImage": null,
-  "screenshots": [],
-  "preview": null
+  "screenshots": [
+    "menloapp/screenshot-fatlines.png",
+    "menloapp/screenshot-profile.png",
+    "menloapp/screenshot-feed.png"
+  ],
+  "preview": {
+    "path": "menloapp/preview-83407c911abd.mp4",
+    "kind": "simulator",
+    "source_commit": "83407c911abdeeb23f6633491d58bcc593e2bb45"
+  }
 }
