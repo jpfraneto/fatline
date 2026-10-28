@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "Fatline",
+  "subtitle": "",
+  "description": "Your own Farcaster/Hypersnap node and client in three commands, plus a USDC launchpad where apps pay for their own servers. MIT.",
+  "website": null,
+  "tokenAddress": null,
+  "githubRepo": null,
+  "menloLink": null,
+  "icon": "menloapp/icon.png",
+  "ogImage": null,
+  "screenshots": [],
+  "preview": null
+}
