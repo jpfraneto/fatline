@@ -105,7 +105,7 @@ export async function feedPage({ fids = null, header = [], route }) {
   const more = el('button', { class: 'more', type: 'button', hidden: true }, t('more'));
   const bar = el('div');
   const top = [...header];
-  if (!fids) top.push(state.config.voices.address ? composer({ onSent: route }) : el('p', { class: 'muted' }, t('voicesOff')));
+  if (!fids && state.config.voices?.address) top.push(composer({ onSent: route }));
   main.replaceChildren(...top, bar, list, more);
   const choice = appChoice();
   const traced = { casts: 0, traced: 0 };

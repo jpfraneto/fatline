@@ -30,6 +30,9 @@ function renderChrome() {
   if (planet) { planet.textContent = glyph; planet.style.setProperty('--planet', color); }
   document.querySelectorAll('[data-t]').forEach((n) => { n.textContent = t(n.dataset.t); });
   $('#settings-link').setAttribute('aria-label', t('settings'));
+  // Voices (long posts onchain) only where a Voices contract is configured; otherwise no tab at all.
+  const voicesTab = document.querySelector('#tabs a[data-tab="voices"]');
+  if (voicesTab) voicesTab.hidden = !state.config?.voices?.address;
 }
 
 const fail = (err) => $('#main').replaceChildren(el('p', { class: 'warn' }, err.message));
@@ -60,7 +63,10 @@ function route() {
   const birth = hash.match(/^\/birth\/(\d{1,12})(\/demo)?/);
   if (birth) return birthPage(birth[1], { demo: Boolean(birth[2]) }).catch(fail);
   if (hash.startsWith('/launch')) return launchPage();
-  if (hash.startsWith('/voices')) return feedPage({ route }).catch(fail);
+  if (hash.startsWith('/voices')) {
+    if (!state.config.voices?.address) { location.replace('#/'); return; }
+    return feedPage({ route }).catch(fail);
+  }
   if (hash.startsWith('/people')) return peoplePage({ route });
   if (hash.startsWith('/settings')) return settingsPage({ onChange: () => { renderChrome(); route(); } }).catch(fail);
   if (hash.startsWith('/apps')) return appsPage().catch(fail);
