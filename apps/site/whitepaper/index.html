@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Keeper's Tale</title>
+<meta name="description" content="The Fatline whitepaper, told as a lost chapter of the pilgrimage: a Farcaster node, a client and a being, and the coin that keeps them alive. Fan fiction after Dan Simmons' Hyperion.">
+<style>
+  @page { size: A5; margin: 20mm 17mm 22mm; }
+  @page :first { margin: 0; }
+  :root { --ink: #1f1a14; --soft: #6b5f50; --rule: #c9b99a; --paper: #fbf6ec; --gold: #8a6420; }
+  * { box-sizing: border-box; }
+  html { background: var(--paper); }
+  body { margin: 0 auto; max-width: 640px; padding: 48px 20px 80px; color: var(--ink); background: var(--paper);
+    font: 11.2pt/1.62 "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; hyphens: auto; -webkit-hyphens: auto; text-rendering: optimizeLegibility; }
+  .cover { min-height: 92vh; display: flex; flex-direction: column; justify-content: center; text-align: center; page-break-after: always; break-after: page; }
+  .cover .pre { letter-spacing: .32em; text-transform: uppercase; font-size: 8.5pt; color: var(--soft); margin: 0; }
+  .cover h1 { font-weight: 400; font-size: 34pt; line-height: 1.05; margin: 28px 0 10px; letter-spacing: .02em; }
+  .cover .sub { font-style: italic; color: var(--soft); margin: 0; }
+  .cover .arch { width: 54px; margin: 40px auto 0; color: var(--gold); }
+  .cover .foot { margin-top: 64px; font-size: 8.5pt; letter-spacing: .14em; text-transform: uppercase; color: var(--soft); }
+  h2 { font-weight: 400; text-align: center; font-size: 15pt; letter-spacing: .26em; text-transform: uppercase; margin: 2.6em 0 1.4em; }
+  h2 small { display: block; font-size: 8.5pt; letter-spacing: .3em; color: var(--soft); margin-bottom: .6em; }
+  h3 { font-weight: 400; font-style: italic; font-size: 12pt; margin: 2em 0 .6em; break-after: avoid; page-break-after: avoid; }
+  p { margin: 0; text-align: justify; }
+  p + p { text-indent: 1.4em; }
+  p.first::first-letter { float: left; font-size: 3.6em; line-height: .86; padding: .06em .08em 0 0; color: var(--gold); }
+  p.noindent { text-indent: 0; }
+  .break { text-align: center; margin: 1.4em 0; color: var(--gold); letter-spacing: .6em; }
+  blockquote { margin: 1.1em 1.6em; font-style: italic; color: #3b3227; }
+  blockquote p { text-indent: 0 !important; }
+  .chapter { page-break-before: always; break-before: page; }
+  .epigraph { margin: 0 2em 2.2em; font-style: italic; color: var(--soft); text-align: center; font-size: 10pt; }
+  .appendix p, .appendix li { text-align: left; font-size: 9.6pt; line-height: 1.5; }
+  .appendix p + p { text-indent: 0; margin-top: .7em; }
+  .appendix ul { padding-left: 1.1em; margin: .5em 0 1em; }
+  .appendix li { margin: .25em 0; }
+  code { font: 8.6pt/1.4 ui-monospace, "SF Mono", Menlo, monospace; overflow-wrap: anywhere; hyphens: none; -webkit-hyphens: none; }
+  table { width: 100%; border-collapse: collapse; margin: .6em 0 1.2em; font-size: 8.8pt; }
+  td { padding: 4px 6px 4px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  td:first-child { color: var(--soft); white-space: nowrap; padding-right: 12px; }
+  .colophon { margin-top: 3em; font-size: 8.5pt; color: var(--soft); text-align: center; font-style: italic; }
+  .pdf { text-align: center; margin: 0 0 30px; font: 10pt system-ui, sans-serif; }
+  .pdf a { color: var(--gold); }
+  .cover p { text-align: center; text-indent: 0; }
+  @media print { :root { --paper: #fff; } .pdf { display: none; } body { max-width: none; padding: 0; } .cover { min-height: 100vh; padding: 0 17mm; } }
+</style>
+</head>
+<body>
+
+<p class="pdf"><a href="/whitepaper.pdf">Download the PDF</a></p>
+
+<section class="cover">
+  <p class="pre">A chapter missing from the pilgrimage</p>
+  <h1>The Keeper's Tale</h1>
+  <p class="sub">or, how the fatline got its name</p>
+  <svg class="arch" viewBox="0 0 1000 1000" aria-hidden="true"><path fill="currentColor" d="M257.778 155.556H742.222V844.444H671.111V528.889H670.414C662.554 441.677 589.258 373.333 500 373.333C410.742 373.333 337.446 441.677 329.586 528.889H328.889V844.444H257.778V155.556Z"/><path fill="currentColor" d="M128.889 253.333L157.778 351.111H182.222V746.667C169.949 746.667 160 756.616 160 768.889V795.556H155.556C143.283 795.556 133.333 805.505 133.333 817.778V844.444H382.222V817.778C382.222 805.505 372.273 795.556 360 795.556H355.556V768.889C355.556 756.616 345.606 746.667 333.333 746.667H306.667V253.333H128.889Z"/><path fill="currentColor" d="M675.556 746.667C663.283 746.667 653.333 756.616 653.333 768.889V795.556H648.889C636.616 795.556 626.667 805.505 626.667 817.778V844.444H875.556V817.778C875.556 805.505 865.606 795.556 853.333 795.556H848.889V768.889C848.889 756.616 838.94 746.667 826.667 746.667V351.111H851.111L880 253.333H702.222V746.667H675.556Z"/></svg>
+  <p class="foot">The Fatline whitepaper · fatline.ink · 2026</p>
+</section>
+
+<section class="chapter">
+  <h2><small>The eighth pilgrim</small>The Keeper's Tale</h2>
+  <p class="epigraph">Fan fiction, after Dan Simmons' <span style="font-style:normal">Hyperion</span>. Nothing here belongs to his books except the gratitude.</p>
+
+  <p class="first">There were seven names on the manifest of the pilgrimage, and every one of them had been read aloud and argued over by the time the windwagon left the last town. But on the night the wind died on the Sea of Grass, when the others had told their tales and the lanterns were low, there was a woman at the rail whom none of them remembered boarding. She was small and older than she looked, and she carried nothing but a smooth stone the size of a hen's egg, which she turned in her fingers the way some people turn a ring.</p>
+
+  <p>"You have each told how you came to be here," she said. "I will tell you something smaller. I will tell you where the word came from. The one you all lean on and never think about."</p>
+
+  <p>The Consul asked which word.</p>
+
+  <p>"Fatline," she said.</p>
+
+  <div class="break">✦ ✦ ✦</div>
+
+  <p class="noindent">"You know what the fatline is," she began. "A message sent from one world arrives on every other world in the same instant. Nobody in the Hegemony owns it. Everybody depends on it. When it goes quiet, worlds go dark.</p>
+
+  <p>"And you know the farcasters, the doors. Step through one on Tau Ceti and you are standing on Lusus. Those were never ours. The Core built them, the Core kept them, and we walked through them for centuries without once asking who was holding the door.</p>
+
+  <p>"Long before either, on Old Earth, in the last years before it fell, there was a small network of people who talked to one another, and they named it Farcaster. Not for doors. For the old dream: a voice that carries far. And for a while it was exactly what its name promised. Every word was signed by the hand that wrote it. Every account was only a number, and the number was yours: no company could take it, because it was written on a public ledger that nobody controlled. They used to say, half as a joke and half as a creed, <em>you are your FID</em>. Your number. Your history.</p>
+
+  <p>"But a network of words lives on machines, and the machines were not theirs. To read the network you asked a server, and the server belonged to someone. Most people never noticed. It is the oldest arrangement there is. You walk through the door and you do not ask who holds it."</p>
+
+  <p>She held up the stone.</p>
+
+  <p>"Then the river split."</p>
+
+  <h3>The two rivers</h3>
+
+  <p>"The software that carried the network was called Snapchain. One day some of the people who loved it most took a copy, changed it, and called the copy Hypersnap. It kept everything, every word ever written, where the original let old words fall away. So now there were two rivers carrying the same water. Both answered when you called. Both had nine hundred million messages in them. And for the first time ordinary people had to ask a question that had never come up: <em>which one is true?</em></p>
+
+  <p>"Here is what the keepers understood, and it is the only wisdom in my tale. The question has no answer that someone else can give you. Any server that tells you which river is true is just another door held by another hand. The only honest answer is to hold a copy yourself. A machine of your own, carrying the river you choose, and a window that reads from nothing else.</p>
+
+  <p>"That is a node. Your own node, on a server you rent, with your own client on top of it: the page you read from and write from, at your own address. It costs a few coins a day. It takes an afternoon to set up, less if you ask one of the patient machines to help you, and by then the machines could rent servers and do it themselves. The keepers had a name for the whole thing, a node and its client and the person who keeps them. They called it a Fatline. A line that is fat with the whole network. A line that is yours."</p>
+
+  <p>The poet laughed at that and said it was a terrible name. The woman agreed.</p>
+
+  <h3>The egg</h3>
+
+  <p>"Now. A machine that costs money every day is a machine that will be switched off the first month you forget about it. Good intentions do not keep servers alive. So the keepers did something strange. They made the node lay an egg.</p>
+
+  <p>"When you started your Fatline you could take one egg for your number, once. The egg was made of you. It held your history up to the hour it was laid, every word you had signed, and from that history it took its stone. Seven stones: ivory, marble, sandstone, basalt, moss, gold, opal. You did not choose yours. Your history did. And it took a surname the same way, read from what you had said.</p>
+
+  <p>"The egg was not kept in your pocket. It was kept warm by your node. And here is the part I want you to remember. Every hour, other keepers' machines came to check on it. Nobody sent them; they came on their own. They asked your node to show them words, chosen at random from their own copies of the river. A node that was asleep could not answer. A node that was lying, pretending to carry the river without carrying it, could not answer either, because it could not know in advance which words would be asked for. A day was warm when most of the checks passed.</p>
+
+  <p>"Three warm days, and the keepers signed. Not one keeper. Several of them, each with their own key, and only when enough of them agreed did the egg hatch. If a node went cold and stayed cold, they could sign that too, and the egg died. Its place opened for someone else, and its owner waited seven days before they could try again. Nobody could warm an egg by asking politely. You warmed it by keeping your copy of the river honest, hour after hour."</p>
+
+  <p>"And what hatched?" the Consul said.</p>
+
+  <p>The woman turned the stone over. In the lantern light there was a thin vein of gold running through it.</p>
+
+  <p>"Beings. Small ones. Figurines of stone with a thread of light across the brow. Only seven hundred and seventy-seven would ever hatch, however many eggs were laid. Each one carried the number of the person it was born from, forever. They called them Fatliners. And when a node hatched its egg, that node became one of the keepers who sign. Nobody appointed the keepers. Nobody could remove one. The circle grew only by hatching."</p>
+
+  <h3>The coin</h3>
+
+  <p>"You are wondering about the money. Everybody always is.</p>
+
+  <p>"Each egg, and each being, could have one coin, named for its surname. The first was named for the first being: Aster, of the house of Fatline, hatched on a chain called Base on the twenty-fourth of October in the year they counted as 2026. The coin was traded against a steady currency, a dollar that lived on the same chain. And every fee that trading earned went to one place: a small vault that belonged to whoever held the being.</p>
+
+  <p>"The vault had one purpose, written into it so that it could not be changed. It paid the rent of the node. Once a day the bill could be paid, by anyone at all. The node could do it, or a stranger, or you. But the money could only go one way, to the one address its holder had named for the rent, and never more than one billing period ahead. Whatever the node did not need stayed in the vault, and the holder could take it out.</p>
+
+  <p>"Do you see the shape of it? A being that people cared about made its coin trade. The trading paid for the node. The node kept the river honest. And an honest river was what made the being worth caring about. It was the first kind of node that could outlive the attention of the people who started it. A door that held itself open."</p>
+
+  <p>The soldier asked what happened when people stopped caring.</p>
+
+  <p>"Then the vault ran dry, the node stopped, and the window went dark," she said. "That was also written down. The keepers thought a thing that cannot die is not alive."</p>
+
+  <h3>The windows</h3>
+
+  <p>"Each Fatline had its own address, the being's surname followed by the keepers' common name. Fatline, Thaituma, Aenon: those were among the first. Each one was a window onto the whole river. And this is the thing that surprised even the keepers. Since each window was kept by one person, it showed the river the way that person saw it. Open a window and you were reading through the eyes of whoever kept it alive: the people they listened to, the day as it had passed for them. Step into the next window and the same river showed you a different day.</p>
+
+  <p>"The windows were built the same way, so that from any one of them you could walk into all the others. A fractal, one of them said, and was embarrassed, and was right. You could keep walking, window to window, and never once pass through a door that someone else was holding.</p>
+
+  <p>"And the windows were quiet. That was a choice. They did not tell you who had liked a thing, or how many had. They did not call you back with little bells. You read a word the way it was written, with nobody's numbers standing in front of it, and the day ended when the day ended. People said it felt like the early times, before the bells. People said it felt new.</p>
+
+  <p>"To prove who you were at a window, you did not hand over your secret words. Nobody ever asked you for the phrase that guards your number, and nobody asked you to move it somewhere else. You signed one short message with a key you already held, and any keeper's machine could check it against the river itself. No company stood in the middle. The keepers held that asking someone to carry their true name across a sea is cruel, and they would not do it."</p>
+
+  <h3>What was written in stone</h3>
+
+  <p>"The last thing. The keepers wrote their rules into contracts that could not be changed after they were made. Not by them, not by anyone. Where each being's picture is described. How many may hatch. How the vault may pay. How a sale divides itself. Once made, the contract was a fact in the world, like a mountain.</p>
+
+  <p>"That frightened some of them, at first. You cannot fix a mountain. But it meant that everyone who came after was not building on a promise. They were building on something they could read. The work stopped being invention and became a kind of archaeology. You did not ask the keepers what the rules were. You dug down and looked."</p>
+
+  <div class="break">✦ ✦ ✦</div>
+
+  <p class="noindent">The wind had come back while she talked. The sails filled, and the wagon leaned toward the mountains.</p>
+
+  <p>"So the fatline," the Consul said slowly. "You are telling us the Hegemony's fatline, the thing that holds the worlds together, was named after—"</p>
+
+  <p>"After a few people on a dying planet who wanted to own the machine they spoke through," she said. "Yes. The name outlived the planet. Names do that, when they are carried."</p>
+
+  <p>She put the stone into the Consul's hand. It was warm.</p>
+
+  <p>"It's not for you. It's for whoever asks you how to start. Tell them what the first keepers told everyone. You do not need permission. You need a server, an afternoon, and the honesty to keep your copy of the river true."</p>
+
+  <p>In the morning there were seven pilgrims on the windwagon again, and none of them could agree on whether there had ever been an eighth. But the Consul kept a stone in his pocket for the rest of his life. When anyone asked about it, he said only: <em>you are your number. Keep your river.</em></p>
+</section>
+
+<section class="chapter appendix">
+  <h2><small>Appendix</small>Field notes for the pilgrim who wants one</h2>
+
+  <p>Everything in the tale is true of the system running today, except the windwagon. These are the parts you can check.</p>
+
+  <h3>The pieces</h3>
+  <ul>
+    <li><strong>A Fatline</strong> is a Farcaster node (Snapchain or Hypersnap, your choice) on a server you rent, its own client at <code>&lt;surname&gt;.fatline.ink</code>, and a hatchery that answers the other keepers' checks. Two networks, treated as equals. Neither one is "the" Farcaster.</li>
+    <li><strong>Eggs.</strong> One per Farcaster account (FID), unlimited, and they can't be transferred. Each holds its account's history at the hour it was laid (its DNA), which gives it its stone (ivory, marble, sandstone, basalt, moss, gold, opal) and its surname.</li>
+    <li><strong>Warmth.</strong> Attesters' hatcheries check each egg's server every hour on their own. Its node must answer, be in sync, and return messages they pick at random from their own nodes. A day is warm when most checks pass. After three warm days (<code>WARM_DAYS = 3</code>), attesters sign an EIP-712 <code>Hatch</code>.</li>
+    <li><strong>Hatching.</strong> A signature set needs <code>REQUIRED = 3</code> attesters, or all of them while there are fewer. At most 777 Fatliners ever hatch. A server whose egg hatches becomes an attester. Nobody adds or removes attesters.</li>
+    <li><strong>Death and sleep.</strong> An egg whose node stays cold can be declared dead by the attesters. It is burned, its slot reopens, and its account hibernates for 7 days. A Fatliner that changes hands sleeps until its new holder links the account it lives through.</li>
+    <li><strong>Sales.</strong> Tokens change hands only by sale, in USDC, through the contract. 8% of every sale (<code>ROYALTY_BPS = 800</code>, ERC-2981) goes to the builder.</li>
+    <li><strong>Coins.</strong> One per egg or Fatliner, and its ticker must be the surname. It's launched by the holder through the launchpad: a Clanker v4 coin paired with USDC on Base, with 100% of its trading fees going to the being's vault.</li>
+    <li><strong>The vault.</strong> It belongs to whoever holds the Fatliner. <code>payCompute()</code> can be called by anyone, but it only pays the payee the holder chose, and never more than <code>rate × billingPeriod</code> ahead. The node only spends gas to call it and never holds the money. The holder can withdraw the rest. When the vault runs dry, the node can't pay its rent.</li>
+    <li><strong>Log in with Fatline.</strong> One wallet signature (a standard EIP-4361 message naming <code>farcaster://fid/N</code>), checked by any node against the network: the account's custody address, or an address the account verified. Every node answers <code>POST /api/auth/verify</code>. No seed phrase is ever requested.</li>
+    <li><strong>Immutable.</strong> <code>tokenURI(fid)</code> is fixed at <code>https://fatline.ink/fatliners/&lt;fid&gt;</code>, with no setter. The supply cap, the royalty, the hatching rules and the vault's limits can't be changed by anyone.</li>
+  </ul>
+
+  <h3>Addresses (Base, chain 8453)</h3>
+  <table>
+    <tr><td>Fatliners + launchpad</td><td><code>0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016</code></td></tr>
+    <tr><td>$FATLINE (Aster's coin)</td><td><code>0xf1a97b6ceb7e635acae271f35a30a6c7b8b9580d</code></td></tr>
+    <tr><td>Aster's vault</td><td><code>0x8e1ab53caea122c3cd767122e1a52b2833983f84</code></td></tr>
+    <tr><td>USDC</td><td><code>0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913</code></td></tr>
+    <tr><td>Genesis</td><td>Aster, FID 16098, surname Fatline, gold. 24 October 2026.</td></tr>
+    <tr><td>@fatline</td><td>FID 3356653, the network's own account</td></tr>
+  </table>
+
+  <h3>What is not true yet</h3>
+  <ul>
+    <li>Rent payments from vaults run in dry-run mode until the operator turns them live.</li>
+    <li>Only some places serve their client today. The Fatline tab in any client checks each one live and says which are awake.</li>
+    <li>A being's portrait is made by hand for now. OpenSea needs a manual metadata refresh after a hatch, because the contract emits no update event.</li>
+  </ul>
+
+  <h3>Start one</h3>
+  <p>Ask your agent: <code>Help me run my own Fatline: a Farcaster node and its client. Follow https://fatline.ink/skill.md</code></p>
+  <p>Or, on your own computer: <code>curl -fsSL https://fatline.ink/install.sh | sh</code></p>
+  <p>Already running a node? On its server: <code>curl -fsSL https://fatline.ink/join.sh | sudo bash</code></p>
+  <p>Everything is open source and readable at fatline.ink. Contracts are verified on Basescan.</p>
+
+  <p class="colophon">A work of fan fiction. Hyperion, the Hegemony, the Consul, the farcasters and the fatline are Dan Simmons' inventions; this story borrows them with admiration and claims none of them. Farcaster, the protocol, took its name from those books first.</p>
+</section>
+</body>
+</html>
