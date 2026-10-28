@@ -18,8 +18,16 @@ if (keyLink) {
   history.replaceState(null, '', `${location.pathname}${location.search}#/`);
 }
 
+// The day's planet, as in the iOS app: Steiner's sevenfold week, each day under its planet and color.
+const PLANETS = [['☉', '#edba54'], ['☽', '#ad99db'], ['♂', '#c74a66'], ['☿', '#f2db66'], ['♃', '#f2944d'], ['♀', '#66b8a8'], ['♄', '#5c8cdb']];
+
 function renderChrome() {
   document.documentElement.lang = state.lang;
+  // The network tints everything: Snapchain warm, Hypersnap cool.
+  document.documentElement.dataset.net = state.network === 'hypersnap' ? 'hypersnap' : 'snapchain';
+  const [glyph, color] = PLANETS[new Date().getDay()];
+  const planet = $('#planet');
+  if (planet) { planet.textContent = glyph; planet.style.setProperty('--planet', color); }
   document.querySelectorAll('[data-t]').forEach((n) => { n.textContent = t(n.dataset.t); });
   $('#settings-link').setAttribute('aria-label', t('settings'));
 }

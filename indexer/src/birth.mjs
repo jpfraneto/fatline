@@ -121,3 +121,35 @@ export function makeBirth({ config, client, contract, hatcheries, plan, fetchImp
     }
   };
 }
+
+const vaultReadAbi = parseAbi(['function balance() view returns (uint256)', 'function pendingFees() view returns (uint256)']);
+
+/**
+ * The money attached to each node, live: its coin (once launched) and the USDC in its vault (kept + fees not yet
+ * collected). GET /api/coins?fids=16098,13505. The world (world.mjs) reads the contract hourly; this answers within
+ * a minute, so a coin launched now shows up on fatline.ink now.
+ */
+export function makeCoins({ client, contract, ttlMs = 60_000 }) {
+  const cache = new Map(); // fid -> { at, value }
+  const read = (address, abi, functionName, args) => client.readContract({ address, abi, functionName, args }).catch(() => null);
+  async function one(fid) {
+    const hit = cache.get(fid);
+    if (hit && Date.now() - hit.at < ttlMs) return hit.value;
+    const id = BigInt(fid);
+    const [coin, vault] = await Promise.all([read(contract, nftAbi, 'coinOfFatliner', [id]), read(contract, nftAbi, 'vaultOfFatliner', [id])]);
+    const has = (a) => a && a !== ZERO;
+    let usdc = null;
+    if (has(vault)) {
+      const [kept, pending] = await Promise.all([read(vault, vaultReadAbi, 'balance'), read(vault, vaultReadAbi, 'pendingFees')]);
+      if (kept != null) usdc = Number(kept + (pending ?? 0n)) / 1e6;
+    }
+    const value = { fid, coin: has(coin) ? coin : null, vault: has(vault) ? vault : null, usdc };
+    cache.set(fid, { at: Date.now(), value });
+    return value;
+  }
+  return async function coins(fids) {
+    const list = [...new Set(String(fids ?? '').split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(0, 100);
+    if (!contract) return { coins: [] };
+    return { coins: await Promise.all(list.map(one)), at: Date.now() };
+  };
+}

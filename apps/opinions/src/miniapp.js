@@ -42,8 +42,22 @@ export async function openUrl(url) {
   window.open(url, '_blank', 'noopener');
 }
 
-/** An EIP-1193 wallet: the Farcaster app's own inside Farcaster, the browser's elsewhere. null if none. */
+/**
+ * An EIP-1193 wallet: the Farcaster app's own inside Farcaster (sdk.wallet.getEthereumProvider, as the mini app docs
+ * say), the browser's elsewhere. null if none. The Farcaster app hands its wallet only to a mini app opened at its own
+ * domain: a page that jumped here from another domain gets none (fatline.ink opens clients with openMiniApp for that).
+ */
 export async function ethProvider() {
-  if (sdk) { try { const p = await sdk.wallet.getEthereumProvider(); if (p) return p; } catch { /* below */ } }
+  if (sdk) {
+    try { const p = await sdk.wallet.getEthereumProvider(); if (p) return p; } catch { /* below */ }
+    if (sdk.wallet?.ethProvider) return sdk.wallet.ethProvider;
+  }
   return window.ethereum ?? null;
+}
+
+/** Why there is no wallet, in words for the person holding the phone. */
+export function noWalletReason() {
+  return sdk
+    ? 'Farcaster did not hand this app a wallet. Open it from its own card (fatline.fatline.ink), or update the Farcaster app.'
+    : 'No wallet here. Open this inside Farcaster, or in a browser with a wallet.';
 }

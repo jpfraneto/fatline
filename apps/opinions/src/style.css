@@ -509,3 +509,83 @@ a.castpanel-link { color: var(--accent); }
 @keyframes bt-spin { 0% { transform: rotateY(0) } 100% { transform: rotateY(360deg) } }
 @keyframes bt-coin { 0% { transform: rotateY(-540deg) scale(.7) } 100% { transform: rotateY(0) scale(1) } }
 @media (prefers-reduced-motion: reduce) { .bt *, .bt *::before { animation: none !important; transition: none !important; } }
+
+/* ---- Lazure: the iOS app's look, on the web (apps/ios/Fatline/Theme.swift).
+   Color born where light meets darkness: Snapchain the warm pole (gold, carmine), Hypersnap the cool one (lilac, azure).
+   Surfaces are thin veils of color laid over the night. Forms avoid the right angle. */
+:root {
+  --parchment: #f7f0e0; --mist: rgba(247, 240, 224, .62); --faint: rgba(247, 240, 224, .38);
+  --gold: #edba54; --peach: #f5c2ab; --carmine: #c74a66; --lilac: #ad99db; --indigo: #211f54; --night: #0f0d24; --azure: #5c8cdb; --verdigris: #66b8a8;
+  --pole: var(--gold); --pole2: var(--carmine);
+  --bg: var(--night); --surface: rgba(255, 255, 255, .055); --raise: rgba(255, 255, 255, .08);
+  --text: var(--parchment); --muted: var(--mist); --line: rgba(247, 240, 224, .13);
+  --accent: var(--gold); --accent-ink: #1d1206; --signal: var(--gold); --ok: var(--verdigris); --amber: var(--gold); --cast: var(--lilac); --voice: var(--peach);
+  --veil: 26px 9px 26px 9px; --radius: 26px 9px 26px 9px;
+  --serif: "New York", ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+:root[data-net="hypersnap"] { --pole: var(--lilac); --pole2: var(--azure); --accent: var(--lilac); --signal: var(--lilac); }
+
+html { background: var(--night); }
+body { background: transparent; font-family: var(--serif); padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px)); }
+/* The living background: a mesh of warm and cool washes over the night, drifting slowly. */
+body::before, body::after { content: ""; position: fixed; inset: -20%; z-index: -1; pointer-events: none; }
+body::before {
+  background:
+    radial-gradient(40% 35% at 55% 18%, color-mix(in srgb, var(--pole2) 42%, transparent), transparent 70%),
+    radial-gradient(45% 40% at 20% 75%, color-mix(in srgb, var(--indigo) 90%, transparent), transparent 70%),
+    radial-gradient(40% 35% at 80% 60%, color-mix(in srgb, var(--pole) 22%, transparent), transparent 70%),
+    radial-gradient(50% 40% at 50% 100%, color-mix(in srgb, var(--pole2) 18%, transparent), transparent 70%),
+    var(--night);
+  animation: lazure 38s ease-in-out infinite alternate; transition: background .8s;
+}
+body::after {
+  background:
+    radial-gradient(30% 22% at 30% 30%, rgba(245, 194, 171, .07), transparent 70%),
+    radial-gradient(28% 24% at 70% 70%, rgba(173, 153, 219, .07), transparent 70%),
+    radial-gradient(26% 20% at 60% 40%, rgba(102, 184, 168, .05), transparent 70%);
+  filter: blur(30px); animation: lazure 55s ease-in-out infinite alternate-reverse;
+}
+@keyframes lazure { 0% { transform: translate(0, 0) scale(1); } 50% { transform: translate(3%, -2%) scale(1.05); } 100% { transform: translate(-3%, 2%) scale(1.02); } }
+@media (prefers-reduced-motion: reduce) { body::before, body::after { animation: none; } }
+
+/* The head: the day's planet and a serif title; under it, the network and the node it reads. */
+.top { align-items: center; padding-top: env(safe-area-inset-top, 0px); }
+.name { font: 400 30px/1.1 var(--serif); letter-spacing: 0; display: inline-flex; align-items: baseline; gap: 10px; }
+.name .planet { font-size: 22px; color: var(--planet, var(--gold)); }
+.tagline { display: none; }
+.gear { color: var(--faint); }
+.source { font-size: 13px; color: var(--mist); margin-top: 6px; }
+.source::before { color: var(--pole); }
+
+/* Inscriptions: small caps, letter-spaced, like the iOS labels. */
+h2, .ck-h, .label, .vw-label, .kind { font: 500 11px var(--serif); letter-spacing: .28em; text-transform: uppercase; color: var(--mist); }
+
+/* The bar at the bottom: a floating veil with the places, the pen on the right (castbutton.js). */
+.tabs { position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: min(640px, calc(100% - 24px)); margin: 0; padding: 10px 92px 10px 14px; border: 0; justify-content: space-around; gap: 4px;
+  border-radius: var(--veil); background: rgba(20, 17, 44, .62); backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3);
+  box-shadow: inset 0 0 0 .7px rgba(237, 186, 84, .25), 0 18px 50px rgba(0, 0, 0, .45); }
+.tabs a { border: 0; margin: 0; padding: 12px 4px; font: 500 10.5px var(--serif); letter-spacing: .2em; text-transform: uppercase; color: var(--faint); text-align: center; flex: 1; }
+.tabs a[aria-current="true"] { color: var(--parchment); border: 0; text-shadow: 0 0 14px color-mix(in srgb, var(--pole) 70%, transparent); }
+.tabs a[aria-current="true"]::before { content: ""; display: block; width: 18px; height: 2px; margin: 0 auto 7px; border-radius: 2px; background: var(--pole); box-shadow: 0 0 10px var(--pole); }
+@media (max-width: 480px) { .tabs { padding-right: 84px; } .tabs a { letter-spacing: .08em; font-size: 9.5px; } }
+.castbutton-wrap { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); right: max(calc(50% - 320px + 10px), calc(22px + env(safe-area-inset-right, 0px))); }
+/* The pen: a seal of seven gently swelling sides, gold to peach. */
+.castbutton { width: 66px; height: 66px; border-radius: 0; color: #1d1206; font: 600 14px var(--serif);
+  background: radial-gradient(circle at 35% 30%, #fff1c9, var(--gold) 45%, var(--peach));
+  clip-path: polygon(50% 0%, 89% 19%, 98% 61%, 72% 95%, 28% 95%, 2% 61%, 11% 19%); box-shadow: none; filter: drop-shadow(0 0 16px rgba(237, 186, 84, .55)); }
+
+/* Veils: every card. No right angles; the corners answer each other across the diagonal. */
+.item, .app-card, .economy, .presence, .indexer, .strip-node, .node-option, .vw-egg, details, .exp, .castpanel {
+  border-radius: var(--veil) !important; background: rgba(255, 255, 255, .055);
+  border: .7px solid rgba(237, 186, 84, .22); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.item { padding: 16px 18px; }
+.list { display: grid; gap: 14px; }
+.text { font: 17px/1.5 var(--serif); }
+.text a, .link { color: var(--peach); }
+.author { font: 600 16px var(--serif); }
+.author img, .dot { width: 34px; height: 34px; box-shadow: 0 0 0 .8px rgba(173, 153, 219, .7), 0 0 18px 4px rgba(173, 153, 219, .35); }
+.actions a { color: var(--faint); }
+textarea, input, select { border-radius: 18px 7px 18px 7px; background: rgba(255, 255, 255, .05); }
+button[type="submit"], .more { border-radius: 18px 7px 18px 7px; }
+.bt-home { border-radius: var(--veil); }

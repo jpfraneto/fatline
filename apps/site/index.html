@@ -370,6 +370,19 @@ async function live() {
   }));
 }
 
+// The money attached to each node, every minute: its coin as soon as it launches, the USDC in its vault, its market cap.
+async function refreshMoney() {
+  if (!nodes.length) return;
+  const q = `fids=${nodes.map((n) => n.fid).join(',')}`;
+  const live = (await getJson(`/api/coins?${q}`)) ?? (await getJson(`https://fatline.fatline.ink/api/coins?${q}`));
+  for (const c of live?.coins ?? []) {
+    const n = nodes.find((x) => x.fid === c.fid);
+    if (n) Object.assign(n, { coin: c.coin ?? n.coin, vaultUsdc: c.usdc });
+  }
+  await Promise.all(nodes.filter((n) => n.coin).map(async (n) => { n.market = (await marketCap(n.coin)) ?? n.market; }));
+  draw(await art);
+}
+
 function draw(art) {
   const coins = nodes.filter((n) => n.coin).length, open = nodes.filter((n) => n.clientUp).length;
   const pl = (k, one, many = `${one}s`) => `${k} ${k === 1 ? one : many}`;
@@ -401,6 +414,7 @@ function draw(art) {
       <div class="row"><span>Run by</span><span class="v keeper">${k.pfp ? `<img src="${esc(k.pfp)}" alt="">` : ''}${k.username ? `@${esc(k.username)}` : `FID ${n.fid}`}</span></div>
       <div class="row"><span>Coin</span><span class="v">${coin}</span></div>
       <div class="row"><span>Market cap</span><span class="v">${mc}</span></div>
+      ${n.vaultUsdc != null ? `<div class="row"><span>In its vault</span><span class="v mc">${n.vaultUsdc.toLocaleString('en-US', { maximumFractionDigits: 2 })} USDC</span></div>` : ''}
       ${open}
     </article>`;
   };
@@ -418,13 +432,15 @@ getJson('/status.json').then(async (s) => {
   nodes = (s?.eggs ?? []).map((e) => ({ fid: e.fid, genesis: Boolean(e.genesis), stage: e.stage === 'hatched' ? 'fatliner' : 'egg', surname: e.surname, stone: e.stone ?? 'ivory', name: e.name ?? e.surname, keeper: e.keeper ?? null }));
   if (nodes.length) draw(await art);
   await live();
+  await refreshMoney();
   setInterval(live, 30 * 60 * 1000);
+  setInterval(refreshMoney, 60 * 1000);
 });
 
 // Inside Farcaster: if you have an egg or a Fatliner, your own client (served by your own server) is where you live.
 (async () => {
   try {
-    const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.1.9');
+    const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.3.0');
     if (!(await sdk.isInMiniApp())) return;
     const ctx = await sdk.context;
     sdk.actions.ready();
@@ -438,7 +454,8 @@ getJson('/status.json').then(async (s) => {
     if (mine) {
       const home = CLIENT_AT[u.fid] ?? `https://${mine.label}.fatline.ink`;
       const up = await fetch(`${home}/api/health`, { signal: AbortSignal.timeout(5000) }).then((r) => r.ok).catch(() => false);
-      if (up) location.replace(`${home}/`);
+      // Its own mini app (its own domain, so the Farcaster app gives it the wallet), not a jump inside this one.
+      if (up) { try { await sdk.actions.openMiniApp({ url: `${home}/` }); } catch { location.replace(`${home}/`); } }
     }
   } catch {}
 })();

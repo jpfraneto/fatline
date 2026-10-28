@@ -5,7 +5,7 @@
 // What it shows comes from /api/birth/<fid> (indexer/src/birth.mjs): the hatch transaction once every node has signed,
 // the coin's launch transaction once it has hatched, and the art.
 import { $, api, el, short } from './lib.js';
-import { ethProvider, openUrl, viewCoin } from './miniapp.js';
+import { ethProvider, noWalletReason, openUrl, viewCoin } from './miniapp.js';
 
 const wait = (ms) => new Promise((r) => { setTimeout(r, ms); });
 const cap = (s) => (s ? s.charAt(0) + s.slice(1).toLowerCase() : '');
@@ -76,7 +76,7 @@ function holdButton(label, onFire) {
 
 async function send(tx, holder, say) {
   const p = await ethProvider();
-  if (!p) throw new Error('No wallet here. Open this inside Farcaster, or in a browser with a wallet.');
+  if (!p) throw new Error(noWalletReason());
   const [from] = await p.request({ method: 'eth_requestAccounts' });
   if (from.toLowerCase() !== holder.toLowerCase()) throw new Error(`This wallet is ${short(from)}. The egg is held by ${short(holder)}: switch to that one.`);
   if ((await p.request({ method: 'eth_chainId' })) !== BASE) await p.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE }] });

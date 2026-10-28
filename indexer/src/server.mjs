@@ -19,7 +19,7 @@ import { makeCockpit } from './cockpit.mjs';
 import { embedTags, makePlace, manifest } from './miniapp.mjs';
 import { makeCompanion } from './companion.mjs';
 import { makeHome } from './home.mjs';
-import { makeArt, makeBirth } from './birth.mjs';
+import { makeArt, makeBirth, makeCoins } from './birth.mjs';
 import { planFatlineLaunch } from './launch-fatline.mjs';
 import { Coins } from './coin.mjs';
 import { Archive, TYPES as ARCHIVE_TYPES } from './archive.mjs';
@@ -122,8 +122,9 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     payTo: process.env.FATLINE_PAY_TO ?? config.deployments?.Fatliners?.royaltyTo ?? null, hatcheries: attesterList(hc) });
   const companionOn = process.env.FATLINE_COMPANION === '1';
   const art = makeArt({ dataDir: config.dataDir });
-  const birth = makeBirth({ config, client: createPublicClient({ chain: hc.chainId === 8453 ? base : hc.chainId === 84532 ? baseSepolia : foundry, transport: http(hc.rpc) }),
-    contract: hc.contract, hatcheries: attesterList(hc), plan: planFatlineLaunch });
+  const chainClient = createPublicClient({ chain: hc.chainId === 8453 ? base : hc.chainId === 84532 ? baseSepolia : foundry, transport: http(hc.rpc) });
+  const birth = makeBirth({ config, client: chainClient, contract: hc.contract, hatcheries: attesterList(hc), plan: planFatlineLaunch });
+  const coinsLive = makeCoins({ client: chainClient, contract: hc.contract });
   // Whoever opens this client: what they have (egg, Fatliner, nothing), and their home feed from this server's node.
   const homeNet = networks[config.defaultNetwork] ?? Object.values(networks)[0];
   const home = homeNet ? makeHome({ api, network: homeNet }) : null;
@@ -141,6 +142,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/viewer\/(\d{1,12})$/, (q, [, fid]) => companion.viewer(fid)],
     // The birth: hatch the egg, then launch its coin, from the holder's own wallet (indexer/src/birth.mjs).
     ['GET', /^\/api\/birth\/(\d{1,12})$/, (q, [, fid]) => birth(fid)],
+    ['GET', /^\/api\/coins$/, (q) => coinsLive(q.get('fids'))],
     ['GET', /^\/api\/home\/(\d{1,12})$/, (q, [, fid]) => { if (!home) throw Object.assign(new Error('No node here.'), { status: 503 }); return home(fid, { before: q.get('before'), limit: q.get('limit') }); }],
     // The cockpit: you, your nodes, your egg or Fatliner, and its hatching, in one answer (the client's home).
     ['GET', /^\/api\/cockpit$/, () => cockpit()],

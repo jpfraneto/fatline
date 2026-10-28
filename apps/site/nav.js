@@ -22,5 +22,5 @@
   const old = document.querySelector('nav[aria-label="Main"], nav.main, body > nav');
   if (old) old.replaceWith(bar); else document.body.prepend(bar);
 
-  import('https://esm.sh/@farcaster/miniapp-sdk@0.1.9').then(async ({ sdk }) => { if (await sdk.isInMiniApp()) sdk.actions.ready(); }).catch(() => {});
+  import('https://esm.sh/@farcaster/miniapp-sdk@0.3.0').then(async ({ sdk }) => { if (await sdk.isInMiniApp()) sdk.actions.ready(); }).catch(() => {});
 })();
