@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fatline</title>
-<meta name="description" content="A Farcaster client that reads Snapchain or Hypersnap, your pick, from a node you run. And a USDC launchpad on Base whose coins pay for those nodes.">
+<meta name="description" content="A USDC launchpad on Base that funds Farcaster nodes and the independent clients attached to them. Each coin's trading fees pay its node's rent.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Fatline">
 <meta property="og:title" content="Fatline">
-<meta property="og:description" content="A Farcaster client that reads Snapchain or Hypersnap, your pick, from a node you run. And a USDC launchpad on Base whose coins pay for those nodes.">
+<meta property="og:description" content="A USDC launchpad on Base that funds Farcaster nodes and the independent clients attached to them. Each coin's trading fees pay its node's rent.">
 <meta property="og:url" content="https://fatline.ink/">
 <meta property="og:image" content="https://fatline.ink/img/og/og.jpg">
 <meta property="og:image:width" content="1200">
@@ -144,80 +144,140 @@
   @media (max-width: 560px) { .flow, .nets { grid-template-columns: 1fr; } }
   .hero { padding-bottom: 28px; }
   .hero .lede { max-width: 60ch; font-size: 17px; }
+
+  /* The navbar, the launchpad up front, then the nodes it funds. Docs live at /docs. */
+  .nav { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: color-mix(in srgb, var(--bg) 78%, transparent);
+    border-bottom: 1px solid var(--line); }
+  .nav-in { max-width: 1080px; margin: 0 auto; display: flex; align-items: center; gap: 18px; padding: 12px max(18px, env(safe-area-inset-right, 0px)) 12px max(18px, env(safe-area-inset-left, 0px)); }
+  .nav-links { display: flex; gap: 16px; font-size: 14px; }
+  .nav-links a { color: var(--muted); text-decoration: none; } .nav-links a:hover { color: var(--ink); }
+  .nav .toggle { margin-left: auto; }
+  .launch { font: 700 13px var(--mono); letter-spacing: .14em; border: 0; border-radius: 999px; padding: 10px 18px; background: var(--gold); color: #1a120b; cursor: pointer;
+    box-shadow: 0 0 24px rgba(255, 198, 92, .35); }
+  @media (max-width: 640px) { .nav-links { display: none; } .nav .toggle button { padding: 6px 9px; font-size: 11px; } .nav-in { gap: 10px; } }
+  .hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn { font: 600 15px var(--body); border-radius: 999px; padding: 13px 22px; cursor: pointer; text-decoration: none; border: 1px solid var(--line); color: var(--ink); background: var(--card); }
+  .btn.gold { background: var(--gold); color: #1a120b; border-color: var(--gold); }
+  .nodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .node { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 18px; background: var(--card); min-width: 0; }
+  .node-top { display: flex; gap: 12px; align-items: center; color: var(--ink); text-decoration: none; }
+  .node-top img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex: none; box-shadow: 0 0 0 2px rgba(255, 198, 92, .25), 0 0 26px 4px var(--glow); }
+  .node-top .name { font: 700 22px/1.1 var(--display); }
+  .node-top .tick { font: 500 11px var(--mono); letter-spacing: .16em; color: var(--gold); margin-top: 3px; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 14px; min-width: 0; }
+  .row > span:first-child { color: var(--muted); font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; flex: none; }
+  .row .v.health, .row .v.keeper { display: inline-flex; justify-content: flex-end; }
+  .row .v { text-align: right; min-width: 0; overflow-wrap: anywhere; }
+  .ca { font: 500 13px var(--mono); background: none; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); padding: 4px 8px; cursor: pointer; }
+  .mc { font: 600 15px var(--mono); color: var(--gold); }
+  .open { display: block; text-align: center; border-radius: 12px; padding: 11px; background: var(--accent); color: #0b0b0b; font-weight: 600; text-decoration: none; }
+  .open.off { background: none; color: var(--muted); border: 1px dashed var(--line); }
+  .hint { color: var(--muted); font-size: 12.5px; }
+  .tally { font: 500 13px var(--mono); color: var(--muted); }
+  dialog { max-width: 640px; width: calc(100% - 24px); border: 1px solid var(--line); border-radius: 20px; background: var(--bg2); color: var(--ink); padding: 0; }
+  dialog::backdrop { background: rgba(0, 0, 0, .6); backdrop-filter: blur(4px); }
+  .dlg { padding: 22px 22px 18px; display: grid; gap: 18px; }
+  .dlg h2 { margin: 0; text-align: left; }
+  .dlg h3 { margin: 0 0 8px; font: 700 18px var(--display); }
+  .dlg p { margin: 0 0 10px; color: var(--muted); font-size: 14.5px; }
+  .dlg ol { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14.5px; display: grid; gap: 4px; } .dlg ol b { color: var(--ink); }
+  .dlg .cta { margin: 0; } .dlg .cta code { font-size: 13.5px; padding: 12px 14px; }
+  .dlg .x { justify-self: end; background: none; border: 0; color: var(--muted); font-size: 22px; cursor: pointer; margin: -10px -8px -14px 0; }
+  .dlg .three pre { font-size: 12.5px; padding: 12px 14px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <a class="mark" href="/">FATLINE</a>
-    <div class="me" id="me" hidden></div>
-    <div class="toggle" role="group" aria-label="Network">
-      <button type="button" data-net="snapchain" aria-pressed="true">Snapchain</button>
-      <button type="button" data-net="hypersnap" aria-pressed="false">Hypersnap</button>
-    </div>
-  </header>
+<nav class="nav"><div class="nav-in">
+  <a class="mark" href="/">FATLINE</a>
+  <div class="nav-links"><a href="#nodes">Nodes</a><a href="#networks">Networks</a><a href="/docs/">Docs</a><a href="/manifesto.html">Manifesto</a></div>
+  <div class="me" id="me" hidden></div>
+  <div class="toggle" role="group" aria-label="Network">
+    <button type="button" data-net="snapchain" aria-pressed="true">Snapchain</button>
+    <button type="button" data-net="hypersnap" aria-pressed="false">Hypersnap</button>
+  </div>
+  <button type="button" class="launch" data-launch>LAUNCH</button>
+</div></nav>
 
+<div class="wrap">
   <section class="hero">
-    <p class="kicker">A Farcaster client · a USDC launchpad</p>
-    <h1>More copies of Farcaster.</h1>
-    <p class="lede"><b>Fatline is a Farcaster client</b> that reads from <b>Snapchain or Hypersnap</b>, the two networks that carry Farcaster, through a node you choose and can see. <b>And a launchpad on Base</b>: every coin is paired with USDC, and its trading fees pay a server that keeps a full copy of the network.</p>
+    <p class="kicker">A USDC launchpad on Base</p>
+    <h1>Coins that keep Farcaster running.</h1>
+    <p class="lede">Each coin funds <b>one Farcaster node</b> and the <b>independent client</b> attached to it. Its trading fees, in USDC, pay that server's rent. Every node below is a client you can open.</p>
+    <div class="hero-ctas"><button type="button" class="btn gold" data-launch>Launch a node</button><a class="btn" href="#nodes">See the nodes</a></div>
   </section>
 
+  <div class="hatchery-head" id="nodes"><span class="label">The nodes</span><span class="tally" id="count">reading the network…</span></div>
+  <div class="nodes" id="grid"></div>
+
   <section class="part" id="networks">
-    <p class="kicker">1 · Pick the network you read</p>
-    <h2>Two networks. You choose. It always says which.</h2>
-    <p class="lede">Snapchain is run by Farcaster. Hypersnap is a community fork that keeps full history. Fatline treats them as equals: switch at the top of this page, or in your client's Settings. Below is what each network looks like right now, read live.</p>
+    <p class="kicker">Two networks, your choice</p>
+    <h2>Every client reads Snapchain or Hypersnap. You switch.</h2>
+    <p class="lede">Snapchain is run by Farcaster. Hypersnap is a community fork that keeps the full history. Switch at the top; each client says which one it is reading.</p>
     <div class="nets" id="nets"><div class="net"><p class="muted">Reading the nodes…</p></div></div>
-    <p class="note">Every node is named. No hidden fallback to someone else's API.</p>
   </section>
 
   <section class="part" id="money">
-    <p class="kicker">2 · The launchpad pays for the copies</p>
-    <h2>Fees in USDC keep a node alive.</h2>
+    <p class="kicker">How a coin pays for a node</p>
     <ol class="flow">
-      <li><b>A coin</b><span>Launched on Clanker, paired with USDC. One per Fatliner, at most 777 ever. Its ticker is the Fatliner's surname; nobody picks it.</span></li>
-      <li><b>Its fees</b><span>100% of the coin's creator fees go to its own vault, paid in USDC. The contract refuses a launch that sends them anywhere else.</span></li>
-      <li><b>The rent</b><span>Anyone can trigger <code>payCompute</code>: the vault pays the server's keeper, never more than the agreed rate for the period.</span></li>
-      <li><b>A copy</b><span>That server runs a full Snapchain or Hypersnap node. If the vault runs dry, or its holder takes the money out, the node goes dark, and it shows.</span></li>
+      <li><b>A node</b><span>Someone runs a full Snapchain or Hypersnap node, and its client. Three warm days and its egg hatches into a Fatliner (777 ever).</span></li>
+      <li><b>A coin</b><span>The Fatliner's coin launches on Clanker, paired with USDC. Its ticker is the Fatliner's surname.</span></li>
+      <li><b>Its fees</b><span>100% of the coin's fees go to its own vault, in USDC.</span></li>
+      <li><b>The rent</b><span>The vault pays the node's bills, never more than the agreed rate. Dry vault, dark node: it shows here.</span></li>
     </ol>
-    <p class="note">On Base (chain 8453): <a href="https://basescan.org/address/0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016">Fatliners + launchpad <code>0xb54C…3016</code></a> · USDC <a href="https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"><code>0x8335…2913</code></a> · <a href="https://github.com/jpfraneto/fatline/blob/main/smart-contracts/deployments/base.json">every address</a>. Today: the contract is live, eggs are open, <b>$FATLINE (the first coin) is not launched yet</b>.</p>
+    <p class="note">On Base: <a href="https://basescan.org/address/0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016">Fatliners + launchpad <code>0xb54C…3016</code></a> · USDC <a href="https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"><code>0x8335…2913</code></a> · <a href="https://github.com/jpfraneto/fatline/blob/main/smart-contracts/deployments/base.json">every address</a></p>
   </section>
-
-  <section class="part" id="run">
-    <p class="kicker">3 · Run a copy yourself</p>
-    <h2>Your node and your client, in three commands.</h2>
-    <div class="three">
-      <pre><code><span class="c"># install the fatline command; it then walks you through the three below</span>
-curl -fsSL https://fatline.ink/install.sh | sh
-
-fatline compute          <span class="c"># rent a server for the node (USDC, by the day)</span>
-fatline node snapchain   <span class="c"># a full node on it, no API keys  (or: node hypersnap)</span>
-fatline client           <span class="c"># your client, reading from your node</span></code></pre>
-    </div>
-    <p class="manual">Every step explained → <a href="/docs/">Docs</a> · <a href="/docs/tutorial.html">Tutorial</a> (<a href="/docs/tutorial.html?lang=es">Español</a> · <a href="/docs/zh.html">中文</a>)</p>
-    <figure class="billboard">
-      <img src="/img/billboard.jpg" srcset="/img/billboard-768.jpg 768w, /img/billboard.jpg 1536w" sizes="(max-width: 900px) 100vw, 900px"
-        width="1536" height="1024" alt="Three small Fatliners on a hill at dusk, one holding a sign that says Recommended, pointing at a billboard">
-      <figcaption class="board">
-        <span class="board-kicker">Or paste this into your agent</span>
-        <span class="cta"><code id="prompt">Help me run a Fatline: https://fatline.ink/skill.md</code><button type="button" id="copy">Copy</button></span>
-        <span class="board-note">It shows every price and waits for your yes. Keys stay in your wallet.</span>
-      </figcaption>
-    </figure>
-    <p class="runner">Already run a Snapchain or Hypersnap node? Look first, nothing changes: <code>curl -fsSL https://fatline.ink/join.sh | bash -s -- --check</code></p>
-    <p class="note">Keep your node live for three days and its egg hatches into one of the 777 Fatliners, the only things that can have a coin. <a href="/manifesto.html">Why</a>.</p>
-  </section>
-
-  <div class="hatchery-head"><span class="label">Nodes running Fatline</span><span class="count" id="count">reading the nodes…</span></div>
-  <div class="grid" id="grid"></div>
 
   <footer><a href="/docs/">Docs</a><a href="/manifesto.html">Manifesto</a><a href="https://github.com/jpfraneto/fatline">GitHub</a><a href="https://farcaster.xyz/fatline">@fatline</a></footer>
 </div>
-<div class="castbar" id="castbar" hidden><button type="button" id="cast">Cast</button></div>
+
+<dialog id="launch"><div class="dlg">
+  <button type="button" class="x" aria-label="Close" data-close>×</button>
+  <h2>Launch a node</h2>
+  <div>
+    <h3>Start a new one</h3>
+    <p>Paste this into your agent (Claude Code, Codex…). It rents the server, installs the node and the client, and shows every price before you say yes.</p>
+    <span class="cta"><code id="prompt">Help me run a Fatline: https://fatline.ink/skill.md</code><button type="button" id="copy">Copy</button></span>
+    <p style="margin-top:10px">Or by hand:</p>
+    <div class="three"><pre><code>curl -fsSL https://fatline.ink/install.sh | sh
+fatline compute          <span class="c"># a server, paid in USDC</span>
+fatline node snapchain   <span class="c"># or: fatline node hypersnap</span>
+fatline client           <span class="c"># your client, on your node</span></code></pre></div>
+  </div>
+  <div>
+    <h3>Connect a node you already run</h3>
+    <p>On its server. It looks first and changes nothing until you say yes:</p>
+    <span class="cta"><code id="join">curl -fsSL https://fatline.ink/join.sh | sudo bash</code><button type="button" data-copy="join">Copy</button></span>
+  </div>
+  <div>
+    <h3>Keep it alive</h3>
+    <ol>
+      <li><b>Lay your egg.</b> The network checks your node every hour.</li>
+      <li><b>Three warm days</b> and it hatches into a Fatliner: your client's name.</li>
+      <li><b>Launch its coin</b> from your client. Its fees pay your node's rent.</li>
+    </ol>
+  </div>
+  <p><a href="/docs/" style="color:var(--ink)">Every step in the docs →</a></p>
+</div></dialog>
 
 <script src="/node-health.js"></script>
 <script>
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const getJson = (url, ms = 8000) => fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(ms) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+
+// LAUNCH: how to start a node, or connect one, and keep it alive.
+const dlg = document.getElementById('launch');
+document.querySelectorAll('[data-launch]').forEach((b) => (b.onclick = () => dlg.showModal()));
+dlg.querySelector('[data-close]').onclick = () => dlg.close();
+dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+const copyFrom = (id) => async (e) => {
+  const t = document.getElementById(id).textContent;
+  try { await navigator.clipboard.writeText(t); e.target.textContent = 'Copied'; setTimeout(() => (e.target.textContent = 'Copy'), 1600); }
+  catch { const r = document.createRange(); r.selectNodeContents(document.getElementById(id)); getSelection().removeAllRanges(); getSelection().addRange(r); }
+};
+document.getElementById('copy').onclick = copyFrom('prompt');
+document.querySelector('[data-copy="join"]').onclick = copyFrom('join');
+if (location.hash === '#launch') dlg.showModal();
+
 // The network you choose: it tints the page (and, in your client, where you read and cast).
 const setNet = (n) => {
   document.documentElement.dataset.net = n;
@@ -225,13 +285,12 @@ const setNet = (n) => {
   try { localStorage.setItem('fatline.net', n); } catch {}
   drawNets();
 };
-// The two networks, live: the nodes the genesis client reads from, per network (its own /api/networks, open to any page).
-// The same switch as in the client's Settings. Same-origin first (once fatline.ink is served by the master), then its name.
+// The two networks, live: the nodes the genesis client reads from (its /api/networks). Same origin first, then its name.
 let nets = null;
 const NET_KEY = { snapchain: 'farcaster', hypersnap: 'hypersnap' };
 async function loadNets() {
   for (const u of ['/api/networks', 'https://fatline.fatline.ink/api/networks']) {
-    try { const r = await fetch(u, { cache: 'no-store', signal: AbortSignal.timeout(8000) }); if (r.ok) { const j = await r.json(); if (Array.isArray(j)) { nets = j; break; } } } catch {}
+    const j = await getJson(u); if (Array.isArray(j)) { nets = j; break; }
   }
   drawNets();
 }
@@ -244,8 +303,9 @@ function drawNets() {
     const nodes = (n.nodes ?? []).filter((x) => !/^https?:\/\/(127\.|localhost)/.test(x.url));
     const rows = nodes.map((x) => {
       const st = x.status ?? {};
-      const state = !st.ok ? 'down' : (st.blockDelay ?? 0) <= 200 ? 'live' : 'syncing';
-      const what = !st.ok ? 'not answering' : state === 'live' ? `in sync · ${fmt(st.messages)} messages` : `catching up · ${fmt(st.blockDelay)} blocks behind`;
+      // Only an unreachable node has an error; ok:false without one means it answers but is behind.
+      const state = st.error ? 'down' : st.ok && (st.blockDelay ?? 0) <= 200 ? 'live' : 'syncing';
+      const what = state === 'down' ? 'not answering' : state === 'live' ? `in sync · ${fmt(st.messages)} messages` : `catching up · ${fmt(st.blockDelay)} blocks behind`;
       const name = x.own || /46\.225\.208\.199/.test(x.url) ? 'Fatline master' : x.label;
       return `<li><i class="dot ${state}"></i><div><b>${esc(name)}</b> <span>· ${esc(what)}</span></div></li>`;
     }).join('');
@@ -260,89 +320,106 @@ loadNets();
 document.querySelectorAll('.toggle button').forEach((b) => (b.onclick = () => setNet(b.dataset.net)));
 try { setNet(localStorage.getItem('fatline.net') || 'snapchain'); } catch { setNet('snapchain'); }
 
-document.getElementById('copy').onclick = async (e) => {
-  const t = document.getElementById('prompt').textContent;
-  try { await navigator.clipboard.writeText(t); e.target.textContent = 'Copied'; setTimeout(() => (e.target.textContent = 'Copy'), 1600); }
-  catch { const r = document.createRange(); r.selectNodeContents(document.getElementById('prompt')); getSelection().removeAllRanges(); getSelection().addRange(r); }
-};
+// The nodes: every egg and Fatliner onchain (the master hatchery's copy of the contract, GET /world), each with its
+// coin (address and market cap from DexScreener) and the client it serves. Tap one to open that client.
+// Where each client is served: <surname>.fatline.ink, unless it says otherwise here.
+// (Fatline's own will move to menloapp.lol/fatline once that serves: change it here.)
+const CLIENT_AT = {};
+const HATCHERY = location.hostname === 'fatline.ink' || location.hostname === 'www.fatline.ink' ? '' : 'https://fatline.ink';
+const art = getJson('/fatliners-art.json').then((a) => a ?? {});
+let nodes = [];
 
-// The hatchery: every egg onchain, who keeps it, its stone, how warm it is. It draws at once from status.json, then
-// reads the world from the master: its hatchery's own copy of the Fatliners contract (GET /world, read from Base once
-// an hour; indexer/src/world.mjs), and each egg's warm checks (https through sslip.io, no DNS needed). No chain reads
-// here. Again every hour while the page is open: the Fatline moves at the pace of its hourly checks.
-const HATCHERY = 'https://46-225-208-199.sslip.io';
-const getJson = (url) => fetch(url, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-const art = getJson('fatliners-art.json').then((a) => a ?? {});
-let eggs = [];
+const money = (n) => (n >= 1e9 ? `$${(n / 1e9).toFixed(2)}B` : n >= 1e6 ? `$${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `$${(n / 1e3).toFixed(1)}k` : `$${Math.round(n)}`);
+async function marketCap(coin) {
+  const j = await getJson(`https://api.dexscreener.com/latest/dex/tokens/${coin}`);
+  const pairs = (j?.pairs ?? []).filter((p) => p.chainId === 'base');
+  const best = pairs.sort((a, b) => (b.liquidity?.usd ?? 0) - (a.liquidity?.usd ?? 0))[0];
+  return best ? { mc: best.marketCap ?? best.fdv ?? null, url: best.url } : null;
+}
 
 async function live() {
-  const world = await getJson(`${HATCHERY}/world`);
-  if (world?.tokens) {
-    const known = new Map(eggs.map((e) => [e.fid, e]));
-    eggs = await Promise.all(world.tokens.map(async (t) => {
-      const e = known.get(t.fid) ?? { fid: t.fid };
-      e.genesis = t.fid === world.genesisFid;
-      e.stage = t.stage === 'fatliner' ? 'hatched' : 'egg';
-      e.surname = t.surname;
-      e.stone = t.stone ?? 'ivory';
-      e.name = e.name ?? (e.genesis ? 'Aster' : t.surname ? t.surname[0] + t.surname.slice(1).toLowerCase() : null);
-      if (!e.keeper?.username) {
-        const ud = await getJson(`https://crackle.farcaster.xyz:3381/v1/userDataByFid?fid=${t.fid}`);
-        const v = (k) => (ud?.messages ?? []).find((m) => m.data?.userDataBody?.type === k)?.data.userDataBody.value ?? null;
-        e.keeper = { username: v('USER_DATA_TYPE_USERNAME'), pfp: v('USER_DATA_TYPE_PFP') };
-      }
-      return e;
-    }));
-  }
-  await Promise.all(eggs.map(async (e) => {
-    const w = await getJson(`${HATCHERY}/eggs/${e.fid}`);
-    const today = w?.days?.at(-1);
-    if (w) e.warmth = { warmDays: w.warmDays, needed: w.needed, day: today?.day ?? null, passed: today?.passed ?? null, need: today?.need ?? null, since: w.layingAt ?? null };
-    e.health = w ? window.nodeHealth(w) : { state: 'unknown', title: 'No word from the hatchery' };
-  }));
+  const world = (await getJson(`${HATCHERY}/world`)) ?? (await getJson('https://46-225-208-199.sslip.io/world'));
+  const names = (await getJson('/api/names')) ?? (await getJson('https://fatline.fatline.ink/api/names'));
+  if (!world?.tokens) { document.getElementById('count').textContent = 'could not read the network just now'; return; }
+  const known = new Map(nodes.map((n) => [n.fid, n]));
+  nodes = world.tokens.map((t) => {
+    const n = known.get(t.fid) ?? { fid: t.fid };
+    const label = (names?.names ?? []).find((x) => x.fid === t.fid)?.label ?? t.surname?.toLowerCase();
+    return Object.assign(n, {
+      genesis: t.fid === world.genesisFid, stage: t.stage, surname: t.surname, stone: t.stone ?? 'ivory', coin: t.coin ?? null,
+      name: t.fid === world.genesisFid ? 'Aster' : t.surname ? t.surname[0] + t.surname.slice(1).toLowerCase() : `#${t.fid}`,
+      client: CLIENT_AT[t.fid] ?? (label ? `https://${label}.fatline.ink` : null), warmth: t.warmth ?? null,
+    });
+  });
   draw(await art);
+  await Promise.all(nodes.map(async (n) => {
+    const [w, up, mc, ud] = await Promise.all([
+      getJson(`${HATCHERY}/eggs/${n.fid}`),
+      n.client ? fetch(`${n.client}/api/health`, { signal: AbortSignal.timeout(6000) }).then((r) => r.ok).catch(() => false) : false,
+      n.coin ? marketCap(n.coin) : null,
+      n.keeper ? null : getJson(`https://crackle.farcaster.xyz:3381/v1/userDataByFid?fid=${n.fid}`),
+    ]);
+    n.health = w ? window.nodeHealth(w) : null;
+    n.network = w?.network === 'hypersnap' ? 'Hypersnap' : 'Snapchain';
+    n.clientUp = up;
+    n.market = mc;
+    if (ud) { const v = (k) => (ud.messages ?? []).find((m) => m.data?.userDataBody?.type === k)?.data.userDataBody.value ?? null; n.keeper = { username: v('USER_DATA_TYPE_USERNAME'), pfp: v('USER_DATA_TYPE_PFP') }; }
+    draw(await art);
+  }));
 }
 
 function draw(art) {
-  const warming = eggs.filter((e) => e.stage === 'egg').length, hatched = eggs.length - warming;
-  const up = eggs.filter((e) => e.health?.state === 'live' || e.health?.state === 'syncing').length;
-  const checked = eggs.some((e) => e.health);
-  document.getElementById('count').textContent = `${checked ? `${up} of ${eggs.length} live now · ` : ''}${warming} warming · ${hatched} hatched · ${777 - eggs.length} of 777 places open`;
-  const card = (e) => {
-    const img = (e.stage === 'hatched' && art.beings?.[e.fid]?.image) || art.eggs?.[e.stone]?.image || `img/eggs/${e.stone}.jpg`;
-    const w = e.warmth;
-    const bar = [1, 2, 3].map((d) => { const done = w && (d <= w.warmDays); const now = w && d === w.day && !done; const pct = done ? 100 : now ? Math.min(100, Math.round(100 * (w.passed ?? 0) / (w.need ?? 18))) : 0; return `<i><b style="width:${pct}%"></b></i>`; }).join('');
-    // A day is 24 hours from the laying; it is warm at 18 good checks (one an hour), and checks go on after that.
-    const day = w?.day ?? 1, warmNow = w && (w.passed ?? 0) >= (w.need ?? 18);
-    const nextIn = w?.since ? Math.max(0, Math.ceil((w.since + day * 86400000 - Date.now()) / 3600000)) : null;
-    const status = e.stage === 'hatched' ? 'hatched'
-      : !w ? 'egg warming'
-      : warmNow ? `day ${day} of 3 is warm ✓${day < 3 && nextIn !== null ? ` · day ${day + 1} starts in ${nextIn} h` : ''}`
-      : `day ${day} of 3 · ${w.passed ?? 0} of ${w.need ?? 18} warm checks so far`;
-    const h = e.health;
-    const health = h ? `<div class="health"><i class="dot ${h.state}"></i><div><b>${esc(h.title)}</b> <span>· ${esc(h.network ?? '')}${h.lastAt ? ` · checked ${esc(window.nodeHealthAgo(Date.now() - h.lastAt))}` : ''}</span></div></div>`
-      : `<div class="health"><i class="dot unknown"></i><span>reading its node…</span></div>`;
-    const k = e.keeper ?? {};
-    return `<a class="egg" href="/${e.fid}">
-      <div class="art"><img src="${esc(img)}" alt="${esc(e.name ?? '')}'s egg, ${esc(e.stone)}" loading="lazy"></div>
-      <div><div class="name">${esc(e.name ?? `#${e.fid}`)}</div><div class="tick">$${esc(e.surname)} · ${esc(String(e.stone).toUpperCase())} · #${e.fid}</div></div>
-      <div class="keeper">${k.pfp ? `<img src="${esc(k.pfp)}" alt="">` : ''}node run by ${k.username ? `@${esc(k.username)}` : `FID ${e.fid}`}</div>
-      ${health}
-      <div class="days">${bar}</div><div class="warm">${esc(status)}</div>
-    </a>`;
+  const coins = nodes.filter((n) => n.coin).length, open = nodes.filter((n) => n.clientUp).length;
+  const pl = (k, one, many = `${one}s`) => `${k} ${k === 1 ? one : many}`;
+  document.getElementById('count').textContent = `${pl(nodes.length, 'node')} · ${pl(open, 'client')} open now · ${pl(coins, 'coin')} · ${777 - nodes.length} of 777 places left`;
+  // Aster first, then coins by market cap, then Fatliners, then eggs.
+  const rank = (n) => (n.genesis ? 0 : n.coin ? 1 : n.stage === 'fatliner' ? 2 : 3);
+  nodes.sort((a, b) => rank(a) - rank(b) || (b.market?.mc ?? 0) - (a.market?.mc ?? 0) || a.fid - b.fid);
+  const card = (n) => {
+    const img = (n.stage === 'fatliner' && art.beings?.[n.fid]?.image) || art.eggs?.[n.stone]?.image || `/img/eggs/${n.stone}.jpg`;
+    const k = n.keeper ?? {};
+    const h = n.health;
+    // The hatchery checks a node hourly until its egg has its warm days; after that, its client answering is the sign.
+    const checked = h && h.state !== 'hatched' && h.state !== 'unknown';
+    const nodeState = n.clientUp ? 'live' : checked ? h.state : 'unknown';
+    const nodeText = n.clientUp ? 'running' : checked ? h.title : n.clientUp === false ? 'no recent check' : 'reading…';
+    const w = n.warmth;
+    const stage = n.stage === 'fatliner' ? 'Fatliner' : `egg · ${w ? `${w.warmDays} of ${w.needed ?? 3} warm days` : 'warming'}`;
+    const coin = n.coin
+      ? `<button type="button" class="ca" data-ca="${esc(n.coin)}" title="Copy the contract address">${esc(n.coin.slice(0, 6))}…${esc(n.coin.slice(-4))}</button>`
+      : `<span class="hint">${n.stage === 'egg' || n.stage === 'fatliner' ? 'not launched yet' : '—'}</span>`;
+    const mc = n.market?.mc != null ? `<a class="mc" href="${esc(n.market.url)}" target="_blank" rel="noopener">${money(n.market.mc)}</a>` : `<span class="hint">${n.coin ? '…' : '—'}</span>`;
+    const open = n.client
+      ? `<a class="open${n.clientUp === false ? ' off' : ''}" href="${esc(n.client)}">${n.clientUp === false ? `${esc(n.client.replace('https://', ''))} · not answering` : `Open ${esc(n.name)}'s client →`}</a>`
+      : `<span class="open off">no client yet</span>`;
+    return `<article class="node">
+      <a class="node-top" href="${esc(n.client ?? `/${n.fid}`)}"><img src="${esc(img)}" alt="" loading="lazy">
+        <div><div class="name">${esc(n.name)}</div><div class="tick">$${esc(n.surname)} · ${esc(stage.toUpperCase())}</div></div></a>
+      <div class="row"><span>Node</span><span class="v health"><i class="dot ${nodeState}"></i>${esc(n.network ?? '')} · ${esc(nodeText)}</span></div>
+      <div class="row"><span>Run by</span><span class="v keeper">${k.pfp ? `<img src="${esc(k.pfp)}" alt="">` : ''}${k.username ? `@${esc(k.username)}` : `FID ${n.fid}`}</span></div>
+      <div class="row"><span>Coin</span><span class="v">${coin}</span></div>
+      <div class="row"><span>Market cap</span><span class="v">${mc}</span></div>
+      ${open}
+    </article>`;
   };
-  document.getElementById('grid').innerHTML = eggs.map(card).join('') +
-    `<div class="empty"><div><div style="font:700 22px var(--display);color:var(--ink)">Your node goes here.</div><p>One line to your agent. It shows up here once it passes its first check.</p></div></div>`;
+  const grid = document.getElementById('grid');
+  grid.innerHTML = nodes.map(card).join('') +
+    `<div class="empty"><div><div style="font:700 22px var(--display);color:var(--ink)">Your node goes here.</div><p>Run one, keep it warm three days, launch its coin.</p><button type="button" class="btn gold" data-launch>Launch a node</button></div></div>`;
+  grid.querySelectorAll('[data-launch]').forEach((b) => (b.onclick = () => dlg.showModal()));
+  grid.querySelectorAll('[data-ca]').forEach((b) => (b.onclick = async () => {
+    try { await navigator.clipboard.writeText(b.dataset.ca); const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = t), 1400); } catch {}
+  }));
 }
 
-getJson('status.json').then(async (s) => {
-  eggs = s?.eggs ?? [];
-  draw(await art);
+getJson('/status.json').then(async (s) => {
+  // First frame from the last build, then live.
+  nodes = (s?.eggs ?? []).map((e) => ({ fid: e.fid, genesis: Boolean(e.genesis), stage: e.stage === 'hatched' ? 'fatliner' : 'egg', surname: e.surname, stone: e.stone ?? 'ivory', name: e.name ?? e.surname, keeper: e.keeper ?? null }));
+  if (nodes.length) draw(await art);
   await live();
-  setInterval(live, 60 * 60 * 1000);
+  setInterval(live, 30 * 60 * 1000);
 });
 
-// Inside Farcaster: a mini app. Your identity at the top, and a Cast button for the vouch.
+// Inside Farcaster: if you have an egg or a Fatliner, your own client (served by your own server) is where you live.
 (async () => {
   try {
     const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.1.9');
@@ -350,25 +427,16 @@ getJson('status.json').then(async (s) => {
     const ctx = await sdk.context;
     sdk.actions.ready();
     const u = ctx?.user;
-    if (u?.fid) {
-      const me = document.getElementById('me');
-      me.innerHTML = `${u.pfpUrl ? `<img src="${esc(u.pfpUrl)}" alt="">` : ''}<b>@${esc(u.username ?? u.fid)}</b>`;
-      me.hidden = false;
-      // You have an egg or a Fatliner: your own client, served by your own server, is where you live.
-      try {
-        const { names } = await (await fetch('https://fatline.fatline.ink/api/names', { signal: AbortSignal.timeout(6000) })).json();
-        const mine = names.find((n) => n.fid === u.fid);
-        if (mine) {
-          const home = `https://${mine.label}.fatline.ink`;
-          const up = await fetch(`${home}/api/health`, { signal: AbortSignal.timeout(5000) }).then((r) => r.ok).catch(() => false);
-          if (up) { location.replace(`${home}/`); return; }
-        }
-      } catch {}
-      const bar = document.getElementById('castbar'); bar.hidden = false;
-      document.getElementById('cast').onclick = () => sdk.actions.composeCast({
-        text: `this is the fatline im running to secure the farcaster network\n\nrun yours here:`,
-        embeds: [`https://fatline.ink/${u.fid}`],
-      });
+    if (!u?.fid) return;
+    const me = document.getElementById('me');
+    me.innerHTML = `${u.pfpUrl ? `<img src="${esc(u.pfpUrl)}" alt="">` : ''}<b>@${esc(u.username ?? u.fid)}</b>`;
+    me.hidden = false;
+    const names = (await getJson('/api/names', 6000)) ?? (await getJson('https://fatline.fatline.ink/api/names', 6000));
+    const mine = (names?.names ?? []).find((n) => n.fid === u.fid);
+    if (mine) {
+      const home = CLIENT_AT[u.fid] ?? `https://${mine.label}.fatline.ink`;
+      const up = await fetch(`${home}/api/health`, { signal: AbortSignal.timeout(5000) }).then((r) => r.ok).catch(() => false);
+      if (up) location.replace(`${home}/`);
     }
   } catch {}
 })();
