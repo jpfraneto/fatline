@@ -151,7 +151,7 @@ api() { echo "[api.$1]"; echo "enabled = $([ "$APIS" = on ] && echo true || echo
   echo '[statsd]'; echo 'prefix="hypersnap"'; echo 'addr="statsd:8125"'; echo 'use_tags=true'; echo
   echo '[gossip]'
   echo "address=\"/ip4/0.0.0.0/udp/$GOSSIP_PORT/quic-v1\""
-  echo 'bootstrap_peers = "/ip4/54.236.164.51/udp/3382/quic-v1, /ip4/54.87.204.167/udp/3382/quic-v1, /ip4/44.197.255.20/udp/3382/quic-v1, /ip4/54.157.62.17/udp/3382/quic-v1, /ip4/34.195.157.114/udp/3382/quic-v1, /ip4/107.20.169.236/udp/3382/quic-v1, /ip4/34.4.32.36/udp/3382/quic-v1, /ip4/35.157.151.56/udp/3382/quic-v1, /ip4/108.132.114.186/udp/3382/quic-v1"'
+  echo 'bootstrap_peers = "/ip4/54.236.164.51/udp/3382/quic-v1, /ip4/54.87.204.167/udp/3382/quic-v1, /ip4/44.197.255.20/udp/3382/quic-v1, /ip4/54.157.62.17/udp/3382/quic-v1, /ip4/34.195.157.114/udp/3382/quic-v1, /ip4/107.20.169.236/udp/3382/quic-v1, /ip4/35.212.102.55/udp/3382/quic-v1, /ip4/35.157.151.56/udp/3382/quic-v1, /ip4/108.132.114.186/udp/3382/quic-v1"'
   echo
   echo '[consensus]'; echo 'shard_ids = [1,2]'; echo 'num_shards = 2'; echo
   echo '[hyper]'; echo 'enabled = true'; echo
