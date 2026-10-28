@@ -93,12 +93,10 @@ document.getElementById('copy').onclick = async (e) => {
 };
 // Render the markdown for people; without JavaScript (and for agents) it stays readable as plain text.
 try {
-  const { marked } = await import('https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.esm.js');
+  const { marked } = await import('/vendor/marked-12.0.2.esm.js');
   const raw = document.getElementById('raw');
   document.getElementById('md').innerHTML = marked.parse(raw.textContent);
 } catch {}
-// Inside Farcaster this page is a mini app: tell the host it is ready.
-try { const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.1.9'); if (await sdk.isInMiniApp()) sdk.actions.ready(); } catch {}
 </script>
 <script src="/nav.js"></script>
 </body>

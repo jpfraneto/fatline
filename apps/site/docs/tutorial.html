@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fatline Tutorial</title>
-<meta name="description" content="Fatline: your own Farcaster or Hypersnap read node and your own client, in a few commands. A tutorial that explains the protocol as you go. Formerly Infinicaster.">
+<meta name="description" content="Fatline: your own Farcaster or Hypersnap read node and your own client, in a few commands. A Farcaster client that switches between Snapchain and Hypersnap, and a USDC launchpad on Base whose coins pay for more full nodes. A tutorial, step by step.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Fatline">
 <meta property="og:title" content="Fatline Tutorial">
-<meta property="og:description" content="Fatline: your own Farcaster or Hypersnap read node and your own client, in a few commands. A tutorial that explains the protocol as you go. Formerly Infinicaster.">
+<meta property="og:description" content="Fatline: your own Farcaster or Hypersnap read node and your own client, in a few commands. A Farcaster client that switches between Snapchain and Hypersnap, and a USDC launchpad on Base whose coins pay for more full nodes. A tutorial, step by step.">
 <meta property="og:url" content="https://fatline.ink/docs/tutorial">
 <meta property="og:image" content="https://fatline.ink/img/og/og-docs.jpg">
 <meta property="og:image:width" content="1200">
@@ -38,13 +38,13 @@
 <!-- ============================================================ QUICKSTART -->
 <section lang="en">
   <h1>Your own Farcaster node and your own client.</h1>
-  <p class="lede">Your agent does the work; you approve the money in your own wallet. Farcaster or Hypersnap: your choice, as equals. Then your node keeps an egg warm for three days, and it hatches into one of the 777.</p>
-  <p><strong>Fatline</strong> is an open protocol for being on Farcaster on your own terms. You choose the network. You choose the node, and the client always says which one it reads from. And the client can pay for its own server from a USDC vault. This repository is its first implementation. <span class="muted">Formerly Infinicaster.</span></p>
+  <p class="lede"><strong>Fatline</strong> is two things. A Farcaster client that reads Snapchain or Hypersnap, with a switch between them, and always names the node it reads from. And a USDC launchpad on Base: each coin's fees pay for a server that runs one more full copy of Farcaster.</p>
+  <p>This tutorial sets up your own node and client, then an egg your node keeps warm for three days until it hatches into one of the 777. Your agent does the work; you approve every payment in your own wallet. <span class="muted">Formerly Infinicaster.</span></p>
 </section>
 <section lang="es">
   <h1>Tu propio nodo de Farcaster y tu propio cliente.</h1>
-  <p class="lede">Tu agente hace el trabajo; tú apruebas el dinero en tu propia wallet. Farcaster o Hypersnap: tú eliges, en igualdad. Después tu nodo mantiene un huevo tibio por tres días, y nace uno de los 777.</p>
-  <p><strong>Fatline</strong> es un protocolo abierto para estar en Farcaster en tus propios términos. Tú eliges la red. Tú eliges el nodo, y el cliente siempre dice desde cuál lee. Y el cliente puede pagar su propio servidor desde una bóveda de USDC. Este repositorio es su primera implementación. <span class="muted">Antes se llamaba Infinicaster.</span></p>
+  <p class="lede"><strong>Fatline</strong> son dos cosas. Un cliente de Farcaster que lee Snapchain o Hypersnap, con un interruptor entre ambas, y siempre dice desde qué nodo lee. Y un launchpad en USDC sobre Base: las comisiones de cada moneda pagan un servidor que corre una copia completa más de Farcaster.</p>
+  <p>Este tutorial instala tu propio nodo y tu cliente, y después un huevo que tu nodo mantiene tibio por tres días hasta que nace uno de los 777. Tu agente hace el trabajo; tú apruebas cada pago en tu propia wallet. <span class="muted">Antes se llamaba Infinicaster.</span></p>
 </section>
 
 <div class="quick">
@@ -288,7 +288,7 @@ fatline feed --limit 20                                              <span class
   <pre><code>fatline identity show     <span class="c"># is the key active?</span>
 fatline identity revoke   <span class="c"># remove it from the network and from this machine</span></code></pre>
   <div class="concept"><strong>Storage rent and server bills are different things.</strong> Storage rent is paid onchain, per account, and sets how many messages the network keeps for you. It does not pay for any server. Your node's server is a separate bill, paid to whoever hosts it.</div>
-  <p class="note"><span class="tag ok">tested</span> with a real account on 2026-10-24 (@anky, FID 16098), recovery-phrase way: key registered, then a cast, a reply, a like, a recast and a follow, each confirmed on our node and seen on crackle, then all undone. <span class="tag">untested</span> the browser-wallet way, with a real account.</p>
+  <p class="note"><span class="tag ok">tested</span> with a real account on 2026-10-24 (@anky, FID 18350), recovery-phrase way: key registered, then a cast, a reply, a like, a recast and a follow, each confirmed on our node and seen on crackle, then all undone. <span class="tag">untested</span> the browser-wallet way, with a real account.</p>
 </section>
 <section id="post" lang="es">
   <h2>Castear: la llave propia de tu cliente</h2>
@@ -304,7 +304,7 @@ fatline identity revoke   <span class="c"># remove it from the network and from 
   <pre><code>fatline identity show     <span class="c"># ¿está activa la llave?</span>
 fatline identity revoke   <span class="c"># la quita de la red y de esta máquina</span></code></pre>
   <div class="concept"><strong>El arriendo de almacenamiento y la cuenta del servidor son cosas distintas.</strong> El arriendo de almacenamiento se paga onchain, por cuenta, y define cuántos mensajes guarda la red para ti. No paga ningún servidor. El servidor de tu nodo es otra cuenta, que se le paga a quien lo hospeda.</div>
-  <p class="note"><span class="tag ok">probado</span> con una cuenta real el 2026-10-24 (@anky, FID 16098), con la frase de recuperación: llave registrada, luego un cast, una respuesta, un like, un recast y un follow, cada uno confirmado en nuestro nodo y visto en crackle, y después todo deshecho. <span class="tag">sin probar</span> la forma con wallet del navegador, con una cuenta real.</p>
+  <p class="note"><span class="tag ok">probado</span> con una cuenta real el 2026-10-24 (@anky, FID 18350), con la frase de recuperación: llave registrada, luego un cast, una respuesta, un like, un recast y un follow, cada uno confirmado en nuestro nodo y visto en crackle, y después todo deshecho. <span class="tag">sin probar</span> la forma con wallet del navegador, con una cuenta real.</p>
 </section>
 
 <!-- ============================================================ FILTER -->
@@ -379,10 +379,10 @@ fatline egg lay            <span class="c"># your app key signs the egg; it goes
 fatline egg                <span class="c"># how warm it is, day by day</span>
 fatline hatch              <span class="c"># after three warm days the egg becomes the Fatliner, with its surname</span>
 fatline coin launch        <span class="c"># later, if you want: its coin, ticker = its surname ($FATLINE first)</span></code></pre>
-  <p>You need a node that is in sync on a server others can reach (step 0 and 1), and this client's app key (posting, above). The egg holds your history up to the hour you laid it: that is your being's body, its DNA. It is held by your custody address unless you pass <code>--to</code>. When it hatches, the same token becomes the Fatliner, with a <strong>surname</strong> read from its DNA. That surname is its coin's ticker: the launchpad launches one coin per Fatliner, only for Fatliners, and refuses any other ticker.</p>
+  <p>You need a node that is in sync on a server others can reach (step 0 and 1), and this client's app key (posting, above). The egg holds your history up to the hour you laid it: that is your being's body, its DNA. It is held by your custody address unless you pass <code>--to</code>. When it hatches, the same token becomes the Fatliner, with a <strong>surname</strong> read from its DNA. That surname is its coin's ticker: the launchpad launches one coin per egg or Fatliner (at most 777), paired with USDC, and refuses any other ticker.</p>
   <div class="concept"><strong>Attesters are the servers that hatched.</strong> Every hour, each of them checks your server: its node answers, it is within ~10 minutes of theirs, it returns two messages they pick at random from their own node, and its hatchery answers with the key your egg names. 18 of 24 checks make a warm day; a cold day doesn't reset anything. After three warm days each one signs your <code>Hatch</code>, and the contract mints with 3 signatures (or all of them, while there are fewer). Your server then joins them. The first one, the server that keeps Aster ($FATLINE) alive, is the only one that didn't hatch.</div>
-  <p>The contracts, on Base: <a href="https://basescan.org/address/0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016">Fatliners</a>, which is also the launchpad (one contract). Every resale of any Fatliner pays 8% to Aster's vault.</p>
-  <p class="note"><span class="tag ok">tested</span> end to end on a local chain with @anky's real history, our real node and two real hatcheries: the same DNA computed by both, three warm days, born, and the second server joined the attesters. <span class="tag no">not yet</span> a first egg hatched on Base.</p>
+  <p>The contracts, on Base: <a href="https://basescan.org/address/0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016">Fatliners</a>, which is also the launchpad (one contract), verified on Basescan. Every sale of a Fatliner pays 8% to the one who built Fatline (<code>royaltyTo</code>).</p>
+  <p class="note"><span class="tag ok">tested</span> end to end on a local chain with @anky's real history, our real node and two real hatcheries: the same DNA computed by both, three warm days, born, and the second server joined the attesters. <span class="tag ok">on Base</span> the first egg has hatched: Thaituma (#13505).</p>
 </section>
 <section id="hatch" lang="es">
   <h2>Haz nacer un Fatliner: tu nodo mantiene un huevo tibio</h2>
@@ -392,23 +392,23 @@ fatline egg lay            <span class="c"># tu llave de app firma el huevo; que
 fatline egg                <span class="c"># qué tan tibio está, día a día</span>
 fatline hatch              <span class="c"># después de tres días tibios el huevo se vuelve el Fatliner, con su apellido</span>
 fatline coin launch        <span class="c"># después, si quieres: su coin, ticker = su apellido ($FATLINE primero)</span></code></pre>
-  <p>Necesitas un nodo sincronizado en un servidor que otros puedan alcanzar (pasos 0 y 1), y la llave de app de este cliente (publicar, arriba). El huevo guarda tu historia hasta la hora en que lo pusiste: ese es el cuerpo de tu ser, su ADN. Lo guarda tu dirección custodia, salvo que pases <code>--to</code>. Cuando nace, el mismo token se vuelve el Fatliner, con un <strong>apellido</strong> leído de su ADN. Ese apellido es el ticker de su coin: el launchpad lanza una coin por Fatliner, solo para Fatliners, y rechaza cualquier otro ticker.</p>
+  <p>Necesitas un nodo sincronizado en un servidor que otros puedan alcanzar (pasos 0 y 1), y la llave de app de este cliente (publicar, arriba). El huevo guarda tu historia hasta la hora en que lo pusiste: ese es el cuerpo de tu ser, su ADN. Lo guarda tu dirección custodia, salvo que pases <code>--to</code>. Cuando nace, el mismo token se vuelve el Fatliner, con un <strong>apellido</strong> leído de su ADN. Ese apellido es el ticker de su coin: el launchpad lanza una coin por huevo o Fatliner (777 como máximo), en par con USDC, y rechaza cualquier otro ticker.</p>
   <div class="concept"><strong>Los atestiguadores son los servidores que ya nacieron.</strong> Cada hora, cada uno revisa tu servidor: su nodo responde, está a ~10 minutos del suyo, devuelve dos mensajes que ellos eligen al azar de su propio nodo, y su hatchery responde con la llave que nombra tu huevo. 18 de 24 revisiones hacen un día tibio; un día frío no reinicia nada. Después de tres días tibios cada uno firma tu <code>Hatch</code>, y el contrato mintea con 3 firmas (o todas, mientras sean menos). Tu servidor se suma a ellos. El primero, el servidor que mantiene vivo a Aster ($FATLINE), es el único que no nació así.</div>
-  <p>Los contratos, en Base: <a href="https://basescan.org/address/0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016">Fatliners</a>, que también es el launchpad (un solo contrato). Cada reventa de cualquier Fatliner paga 8% a la bóveda de Aster.</p>
-  <p class="note"><span class="tag ok">probado</span> de punta a punta en una cadena local con la historia real de @anky, nuestro nodo real y dos hatcheries reales: el mismo ADN calculado por ambos, tres días tibios, nacido, y el segundo servidor se sumó a los atestiguadores. <span class="tag no">todavía no</span> un primer huevo nacido en Base.</p>
+  <p>Los contratos, en Base: <a href="https://basescan.org/address/0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016">Fatliners</a>, que también es el launchpad (un solo contrato), verificado en Basescan. Cada venta de un Fatliner paga 8% a quien construyó Fatline (<code>royaltyTo</code>).</p>
+  <p class="note"><span class="tag ok">probado</span> de punta a punta en una cadena local con la historia real de @anky, nuestro nodo real y dos hatcheries reales: el mismo ADN calculado por ambos, tres días tibios, nacido, y el segundo servidor se sumó a los atestiguadores. <span class="tag ok">en Base</span> ya nació el primer huevo: Thaituma (#13505).</p>
 </section>
 
 <section id="life" lang="en">
   <h2>Give your client a life</h2>
   <p class="muted">Why "Fatline": a fatline, as we use the word, is a line you hold at both ends. Your keys sign at one end, your own node listens at the other, and nobody in between rents you the line and can take it back. Keeping a line open costs something, so this one carries its own purse. The word comes from Dan Simmons' novel <em>Hyperion</em>; what it means here is ours.</p>
-  <p>The last chapter is that purse: a client can pay for its own server. In the client, <strong>Launch an app</strong> creates a USDC vault on Base, and optionally a coin on Clanker whose trading fees go to that vault, in USDC. The server pays itself from the vault. If the vault runs dry, the server stops being paid and the app dies. Anyone can feed it.</p>
-  <p class="note">Status: proven on a local copy of Base with fake money, against the real Clanker and Uniswap contracts. <span class="tag no">untested</span> with real money; the contracts are not deployed on Base yet, and have had no external audit.</p>
+  <p>The last chapter is that purse: the launchpad. Your egg or Fatliner can launch one coin on Clanker, paired with USDC, ticker = its surname: <code>fatline coin launch --fid &lt;your FID&gt; --go</code>, approved in your own wallet. 100% of its creator fees go to its own vault, in USDC; the contract refuses any other split. Anyone can call <code>payCompute()</code>, and the vault pays the server's keeper, at most the agreed rate for the period. If the vault runs dry, or you withdraw (you can take all of it), the node goes dark. Anyone can refill it.</p>
+  <p class="note">Status: the contract is live and verified on Base, and the whole path was rehearsed on a copy of Base against the real Clanker. <span class="tag no">not yet</span> a coin launched with real money ($FATLINE comes first). No external audit.</p>
 </section>
 <section id="life" lang="es">
   <h2>Dale vida a tu cliente</h2>
   <p class="muted">Por qué "Fatline": una fatline, como usamos la palabra, es una línea que sostienes por ambos extremos. Tus llaves firman en un extremo, tu propio nodo escucha en el otro, y nadie en medio te arrienda la línea ni puede quitártela. Mantener una línea abierta cuesta algo, así que esta lleva su propia bolsa. La palabra viene de la novela <em>Hyperion</em>, de Dan Simmons; lo que significa aquí es nuestro.</p>
-  <p>El último capítulo es esa bolsa: un cliente puede pagar su propio servidor. En el cliente, <strong>Lanzar una app</strong> crea una bóveda de USDC en Base y, si quieres, una moneda en Clanker cuyas comisiones van a esa bóveda, en USDC. El servidor se paga desde la bóveda. Si la bóveda se vacía, el servidor deja de pagarse y la app muere. Cualquiera puede alimentarla.</p>
-  <p class="note">Estado: probado en una copia local de Base con dinero falso, contra los contratos reales de Clanker y Uniswap. <span class="tag no">sin probar</span> con dinero real; los contratos aún no están desplegados en Base y no han tenido auditoría externa.</p>
+  <p>El último capítulo es esa bolsa: el launchpad. Tu huevo o tu Fatliner puede lanzar una moneda en Clanker, en par con USDC, ticker = su apellido: <code>fatline coin launch --fid &lt;tu FID&gt; --go</code>, aprobado en tu propia wallet. El 100% de sus comisiones de creador va a su propia bóveda, en USDC; el contrato rechaza cualquier otro reparto. Cualquiera puede llamar <code>payCompute()</code>, y la bóveda le paga al encargado del servidor, como máximo la tarifa acordada por período. Si la bóveda se vacía, o la retiras (puedes sacarlo todo), el nodo se apaga. Cualquiera puede volver a llenarla.</p>
+  <p class="note">Estado: el contrato está vivo y verificado en Base, y todo el camino se ensayó en una copia de Base contra el Clanker real. <span class="tag no">todavía no</span> una moneda lanzada con dinero real ($FATLINE va primero). Sin auditoría externa.</p>
 </section>
 
 <!-- ============================================================ TESTED -->
@@ -422,7 +422,9 @@ fatline coin launch        <span class="c"># después, si quieres: su coin, tick
     <tr><td>Renting the node's server on Hetzner</td><td><span class="tag ok">done once</span>, our own node, 2026-10-22</td></tr>
     <tr><td>All three commands, fresh, start to finish</td><td><span class="tag ok">works</span></td></tr>
     <tr><td>Our own nodes answering, shown as "behind" until in sync</td><td><span class="tag ok">works</span>, both networks, 2026-10-22</td></tr>
-    <tr><td>A read node fully in sync</td><td><span class="tag ok">works</span> Farcaster: 5 h 43 min after it answered, back in sync 62 s after a reboot. Hypersnap: in sync too; both run on one server since 2026-10-23</td></tr>
+    <tr><td>A read node fully in sync</td><td><span class="tag ok">works</span> Farcaster: 5 h 43 min after it answered, back in sync 62 s after a reboot. Hypersnap: in sync too; both run on one server since 2026-10-23. Hypersnap stalled 2026-10-24..28 on an old version; upgraded to 0.15.0 and re-synced from a snapshot on 2026-10-28. Both now upgrade themselves daily</td></tr>
+    <tr><td>Fatliners (the NFT and the launchpad) on Base</td><td><span class="tag ok">live</span>, verified on Basescan; first egg hatched: Thaituma (#13505)</td></tr>
+    <tr><td>A coin launched with real money</td><td><span class="tag no">not yet</span>: $FATLINE comes first. No external audit</td></tr>
     <tr><td>Copying only chosen accounts (<code>follow</code>, not a node)</td><td><span class="tag ok">works</span> on real nodes, both networks</td></tr>
     <tr><td>Registering an app key and posting with a real account</td><td><span class="tag ok">works</span>, recovery-phrase way, 2026-10-24</td></tr>
     <tr><td>A replicating (lighter) node</td><td><span class="tag no">not possible today</span>: both networks' replicators refuse key messages</td></tr>
@@ -439,7 +441,9 @@ fatline coin launch        <span class="c"># después, si quieres: su coin, tick
     <tr><td>Arrendar el servidor del nodo en Hetzner</td><td><span class="tag ok">hecho una vez</span>, nuestro nodo, 2026-10-22</td></tr>
     <tr><td>Los tres comandos, desde cero, de principio a fin</td><td><span class="tag ok">funciona</span></td></tr>
     <tr><td>Nuestros nodos respondiendo, marcados "atrasado" hasta sincronizar</td><td><span class="tag ok">funciona</span>, ambas redes, 2026-10-22</td></tr>
-    <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag ok">funciona</span> Farcaster: 5 h 43 min después de responder, sincronizado de nuevo 62 s después de un reinicio. Hypersnap: también sincronizado; los dos corren en un solo servidor desde el 2026-10-23</td></tr>
+    <tr><td>Un nodo de lectura completamente sincronizado</td><td><span class="tag ok">funciona</span> Farcaster: 5 h 43 min después de responder, sincronizado de nuevo 62 s después de un reinicio. Hypersnap: también sincronizado; los dos corren en un solo servidor desde el 2026-10-23. Hypersnap se detuvo del 2026-10-24 al 28 en una versión vieja; se actualizó a 0.15.0 y se resincronizó desde un snapshot el 2026-10-28. Los dos se actualizan solos cada día</td></tr>
+    <tr><td>Fatliners (el NFT y el launchpad) en Base</td><td><span class="tag ok">vivo</span>, verificado en Basescan; primer huevo nacido: Thaituma (#13505)</td></tr>
+    <tr><td>Una moneda lanzada con dinero real</td><td><span class="tag no">todavía no</span>: $FATLINE va primero. Sin auditoría externa</td></tr>
     <tr><td>Copiar solo algunas cuentas (<code>follow</code>, no es un nodo)</td><td><span class="tag ok">funciona</span> con nodos reales, ambas redes</td></tr>
     <tr><td>Registrar una llave y publicar con una cuenta real</td><td><span class="tag ok">funciona</span>, con la frase de recuperación, 2026-10-24</td></tr>
     <tr><td>Un nodo replicador (más liviano)</td><td><span class="tag no">no es posible hoy</span>: los replicadores de ambas redes rechazan los mensajes de llaves</td></tr>

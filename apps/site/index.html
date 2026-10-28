@@ -439,8 +439,9 @@ getJson('/status.json').then(async (s) => {
 
 // Inside Farcaster: if you have an egg or a Fatliner, your own client (served by your own server) is where you live.
 (async () => {
+  if (window.parent === window && !window.ReactNativeWebView) return; // not inside a Farcaster host
   try {
-    const { sdk } = await import('https://esm.sh/@farcaster/miniapp-sdk@0.3.0');
+    const { sdk } = await import('/vendor/miniapp-sdk-0.3.0.mjs');
     if (!(await sdk.isInMiniApp())) return;
     const ctx = await sdk.context;
     sdk.actions.ready();
