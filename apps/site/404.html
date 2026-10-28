@@ -88,6 +88,14 @@
   .cast img.media { background: none; }
   .cast .linkcard { display: block; margin: 10px 0; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; font: 14px var(--mono); overflow-wrap: anywhere; text-decoration: none; }
   .cast .quote { display: block; margin: 14px 0; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--paper2); text-decoration: none; overflow-wrap: anywhere; }
+  .coin { display: grid; grid-template-columns: 96px 1fr; gap: 18px; align-items: center; margin: 18px 0; padding: 18px; border: 1px solid var(--line); border-radius: 18px; background: var(--paper2); }
+  .coin img { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 3px rgba(255,198,92,.35), 0 0 40px 6px rgba(255,170,60,.2); }
+  .coin .name { font: 800 28px/1.05 Fraunces, Georgia, serif; font-variation-settings: 'opsz' 96, 'SOFT' 100, 'WONK' 1; }
+  .coin .tick { margin-top: 4px; color: var(--muted); font: 500 12.5px var(--mono); letter-spacing: .16em; }
+  .coin .acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; }
+  .buy { display: inline-block; padding: 12px 22px; border-radius: 999px; background: linear-gradient(90deg, var(--blue), var(--pink)); color: #fff; font: 600 14px/1 var(--sans); letter-spacing: .02em; text-decoration: none; }
+  .buy:hover { filter: brightness(1.08); }
+  @media (max-width: 420px) { .coin { grid-template-columns: 72px 1fr; } .coin img { width: 72px; height: 72px; } }
 </style>
 </head>
 <body>
@@ -156,7 +164,7 @@ function being(f) {
   if (!b) return '';
   const scan = (a) => `https://basescan.org/address/${a}`;
   return `<h2>Its being</h2>
-    <p>Fatliner <b>#${esc(b.id)}</b>${b.genesis ? ', the genesis Fatliner' : ''}, born ${esc(b.born.slice(0, 10))} in <a href="${scan(esc(b.contract))}">the Fatliners contract</a>. ${b.note ? esc(b.note) : ''}</p>
+    <p>Fatliner <b>#${esc(b.id)}</b>${b.genesis ? ', the genesis Fatliner' : ''}, born ${b.born ? `${esc(String(b.born).slice(0, 10))} ` : ''}in <a href="${scan(esc(b.contract))}">the Fatliners contract</a>. ${b.note ? esc(b.note) : ''}</p>
     <table class="cost">
       ${b.surname ? `<tr><td>Surname (its coin's ticker)</td><td><code>${esc(b.surname)}</code></td></tr>` : ''}
       <tr><td>DNA (its history, sealed)</td><td><code>${esc(b.dna.slice(0, 10))}…${esc(b.dna.slice(-6))}</code></td></tr>
@@ -179,10 +187,65 @@ function since(iso) {
   return h >= 24 ? `${Math.floor(h / 24)} d ${h % 24} h` : h >= 1 ? `${h} h` : `${Math.max(1, Math.round(ms / 60e3))} min`;
 }
 
+// The chain decides. Our server indexes the Fatliners contract (/world), so a page knows which tokens exist; each
+// token's coin, vault and app is then read back from Base itself (eth_call) before the page shows it. No log scans:
+// public RPCs refuse them over the contract's whole life.
+const WORLD = 'https://46-225-208-199.sslip.io/world';
+const RPCS = ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'];
+const ZERO_ADDR = '0x' + '0'.repeat(40);
+const word32 = (n) => BigInt(n).toString(16).padStart(64, '0');
+async function ethCall(to, data) {
+  for (const u of RPCS) {
+    try {
+      const j = await fetch(u, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] }) }).then((r) => r.json());
+      if (typeof j.result === 'string' && j.result.length >= 66) return j.result;
+    } catch {}
+  }
+  return null;
+}
+let chainCache;
+function chainTokens() {
+  chainCache ??= fetch(WORLD, { cache: 'no-store' }).then((r) => (r.ok ? r.json() : null)).catch(() => null).then(async (w) => {
+    if (!w?.tokens || !/^0x[0-9a-fA-F]{40}$/.test(w.contract ?? '')) return null;
+    const nft = w.contract;
+    const read = async (sel, fid, indexed) => {
+      const hex = await ethCall(nft, sel + word32(fid));
+      if (!hex) return indexed ? String(indexed).toLowerCase() : null; // Base didn't answer: the server's copy of it
+      const a = '0x' + hex.slice(-40).toLowerCase();
+      return a === ZERO_ADDR ? null : a;
+    };
+    const tokens = await Promise.all(w.tokens.map(async (t) => {
+      const [coin, vault, app] = await Promise.all([read('0x0a0338a4', t.fid, t.coin), read('0x66f09ffc', t.fid, t.vault), read('0xd47eae63', t.fid, t.app)]);
+      return { ...t, coin, vault, app };
+    }));
+    const g = Number(w.genesisFid);
+    tokens.sort((a, b) => (b.fid === g) - (a.fid === g) || !!b.coin - !!a.coin || a.fid - b.fid);
+    return { contract: nft.toLowerCase(), genesisFid: g, places: w.places, tokens };
+  });
+  return chainCache;
+}
+let artCache;
+const artJson = () => (artCache ??= fetch('/fatliners-art.json').then((r) => r.json()).catch(() => ({})));
+const titled = (s) => s.charAt(0) + s.slice(1).toLowerCase();
+const nameOf = (t, g) => (t.fid === g ? 'Aster' : titled(t.surname ?? ''));
+const imageOf = (t, art) => (t.stage === 'fatliner' ? art.beings?.[t.fid]?.image : null) ?? art.eggs?.[t.stone]?.image ?? art.egg?.image ?? '';
+// One coin: what it is, and where to buy it and use it.
+function coinCard(t, w, art) {
+  const tick = esc(t.surname);
+  return `<div class="coin"><img src="${esc(imageOf(t, art))}" alt="">
+    <div><div class="name">${esc(nameOf(t, w.genesisFid))}</div><div class="tick">$${tick} · FATLINER #${t.fid}${t.fid === w.genesisFid ? ' · GENESIS' : ''}</div></div>
+    <div class="acts"><a class="buy" href="https://clanker.world/clanker/${esc(t.coin)}" rel="noopener">Buy $${tick}</a>
+      <a class="btn" href="https://${esc(t.surname.toLowerCase())}.fatline.ink">Its client</a>
+      <a class="btn" href="/${t.fid}">Its node</a>
+      <a class="btn" href="https://basescan.org/token/${esc(t.coin)}">Basescan ↗</a></div></div>`;
+}
+const FEES_LINE = 'Paired with USDC on Clanker. 100% of its trading fees go to its own vault, in USDC: they pay for its Farcaster node and its client.';
+
 if (t && t[1].toUpperCase() === 'FATLINE') document.getElementById('nav-fatline').setAttribute('aria-current', 'page');
 if (t) {
-  fetch('/status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null).then((s) => {
+  Promise.all([fetch('/status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null), chainTokens(), artJson()]).then(([s, w, art]) => {
     const f = (s?.fatlines ?? []).find((x) => x.ticker.toLowerCase() === t[1].toLowerCase());
+    const onchain = w?.tokens.find((x) => x.coin && x.surname.toLowerCase() === t[1].toLowerCase());
     if (!f) {
       document.title = 'Not found · Fatline';
       main.innerHTML = `<div><div class="kicker">Fatline</div><h1>No $${esc(t[1].toUpperCase())} here</h1>
@@ -190,7 +253,8 @@ if (t) {
       return;
     }
     document.title = `$${f.ticker} · Fatline`;
-    const coin = f.coin?.address
+    const coin = onchain ? coinCard(onchain, w, art)
+      : f.coin?.address
       ? `<p>Coin on Base: <a href="/base/${esc(f.coin.address)}"><code>${esc(f.coin.address)}</code></a></p>`
       : `<p class="muted">${esc(f.coin?.note ?? 'Coin not launched yet.')}</p>`;
     main.innerHTML = `<div><div class="kicker">Fatline</div><h1>$${esc(f.ticker)}</h1>${owner(f)}${coin}
@@ -336,47 +400,70 @@ if (t) {
         <div class="links"><a class="btn primary" href="/docs/">Run your own node</a></div></div>`;
     });
 } else if (appPath) {
-  // One node, one client, one contract: which Fatline runs on this contract (Fatliners.appOf, its AppSet events).
-  const app = appPath[1].toLowerCase();
-  const RPC = 'https://mainnet.base.org';
-  const rpc = (method, params) => fetch(RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) }).then((r) => r.json()).then((j) => j.result);
-  const word = (n) => BigInt(n).toString(16).padStart(64, '0');
-  const str = (hex) => { const b = hex.slice(2); const len = parseInt(b.slice(64, 128), 16); let o = ''; for (let i = 0; i < len; i++) o += String.fromCharCode(parseInt(b.slice(128 + i * 2, 130 + i * 2), 16)); return o; };
-  const scan = `https://basescan.org/address/${app}`;
-  main.innerHTML = `<div><div class="kicker">Base · app contract</div><h1>Reading…</h1><p><code>${esc(app)}</code></p></div>`;
-  fetch('https://raw.githubusercontent.com/jpfraneto/fatline/main/smart-contracts/deployments/base.json', { cache: 'no-store' }).then((r) => r.json()).then(async (d) => {
-    const nft = d.Fatliners.address;
-    const logs = await rpc('eth_getLogs', [{ address: nft, fromBlock: '0x' + Number(d.fromBlock).toString(16), toBlock: 'latest',
-      topics: ['0xbb87f81106f8d961218386a4db09914d0ee98730973a7e85b726b37a340045d4', null, '0x' + word(app)] }]) ?? [];
-    const fids = [...new Set(logs.map((l) => Number(BigInt(l.topics[1]))))];
-    const live = [];
-    for (const fid of fids) { // still tied now? (a holder can replace it)
-      const now = await rpc('eth_call', [{ to: nft, data: '0xd47eae63' + word(fid) }, 'latest']);
-      if (now && now.slice(-40).toLowerCase() === app.slice(2)) live.push({ fid, surname: str(await rpc('eth_call', [{ to: nft, data: '0x8d967a78' + word(fid) }, 'latest'])) });
-    }
-    if (!live.length) {
-      document.title = `${app.slice(0, 10)}… · Fatline`;
-      main.innerHTML = `<div><div class="kicker">Base · app contract</div><h1>No Fatline runs on this yet</h1><p><code>${esc(app)}</code></p>
-        <p class="muted">A Fatline's holder ties one smart contract to it (<code>setApp</code>): the one its client runs on. None is tied to this address right now.</p>
-        <div class="links"><a class="btn" href="${scan}">Basescan ↗</a><a class="btn primary" href="/docs/">Run your own</a></div></div>`;
+  // fatline.ink/<address>: whatever this address is in the Fatline contract, read from Base. The contract itself (the
+  // launchpad every coin's metadata points to), a coin, a vault, or the app a Fatliner's client runs on.
+  const addr = appPath[1].toLowerCase();
+  const scan = `https://basescan.org/address/${addr}`;
+  const shell = (kicker, inner) => `<div><div class="kicker">${kicker}</div>${inner}</div>`;
+  main.innerHTML = shell('Base', `<h1>Reading…</h1><p><code>${esc(addr)}</code></p>`);
+  Promise.all([chainTokens(), artJson()]).then(([w, art]) => {
+    if (!w) {
+      main.innerHTML = shell('Base', `<h1>Could not read Base right now</h1><p><code>${esc(addr)}</code></p><div class="links"><a class="btn" href="${scan}">Basescan ↗</a></div>`);
       return;
     }
-    const f = live[0];
-    document.title = `$${f.surname} · app · Fatline`;
-    main.innerHTML = `<div><div class="kicker">Base · the app of Fatline #${f.fid}</div><h1>$${esc(f.surname)}</h1><p><code>${esc(app)}</code></p>
-      <p>This is the smart contract Fatline #${f.fid}'s client runs on. One node, one client, one contract: the coin points here, and so does its client.</p>
-      <div class="links"><a class="btn" href="${scan}">Basescan ↗</a><a class="btn" href="/fatliners/${f.fid}">The being</a><a class="btn primary" href="/docs/">Run your own</a></div></div>`;
-  }).catch(() => { main.innerHTML = `<div><div class="kicker">Base · app contract</div><h1>Could not read Base right now</h1><p><code>${esc(app)}</code></p><div class="links"><a class="btn" href="${scan}">Basescan ↗</a></div></div>`; });
+    const coins = w.tokens.filter((t) => t.coin);
+    if (addr === w.contract) {
+      document.title = 'Fatline · the contract';
+      const rest = w.tokens.filter((t) => !t.coin);
+      main.innerHTML = shell('Base · the Fatline contract', `<h1>Fatline</h1>
+        <p>One contract on Base: the Fatliners, and the launchpad for their coins. One coin per Fatliner, 777 at most.</p>
+        <p class="muted">Each coin is paired with USDC on Clanker, and 100% of its trading fees go to its own vault, in USDC: they pay for that Fatliner's Farcaster node and its client.</p>
+        <h2>${coins.length === 1 ? 'Its coin' : `Its coins · ${coins.length} of ${Number(w.places) || 777}`}</h2>
+        ${coins.map((t) => coinCard(t, w, art)).join('') || '<p class="muted">No coin launched yet.</p>'}
+        ${rest.length ? `<h2>Waiting for their coin</h2>${rest.map((t) => `<div class="row"><a href="/${t.fid}"><b>${esc(nameOf(t, w.genesisFid))}</b></a><span class="muted">$${esc(t.surname)} · ${t.stage === 'fatliner' ? 'hatched' : 'an egg'} · FID ${t.fid}</span></div>`).join('')}` : ''}
+        <p class="note">Read from Base just now: <code>${esc(addr)}</code>.</p>
+        <div class="links"><a class="btn" href="${scan}#code">Basescan ↗</a><a class="btn primary" href="/docs/">Run your own</a></div>`);
+      return;
+    }
+    const t = w.tokens.find((x) => x.coin === addr || x.vault === addr || x.app === addr);
+    if (!t) {
+      document.title = `${addr.slice(0, 10)}… · Fatline`;
+      main.innerHTML = shell('Base', `<h1>Not part of Fatline</h1><p><code>${esc(addr)}</code></p>
+        <p class="muted">This address isn't the Fatline contract, a Fatliner's coin, its vault, or the app it runs on.</p>
+        <div class="links"><a class="btn" href="${scan}">Basescan ↗</a><a class="btn primary" href="/${w.contract}">The Fatline contract</a></div>`);
+      return;
+    }
+    const what = t.coin === addr ? 'coin' : t.vault === addr ? 'vault' : 'app';
+    document.title = `$${t.surname} · ${what} · Fatline`;
+    const line = what === 'coin' ? FEES_LINE
+      : what === 'vault' ? `The vault of $${t.surname}: 100% of its coin's trading fees land here, in USDC, and pay for its Farcaster node and its client.`
+      : `The smart contract Fatliner #${t.fid}'s client runs on.`;
+    main.innerHTML = shell(`Base · ${what} of Fatliner #${t.fid}`, `<h1>$${esc(t.surname)}</h1><p><code>${esc(addr)}</code></p><p>${esc(line)}</p>
+      ${t.coin ? coinCard(t, w, art) : `<p class="muted">No coin launched yet.</p>`}
+      <div class="links"><a class="btn" href="${scan}">Basescan ↗</a><a class="btn primary" href="/${w.contract}">The Fatline contract</a></div>`);
+  });
 } else if (!m) {
   document.title = 'Not found · Fatline';
   main.innerHTML = `<div><div class="kicker">404</div><h1>Nothing here</h1>
     <p class="muted">No page at <code>${esc(location.pathname)}</code>. A coin's page is <code>/base/0x…</code>, its contract address on Base. A cast's page is <code>/c/&lt;username&gt;/&lt;hash&gt;</code>.</p>
     <div class="links"><a class="btn primary" href="/explore.html">The board</a></div></div>`;
 } else {
+  // A coin's page. Which Fatliner it belongs to comes from Base; the board (status.json) adds its server, if we know it.
   const address = m[1];
-  fetch('/status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null).then((s) => {
-    const f = (s?.fatlines ?? []).find((x) => x.coin?.address?.toLowerCase() === address.toLowerCase());
+  const lower = address.toLowerCase();
+  Promise.all([fetch('/status.json', { cache: 'no-store' }).then((r) => r.ok ? r.json() : null).catch(() => null), chainTokens(), artJson()]).then(([s, w, art]) => {
+    const t = w?.tokens.find((x) => x.coin === lower);
+    const f = (s?.fatlines ?? []).find((x) => x.coin?.address?.toLowerCase() === lower || (t && x.ticker.toLowerCase() === t.surname.toLowerCase()));
     const scan = `https://basescan.org/token/${address}`;
+    if (t) {
+      document.title = `$${t.surname} · Fatline`;
+      main.innerHTML = `<div><div class="kicker">Base · Fatline coin</div><h1>$${esc(t.surname)}</h1>
+        <p><code>${esc(address)}</code></p>${f ? owner(f) : ''}<p>${esc(FEES_LINE)}</p>
+        ${coinCard(t, w, art)}
+        ${f ? `<h2>Nodes it keeps alive</h2>${nodeRows(f)}${body(f)}` : ''}
+        <div class="links"><a class="btn" href="${scan}">Basescan ↗</a><a class="btn primary" href="/${w.contract}">The Fatline contract</a></div></div>`;
+      return;
+    }
     if (!f) {
       document.title = `${address.slice(0, 10)}… · Fatline`;
       main.innerHTML = `<div><div class="kicker">Base · coin</div><h1>Not a known Fatline</h1>
