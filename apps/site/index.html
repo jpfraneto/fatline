@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fatline</title>
-<meta name="description" content="Run your own Farcaster: a full node on a server you control, and a client that reads only from it. Keep it live for three days and it earns you one of 777 Fatliners.">
+<meta name="description" content="A Farcaster client that reads Snapchain or Hypersnap, your pick, from a node you run. And a USDC launchpad on Base whose coins pay for those nodes.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Fatline">
 <meta property="og:title" content="Fatline">
-<meta property="og:description" content="Run your own Farcaster: a full node on a server you control, and a client that reads only from it. Keep it live for three days and it earns you one of 777 Fatliners.">
+<meta property="og:description" content="A Farcaster client that reads Snapchain or Hypersnap, your pick, from a node you run. And a USDC launchpad on Base whose coins pay for those nodes.">
 <meta property="og:url" content="https://fatline.ink/">
 <meta property="og:image" content="https://fatline.ink/img/og/og.jpg">
 <meta property="og:image:width" content="1200">
@@ -115,6 +115,35 @@
   footer { margin-top: 56px; display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; font: 500 12px var(--mono); letter-spacing: .14em; }
   footer a { color: var(--muted); text-decoration: none; }
   @media (prefers-reduced-motion: reduce) { body { transition: none; } }
+  .part { max-width: 900px; margin: 0 auto; padding: 44px 0 10px; border-top: 1px solid var(--line); text-align: center; }
+  h2 { font: 700 clamp(26px, 4vw, 38px)/1.1 var(--display); font-variation-settings: 'opsz' 96, 'SOFT' 100, 'WONK' 1; margin: 0 0 14px; text-wrap: balance; }
+  .lede b { color: var(--ink); font-weight: 600; }
+  .note { color: var(--muted); font-size: 14px; max-width: 64ch; margin: 18px auto 0; overflow-wrap: anywhere; }
+  .note a { color: var(--ink); text-underline-offset: 3px; }
+  .note code, .flow code { font: 12.5px var(--mono); }
+  .muted { color: var(--muted); }
+  .nets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; text-align: left; }
+  .net { border: 1px solid var(--line); border-radius: 16px; background: var(--card); padding: 16px; cursor: pointer; transition: border-color .3s, opacity .3s; min-width: 0; }
+  .net[aria-pressed="false"] { opacity: .55; }
+  .net[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .net h3 { margin: 0 0 4px; font: 700 20px var(--display); display: flex; justify-content: space-between; gap: 8px; }
+  .net h3 small { font: 500 11px var(--mono); letter-spacing: .12em; color: var(--accent); align-self: center; }
+  .net .about { margin: 0 0 10px; color: var(--muted); font-size: 13.5px; }
+  .net ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .net li { display: flex; gap: 8px; align-items: baseline; font-size: 13.5px; min-width: 0; }
+  .net li span { color: var(--muted); overflow-wrap: anywhere; }
+  .net .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--muted); }
+  .net .dot.live { background: #4ade80; } .net .dot.syncing { background: var(--gold); } .net .dot.down { background: #ff6b5a; }
+  .flow { list-style: none; counter-reset: f; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; text-align: left; }
+  .flow li { border: 1px solid var(--line); border-radius: 16px; background: var(--card); padding: 16px; }
+  .flow b { display: block; font: 700 19px/1.2 var(--display); margin-bottom: 6px; }
+  .flow b::before { counter-increment: f; content: counter(f); display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 8px; border-radius: 50%;
+    font: 600 12px var(--mono); background: var(--accent); color: #0b0b0b; transform: translateY(-2px); }
+  .flow span { color: var(--muted); font-size: 14px; }
+  @media (max-width: 820px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) { .flow, .nets { grid-template-columns: 1fr; } }
+  .hero { padding-bottom: 28px; }
+  .hero .lede { max-width: 60ch; font-size: 17px; }
 </style>
 </head>
 <body>
@@ -129,34 +158,54 @@
   </header>
 
   <section class="hero">
-    <p class="kicker">Farcaster, on your own machine</p>
-    <h1>Run your own Farcaster.</h1>
-    <p class="lede">Fatline puts a full copy of Farcaster on a server you control, with a client that reads only from it. Nobody in between can filter your feed or switch you off.</p>
-    <p class="start">Three commands, no API keys</p>
+    <p class="kicker">A Farcaster client · a USDC launchpad</p>
+    <h1>More copies of Farcaster.</h1>
+    <p class="lede"><b>Fatline is a Farcaster client</b> that reads from <b>Snapchain or Hypersnap</b>, the two networks that carry Farcaster, through a node you choose and can see. <b>And a launchpad on Base</b>: every coin is paired with USDC, and its trading fees pay a server that keeps a full copy of the network.</p>
+  </section>
+
+  <section class="part" id="networks">
+    <p class="kicker">1 · Pick the network you read</p>
+    <h2>Two networks. You choose. It always says which.</h2>
+    <p class="lede">Snapchain is run by Farcaster. Hypersnap is a community fork that keeps full history. Fatline treats them as equals: switch at the top of this page, or in your client's Settings. Below is what each network looks like right now, read live.</p>
+    <div class="nets" id="nets"><div class="net"><p class="muted">Reading the nodes…</p></div></div>
+    <p class="note">Every node is named. No hidden fallback to someone else's API.</p>
+  </section>
+
+  <section class="part" id="money">
+    <p class="kicker">2 · The launchpad pays for the copies</p>
+    <h2>Fees in USDC keep a node alive.</h2>
+    <ol class="flow">
+      <li><b>A coin</b><span>Launched on Clanker, paired with USDC. One per Fatliner, at most 777 ever. Its ticker is the Fatliner's surname; nobody picks it.</span></li>
+      <li><b>Its fees</b><span>100% of the coin's creator fees go to its own vault, paid in USDC. The contract refuses a launch that sends them anywhere else.</span></li>
+      <li><b>The rent</b><span>Anyone can trigger <code>payCompute</code>: the vault pays the server's keeper, never more than the agreed rate for the period.</span></li>
+      <li><b>A copy</b><span>That server runs a full Snapchain or Hypersnap node. If the vault runs dry, or its holder takes the money out, the node goes dark, and it shows.</span></li>
+    </ol>
+    <p class="note">On Base (chain 8453): <a href="https://basescan.org/address/0xb54CD4A4E56D2549557b1284AB0BEA2D076a3016">Fatliners + launchpad <code>0xb54C…3016</code></a> · USDC <a href="https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"><code>0x8335…2913</code></a> · <a href="https://github.com/jpfraneto/fatline/blob/main/smart-contracts/deployments/base.json">every address</a>. Today: the contract is live, eggs are open, <b>$FATLINE (the first coin) is not launched yet</b>.</p>
+  </section>
+
+  <section class="part" id="run">
+    <p class="kicker">3 · Run a copy yourself</p>
+    <h2>Your node and your client, in three commands.</h2>
     <div class="three">
-      <pre><code><span class="c"># install the fatline command; it then offers to walk you through the three below</span>
+      <pre><code><span class="c"># install the fatline command; it then walks you through the three below</span>
 curl -fsSL https://fatline.ink/install.sh | sh
 
-fatline compute          <span class="c"># (0) rent a machine that can hold a node</span>
-fatline node snapchain   <span class="c"># (1) your own read node on it  (or: node hypersnap)</span>
-fatline client           <span class="c"># (2) your client, reading only from your node</span></code></pre>
+fatline compute          <span class="c"># rent a server for the node (USDC, by the day)</span>
+fatline node snapchain   <span class="c"># a full node on it, no API keys  (or: node hypersnap)</span>
+fatline client           <span class="c"># your client, reading from your node</span></code></pre>
     </div>
-    <p class="manual">The tutorial explains each step and the protocol behind it → <a href="/docs/tutorial.html">English</a> · <a href="/docs/tutorial.html?lang=es">Español</a> · <a href="/docs/zh.html">中文</a></p>
+    <p class="manual">Every step explained → <a href="/docs/">Docs</a> · <a href="/docs/tutorial.html">Tutorial</a> (<a href="/docs/tutorial.html?lang=es">Español</a> · <a href="/docs/zh.html">中文</a>)</p>
     <figure class="billboard">
       <img src="/img/billboard.jpg" srcset="/img/billboard-768.jpg 768w, /img/billboard.jpg 1536w" sizes="(max-width: 900px) 100vw, 900px"
         width="1536" height="1024" alt="Three small Fatliners on a hill at dusk, one holding a sign that says Recommended, pointing at a billboard">
       <figcaption class="board">
-        <span class="board-kicker">Paste this into your agent</span>
+        <span class="board-kicker">Or paste this into your agent</span>
         <span class="cta"><code id="prompt">Help me run a Fatline: https://fatline.ink/skill.md</code><button type="button" id="copy">Copy</button></span>
-        <span class="board-note">Claude Code, Codex… it runs the commands with you</span>
+        <span class="board-note">It shows every price and waits for your yes. Keys stay in your wallet.</span>
       </figcaption>
     </figure>
-    <p class="runner">Already run a Snapchain or Hypersnap node? One line on its server: <code>curl -fsSL https://fatline.ink/join.sh | sudo bash</code></p>
-    <div class="steps after">
-      <div class="step"><b>Your node</b><p>All of Farcaster (Snapchain or Hypersnap, your pick) streams into a server you rent. From about $2.60 a day.</p></div>
-      <div class="step"><b>Your client</b><p>Read and cast through your own node, with your own account. You can start before it finishes syncing.</p></div>
-      <div class="step"><b>Your Fatliner</b><p>Every hour, the network checks your node. Keep it live for three days and it can earn you one of 777 Fatliners, each with its own coin.</p></div>
-    </div>
+    <p class="runner">Already run a Snapchain or Hypersnap node? Look first, nothing changes: <code>curl -fsSL https://fatline.ink/join.sh | bash -s -- --check</code></p>
+    <p class="note">Keep your node live for three days and its egg hatches into one of the 777 Fatliners, the only things that can have a coin. <a href="/manifesto.html">Why</a>.</p>
   </section>
 
   <div class="hatchery-head"><span class="label">Nodes running Fatline</span><span class="count" id="count">reading the nodes…</span></div>
@@ -174,7 +223,40 @@ const setNet = (n) => {
   document.documentElement.dataset.net = n;
   document.querySelectorAll('.toggle button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.net === n)));
   try { localStorage.setItem('fatline.net', n); } catch {}
+  drawNets();
 };
+// The two networks, live: the nodes the genesis client reads from, per network (its own /api/networks, open to any page).
+// The same switch as in the client's Settings. Same-origin first (once fatline.ink is served by the master), then its name.
+let nets = null;
+const NET_KEY = { snapchain: 'farcaster', hypersnap: 'hypersnap' };
+async function loadNets() {
+  for (const u of ['/api/networks', 'https://fatline.fatline.ink/api/networks']) {
+    try { const r = await fetch(u, { cache: 'no-store', signal: AbortSignal.timeout(8000) }); if (r.ok) { const j = await r.json(); if (Array.isArray(j)) { nets = j; break; } } } catch {}
+  }
+  drawNets();
+}
+function drawNets() {
+  const box = document.getElementById('nets'); if (!box) return;
+  const chosen = NET_KEY[document.documentElement.dataset.net] ?? 'farcaster';
+  if (!nets) { box.innerHTML = '<div class="net"><p class="muted">Reading the nodes…</p></div>'; return; }
+  const fmt = (n) => (typeof n === 'number' ? n.toLocaleString('en-US') : '?');
+  box.innerHTML = nets.map((n) => {
+    const nodes = (n.nodes ?? []).filter((x) => !/^https?:\/\/(127\.|localhost)/.test(x.url));
+    const rows = nodes.map((x) => {
+      const st = x.status ?? {};
+      const state = !st.ok ? 'down' : (st.blockDelay ?? 0) <= 200 ? 'live' : 'syncing';
+      const what = !st.ok ? 'not answering' : state === 'live' ? `in sync · ${fmt(st.messages)} messages` : `catching up · ${fmt(st.blockDelay)} blocks behind`;
+      const name = x.own || /46\.225\.208\.199/.test(x.url) ? 'Fatline master' : x.label;
+      return `<li><i class="dot ${state}"></i><div><b>${esc(name)}</b> <span>· ${esc(what)}</span></div></li>`;
+    }).join('');
+    const key = n.name === 'farcaster' ? 'snapchain' : n.name;
+    const label = n.name === 'farcaster' ? 'Snapchain' : n.label;
+    return `<div class="net" role="button" tabindex="0" data-net="${esc(key)}" aria-pressed="${n.name === chosen}">
+      <h3>${esc(label)}${n.name === chosen ? '<small>READING</small>' : ''}</h3><p class="about">${esc(n.about ?? '')}</p><ul>${rows}</ul></div>`;
+  }).join('');
+  box.querySelectorAll('.net[data-net]').forEach((el) => { el.onclick = () => setNet(el.dataset.net); el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setNet(el.dataset.net); } }; });
+}
+loadNets();
 document.querySelectorAll('.toggle button').forEach((b) => (b.onclick = () => setNet(b.dataset.net)));
 try { setNet(localStorage.getItem('fatline.net') || 'snapchain'); } catch { setNet('snapchain'); }
 
