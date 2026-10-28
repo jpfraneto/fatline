@@ -262,3 +262,4 @@ Order of priority, always: **the bounty path works for a stranger > the tutorial
 ### ~21:05 UTC 2026-10-28 — The whitepaper
 - fatline.ink/whitepaper.pdf (14 A5 pages, rendered with headless Chrome from apps/site/whitepaper/index.html, also served at /whitepaper). "The Keeper's Tale": fan fiction, a lost chapter of Hyperion's pilgrimage, then field notes (every rule with its constant, the addresses, what is not true yet, how to start). Re-render after edits: Chrome --headless=new --no-pdf-header-footer --print-to-pdf.
 - Cast via @fatline: 0x9df099edb1c25c84b2195f46c9888f8227ccd7be.
+- ~21:10 UTC: rewritten closer to the book (Keats epigraph, fuller frame, the tale as the first keeper's comlog over three warm days; 17 pages). Sent to the Infinicaster Telegram group (message 127) with the link.
