@@ -1,15 +1,14 @@
 // The client inside Farcaster: the game depends on who opens it.
 //   No egg yet     how to get one, plainly.
-//   An egg         its status on top, and their Farcaster coming to life underneath: the people they follow,
-//                  read from this server's own node.
-//   A Fatliner     just their feed (with one line about the node while it is not in sync).
+//   An egg         the egg on top (hatch it when it's ready, or launch its coin), its warm days, and their
+//                  Farcaster underneath: the people they follow, read from this server's own node.
+//   A Fatliner     the being and its coin on top, then their feed (one line about the node while it is not in sync).
 // The same layout on every Fatline, so it is predictable. Everything comes from this server: /api/viewer and /api/home.
-import { $, api, el, state } from './lib.js';
+import { $, api, el } from './lib.js';
 import { card } from './feed.js';
-import { AR, EGGS } from './cockpit.js';
 import { openUrl, viewer } from './miniapp.js';
+import { birthPanel } from './birth.js';
 
-const cap = (s) => (s ? s.charAt(0) + s.slice(1).toLowerCase() : '');
 const copy = (text) => el('div', { class: 'ck-cmd' }, el('code', {}, text), el('button', { type: 'button', onclick: async (e) => {
   try { await navigator.clipboard.writeText(text); e.target.textContent = 'Copied'; } catch { e.target.textContent = 'Select it'; }
   setTimeout(() => { e.target.textContent = 'Copy'; }, 1500);
@@ -30,24 +29,6 @@ function howToGetOne(v) {
     el('p', { class: 'vw-label' }, 'Already run a node? On its server:'),
     copy('curl -fsSL https://fatline.ink/join.sh | sudo bash'),
     el('p', { class: 'ck-foot' }, el('a', { href: 'https://fatline.ink/docs/', onclick: (e) => { e.preventDefault(); openUrl('https://fatline.ink/docs/'); } }, 'The full guide')));
-}
-
-function eggStatus(v) {
-  const e = v.egg ?? { warmDays: 0, needed: 3, days: [] };
-  const days = Array.from({ length: e.needed }, (_, i) => {
-    const d = e.days?.[i];
-    const pct = d ? Math.min(100, Math.round((d.passed / d.need) * 100)) : 0;
-    return el('li', { class: d?.warm ? 'warm' : '' }, el('div', { class: 'ck-bar' }, el('i', { style: `width:${pct}%` })), el('small', {}, `day ${i + 1}`));
-  });
-  const eta = e.eta ? new Date(e.eta) : null;
-  const when = !eta ? 'Your node keeps it warm.' : eta - Date.now() < 60_000 ? 'Hatching now.'
-    : `Hatches in about ${Math.max(1, Math.round((eta - Date.now()) / 3_600_000))} h, ${eta.toLocaleString(state.lang, { weekday: 'short', hour: '2-digit', minute: '2-digit' })}, if your node stays up.`;
-  return el('section', { class: 'vw-egg' },
-    el('img', { src: AR + EGGS[v.stone ?? 'ivory'], alt: '', width: 72, height: 72 }),
-    el('div', {},
-      el('b', {}, cap(v.surname) || 'Your egg', el('small', {}, ` · ${e.warmDays} of ${e.needed} warm days`)),
-      el('ul', { class: 'ck-days vw-days' }, days),
-      el('small', { class: 'vw-when' }, when)));
 }
 
 function nodeLine(v) {
@@ -87,9 +68,8 @@ export async function placePage() {
   let v;
   try { v = await api(`/api/viewer/${fid}`); } catch (err) { main.replaceChildren(el('p', { class: 'warn' }, err.message)); return; }
   if (v.stage === 'none') { main.replaceChildren(howToGetOne(v)); return; }
-  // Warm enough to hatch: the birth (hatch, then its coin).
-  if (v.stage === 'egg' && v.egg?.hatched) { location.hash = `#/birth/${fid}`; return; }
-  const coinLine = v.stage === 'fatliner' ? el('p', { class: 'vw-node' }, el('a', { href: `#/birth/${fid}` }, `$${v.surname ?? ''} →`)) : null;
-  main.replaceChildren(...[v.stage === 'egg' ? eggStatus(v) : nodeLine(v), coinLine, feed(fid)].filter(Boolean));
+  // Their token on top, as it is now (egg, ready to hatch, Fatliner, its coin), and what they can do with it, right here.
+  const warm = v.egg ? { warmDays: v.egg.warmDays ?? 0, needed: v.egg.needed ?? 3 } : null;
+  main.replaceChildren(...[birthPanel(fid, { warm }), nodeLine(v), feed(fid)].filter(Boolean));
 }
 

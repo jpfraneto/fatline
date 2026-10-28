@@ -1,6 +1,6 @@
-// The birth: an egg hatches, then its coin comes into the world. Both from the holder's own wallet (inside Farcaster,
-// the Farcaster wallet; in a browser, theirs), both watched as they happen. #/birth/<fid>; #/birth/<fid>/demo plays it
-// with no wallet and no transaction, to walk through it.
+// The token on the home page: an egg hatches, then its coin comes into the world. Both from the holder's own wallet
+// (inside Farcaster, the Farcaster wallet; in a browser, theirs), both watched as they happen, where they already are.
+// #/birth/<fid>/demo plays it with no wallet and no transaction, to walk through it.
 //
 // What it shows comes from /api/birth/<fid> (indexer/src/birth.mjs): the hatch transaction once every node has signed,
 // the coin's launch transaction once it has hatched, and the art.
@@ -94,93 +94,126 @@ async function send(tx, holder, say) {
 // A walk-through with nothing sent.
 const fake = async (say) => { say('Approve it in your wallet.'); await wait(1600); say('Base is writing it…'); await wait(2600); return `0x${'d3m0'.repeat(16)}`; };
 
-// ---- the page
+// ---- the token, on the home page: what it is now, and the one thing its holder can do next
 
+/**
+ * The holder's token as the home page shows it: the egg (warming, or ready to hatch), the Fatliner, its coin.
+ * Hatching and launching happen right here, from the holder's wallet. warm: { warmDays, needed } from the home's data.
+ */
+export function birthPanel(fid, { demo = false, warm = null } = {}) {
+  const root = el('section', { class: 'bt bt-home' }, el('p', { class: 'bt-line on' }, '…'));
+  draw(root, fid, { demo, warm }).catch((err) => root.replaceChildren(el('p', { class: 'warn' }, err.message)));
+  return root;
+}
+
+// Old links (#/birth/<fid>) open the home page, where the token now lives; /demo still walks through it.
 export async function birthPage(fid, { demo = false } = {}) {
+  if (!demo) { location.replace('#/'); return; }
   const main = $('#main');
   main.classList.add('birth-page');
-  main.replaceChildren(el('section', { class: 'bt' }, el('p', { class: 'bt-line on' }, '…')));
-  let b;
-  try { b = await api(`/api/birth/${fid}`); } catch (err) { main.replaceChildren(el('p', { class: 'warn' }, err.message)); return; }
+  main.replaceChildren(birthPanel(fid, { demo }));
+}
+
+async function draw(root, fid, { demo, warm }) {
+  let b = await api(`/api/birth/${fid}`);
+  if (b.stage === 'none') { root.remove(); return; }
   if (demo) b = demoState(b);
 
   const canvas = el('canvas', { class: 'bt-sky' });
   const art = el('div', { class: 'bt-art' },
-    el('img', { class: 'bt-egg', src: b.art.egg, alt: '' }),
-    b.art.being ? el('img', { class: 'bt-being', src: b.art.being, alt: '' }) : null,
+    el('img', { class: 'bt-egg', src: b.art.egg, alt: `${b.stone} egg` }),
+    b.art.being ? el('img', { class: 'bt-being', src: b.art.being, alt: b.name ?? '' }) : null,
     crack(), el('div', { class: 'bt-flash' }));
+  const surname = cap(b.surname);
+  const name = el('div', { class: 'bt-name on' });
   const line = el('p', { class: 'bt-line' });
-  const name = el('div', { class: 'bt-name' });
+  const sub = el('p', { class: 'bt-sub' });
   const act = el('div', { class: 'bt-act' });
   const card = el('div', { class: 'bt-card' });
-  main.replaceChildren(el('section', { class: 'bt' }, canvas, art, line, name, act, card));
+  const facts = el('p', { class: 'bt-facts' });
+  root.replaceChildren(canvas, art, name, line, sub, act, card, facts);
   const s = sky(canvas);
   const say = async (text, ms = 0) => { line.classList.remove('on'); await wait(250); line.textContent = text; line.classList.add('on'); if (ms) await wait(ms); };
-  const surname = cap(b.surname);
+  const link = (text, url) => el('a', { href: url, onclick: (e) => { e.preventDefault(); openUrl(url); } }, text);
   const fail = (err, retry) => { s.current = 0.3; say(err.message); act.replaceChildren(el('button', { type: 'button', class: 'bt-again', onclick: retry }, 'Try again')); };
 
-  // 1. The egg, ready to hatch
-  async function hatchStep() {
+  const label = () => {
+    name.replaceChildren(el('b', {}, b.name ?? surname),
+      el('small', {}, [`$${b.surname}`, `#${b.fid}`, b.stone, b.stage === 'fatliner' ? 'Fatliner' : 'egg'].join(' · ')));
+    facts.replaceChildren(...[
+      b.links?.opensea ? link('OpenSea', b.links.opensea) : null,
+      b.links?.metadata ? link('Metadata', b.links.metadata) : null,
+      b.links?.basescan ? link('Basescan', b.links.basescan) : null,
+    ].filter(Boolean).flatMap((a, i) => (i ? [' · ', a] : [a])));
+  };
+  label();
+
+  // The egg
+  async function eggStep() {
     art.className = 'bt-art egg';
-    if (!b.hatch?.ready) {
-      // Not ready to hatch: its coin can still come first (an egg has the right to its coin).
-      if (b.coin || b.launch) return coinStep();
-      const signed = (b.hatch?.attesters ?? []).filter((a) => a.signed).length;
-      await say(`${(b.name ?? surname).split(' ')[0]} is warming. ${signed} of ${b.hatch?.threshold ?? '…'} nodes have signed its birth.`);
+    if (b.hatch?.ready) {
+      await say(`${(b.name ?? surname).split(' ')[0]} is ready to hatch.`);
+      sub.textContent = 'Every node that kept it warm has signed its birth.';
+      act.replaceChildren(holdButton('Hold to hatch', async () => {
+        art.classList.add('shake'); s.current = 0.8;
+        try {
+          await (demo ? fake : (say) => send(b.hatch.tx, b.holder, say))((t) => say(t));
+        } catch (err) { art.classList.remove('shake'); return fail(err, eggStep); }
+        act.replaceChildren(); sub.textContent = '';
+        await hatched();
+      }));
       return;
     }
-    await say(`${(b.name ?? surname).split(' ')[0]} is ready.`);
-    act.replaceChildren(holdButton('Hold to hatch', async () => {
-      art.classList.add('shake'); s.current = 0.8;
-      try {
-        await (demo ? fake : (say) => send(b.hatch.tx, b.holder, say))((t) => say(t));
-      } catch (err) { art.classList.remove('shake'); return fail(err, hatchStep); }
-      act.replaceChildren();
-      await hatched();
-    }));
+    const w = warm?.warmDays ?? null, need = warm?.needed ?? 3;
+    const signed = (b.hatch?.attesters ?? []).filter((a) => a.signed).length;
+    if (w != null && w < need) await say(`Warming: ${w} of ${need} days.`);
+    else await say(b.hatch?.threshold ? `${signed} of ${b.hatch.threshold} nodes signed its birth.` : 'Warming.');
+    sub.textContent = w != null && w < need ? 'Your node keeps it warm. Three warm days and it hatches.'
+      : 'It hatches once enough of the nodes that check it have signed. Nothing to do but keep your node up.';
+    // An egg already has the right to its coin: it can come first.
+    coinStep({ keepLine: true });
   }
 
-  // 2. It hatches: cracks of light, a flash, the being
+  // It hatches: cracks of light, a flash, the being
   async function hatched() {
     s.current = 1;
     art.classList.add('cracking');
     await wait(reduced() ? 0 : 1500);
     art.classList.add('open');
     s.gold = 1; s.current = 0.5;
-    name.replaceChildren(el('b', {}, b.name ?? surname), el('small', {}, `$${b.surname} · #${b.fid}`));
-    name.classList.add('on');
     await say('Born.', 2200);
     if (!demo) { try { b = await api(`/api/birth/${fid}`); } catch { /* the next step says so */ } } else b = demoState(b, 'fatliner');
+    label();
     coinStep();
   }
 
-  // 3. Its coin
-  async function coinStep() {
-    art.className = b.stage === 'egg' ? 'bt-art egg' : 'bt-art open';
-    if (!name.firstChild) name.replaceChildren(el('b', {}, b.name ?? surname), el('small', {}, `$${b.surname} · #${b.fid}`));
-    name.classList.add('on');
-    if (b.coin) return done(b.coin.address, b.coin.vault);
-    if (!b.launch) { await say(b.launchError ?? 'Its coin is not ready to launch yet.'); return; }
-    await say(`Bring $${b.surname} into the world.`);
+  // Its coin
+  async function coinStep({ keepLine = false } = {}) {
+    if (b.stage === 'fatliner') {
+      art.className = 'bt-art open';
+      if (!b.art.being) sub.textContent = 'Its portrait is being made. Until then it wears its egg.';
+    }
+    if (b.coin) return done(b.coin.address, b.coin.vault, { keepLine });
+    if (!b.launch) { if (!keepLine) await say(b.launchError ?? 'Its coin is not ready to launch yet.'); return; }
+    if (!keepLine) await say(`Bring $${b.surname} into the world.`);
     act.replaceChildren(holdButton(`Launch $${b.surname}`, async () => {
       s.current = 0.9; art.classList.add('coining');
       try {
         await (demo ? fake : (say) => send(b.launch, b.holder, say))((t) => say(t));
-      } catch (err) { art.classList.remove('coining'); return fail(err, coinStep); }
+      } catch (err) { art.classList.remove('coining'); return fail(err, () => coinStep()); }
       act.replaceChildren();
       done(b.launch.coin, b.launch.vault);
-    }));
+    }), el('small', { class: 'bt-note' }, `Paired with USDC on Base. All its trading fees go to its vault and pay for its node.`));
   }
 
-  // 4. The coin exists
-  async function done(coin, vault) {
+  // The coin exists
+  async function done(coin, vault, { keepLine = false } = {}) {
     art.classList.add('coined');
     s.current = 0.25;
-    await say(`$${b.surname}`, 400);
+    if (!keepLine) await say(`$${b.surname}`, 400);
     const img = b.images ?? {};
-    const link = (text, url) => el('a', { href: url, onclick: (e) => { e.preventDefault(); openUrl(url); } }, text);
     card.replaceChildren(
-      el('p', { class: 'bt-rule' }, 'Its trading fees pay for its node, a month ahead.'),
+      el('p', { class: 'bt-rule' }, 'Its trading fees pay for its node.'),
       el('dl', {},
         el('dt', {}, 'Coin'), el('dd', {}, coin ? short(coin) : '…'),
         el('dt', {}, 'Vault'), el('dd', {}, vault ? short(vault) : '…')),
@@ -193,9 +226,8 @@ export async function birthPage(fid, { demo = false } = {}) {
     card.classList.add('on');
   }
 
-  if (b.stage === 'egg') hatchStep();
-  else if (b.stage === 'fatliner') coinStep();
-  else say('No egg here.');
+  if (b.stage === 'egg') eggStep();
+  else coinStep();
 }
 
 function crack() {

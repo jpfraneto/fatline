@@ -454,6 +454,16 @@ a.castpanel-link { color: var(--accent); }
 .birth-page { padding: 0 !important; max-width: none !important; }
 .bt { --gold: #ffc65c; position: relative; min-height: 100dvh; overflow: hidden; color: #f6ecd7;
   background: radial-gradient(900px 700px at 50% 42%, #3a2512 0%, #1a110a 55%, #0d0905 100%); display: flex; flex-direction: column; align-items: center; }
+.bt-home { min-height: 0; padding: 8px 0 22px; margin: 0 0 18px; border-radius: 18px; }
+.bt-home .bt-art { margin-top: 28px; width: min(64vw, 280px); }
+.bt-home .bt-line { margin-top: 18px; font-size: clamp(18px, 4.6vw, 24px); }
+.bt-home .bt-name b { font-size: clamp(30px, 8vw, 44px); margin-top: 18px; }
+.bt-sub { position: relative; margin: 6px 20px 0; max-width: 420px; text-align: center; color: #cdb68e; font-size: 14px; }
+.bt-sub:empty { display: none; }
+.bt-act { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.bt-note { color: #cdb68e; font-size: 12px; max-width: 300px; text-align: center; }
+.bt-facts { position: relative; margin: 6px 0 0; font-size: 13px; color: #cdb68e; }
+.bt-facts a { color: inherit; }
 .bt-sky { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .bt-art { position: relative; margin-top: 12dvh; width: min(52vw, 300px); aspect-ratio: 1; }
 .bt-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }

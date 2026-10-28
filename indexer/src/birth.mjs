@@ -18,6 +18,7 @@ const nftAbi = parseAbi([
   'function coinOfFatliner(uint256) view returns (address)',
   'function vaultOfFatliner(uint256) view returns (address)',
   'function predictFatlinerVault(uint256) view returns (address)',
+  'function tokenURI(uint256) view returns (string)',
 ]);
 const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
 const ZERO = '0x0000000000000000000000000000000000000000';
@@ -100,8 +101,10 @@ export function makeBirth({ config, client, contract, hatcheries, plan, fetchImp
     const g = config.deployments?.Fatliners?.genesis;
     const titled = surname.charAt(0) + surname.slice(1).toLowerCase();
     const name = g && Number(g.fid) === fid ? `${g.name} ${titled}` : titled;
-    const vault = await read('predictFatlinerVault', fid).catch(() => null);
-    const out = { fid, stage, name, holder, surname, stone, vault, chainId: client.chain?.id ?? 8453, art: artOf(fid, stone), images: coinImages(surname) };
+    const [vault, uri] = await Promise.all([read('predictFatlinerVault', fid).catch(() => null), read('tokenURI', fid).catch(() => null)]);
+    // Where the token is seen: its metadata (the contract's own tokenURI), OpenSea, the explorer.
+    const links = { metadata: uri, opensea: `https://opensea.io/assets/base/${contract}/${fid}`, basescan: `https://basescan.org/nft/${contract}/${fid}` };
+    const out = { fid, stage, name, holder, surname, stone, vault, contract, links, chainId: client.chain?.id ?? 8453, art: artOf(fid, stone), images: coinImages(surname) };
     if (stage === 'egg') {
       const h = await hatchOf(fid);
       out.hatch = { ready: Boolean(h.ready), signatures: h.signatures ?? 0, threshold: h.threshold ?? null, attesters: h.attesters ?? [], tx: h.tx ?? null, error: h.error ?? null };

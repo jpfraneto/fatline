@@ -4,6 +4,7 @@ import { $, api, el, state } from './lib.js';
 import { card } from './feed.js';
 import { castComposer } from './post.js';
 import { lifeForce } from './lifeforce.js';
+import { birthPanel } from './birth.js';
 
 const POLL_MS = 15_000;
 // Each stone's egg, alive under the arch (the same art the token's metadata shows; on Arweave).
@@ -98,6 +99,12 @@ function hero(d) {
   const s = story(d);
   const tk = d.token ?? {};
   const name = d.me.username ? `@${d.me.username}` : d.me.fid ? `FID ${d.me.fid}` : 'Your Fatline';
+  // With a token, the token panel above says where it is and what to do; here only who, and the warm days.
+  if (d.me.fid && (tk.stage === 'egg' || tk.stage === 'fatliner')) {
+    return el('div', { class: 'ck-hero' },
+      el('p', { class: 'ck-who' }, d.me.pfp ? el('img', { src: d.me.pfp, alt: '' }) : null, name, el('small', {}, ` · FID ${d.me.fid}`)),
+      tk.stage === 'egg' ? days(d.hatch) : null);
+  }
   return el('div', { class: `ck-hero ck-${s.mood}` },
     el('p', { class: 'ck-who' }, d.me.pfp ? el('img', { src: d.me.pfp, alt: '' }) : null, name, d.me.fid ? el('small', {}, ` · FID ${d.me.fid}`) : null,
       tk.surname && tk.stage !== 'none' ? el('small', {}, ` · ${tk.surname}`) : null, tk.stone ? el('small', {}, ` · ${tk.stone}`) : null),
@@ -169,7 +176,12 @@ export async function cockpitPage() {
   const fids = [...new Set([...(state.people ?? []).map((p) => p.fid), ...(d.me.fid ? [d.me.fid] : [])])];
   const around = fire(fids);
   const bottom = el('div', {}, ...lower(d).filter(Boolean));
-  main.replaceChildren(el('section', { class: 'ck' }, el('div', { class: 'ck-hero' }, stage, readout), top,
+  // The holder's token, when there is one: the egg or the Fatliner, hatching and its coin, right here (birth.js).
+  const tk = d.token ?? {};
+  const token = d.me.fid && (tk.stage === 'egg' || tk.stage === 'fatliner')
+    ? birthPanel(d.me.fid, { warm: d.hatch ? { warmDays: d.hatch.warmDays ?? 0, needed: d.hatch.needed ?? 3 } : null }) : null;
+  if (token) stopLife?.(), stopLife = null;
+  main.replaceChildren(el('section', { class: 'ck' }, token ?? el('div', { class: 'ck-hero' }, stage, readout), top,
     el('section', { class: 'ck-circle', 'aria-labelledby': 'ck-fire-h' },
       el('h2', { class: 'ck-h', id: 'ck-fire-h' }, 'By the fire'),
       way,
