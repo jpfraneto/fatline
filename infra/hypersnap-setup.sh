@@ -29,8 +29,8 @@
 # the messages Snapchain pruned before then.
 set -euo pipefail
 
-IMAGE="farcasterorg/hypersnap:0.13.5"   # = "latest" on 2026-10-22 (sha256:6b5e3a23...)
-UPSTREAM_COMMIT="2e8733d044141ad3ba0e0592a4d5873c1dc6ce9c"   # farcasterorg/hypersnap main, 2026-10-17
+IMAGE="farcasterorg/hypersnap:0.15.0"   # = "latest" on 2026-10-24 (sha256:3ec4c8cafa768...). 0.13.5 froze on 0.15.0's protocol change (trie root mismatch)
+UPSTREAM_COMMIT="bdef7b75c1fdf1c84611abfa6e1457ea6261f8ee"   # farcasterorg/hypersnap main, 2026-10-24: "0.15.0 compat"
 VALIDATORS_COMMIT="21b4a8b209ccd93e9d7ecf2d3ce8910b9a1cf46e" # farcasterxyz/snapchain, 2026-10-15: registry v18 validator sets
 SNAPSHOT="${FATLINE_SNAPSHOT:-stream}"
 if [ "$SNAPSHOT" = replicate ] && [ "${FATLINE_FORCE:-}" != 1 ]; then
