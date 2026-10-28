@@ -14,6 +14,7 @@
 // Clanker v4 coin, paired with USDC, with 100% of the trading fees going to that vault. The keeper is the
 // server that keeps the Fatliner alive: it pays itself for compute from the vault, in USDC.
 // Only the holder of the egg or Fatliner can do this, once. Defaults: the genesis Fatliner, Aster, $FATLINE.
+import { readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { fileURLToPath } from 'node:url';
@@ -38,7 +39,9 @@ const nftAbi = parseAbi([
   'function appOf(uint256) view returns (address)',
   'function surnameOf(uint256) view returns (string)',
   'function genesisFid() view returns (uint256)',
+  'function stoneOf(uint256) view returns (uint8)',
 ]);
+const STONES = ['ivory', 'marble', 'sandstone', 'basalt', 'moss', 'gold', 'opal'];
 const ZERO = '0x0000000000000000000000000000000000000000';
 
 function args() {
@@ -61,8 +64,11 @@ export async function planFatlineLaunch(config, opts = {}) {
   if (launched === 0n && !isGenesis) throw new Error(`$${g.ticker} (Aster) launches first. Then every other Fatliner can.`);
   const titled = ticker.charAt(0) + ticker.slice(1).toLowerCase();
   const name = opts.name ?? (isGenesis ? `${g.name} Fatline` : titled);
-  // Aster's being, on Arweave (the same picture as fatline.ink/img/world/aster.jpg, which can change).
-  const image = opts.image ?? (isGenesis ? 'https://arweave.net/9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM' : '');
+  // The coin's picture: its being on Arweave (apps/site/fatliners-art.json, the same art as its token), or, until the
+  // being is made, its stone's egg. Never empty: a coin without a picture shows blank on Clanker and DexScreener.
+  const art = JSON.parse(readFileSync(new URL('../../apps/site/fatliners-art.json', import.meta.url), 'utf8'));
+  const stone = STONES[Number(await nft('stoneOf').catch(() => 0))] ?? 'ivory';
+  const image = opts.image ?? art.beings?.[fid]?.image ?? art.eggs?.[stone]?.image ?? art.egg.image;
   // The payee (the vault's "keeper"): where the node's rent goes, a month ahead. Never the node itself: the server
   // only triggers payCompute (gas) and must not hold the treasury. Default: the holder; better, the USDC top-up
   // address of the card that pays the server's bills (--payee 0x…). The holder can change it later (setKeeper).
