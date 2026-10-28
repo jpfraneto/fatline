@@ -47,6 +47,7 @@ test('never routes to private or loopback addresses; names pointing at this serv
   assert.equal(resolve('thaituma.fatline.ink', ctx), '5.161.241.24');
   assert.equal(resolve('fatline.fatline.ink', ctx), 'self');
   assert.equal(resolve('46-225-208-199.sslip.io', ctx), 'self');
+  assert.equal(resolve('www.fatline.ink', ctx), 'self'); // www is fatline.ink itself, never a surname
   assert.equal(resolve('evil.fatline.ink', ctx), null);
   assert.equal(resolve('nobody.fatline.ink', ctx), null);
   assert.equal(resolve('a.b.fatline.ink', ctx), 'self');

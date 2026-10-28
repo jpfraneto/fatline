@@ -73,7 +73,7 @@ export function isPrivate(host) {
 /** Where a name goes: { host, port } of someone's server, 'self' (this server's Caddy), or null (unknown). */
 export function resolve(name, { table, domain, self, allowPrivate = false }) {
   const m = String(name ?? '').match(new RegExp(`^([a-z0-9]{1,12})\\.${domain.replace(/\./g, '\\.')}$`));
-  if (!m) return 'self';
+  if (!m || m[1] === 'www') return 'self'; // www.fatline.ink is fatline.ink: this server
   const host = table.get(m[1]);
   if (!host) return null;
   if (self.has(host)) return 'self';
