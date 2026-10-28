@@ -23,8 +23,8 @@ const ALERT_EVERY_H = 2;  // repeat a failed-grow alert at most this often
 // Both volumes are on the one server (since 2026-10-23).
 const NODES = [
   { name: 'Snapchain (FATLINE master)', ip: '46.225.208.199', volumeId: 107233477, mount: '/mnt/HC_Volume_107233477', base: 700 },
-  { name: 'Hypersnap', ip: '46.225.208.199', volumeId: 107234161, mount: '/mnt/HC_Volume_107234161', base: 685,
-    paused: 'stopped on 2026-10-25, disk full, waiting for Hetzner to raise the volume limit (/root/hypersnap-paused.txt)' },
+  // Grown to 1,000 GB on 2026-10-28 once Hetzner raised the account's limit (owner's go); running again.
+  { name: 'Hypersnap', ip: '46.225.208.199', volumeId: 107234161, mount: '/mnt/HC_Volume_107234161', base: 1000 },
 ];
 const GROW_CAP = 200; // GB over `base`, the size each volume had when this was approved
 
