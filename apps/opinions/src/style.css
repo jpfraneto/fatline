@@ -624,15 +624,15 @@ button[type="submit"], .more { border-radius: 18px 7px 18px 7px; }
 .day-end p { margin: 4px 0; }
 .day-end p:first-of-type { font: 20px/1.4 var(--serif); color: var(--text); }
 .day-seal { display: block; font-size: 22px; color: var(--pole); margin-bottom: 8px; }
-.pl { display: flex; gap: 16px; margin: 0 0 14px; padding: 14px; border-radius: var(--veil); background: var(--surface); border: 1px solid var(--line); cursor: pointer; transition: transform .15s, border-color .15s; }
-.pl:hover { transform: translateY(-1px); border-color: rgba(237, 186, 84, .4); }
-.pl.here { border-color: rgba(237, 186, 84, .55); }
-.pl-art { width: 92px; height: 92px; flex: none; object-fit: cover; border-radius: 20px 7px 20px 7px; background: var(--raise); }
-.pl-body { min-width: 0; flex: 1; }
-.pl-host { margin: 0; font-size: 12px; letter-spacing: .08em; color: var(--pole); }
-.pl-here { color: var(--faint); }
-.pl-name { margin: 2px 0 2px; font: 600 24px/1.15 var(--serif); color: var(--text); }
-.pl-who { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
-.pl-state.on { color: var(--ok); } .pl-state.off { color: var(--faint); }
-.pl-said { margin: 0; font: 15px/1.45 var(--serif); color: var(--text); opacity: .9; overflow-wrap: anywhere; }
-.pl-said cite { display: block; margin-top: 4px; font: 12px/1 system-ui, sans-serif; font-style: normal; color: var(--faint); }
+.dp { display: flex; gap: 16px; margin: 0 0 14px; padding: 14px; border-radius: var(--veil); background: var(--surface); border: 1px solid var(--line); cursor: pointer; transition: transform .15s, border-color .15s; }
+.dp:hover { transform: translateY(-1px); border-color: rgba(237, 186, 84, .4); }
+.dp.here { border-color: rgba(237, 186, 84, .55); }
+.dp-art { width: 92px; height: 92px; flex: none; object-fit: cover; border-radius: 20px 7px 20px 7px; background: var(--raise); }
+.dp-body { min-width: 0; flex: 1; }
+.dp-host { margin: 0; font-size: 12px; letter-spacing: .08em; color: var(--pole); }
+.dp-here { color: var(--faint); }
+.dp-name { margin: 2px 0 2px; font: 600 24px/1.15 var(--serif); color: var(--text); }
+.dp-who { margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+.dp-state.on { color: var(--ok); } .dp-state.off { color: var(--faint); }
+.dp-said { margin: 0; font: 15px/1.45 var(--serif); color: var(--text); opacity: .9; overflow-wrap: anywhere; }
+.dp-said cite { display: block; margin-top: 4px; font: 12px/1 system-ui, sans-serif; font-style: normal; color: var(--faint); }

@@ -17,11 +17,9 @@ function ago(ms) {
   return `${Math.round(m / 1440)} days ago`;
 }
 
-function awake(tk) {
-  const c = tk.warmth?.lastCheck;
-  if (tk.hibernatingUntil) return { word: 'asleep', cls: 'off' };
-  if (c?.ok && Date.now() - c.at < 3 * 3600_000) return { word: 'awake', cls: 'on' };
-  return { word: 'quiet', cls: 'off' };
+// Awake: its client answers right now (GET <place>/api/health). Asked live, from this browser, every time.
+async function awake(url) {
+  try { const r = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(6000) }); return r.ok; } catch { return false; }
 }
 
 function place(tk, { art, users, lastCast, genesis }) {
@@ -30,18 +28,17 @@ function place(tk, { art, users, lastCast, genesis }) {
   const here = location.host === host;
   const u = users[tk.linkedFid ?? tk.fid];
   const image = pic(art.beings?.[tk.fid]?.image ?? art.eggs?.[tk.stone]?.image ?? art.egg?.image);
-  const a = awake(tk);
   const title = tk.fid === genesis ? `Aster ${titled(tk.surname)}` : titled(tk.surname);
   const said = lastCast
-    ? el('blockquote', { class: 'pl-said' }, el('span', {}, lastCast.text?.slice(0, 180) || '(a picture)'), el('cite', {}, ago(lastCast.timestamp)))
-    : el('p', { class: 'pl-said muted' }, 'Nothing said yet.');
-  return el('article', { class: `pl${here ? ' here' : ''}`, onclick: () => (here ? location.assign('#/') : openPlace(url)) },
-    el('img', { class: 'pl-art', src: image, alt: '', loading: 'lazy' }),
-    el('div', { class: 'pl-body' },
-      el('p', { class: 'pl-host' }, host, here ? el('span', { class: 'pl-here' }, ' · you are here') : null),
-      el('h2', { class: 'pl-name' }, title),
-      el('p', { class: 'pl-who' }, u?.username ? `@${u.username}` : `FID ${tk.fid}`, ' · ',
-        el('span', { class: `pl-state ${a.cls}` }, a.word),
+    ? el('blockquote', { class: 'dp-said' }, el('span', {}, lastCast.text?.slice(0, 180) || '(a picture)'), el('cite', {}, ago(lastCast.timestamp)))
+    : el('p', { class: 'dp-said muted' }, 'Nothing said yet.');
+  return el('article', { class: `dp${here ? ' here' : ''}`, onclick: () => (here ? location.assign('#/') : openPlace(url)) },
+    el('img', { class: 'dp-art', src: image, alt: '', loading: 'lazy' }),
+    el('div', { class: 'dp-body' },
+      el('p', { class: 'dp-host' }, host, here ? el('span', { class: 'dp-here' }, ' · you are here') : null),
+      el('h2', { class: 'dp-name' }, title),
+      el('p', { class: 'dp-who' }, u?.username ? `@${u.username}` : `FID ${tk.fid}`, ' · ',
+        el('span', { class: 'dp-state', 'data-url': here ? location.origin : url }, 'checking…'),
         tk.coin ? ` · $${tk.surname}` : '', tk.stage === 'egg' ? ' · still an egg' : ''),
       said));
 }
@@ -64,7 +61,7 @@ export async function directoryPage() {
   for (const c of feed?.items ?? []) if (c.kind === 'cast' && !last[c.fid]) last[c.fid] = c;
   main.replaceChildren(el('section', { class: 'dir' },
     el('header', { class: 'day-head' },
-      el('p', { class: 'day-date' }, `${tokens.length} ${tokens.length === 1 ? 'place' : 'places'} · ${tokens.filter((t) => awake(t).cls === 'on').length} awake`),
+      el('p', { class: 'day-date', id: 'dir-count' }, `${tokens.length} ${tokens.length === 1 ? 'place' : 'places'}`),
       el('h1', { class: 'day-title' }, 'Fatline'),
       el('p', { class: 'day-whose' }, 'Every place is a person, their own Farcaster node and their own client. Same shape everywhere, so you can walk from one into the next.')),
     ...tokens.map((tk) => place(tk, { art, users, lastCast: last[tk.linkedFid ?? tk.fid], genesis: world.genesisFid })),
@@ -73,4 +70,14 @@ export async function directoryPage() {
       el('p', {}, 'Run the next one.'),
       el('p', { class: 'muted' }, el('a', { href: 'https://fatline.ink/#launch', target: '_blank', rel: 'noopener' }, 'How to start a place')),
       state.me?.canWrite ? el('p', { class: 'muted' }, el('a', { href: '#/here' }, 'Your node and your egg')) : null)));
+  const spans = [...main.querySelectorAll('.dp-state')];
+  let up = 0;
+  await Promise.all(spans.map(async (sp) => {
+    const ok = await awake(sp.dataset.url);
+    if (ok) up++;
+    sp.textContent = ok ? 'awake' : 'quiet';
+    sp.classList.add(ok ? 'on' : 'off');
+  }));
+  const count = $('#dir-count');
+  if (count) count.textContent += ` · ${up} awake`;
 }

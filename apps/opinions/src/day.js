@@ -20,7 +20,7 @@ function cached(fid) { return store.get(`day:${fid}`, null); }
 function keep(fid, v) { try { localStorage.setItem(`day:${fid}`, JSON.stringify(v)); } catch { /* full or private: fine */ } }
 
 /** The last day of fid's home, from this node: every page until a cast is older than a day. */
-async function fetchDay(fid) {
+async function fetchDay(fid, onPage = null) {
   const since = Date.now() - DAY_MS;
   const items = [];
   const users = {};
@@ -29,6 +29,7 @@ async function fetchDay(fid) {
     const page = await api(`/api/home/${fid}`, { limit: 50, ...(before ? { before } : {}) });
     Object.assign(users, page.users);
     items.push(...page.items);
+    onPage?.({ at: Date.now(), items: items.filter((c) => c.timestamp >= since), users, partial: true });
     if (!page.next || page.items.at(-1)?.timestamp < since) break;
     before = page.next;
   }
@@ -87,6 +88,11 @@ function moments(items) {
 }
 
 function draw(box, day, whose) {
+  if (day.partial) {
+    box.replaceChildren(el('header', { class: 'day-head' }, el('h1', { class: 'day-title' }, 'Today'), el('p', { class: 'day-whose' }, whose)),
+      ...moments(day.items).map((g) => moment(g, day.users)), el('p', { class: 'ck-loading' }, 'Reading more…'));
+    return;
+  }
   const groups = moments(day.items);
   const voices = new Set(day.items.map((c) => c.fid)).size;
   const date = new Date().toLocaleDateString(state.lang, { weekday: 'long', day: 'numeric', month: 'long' });
@@ -109,7 +115,7 @@ export function dayFeed(fid, whose) {
   if (old?.items) draw(box, old, whose);
   else box.append(el('p', { class: 'ck-loading' }, 'Reading the day from this node…'));
   if (!old || Date.now() - old.at > FRESH_MS) {
-    fetchDay(fid).then((d) => { keep(fid, d); if (box.isConnected || !old) draw(box, d, whose); })
+    fetchDay(fid, old ? null : (d) => { if (d.items.length) draw(box, d, whose); }).then((d) => { keep(fid, d); if (box.isConnected || !old) draw(box, d, whose); })
       .catch((err) => { if (!old) box.replaceChildren(el('p', { class: 'muted' }, err.message)); });
   }
   return box;
