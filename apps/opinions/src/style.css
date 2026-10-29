@@ -865,3 +865,7 @@ html.snap-soft body { animation: snap-soft .45s ease-out; }
 .world-links a { color: var(--pole); text-decoration: none; margin: 0 8px; }
 @media (max-width: 480px) { .rg-doors { grid-template-columns: 1fr; } .rg-node-who { display: none; } }
 .rg-tried { margin: 10px 0; } .rg-tried summary { cursor: pointer; color: var(--carmine); } .rg-tried p { margin: 4px 0; color: var(--muted); }
+.rg-gives { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.rg-give { padding: 8px 14px; border-radius: 18px 7px 18px 7px; background: color-mix(in srgb, var(--pole) 18%, transparent); color: var(--text); text-decoration: none; font: 600 15px var(--serif); }
+.rg-give:hover { background: color-mix(in srgb, var(--pole) 30%, transparent); }
+.rg-money { margin-top: 8px; } .rg-money summary { cursor: pointer; color: var(--muted); font-size: 14px; }

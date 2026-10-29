@@ -140,6 +140,19 @@ function facts(rows) {
   return el('dl', { class: 'pf-facts' }, ...rows.filter(Boolean).map(([k, v]) => el('div', { class: 'pf-fact' }, el('dt', {}, k), el('dd', {}, v))));
 }
 
+const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
+const when = (ms) => new Date(ms).toLocaleString(state.lang, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+/** Send USDC on Base from your own wallet: a link a wallet opens (EIP-681), or the address to copy. Nothing goes through Fatline. */
+function give(to, whom, note) {
+  const link = (n) => el('a', { class: 'rg-give', href: `ethereum:${USDC_BASE}@8453/transfer?address=${to}&uint256=${n * 1e6}` }, `${n} USDC`);
+  return el('div', { class: 'rg-proof' },
+    el('p', { class: 'rg-k' }, `Send USDC to ${whom}`),
+    el('p', { class: 'rg-gives' }, link(5), link(20), link(50)),
+    el('p', { class: 'small' }, 'On Base, to ', el('code', {}, `${to.slice(0, 6)}…${to.slice(-4)}`), ' ', copyButton(to, 'Copy address')),
+    el('p', { class: 'small muted' }, `${note} The links open your wallet; you approve there.`));
+}
+
 const PROOF = { egg: 'its keeper\'s egg (checked every hour by the hatcheries)', 'well-known': 'a file at its host (/.well-known/fatline)', dns: 'a DNS record (_fatline)' };
 
 export async function nodeProfilePage(id) {
@@ -178,13 +191,16 @@ export async function nodeProfilePage(id) {
     n.fatliner ? el('p', {}, el('a', { href: '#/fatline' }, n.fatliner.surname ? n.fatliner.surname.charAt(0) + n.fatliner.surname.slice(1).toLowerCase() : `#${n.fatliner.fid}`), ` · ${n.fatliner.stage === 'fatliner' ? 'hatched' : 'an egg, being kept warm'}`) : null,
     f ? el('h2', { class: 'rg-h' }, 'Keeping it alive') : null,
     f ? facts([
-      f.earnedUsdc != null ? ['Its coin earned', usd(f.earnedUsdc)] : null,
+      f.rentMonthUsdc != null ? ['Rent', `${usd(f.rentMonthUsdc)} a month, set in its vault onchain`] : null,
       f.vaultUsdc != null ? ['In its vault', usd(f.vaultUsdc)] : null,
+      f.paidThrough ? ['Paid through', when(f.paidThrough)] : null,
+      f.aliveUntil ? ['Lasts until', `${when(f.aliveUntil)}${f.runwayDays != null ? ` (${f.runwayDays === 0 ? 'less than a day' : `${f.runwayDays} ${f.runwayDays === 1 ? 'day' : 'days'}`}) if nobody adds` : ''}`] : null,
+      f.earnedUsdc != null ? ['Its coin earned', usd(f.earnedUsdc)] : null,
       f.costMonthUsd != null ? ['Costs', `$${f.costMonthUsd} a month (its operator says)`] : null,
-      f.runwayDays != null ? ['Runway', `about ${f.runwayDays} days at that cost`] : null,
-      f.supportUsdc ? ['Support it', el('span', {}, 'USDC on Base to ', el('code', {}, `${f.supportUsdc.slice(0, 6)}…${f.supportUsdc.slice(-4)}`), ' ', copyButton(f.supportUsdc))] : null,
       f.coin ? ['Coin', el('span', {}, el('code', {}, `${f.coin.slice(0, 6)}…${f.coin.slice(-4)}`), ' ', copyButton(f.coin))] : null,
     ]) : null,
+    f?.vault ? give(f.vault, 'its vault', 'It goes straight into the vault, which pays the server\'s rent. Its holder can also withdraw it.') : null,
+    f?.supportUsdc ? give(f.supportUsdc, 'its operator', 'An address its operator gave for support. Fatline does not hold it or check how it is spent.') : null,
     el('details', { class: 'rg-dev' },
       el('summary', {}, 'Use it'),
       el('p', {}, 'Its HTTP API, straight from your app. Nothing goes through Fatline:'),
@@ -202,6 +218,8 @@ export async function joinPage() {
   const input = el('input', { type: 'url', inputmode: 'url', placeholder: 'http://203.0.113.7:3381', autocomplete: 'off', spellcheck: 'false', value: new URLSearchParams(location.hash.split('?')[1] ?? '').get('node') ?? '' });
   const clientIn = el('input', { type: 'url', inputmode: 'url', placeholder: 'https://your-client.example (optional)', autocomplete: 'off', spellcheck: 'false' });
   const nameIn = el('input', { type: 'text', maxlength: 40, placeholder: 'A name for it (optional)' });
+  const usdcIn = el('input', { type: 'text', maxlength: 42, placeholder: '0x… an address on Base for support (optional)', autocomplete: 'off', spellcheck: 'false' });
+  const costIn = el('input', { type: 'number', min: 0, step: 1, inputmode: 'decimal', placeholder: 'What the server costs a month, in USD (optional)' });
   const out1 = el('div', { class: 'rg-out' });
   const step2 = el('div', { class: 'rg-step-body' });
   const step3 = el('div', { class: 'rg-step-body' });
@@ -264,6 +282,8 @@ export async function joinPage() {
     const lines = [`fatline node`, `node: ${last.node.url}`];
     if (last.client?.url) lines.push(`client: ${last.client.url}`);
     if (nameIn.value.trim()) lines.push(`name: ${nameIn.value.trim().replace(/[\r\n]/g, ' ')}`);
+    if (/^0x[0-9a-fA-F]{40}$/.test(usdcIn.value.trim())) lines.push(`usdc: ${usdcIn.value.trim()}`);
+    if (costIn.value !== '' && Number(costIn.value) >= 0) lines.push(`cost: ${Number(costIn.value)} USD a month`);
     const text = lines.join('\n');
     const status = el('p', { class: 'status' });
     const go = el('button', { type: 'button', class: 'rg-primary', disabled: !last.node.proof?.ok }, 'Publish to Farcaster');
@@ -286,7 +306,7 @@ export async function joinPage() {
   }
 
   for (const i of [input, clientIn]) i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); check(); } });
-  nameIn.addEventListener('input', () => drawPublish());
+  for (const i of [nameIn, usdcIn, costIn]) i.addEventListener('input', () => drawPublish());
   window.addEventListener('fatline:me', () => { if (location.hash.startsWith('#/join')) joinPage(); }, { once: true });
 
   main.replaceChildren(el('section', { class: 'rg' },
@@ -299,7 +319,9 @@ export async function joinPage() {
       el('li', {}, el('h2', { class: 'rg-h' }, 'Prove it is yours'), step2),
       el('li', {}, el('h2', { class: 'rg-h' }, 'Your client, if you have one'),
         el('p', { class: 'small muted' }, 'A Farcaster client or app that reads this node. Same proof, at its own address.'),
-        clientIn, nameIn),
+        clientIn, nameIn,
+        el('details', { class: 'rg-money' }, el('summary', {}, 'Money, if you want help keeping it up'),
+          el('p', { class: 'small muted' }, 'Shown on its page, in your words. Nothing to launch: no coin, no token.'), usdcIn, costIn)),
       el('li', {}, el('h2', { class: 'rg-h' }, 'Publish'), step3)),
     el('p', { class: 'small muted rg-after' }, 'Want a Fatliner and a coin that pays its rent? That needs Fatline on your server: ', el('code', {}, 'curl -fsSL https://fatline.ink/join.sh | bash -s -- --check'), ' looks first and changes nothing.')));
   clientIn.addEventListener('change', () => { if (last) check(); });

@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { tmpdir } from 'node:os';
 import { openDb } from '../src/db.mjs';
-import { endpointId, healthNow, measure, normalizeEndpoint, parseRecord, proofFids, proveHost, readReference, recordText, Registry, RECORDS_URL, STALE_MS } from '../src/registry.mjs';
+import { endpointId, healthNow, measure, vaultMoney, normalizeEndpoint, parseRecord, proofFids, proveHost, readReference, recordText, Registry, RECORDS_URL, STALE_MS } from '../src/registry.mjs';
 import { placesFrom } from '../src/server.mjs';
 
 const FC_EPOCH_MS = 1_609_459_200_000;
@@ -250,4 +250,35 @@ test('a flood of records can\'t stall a round: an account\'s latest 4 count, and
   assert.equal(asked, 60);
   const flood = r.list(new URLSearchParams('include=unproven')).unproven.filter((u) => u.fid === 900);
   assert.deepEqual(flood.map((u) => u.url), ['https://n26.example.com:3381', 'https://n27.example.com:3381', 'https://n28.example.com:3381', 'https://n29.example.com:3381']);
+});
+
+test('money: a vault\'s rent and runway come from the vault contract; a keeper attaches it to another node; a stranger can\'t', async () => {
+  const VAULT = '0x8e1ab53caea122c3cd767122e1a52b2833983f84';
+  const day = 86_400_000;
+  assert.deepEqual(vaultMoney({ usdc: 12.5, ratePerSecond: 50, paidThrough: (NOW + day) / 1000, aliveUntil: (NOW + 3.5 * day) / 1000 }, NOW),
+    { vaultUsdc: 12.5, rentMonthUsdc: 129.6, paidThrough: NOW + day, aliveUntil: NOW + 3.5 * day, runwayDays: 3 });
+  const r = registry({
+    places: [{ fid: 16098, tokenFid: 16098, surname: 'FATLINE', stage: 'fatliner', node: 'http://46.225.208.199:3381', client: 'https://fatline.fatline.ink', coin: '0xc0', vault: VAULT, earned: 7.43 }],
+    casts: [
+      { fid: 500, text: `node: https://hub.example.com:3381\nvault: ${VAULT}\nusdc: 0x1111111111111111111111111111111111111111\ncost: 40` },
+      { fid: 16098, text: `node: http://46.225.208.199:4381\nvault: ${VAULT}` },
+    ],
+    hosts: { 'http://46.225.208.199:3381': {}, 'http://46.225.208.199:4381': { hypersnap: true }, 'https://hub.example.com:3381': {}, 'https://hub.example.com': { wellKnown: 'fid: 500' } },
+    vaults: async (addrs) => { assert.deepEqual(addrs, [VAULT]); return { [VAULT]: { usdc: 12.5, ratePerSecond: 50, paidThrough: (NOW + day) / 1000, aliveUntil: (NOW + 3.5 * day) / 1000 } }; },
+  });
+  await r.round();
+  const aster = r.get('46-225-208-199-3381').funding;
+  assert.deepEqual([aster.vaultUsdc, aster.rentMonthUsdc, aster.runwayDays, aster.earnedUsdc], [12.5, 129.6, 3, 7.43]);
+  assert.equal(r.get('46-225-208-199-4381').funding.vault, VAULT); // its keeper attached it
+  const hub = r.get('hub-example-com-3381').funding;
+  assert.equal(hub.vault, undefined); // not this account's vault
+  assert.deepEqual([hub.supportUsdc, hub.costMonthUsd], ['0x1111111111111111111111111111111111111111', 40]);
+  assert.ok(r.list(new URLSearchParams('include=unproven')).unproven.some((u) => u.kind === 'vault' && u.fid === 500));
+});
+
+test('the join check: 8 looks a minute from one address', async () => {
+  const r = registry({ hosts: { 'http://46.225.208.199:3381': {} } });
+  for (let i = 0; i < 8; i++) await r.check({ url: 'http://46.225.208.199:3381', ip: '1.2.3.4' });
+  await assert.rejects(r.check({ url: 'http://46.225.208.199:3381', ip: '1.2.3.4' }), /a lot of checks from here/);
+  await r.check({ url: 'http://46.225.208.199:3381', ip: '5.6.7.8' });
 });

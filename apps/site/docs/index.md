@@ -132,7 +132,7 @@ client: https://example.com
 name: Example
 ```
 
-`client:` (a client that reads this node, up to 4) and `name:` are optional; so are `usdc:` (an address on Base where people can send support) and `cost:` (what the server costs a month, in USD, in the operator's own words). A record with only `client:` lines lists a client; `reads: <node>` says which node it reads. Every node holds these casts, so anyone can read the list without Fatline: `GET <any node>/v1/castsByParent?url=https://fatline.ink/nodes`. Delete the cast and the node leaves. [Bring your node](https://fatline.ink/join) checks the address, shows the proof to put in place, and publishes the cast from your account.
+`client:` (a client that reads this node, up to 4) and `name:` are optional; so are `usdc:` (an address on Base where people can send support), `cost:` (what the server costs a month, in USD, in the operator's own words) and `vault:` (the vault of a Fatliner the same account keeps, to show its money on this node too; any other vault is refused). A record with only `client:` lines lists a client; `reads: <node>` says which node it reads. Every node holds these casts, so anyone can read the list without Fatline: `GET <any node>/v1/castsByParent?url=https://fatline.ink/nodes`. Delete the cast and the node leaves. [Bring your node](https://fatline.ink/join) checks the address, shows the proof to put in place, and publishes the cast from your account.
 
 **Proof.** A record is listed only when the address agrees, so nobody can list someone else's node:
 
@@ -157,6 +157,13 @@ A proof found counts for 30 days after it was last seen, and is looked for again
 
 The network is measured too: Hypersnap answers its `/v2/farcaster/user/bulk` API, Snapchain does not. Snapchain and Hypersnap are never mixed.
 
+**Keeping a node alive, without a token.** A node's page says what is known about its money, and where it comes from:
+
+- **A Fatliner's vault**, read from Base every hour: the rent the vault pays (its `ratePerSecond`, set onchain), the USDC in it (kept plus fees waiting), until when the rent is paid, and until when it lasts if nobody adds (`aliveUntil`). Anyone can top it up: a plain USDC transfer to the vault counts, because the vault's balance is its USDC. The page has buttons that open your own wallet. The vault's holder can withdraw everything; that is the deal, and it is said on the page.
+- **A support address** (`usdc:`) and a **monthly cost** (`cost:`) for any node, in the operator's words. Fatline doesn't hold the address or check how it's spent.
+
+Nothing here launches a coin, and nothing promises that trading fees will pay a server. A coin still needs a Fatliner ([keep an egg warm](#keep-an-egg-warm)).
+
 **For developers.** Read-only JSON, any origin:
 
 ```sh
@@ -165,7 +172,26 @@ curl 'https://fatline.ink/api/registry?network=snapchain&healthy=true'  # only S
 curl 'https://fatline.ink/api/registry/<id>'                            # one node, with its last 48 measurements
 ```
 
-Each node has `id`, `url`, `network`, `operator` (`fid`, `username`, `pfp`), `proof`, `clients`, `fatliner`, `funding` and `health` (`state`, `checkedAt`, `lastSyncedAt`, `behindBlocks`, `latencyMs`, `version`, `dataCheck`, `measuredBy`). Then call the node directly: Fatline never sits between your app and the node, and has no gateway. Every Fatline server runs the same registry at `/api/registry` and measures from where it stands, so you can ask more than one. These are hourly measurements from one place, not an uptime promise.
+Picking a node in your own code, with a fallback, and nothing in between (tested against fatline.ink on 2026-10-29):
+
+```js
+// Read from a node the registry measured in sync; if it fails, the next. Always say which node answered.
+async function read(path, { network = 'snapchain' } = {}) {
+  const { nodes } = await (await fetch(`https://fatline.ink/api/registry?network=${network}&healthy=true`)).json();
+  for (const n of nodes) {
+    try {
+      const res = await fetch(`${n.url}${path}`, { signal: AbortSignal.timeout(5000) });
+      if (res.ok) return { node: n.url, data: await res.json() };
+    } catch { /* the next one */ }
+  }
+  throw new Error(`no ${network} node in sync answered`);
+}
+const { node, data } = await read('/v1/castsByFid?fid=3&pageSize=1&reverse=true');
+```
+
+From a server or a script, any listed node works. From a web page served over https, the browser only lets you call `https://` nodes.
+
+Each node has `id`, `url`, `network`, `operator` (`fid`, `username`, `pfp`), `proof`, `clients`, `fatliner`, `funding` (`vault`, `vaultUsdc`, `rentMonthUsdc`, `paidThrough`, `aliveUntil`, `runwayDays`, `earnedUsdc`, `coin`, `supportUsdc`, `costMonthUsd`) and `health` (`state`, `checkedAt`, `lastSyncedAt`, `behindBlocks`, `latencyMs`, `version`, `dataCheck`, `measuredBy`). Then call the node directly: Fatline never sits between your app and the node, and has no gateway. Every Fatline server runs the same registry at `/api/registry` and measures from where it stands, so you can ask more than one. These are hourly measurements from one place, not an uptime promise.
 
 ## Hatch a Fatliner
 
@@ -210,6 +236,6 @@ In Dan Simmons' *Hyperion*, humanity's worlds are joined by **farcasters**, port
 ## More
 
 - [The manifesto](../manifesto.html)
-- [The nodes, as they are](../explore.html)
+- [Every node, measured](../nodes)
 - [The source](https://github.com/jpfraneto/fatline): its README lists what is tested and what is not
 - [For agents](../skill.md) · [llms.txt](../llms.txt)

@@ -78,13 +78,14 @@ export function endpointId(url) {
 const hostOf = (url) => new URL(url).hostname.replace(/^\[|\]$/g, '').toLowerCase();
 
 /**
- * One cast's text, read as a record. Lines of `key: value`; the keys are node, client, reads, name, usdc, cost.
+ * One cast's text, read as a record. Lines of `key: value`; the keys are node, client, reads, name, usdc, cost, vault
+ * (the vault of a Fatliner the same account keeps: its rent money then shows on these nodes too).
  * Returns null when the cast names no node and no client (a comment under fatline.ink/nodes, not a record).
  */
 export function parseRecord(text) {
-  const out = { nodes: [], clients: [], reads: [], name: null, usdc: null, costMonthUsd: null };
+  const out = { nodes: [], clients: [], reads: [], name: null, usdc: null, costMonthUsd: null, vault: null };
   for (const raw of String(text ?? '').split(/\r?\n/).slice(0, 40)) {
-    const m = raw.match(/^\s*(node|client|reads|name|usdc|cost)\s*:\s*(.+?)\s*$/i);
+    const m = raw.match(/^\s*(node|client|reads|name|usdc|cost|vault)\s*:\s*(.+?)\s*$/i);
     if (!m) continue;
     const key = m[1].toLowerCase(), value = m[2];
     if (key === 'node' || key === 'client' || key === 'reads') {
@@ -95,6 +96,8 @@ export function parseRecord(text) {
       out.name = value.replace(/[\u0000-\u001f<>]/g, '').slice(0, 40) || null;
     } else if (key === 'usdc' && !out.usdc && /^0x[0-9a-fA-F]{40}$/.test(value)) {
       out.usdc = value;
+    } else if (key === 'vault' && !out.vault && /^0x[0-9a-fA-F]{40}$/.test(value)) {
+      out.vault = value.toLowerCase();
     } else if (key === 'cost' && out.costMonthUsd == null) {
       const n = Number(value.replace(/[$,]|usd|\/\s*month|a month|per month/gi, '').trim());
       if (Number.isFinite(n) && n >= 0 && n < 100_000) out.costMonthUsd = n;
@@ -263,6 +266,21 @@ export function healthNow(m, { now = Date.now(), lastSyncedAt = null } = {}) {
   };
 }
 
+/**
+ * A vault's money in plain numbers. f: { usdc (kept + fees waiting, in USDC), ratePerSecond (USDC units), paidThrough,
+ * aliveUntil (unix seconds) }, as the vault contract returns them. The rent is the contract's, not anyone's estimate.
+ */
+export function vaultMoney(f, now = Date.now()) {
+  const rate = Number(f.ratePerSecond ?? 0);
+  const out = { vaultUsdc: f.usdc ?? null, rentMonthUsdc: rate > 0 ? Math.round((rate * 30 * 86400) / 1e4) / 100 : null };
+  if (f.paidThrough) out.paidThrough = Number(f.paidThrough) * 1000;
+  if (f.aliveUntil && rate > 0) {
+    out.aliveUntil = Number(f.aliveUntil) * 1000;
+    out.runwayDays = Math.max(0, Math.floor((out.aliveUntil - now) / 86_400_000));
+  }
+  return out;
+}
+
 // ------------------------------------------------------------------ the registry
 
 /** Runs `fn` over `items`, `n` at a time. */
@@ -278,12 +296,13 @@ export class Registry {
    * db: this server's SQLite. networks: { farcaster: Network, hypersnap: Network } (hub.mjs), read for records.
    * references: { snapchain: [urls], hypersnap: [urls] }: the nodes this server trusts to judge sync.
    * places: async () => [{ fid, surname, stage, node, network, client, coin, vault, earned, being }] (Fatline's eggs and Fatliners).
-   * users: async (fid) => { username, pfp } | null. coins: async (fids) => [{ fid, usdc }] (vault balances), optional.
+   * users: async (fid) => { username, pfp } | null.
+   * vaults: async ([address]) => { address: { usdc, ratePerSecond, paidThrough, aliveUntil } }: each Fatliner vault, read from Base.
    * extraNodes: [{ url, label }] this server runs; listed only when they share a host with its owner's own place (ownerFid).
    */
-  constructor({ db, networks = {}, references = {}, places = async () => [], users = async () => null, coins = null, ownerFid = null, extraNodes = [],
+  constructor({ db, networks = {}, references = {}, places = async () => [], users = async () => null, vaults = null, ownerFid = null, extraNodes = [],
     measuredBy = 'this server', fetchImpl = outsideFetch, refFetch = fetch, prove = proveHost, now = Date.now, random = Math.random, log = () => {} }) {
-    Object.assign(this, { db, networks, references, places, users, coins, ownerFid, extraNodes, measuredBy, fetchImpl, refFetch, prove, now, random, log });
+    Object.assign(this, { db, networks, references, places, users, vaults, ownerFid, extraNodes, measuredBy, fetchImpl, refFetch, prove, now, random, log });
     db.exec(`
       CREATE TABLE IF NOT EXISTS registry_checks (id TEXT NOT NULL, at INTEGER NOT NULL, state TEXT NOT NULL, json TEXT NOT NULL);
       CREATE INDEX IF NOT EXISTS registry_checks_time ON registry_checks (id, at DESC);
@@ -414,7 +433,11 @@ export class Registry {
         if (have?.operator && have.operator !== r.fid) { unproven.push({ url, kind: 'node', fid: r.fid, record, why: 'listed under another account' }); continue; }
         const proof = have?.operator === r.fid ? have.proof : await covered(url, r.fid);
         if (!proof) { unproven.push({ url, kind: 'node', fid: r.fid, record, why: 'no proof at its host yet' }); continue; }
-        const funding = rec.usdc || rec.costMonthUsd != null ? { ...(have?.funding ?? {}), supportUsdc: rec.usdc, costMonthUsd: rec.costMonthUsd } : have?.funding ?? null;
+        // A vault attached by its keeper: only one of a Fatliner this same account keeps.
+        const kept = rec.vault ? places.find((p) => String(p.vault ?? '').toLowerCase() === rec.vault && Number(p.fid) === r.fid) : null;
+        const fromVault = kept ? { coin: kept.coin ?? null, vault: kept.vault, earnedUsdc: kept.earned ?? null } : {};
+        const funding = rec.usdc || rec.costMonthUsd != null || kept ? { ...(have?.funding ?? {}), ...fromVault, supportUsdc: rec.usdc, costMonthUsd: rec.costMonthUsd } : have?.funding ?? null;
+        if (rec.vault && !kept) unproven.push({ url, kind: 'vault', fid: r.fid, record, why: `vault ${rec.vault} is not a Fatliner vault this account keeps` });
         const e = add(url, { sources: ['record'], operator: r.fid, proof, record });
         if (rec.name) e.name = rec.name;
         e.funding = funding;
@@ -449,12 +472,14 @@ export class Registry {
     // Names and faces, vault balances.
     const fids = [...new Set([...list.map((e) => e.operator), ...[...clients.values()].map((c) => c.operator)].filter(Boolean))];
     const people = Object.fromEntries(await Promise.all(fids.map(async (f) => [f, await this.users(f).catch(() => null)])));
-    const vaults = this.coins ? Object.fromEntries(((await this.coins(list.filter((e) => e.funding?.vault).map((e) => e.fatliner?.fid).filter(Boolean)).catch(() => [])) ?? []).map((c) => [c.fid, c.usdc])) : {};
+    // The money, read from Base: each vault's USDC, the rent its contract pays, and until when it lasts.
+    const addrs = [...new Set(list.map((e) => e.funding?.vault).filter(Boolean).map((a) => a.toLowerCase()))];
+    const facts = this.vaults && addrs.length ? await this.vaults(addrs).catch((err) => { this.log(`[registry] vaults: ${err.message}`); return {}; }) : {};
     const who = (fid) => (fid ? { fid, username: people[fid]?.username ?? null, pfp: people[fid]?.pfp ?? null } : null);
     for (const e of list) {
       e.operator = who(e.operator);
-      if (e.funding && e.fatliner?.fid in vaults) e.funding.vaultUsdc = vaults[e.fatliner.fid];
-      if (e.funding?.vaultUsdc != null && e.funding.costMonthUsd > 0) e.funding.runwayDays = Math.floor(e.funding.vaultUsdc / (e.funding.costMonthUsd / 30));
+      const f = e.funding?.vault ? facts[e.funding.vault.toLowerCase()] : null;
+      if (f) Object.assign(e.funding, vaultMoney(f, now));
     }
     for (const c of clients.values()) c.operator = who(c.operator);
     this.state = {
@@ -538,7 +563,7 @@ export class Registry {
 
   /**
    * GET /api/registry/check?url=&fid=&client=: the join page's look at an address, before anything is published.
-   * At most one look per address a minute (the same answer again), and 30 a minute in all.
+   * At most one look per address a minute (the same answer again), 8 a minute from one address, 30 a minute in all.
    */
   async check({ url, fid, client, ip = '' } = {}) {
     const node = url ? normalizeEndpoint(url) : null;
@@ -550,9 +575,10 @@ export class Registry {
     if (who !== null && !(Number.isInteger(who) && who > 0)) throw fail('fid: a Farcaster ID.');
     // The node is measured at most once a minute per address (the same answer again); the proofs are looked for
     // every time, so "I put it there: check" sees the file at once. 30 looks a minute in all.
-    this.asked = this.asked.filter((t) => this.now() - t < 60_000);
+    this.asked = this.asked.filter((t) => this.now() - t.at < 60_000);
     if (this.asked.length >= 30) throw fail('Many checks right now. Try again in a minute.', 429);
-    this.asked.push(this.now());
+    if (ip && this.asked.filter((t) => t.ip === ip).length >= 8) throw fail('That is a lot of checks from here. Try again in a minute.', 429);
+    this.asked.push({ at: this.now(), ip });
     let measured = null;
     if (node) {
       const hit = this.checks.get(node);

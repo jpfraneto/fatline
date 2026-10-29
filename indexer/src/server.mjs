@@ -31,7 +31,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { ROOT } from './config.mjs';
 import { base, baseSepolia, foundry } from 'viem/chains';
-import { createPublicClient, http } from 'viem';
+import { createPublicClient, http, parseAbi } from 'viem';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml',
@@ -145,7 +145,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     db: registryDb, networks, references: referencesFrom(config), ownerFid,
     places: placesFrom(attesterList(hc)), extraNodes: (config.masterNodes ?? []).filter((n) => n.public !== false),
     users: async (fid) => { const u = await api.resolve(homeNet?.name ?? config.defaultNetwork, String(fid)); return { username: u?.username ?? null, pfp: u?.pfp ?? null }; },
-    coins: async (fids) => (fids.length ? (await coinsLive(fids.join(','))).coins ?? [] : []),
+    vaults: (addresses) => vaultFacts(chainClient, addresses),
     measuredBy: process.env.FATLINE_HOST ?? 'this server', log: console.log,
   }) : null;
   const needRegistry = () => { if (!registry) throw Object.assign(new Error('The registry is not running on this server.'), { status: 503 }); return registry; };
@@ -299,6 +299,21 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
   });
   httpServer.registry = registry;
   return httpServer;
+}
+
+const VAULT_ABI = parseAbi(['function balance() view returns (uint256)', 'function pendingFees() view returns (uint256)',
+  'function ratePerSecond() view returns (uint256)', 'function paidThrough() view returns (uint256)', 'function aliveUntil() view returns (uint256)']);
+
+/** Each Fatliner vault's money, read from Base (the registry's funding): USDC kept and waiting, its rent, until when it lasts. */
+export async function vaultFacts(client, addresses) {
+  const read = (address, functionName) => client.readContract({ address, abi: VAULT_ABI, functionName }).catch(() => null);
+  const out = {};
+  await Promise.all(addresses.slice(0, 100).map(async (a) => {
+    const [kept, pending, rate, paid, alive] = await Promise.all(['balance', 'pendingFees', 'ratePerSecond', 'paidThrough', 'aliveUntil'].map((f) => read(a, f)));
+    if (kept == null) return;
+    out[a.toLowerCase()] = { usdc: Number(kept + (pending ?? 0n)) / 1e6, ratePerSecond: rate == null ? null : Number(rate), paidThrough: paid == null ? null : Number(paid), aliveUntil: alive == null ? null : Number(alive) };
+  }));
+  return out;
 }
 
 /**
