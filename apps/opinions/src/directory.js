@@ -2,7 +2,7 @@
 // still being kept warm, and every other of the 777 places, an egg not laid yet. Each one glows by what its coin has
 // earned in trading fees, ever (the vault's harvests plus what waits in the fee locker, from fatline.ink/world).
 // Tap one to walk into its place. How to bring one to life (the manual) waits at the bottom.
-import { $, el, state } from './lib.js';
+import { $, api, el, state } from './lib.js';
 import { openPlace, inMiniApp, openUrl } from './miniapp.js';
 // The same file fatline.ink serves as /manual.js, bundled in here: a node never asks fatline.ink to draw it.
 import { mountManual } from '../../site/manual.js';
@@ -32,25 +32,56 @@ function walkIn(tk) {
   return () => openPlace(`https://${host}`);
 }
 
-/** A Fatliner: its own art, or the base being every Fatliner shares until its own is made. */
-function being(tk, { art, genesis }) {
+/** Who keeps it: their face and @name, read from this node; tap to look them up (the lupa). */
+function keeper(tk, users) {
+  const fid = tk.linkedFid || tk.fid;
+  const u = users[fid];
+  return el('a', { class: 'wk', href: `#/u/${fid}` },
+    u?.pfp ? el('img', { src: u.pfp, alt: '', loading: 'lazy' }) : el('span', { class: 'wk-dot' }),
+    u?.username ? `@${u.username}` : `FID ${fid}`);
+}
+
+/** Its coin's contract address, copied with one tap. */
+function contract(tk) {
+  if (!tk.coin) return null;
+  const label = `$${tk.surname} · ${tk.coin.slice(0, 6)}…${tk.coin.slice(-4)}`;
+  const b = el('button', { type: 'button', class: 'wca', title: tk.coin, 'aria-label': `Copy the contract address of $${tk.surname}` }, label, el('span', { class: 'wca-i', 'aria-hidden': 'true' }, '⧉'));
+  b.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(tk.coin); } catch {
+      const t = Object.assign(document.createElement('textarea'), { value: tk.coin }); document.body.append(t); t.select(); document.execCommand('copy'); t.remove();
+    }
+    b.firstChild.textContent = 'Copied';
+    setTimeout(() => { b.firstChild.textContent = label; }, 1500);
+  });
+  return b;
+}
+
+/** A Fatliner: its own art once it is made; until then its keeper's own face. */
+function being(tk, { art, genesis, users }) {
   const own = art.beings?.[tk.fid]?.image;
-  const base = art.beings?.[genesis]?.image;
-  const a = aliveness(tk.earned);
-  return look(el('button', { type: 'button', class: `wb${own ? '' : ` base stone-${tk.stone}`}`, onclick: walkIn(tk), 'aria-label': titled(tk.surname) },
-    el('span', { class: 'wb-aura', 'aria-hidden': 'true' }),
-    el('img', { class: 'wb-art', src: pic(own ?? base), alt: '', loading: 'lazy' }),
-    el('span', { class: 'wb-name' }, tk.fid === genesis ? `Aster ${titled(tk.surname)}` : titled(tk.surname)),
-    tk.earned > 0 ? el('span', { class: 'wb-earned' }, `${usd(tk.earned)} earned`) : null), a);
+  const face = users[tk.linkedFid || tk.fid]?.pfp;
+  const name = tk.fid === genesis ? `Aster ${titled(tk.surname)}` : titled(tk.surname);
+  return look(el('article', { class: 'wb' },
+    el('button', { type: 'button', class: `wb-fig${own ? '' : ' face'}`, onclick: walkIn(tk), 'aria-label': `Walk into ${name}` },
+      el('span', { class: 'wb-aura', 'aria-hidden': 'true' }),
+      el('img', { class: 'wb-art', src: own ? pic(own) : face ?? pic(art.eggs?.[tk.stone]?.image), alt: '', loading: 'lazy' })),
+    el('span', { class: 'wb-name' }, name),
+    tk.earned > 0 ? el('span', { class: 'wb-earned' }, `${usd(tk.earned)} earned`) : null,
+    keeper(tk, users),
+    contract(tk)), aliveness(tk.earned));
 }
 
 /** An egg being kept warm: its stone. */
-function egg(tk, { art }) {
-  return look(el('button', { type: 'button', class: 'we', onclick: walkIn(tk), 'aria-label': `${titled(tk.surname)}, an egg` },
-    el('span', { class: 'wb-aura', 'aria-hidden': 'true' }),
-    el('img', { class: 'we-art', src: pic(art.eggs?.[tk.stone]?.image ?? art.egg?.image), alt: '', loading: 'lazy' }),
-    el('span', { class: 'wb-name' }, titled(tk.surname)),
-    tk.warmth && !tk.warmth.hatched ? el('span', { class: 'wb-earned' }, `${tk.warmth.warmDays ?? 0} of ${tk.warmth.needed ?? 3} warm days`) : null), aliveness(tk.earned));
+function egg(tk, { art, users }) {
+  const name = titled(tk.surname);
+  return look(el('article', { class: 'we' },
+    el('button', { type: 'button', class: 'wb-fig', onclick: walkIn(tk), 'aria-label': `Walk into ${name}, an egg` },
+      el('span', { class: 'wb-aura', 'aria-hidden': 'true' }),
+      el('img', { class: 'we-art', src: pic(art.eggs?.[tk.stone]?.image ?? art.egg?.image), alt: '', loading: 'lazy' })),
+    el('span', { class: 'wb-name' }, name),
+    tk.warmth && !tk.warmth.hatched ? el('span', { class: 'wb-earned' }, `${tk.warmth.warmDays ?? 0} of ${tk.warmth.needed ?? 3} warm days`) : null,
+    keeper(tk, users),
+    contract(tk)), aliveness(tk.earned));
 }
 
 /** The places nobody has laid yet: a field of eggs, each breathing at its own pace. */
@@ -76,7 +107,7 @@ export async function directoryPage() {
   main.replaceChildren(el('p', { class: 'ck-loading' }, '…'));
   let world, art;
   try {
-    [world, art] = await Promise.all([fetch(WORLD).then((r) => r.json()), fetch(ART).then((r) => r.json()).catch(() => ({}))]);
+    [world, art] = await Promise.all([fetch(WORLD, { signal: AbortSignal.timeout(12000) }).then((r) => r.json()), fetch(ART, { signal: AbortSignal.timeout(12000) }).then((r) => r.json()).catch(() => ({}))]);
   } catch (err) { main.replaceChildren(el('p', { class: 'warn' }, `fatline.ink did not answer: ${err.message}`)); return; }
   const genesis = world.genesisFid;
   const alive = (world.tokens ?? []).filter((t) => t.surname && (t.stage === 'egg' || t.stage === 'fatliner'));
@@ -84,13 +115,16 @@ export async function directoryPage() {
     .sort((x, y) => (y.fid === genesis) - (x.fid === genesis) || (y.earned ?? 0) - (x.earned ?? 0) || x.laidAt - y.laidAt);
   const eggs = alive.filter((t) => t.stage === 'egg').sort((x, y) => (y.earned ?? 0) - (x.earned ?? 0) || x.laidAt - y.laidAt);
   const waiting = Math.max(0, (world.places ?? 777) - alive.length);
+  // Who keeps each one, from this node.
+  const users = {};
+  await Promise.all([...new Set(alive.map((t) => t.linkedFid || t.fid))].map(async (f) => { users[f] = await api('/api/user', { q: String(f) }).catch(() => null); }));
   const manual = el('div', { class: 'world-manual' });
   main.replaceChildren(el('section', { class: 'world' },
     el('header', { class: 'world-head' },
       el('h1', {}, 'Fatline'),
       el('p', {}, [`${beings.length} ${beings.length === 1 ? 'Fatliner' : 'Fatliners'}`, `${eggs.length} ${eggs.length === 1 ? 'egg' : 'eggs'}`, `${waiting} waiting`].join(' · '))),
-    el('div', { class: 'world-beings' }, ...beings.map((tk) => being(tk, { art, genesis }))),
-    eggs.length ? el('div', { class: 'world-eggs' }, ...eggs.map((tk) => egg(tk, { art }))) : null,
+    el('div', { class: 'world-beings' }, ...beings.map((tk) => being(tk, { art, genesis, users }))),
+    eggs.length ? el('div', { class: 'world-eggs' }, ...eggs.map((tk) => egg(tk, { art, users }))) : null,
     field(waiting),
     el('p', { class: 'world-foot' }, 'Each one glows with what its coin has earned.'),
     manual));
