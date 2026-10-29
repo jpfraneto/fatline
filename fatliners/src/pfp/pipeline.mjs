@@ -21,7 +21,7 @@ import { extractFeatures, FEATURES_VERSION } from '../features.mjs';
 import { buildDna, DNA_VERSION } from '../dna.mjs';
 import { visualTraits, networkEvidence, attributes, TRAITS_VERSION } from './traits.mjs';
 import { buildPfpPrompt } from './prompt.mjs';
-import { resolveReference, referenceRecord, REPO_ROOT, STYLE } from './reference.mjs';
+import { resolveReference, referenceRecord, REPO_ROOT, STYLE, FAMILY_SHEET, ASTER } from './reference.mjs';
 import { beingName, NAME_VERSION } from './name.mjs';
 
 export const PROMPTS = {
@@ -32,10 +32,15 @@ export const PROMPTS = {
   'fatliners.pfp-prompt/5': 'pfp-5.prompt.md',  // + five bold differences first, seeded pose (the canon)
   'fatliners.pfp-prompt/6': 'pfp-6.prompt.md',  // the being at rest (unlit veins, no network colour), living skin, varied faces
   'fatliners.pfp-prompt/7': 'pfp-7.prompt.md',  // the figurine look: the owner's Cloud Ruins image as the reference, a prop from the history
+  'fatliners.pfp-prompt/8': 'pfp-8.prompt.md',  // the family: Aster's master sheet (the skeleton) + Aster (the photograph)
 };
 export const CALIBRATION = 'pfp-5';
 // Prompts that use a different reference image than the species blueprint.
-export const PROMPT_REFERENCE = { 'fatliners.pfp-prompt/7': STYLE };
+export const PROMPT_REFERENCE = { 'fatliners.pfp-prompt/7': STYLE, 'fatliners.pfp-prompt/8': FAMILY_SHEET };
+// Prompts that attach more than one image, in order, each with its role. The first is PROMPT_REFERENCE's.
+export const PROMPT_REFERENCES = {
+  'fatliners.pfp-prompt/8': [[FAMILY_SHEET, 'reference image 1: the family sheet (the skeleton)'], [ASTER, 'reference image 2: Aster (how a member is photographed)']],
+};
 
 export function loadCalibration(name = CALIBRATION) {
   const text = readFileSync(join(REPO_ROOT, 'fatliners/calibration', `${name}.json`), 'utf8');
@@ -90,8 +95,11 @@ export function derive({ history: rawHistory, readNetworks, coverage, promptVers
  */
 export async function prepare({ fid, source, referenceOverride = null, promptVersion = LATEST_PROMPT, outRoot = OUT_ROOT, snapshotAt = COLLECTION_SNAPSHOT_AT, log = () => {} }) {
   // Stage 1: the reference. If it fails, history can still be read, but no request is marked ready.
-  let reference = null, referenceError = null;
-  try { reference = resolveReference({ override: referenceOverride ?? PROMPT_REFERENCE[promptVersion] ?? null }); } catch (err) { referenceError = err; }
+  let reference = null, referenceError = null, extra = [];
+  try {
+    reference = resolveReference({ override: referenceOverride ?? PROMPT_REFERENCE[promptVersion] ?? null });
+    extra = referenceOverride ? [] : (PROMPT_REFERENCES[promptVersion] ?? []).slice(1).map(([path, role]) => ({ ...resolveReference({ override: path }), role }));
+  } catch (err) { referenceError = err; }
 
   // Stage 2: history.
   let got;
@@ -110,7 +118,9 @@ export async function prepare({ fid, source, referenceOverride = null, promptVer
 
   // Stage 3–5: traits, prompt, manifests.
   const template = loadTemplate(promptVersion);
-  const d = derive({ history: got.history, readNetworks: got.readNetworks, coverage: got.coverage, promptVersion, template, reference });
+  // Every attached image is part of the cache key: change one and it is a new request.
+  const keyRef = extra.length ? { sha256: sha256Hex([reference.sha256, ...extra.map((r) => r.sha256)].join(':')).slice(2) } : reference;
+  const d = derive({ history: got.history, readNetworks: got.readNetworks, coverage: got.coverage, promptVersion, template, reference: keyRef });
   const dir = join(outRoot, `fid-${d.fid}`, d.key);
   mkdirSync(dir, { recursive: true });
   const ref = referenceRecord(reference);
@@ -132,7 +142,9 @@ export async function prepare({ fid, source, referenceOverride = null, promptVer
     fid: d.fid,
     key: d.key,
     prompt: { file: 'pfp.prompt.txt', sha256: d.prompt.sha256, version: promptVersion },
-    reference: { ...ref, role: promptVersion in PROMPT_REFERENCE ? 'reference image 1: style' : 'reference image 1: species authority', attach: 'required' },
+    reference: { ...ref, role: PROMPT_REFERENCES[promptVersion]?.[0][1] ?? (promptVersion in PROMPT_REFERENCE ? 'reference image 1: style' : 'reference image 1: species authority'), attach: 'required' },
+    // All attached images, in order (the first is `reference`). The adapters attach every one.
+    references: [{ ...ref, role: PROMPT_REFERENCES[promptVersion]?.[0][1] ?? 'reference image 1' }, ...extra.map((r) => ({ ...referenceRecord(r), role: r.role }))],
     snapshot: { commitment: d.commitment, snapshotAt: d.history.snapshotAt },
     versions: d.versions,
     output: { size: '1024x1024', format: 'png', count: 1, background: 'dark, opaque' },

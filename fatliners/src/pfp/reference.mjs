@@ -16,12 +16,19 @@ export const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..
 export const CANONICAL = 'fatliners/assets/FATLINERS_MASTER_REFERENCE.png';
 export const ROOT_COPY = 'FATLINERS_MASTER_REFERENCE.png';
 export const STYLE = 'fatliners/assets/FATLINERS_STYLE_REFERENCE.png';
+// The family (prompt v8): the master sprite made from Aster, and Aster's own portrait.
+export const FAMILY_SHEET = 'fatliners/assets/FATLINE_FAMILY_SHEET.png';
+export const ASTER = 'fatliners/assets/FATLINE_ASTER.png';
 
 // Known references. Replacing the image means a new entry here (a new reference version), never an edit.
 export const REFERENCE_VERSIONS = {
   '354bee988e0ec602b5b5d46f2e1c1f0ec24ad8b978bfeb0cccd2fb6c9571ce56': 'species-blueprint/1',
   // The owner's "Sunset Gathering in the Cloud Ruins": the figurine look, from prompt v7 on.
   'c92ecdb2dd138d4837996371cbf3bc834f7e876063960057002fdcb400abf7e4': 'style-cloud-ruins/1',
+  // The family sheet: Aster as a model sheet in base stone (fatliners/bin/family.mjs, gpt-image-2.5-sunburst, 2026-10-29).
+  'c4334926899548129145979382b222117c22e8b1769dc030e81aa349e0d0914b': 'family-sheet/1',
+  // Aster, the first Fatliner (arweave.net/9pzIvT9KiTuiIh98jxYMKP9NcIyUTSom6N2YxKVQWIM, as PNG).
+  '9fbd80a4b9584cd318365739da9fbcc0906a32446b159ebd14b7edf98cc4e700': 'aster/1',
 };
 
 export class ReferenceError extends Error {

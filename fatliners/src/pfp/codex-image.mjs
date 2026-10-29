@@ -18,10 +18,11 @@ import { metadata } from './pipeline.mjs';
 export const PROVIDER = 'codex-cli/built-in-image_gen';
 const MODEL_NOTE = 'gpt-image-2, as named by Codex\'s imagegen skill; not reported by the tool per call';
 
-export function wrapperText(promptText) {
+export function wrapperText(promptText, n = 1) {
+  const attached = Array.from({ length: n }, (_, i) => `reference-${i + 1}.png as reference image ${i + 1}`).join(', ');
   return [
     'Generate exactly one image with your built-in image generation tool, then stop.',
-    'Use the attached image (reference-1.png) as reference image 1, as described in the prompt.',
+    `Use the attached ${n === 1 ? 'image' : 'images'} (${attached}) as described in the prompt.`,
     'Pass the prompt between the PROMPT markers to the image tool verbatim. Do not rewrite, shorten or add to it.',
     'Output: one square image.',
     'When the image is generated, copy the generated PNG file to ./portrait.png in the current directory, then print only the absolute path of the original generated file. Do not create or edit any other file.',
@@ -54,20 +55,22 @@ export async function generatePortrait(dir, { revise = false, timeoutMs = 600_00
 
   const prompt = readFileSync(join(dir, 'pfp.prompt.txt'), 'utf8');
   if (sha256Hex(prompt).slice(2) !== req.prompt.sha256) throw new Error('pfp.prompt.txt does not match the request hash');
-  const refPath = join(REPO_ROOT, req.reference.path);
-  const refBytes = readFileSync(refPath);
-  if (sha256File(refBytes) !== req.reference.sha256) throw new Error(`reference changed on disk since the request was prepared: ${req.reference.path}`);
+  if (req.references && req.references[0]?.sha256 !== req.reference.sha256) throw new Error('reference changed: the request\'s references disagree');
+  const refs = req.references ?? [req.reference];
+  for (const r of refs) {
+    if (sha256File(readFileSync(join(REPO_ROOT, r.path))) !== r.sha256) throw new Error(`reference changed on disk since the request was prepared: ${r.path}`);
+  }
 
   const revDir = join(dir, 'revisions');
   const revision = existsSync(accepted) ? 1 + (existsSync(revDir) ? readdirSync(revDir).length : 0) : 0;
   const work = join(dir, `.work-${revision}`);
   mkdirSync(work, { recursive: true });
-  copyFileSync(refPath, join(work, 'reference-1.png'));
-  const wrapper = wrapperText(prompt);
+  refs.forEach((r, i) => copyFileSync(join(REPO_ROOT, r.path), join(work, `reference-${i + 1}.png`)));
+  const wrapper = wrapperText(prompt, refs.length);
   const codexVersion = version();
   const started = Date.now();
   log(`FID ${req.fid}: generating with ${PROVIDER} (revision ${revision})…`);
-  const out = await runner('codex', ['exec', '--skip-git-repo-check', '-s', 'workspace-write', '-i', 'reference-1.png', '-'], { cwd: work, input: wrapper, timeoutMs });
+  const out = await runner('codex', ['exec', '--skip-git-repo-check', '-s', 'workspace-write', ...refs.flatMap((_, i) => ['-i', `reference-${i + 1}.png`]), '-'], { cwd: work, input: wrapper, timeoutMs });
   writeFileSync(join(work, 'codex.log'), out);
   const made = join(work, 'portrait.png');
   if (!existsSync(made)) throw new Error(`codex finished but wrote no portrait.png (log: ${join(work, 'codex.log')})`);

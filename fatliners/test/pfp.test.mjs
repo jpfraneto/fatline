@@ -202,9 +202,11 @@ test('OpenRouter: the prompt verbatim, the reference attached, the portrait kept
     assert.equal(url, 'https://openrouter.ai/api/v1/images');
     assert.equal(init.headers.authorization, 'Bearer sk-or-test');
     const body = JSON.parse(init.body);
-    assert.equal(body.model, 'openai/gpt-image-2');
+    assert.equal(body.model, 'openai/gpt-image-2.5-sunburst', 'the family is drawn with Aster\'s model');
     assert.equal(body.prompt, readFileSync(join(dir, 'pfp.prompt.txt'), 'utf8').trim(), 'prompt passed verbatim');
-    assert.equal(Buffer.from(body.input_references[0].image_url.url.split(',')[1], 'base64').length, used.bytes, 'the reference is attached');
+    const req = JSON.parse(readFileSync(join(dir, 'pfp.request.json'), 'utf8'));
+    assert.equal(body.input_references.length, req.references.length, 'every reference is attached');
+    assert.equal(Buffer.from(body.input_references[0].image_url.url.split(',')[1], 'base64').length, used.bytes, 'the family sheet first');
     return new Response(JSON.stringify({ data: [{ b64_json: png.toString('base64') }], usage: { cost: 0.13 } }), { status: 200 });
   };
   const g1 = await viaOpenRouter(dir, { key: 'sk-or-test', fetchImpl });
@@ -218,4 +220,27 @@ test('OpenRouter: the prompt verbatim, the reference attached, the portrait kept
   const refuse = async () => new Response(JSON.stringify({ error: { message: 'Insufficient credits' } }), { status: 402 });
   await assert.rejects(viaOpenRouter(dir2, { key: 'sk-or-test', fetchImpl: refuse }), (e) => /402: Insufficient credits/.test(e.message) && !e.message.includes('sk-or'));
   await assert.rejects(viaOpenRouter(dir2, { key: '', fetchImpl }), /No OpenRouter key/);
+});
+
+test('the family (v8): the family sheet then Aster, both attached, both in the cache key; no seeded head', async () => {
+  const { PROMPT_REFERENCES } = await import('../src/pfp/pipeline.mjs');
+  assert.equal(LATEST_PROMPT, 'fatliners.pfp-prompt/8');
+  const out = tmp();
+  const json = { schema: 'fatliners.input/1', fid: 900006, history: both(asFid('syn-painter', 900006)), readNetworks: ['farcaster', 'hypersnap'] };
+  const { dir, key } = await prepare({ fid: 900006, source: { kind: 'file', json }, outRoot: out });
+  const req = JSON.parse(readFileSync(join(dir, 'pfp.request.json'), 'utf8'));
+  assert.deepEqual(req.references.map((r) => r.path), PROMPT_REFERENCES[LATEST_PROMPT].map(([p]) => p));
+  assert.deepEqual(req.references.map((r) => r.version), ['family-sheet/1', 'aster/1']);
+  assert.equal(req.reference.sha256, req.references[0].sha256);
+  const text = readFileSync(join(dir, 'pfp.prompt.txt'), 'utf8');
+  assert.match(text, /Reference image 1 is the family's master sheet/);
+  assert.match(text, /Reference image 2 is Aster/);
+  // A v7 request for the same history has another key: the attached images are part of it.
+  const v7 = await prepare({ fid: 900006, source: { kind: 'file', json }, outRoot: out, promptVersion: 'fatliners.pfp-prompt/7' });
+  assert.notEqual(v7.key, key);
+  // The Codex adapter attaches both too.
+  let args = null;
+  const runner = async (_c, a, { cwd }) => { args = a; copyFileSync(REF, join(cwd, 'portrait.png')); return 'ok'; };
+  await generatePortrait(dir, { runner, version: () => 'codex-test', log: () => {} });
+  assert.deepEqual(args.filter((x) => /^reference-\d\.png$/.test(x)), ['reference-1.png', 'reference-2.png']);
 });
