@@ -18,6 +18,28 @@ export function linkEmbeds(text) {
   const urls = (String(text).match(/https:\/\/[^\s<>"]+/g) ?? []).map((u) => u.replace(/[.,;:!?)\]]+$/, ''));
   return [...new Set(urls)].filter((u) => Buffer.byteLength(u) <= 256).slice(0, 2).map((url) => ({ url }));
 }
+/**
+ * @names in a cast become mentions, as Farcaster stores them: the @name leaves the text, its FID and the byte position
+ * where it stood are kept (apps put the name back when they show it). lookup(name) -> FID, or null: a name nobody
+ * holds stays plain text. At most 10, as the protocol allows.
+ */
+export async function withMentions(text, lookup) {
+  const re = /(^|[^\w@/.])@([a-z0-9][a-z0-9-]{0,15}(?:\.eth)?)(?![\w-]|\.\w)/gi;
+  let out = '';
+  let last = 0;
+  const mentions = [];
+  const mentionsPositions = [];
+  for (const m of String(text).matchAll(re)) {
+    const at = m.index + m[1].length;
+    const name = m[2].toLowerCase();
+    const fid = mentions.length < 10 ? await lookup(name).catch(() => null) : null;
+    out += text.slice(last, at);
+    if (fid) { mentions.push(Number(fid)); mentionsPositions.push(Buffer.byteLength(out)); } else out += `@${m[2]}`;
+    last = at + 1 + m[2].length;
+  }
+  return { text: out + text.slice(last), mentions, mentionsPositions };
+}
+
 const hex = (bytes) => `0x${Buffer.from(bytes).toString('hex')}`;
 const bytes = (h) => Buffer.from(String(h).replace(/^0x/, ''), 'hex');
 
@@ -92,7 +114,9 @@ export class Writer {
     const size = Buffer.byteLength(text);
     if (size > LONG_CAST_MAX_BYTES) throw fail(`A cast holds ${LONG_CAST_MAX_BYTES} bytes; this is ${size}. Longer opinions go in Voices.`);
     const type = size > CAST_MAX_BYTES ? CastType.LONG_CAST : CastType.CAST;
-    const body = { text, embeds: linkEmbeds(text), embedsDeprecated: [], mentions: [], mentionsPositions: [], type };
+    // @names the node knows become real mentions (the person is notified), not just text.
+    const named = await withMentions(text, async (name) => (await this.network.get('/v1/userNameProofByName', { name }))?.data?.fid ?? null);
+    const body = { ...named, embeds: linkEmbeds(text), embedsDeprecated: [], type };
     if (parent) body.parentCastId = { fid: Number(parent.fid), hash: bytes(parent.hash) };
     const message = unwrap(await makeCastAdd(body, this.options, this.signer), 'Could not build the cast');
     return this.#publish('cast', message, (hash) => ['/v1/castById', { fid: this.fid, hash }], true);

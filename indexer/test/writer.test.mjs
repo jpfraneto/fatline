@@ -7,7 +7,7 @@ import {
 } from '@farcaster/core';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { SCOPES } from '../src/identity.mjs';
-import { Writer, linkEmbeds } from '../src/writer.mjs';
+import { Writer, linkEmbeds, withMentions } from '../src/writer.mjs';
 
 const hex = (b) => `0x${Buffer.from(b).toString('hex')}`;
 
@@ -129,4 +129,15 @@ test('a KEY_ADD is signed by the custody address and scoped to social actions on
   const message = await makeKeyAdd(body.value, { fid: 18350, network: FarcasterNetwork.MAINNET }, appSigner);
   assert.ok(message.isOk());
   assert.ok(!SCOPES.includes(MessageType.KEY_ADD) && !SCOPES.includes(MessageType.KEY_REMOVE));
+});
+
+test('@names become mentions where Farcaster keeps them; unknown names, emails and links stay text', async () => {
+  const fids = { fatline: 1312263, dwr: 3 };
+  const lookup = async (name) => fids[name] ?? null;
+  const a = await withMentions('hey @fatline help me understand how to set one up', lookup);
+  assert.deepEqual(a, { text: 'hey  help me understand how to set one up', mentions: [1312263], mentionsPositions: [4] });
+  const b = await withMentions('@dwr and @nobody, ñ @fatline. me@mail.com https://x.com/@dwr', lookup);
+  assert.equal(b.text, ' and @nobody, ñ . me@mail.com https://x.com/@dwr');
+  assert.deepEqual(b.mentions, [3, 1312263]);
+  assert.deepEqual(b.mentionsPositions, [0, Buffer.byteLength(' and @nobody, ñ ')], 'byte positions, not characters');
 });

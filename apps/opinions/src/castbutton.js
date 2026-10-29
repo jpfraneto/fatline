@@ -17,6 +17,23 @@ const STEPS = {
 };
 const phone = () => matchMedia('(pointer: coarse)').matches;
 
+/**
+ * What a new cast starts with. Someone who keeps a Fatline (this place's owner, or an egg or Fatliner in the world):
+ * the vouch, what it is and how anyone runs theirs. Someone who doesn't yet: asking @fatline how (a real mention).
+ */
+async function openingLine(me) {
+  const vouch = `this is the fatline im running to secure the farcaster network\n\nrun yours here:\n\nhttps://fatline.ink/${me.fid}`;
+  const ask = 'hey @fatline help me understand how to set one up';
+  if (!me.visitor) return vouch;
+  try {
+    const w = await fetch('https://fatline.ink/world', { signal: AbortSignal.timeout(4000) }).then((r) => r.json());
+    const keeps = (w.tokens ?? []).some((t) => (t.fid === me.fid || t.linkedFid === me.fid) && (t.stage === 'egg' || t.stage === 'fatliner'));
+    return keeps ? vouch : ask;
+  } catch {
+    return ask;
+  }
+}
+
 let session = null; // the sign-in this browser started
 async function loginCall(method, path = '/api/login', body) {
   const token = store.get('writeToken', '');
@@ -39,15 +56,17 @@ export function castButton() {
   const close = () => { panel.hidden = true; polling = false; };
   const head = (title) => el('div', { class: 'castpanel-head' }, el('strong', {}, title), el('button', { class: 'ghost', type: 'button', onclick: close, 'aria-label': 'Close' }, '×'));
 
-  const showComposer = () => {
+  const showComposer = async () => {
     panel.replaceChildren(head(`Cast as FID ${state.me.fid}`), castComposer({ onDone: () => setTimeout(close, 1200) }));
     const box = panel.querySelector('textarea');
-    // The vouch: what this Fatline is, and how anyone runs theirs. Theirs to edit or replace.
-    if (box && !box.value) {
-      box.value = `this is the fatline im running to secure the farcaster network\n\nrun yours here:\n\nhttps://fatline.ink/${state.me.fid}`;
-      box.dispatchEvent(new Event('input'));
-    }
     box?.focus();
+    const opening = await openingLine(state.me);
+    // Theirs to edit or replace: only filled while they have not started writing.
+    if (box && !box.value && opening) {
+      box.value = opening;
+      box.dispatchEvent(new Event('input'));
+      box.setSelectionRange(box.value.length, box.value.length);
+    }
   };
 
   // Polls the sign-in until it is done or fails.

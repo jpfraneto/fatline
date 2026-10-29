@@ -21,5 +21,13 @@ export async function profileOf(fid) {
   }
 }
 
-/** Forget this browser's key. The owner's write token stays: their server's key is not this browser's to drop. */
-export function logOut() { forgetKey(); }
+/**
+ * Log out = delete the key from this browser. A visitor's key exists only here (the server only ever saw its
+ * signatures), so this is the whole log out. The owner's write token goes too; Sign in with Farcaster brings them back.
+ * The key stays approved on the account until it is removed in the Farcaster app: deleting it here only means this
+ * browser can't use it any more.
+ */
+export function logOut() {
+  forgetKey();
+  try { localStorage.removeItem('writeToken'); } catch { /* private mode */ }
+}

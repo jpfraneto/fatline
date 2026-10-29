@@ -781,3 +781,10 @@ html.snap-on body > *:not(.snap-layer) { animation: snap-wake .9s cubic-bezier(.
 .snap-bolts .b3 { stroke: var(--snap-far); stroke-width: .8; opacity: .6; }
 html.snap-soft body { animation: snap-soft .45s ease-out; }
 @keyframes snap-soft { 0% { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--snap-glow) 25%, transparent); } 100% { box-shadow: none; } }
+
+/* Settings: your key, and deleting it (the log out). */
+.key-box { display: grid; gap: 8px; justify-items: start; }
+.key-box p { margin: 0; }
+.key-delete { border: .7px solid rgba(199, 74, 102, .6); background: rgba(199, 74, 102, .12); color: var(--text); padding: 9px 16px;
+  border-radius: 18px 7px 18px 7px; cursor: pointer; font: 15px var(--serif); }
+.key-delete:hover { background: rgba(199, 74, 102, .24); }

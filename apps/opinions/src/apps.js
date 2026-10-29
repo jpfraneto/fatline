@@ -134,7 +134,7 @@ export function feedForm(app, onDone) {
     onsubmit: async (e) => {
       e.preventDefault();
       button.disabled = true;
-      status.textContent = t('signing');
+      status.textContent = t('walletSigning');
       try {
         const w = await wallet(state.config.launchpad.chainId);
         const units = parseUnits(amount.value, 6);
@@ -157,7 +157,7 @@ export function presence(app, onDone) {
   const max = Math.max(1, ...s.week.map((d) => d.users));
   const status = el('p', { class: 'status', role: 'status' });
   const here = async (direct) => {
-    status.textContent = t('signing');
+    status.textContent = t('walletSigning');
     try {
       const w = await wallet(state.config.launchpad.chainId);
       if (direct) {
@@ -236,7 +236,7 @@ export function launchPage() {
         });
         const params = { ...prep.params, billingPeriod: BigInt(prep.params.billingPeriod) };
         const deposit = parseUnits(f.deposit.value || '0', 6);
-        status.textContent = t('signing');
+        status.textContent = t('walletSigning');
         const call = f.coin.checked
           ? { to: prep.factory, value: BigInt(prep.value ?? 0), data: encodeFunctionData({ abi: factoryAbi, functionName: 'launchFatline', args: [BigInt(prep.fid), params, prep.deployCalldata, deposit] }) }
           : { to: prep.factory, data: encodeFunctionData({ abi: factoryAbi, functionName: 'createApp', args: [params, deposit] }) };

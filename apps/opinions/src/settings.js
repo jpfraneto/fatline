@@ -1,6 +1,8 @@
 // Settings: which network to read (Farcaster or Hypersnap) and which nodes. Not on the front page,
 // but always one tap away, and the app never switches nodes without saying so.
 import { $, api, chosenNode, el, state, store, t } from './lib.js';
+import { loggedIn, logOut } from './fatline-login.js';
+import { loadMe } from './post.js';
 
 export async function settingsPage({ onChange }) {
   const main = $('#main');
@@ -15,8 +17,14 @@ export async function settingsPage({ onChange }) {
       onclick: () => { state.lang = code; store.set('lang', code); onChange(); },
     }, name)));
   const nodes = el('div', { class: 'nodes' }, el('p', { class: 'muted' }, '…'));
-  const identity = state.me?.fid
-    ? el('p', { class: 'muted small' }, t('postingAs', state.me.fid), ' ', el('span', { class: 'mono' }, `${state.me.publicKey.slice(0, 12)}…`))
+  // Your key: it lives only in this browser. Deleting it is the log out.
+  const who = loggedIn();
+  const identity = who
+    ? el('div', { class: 'key-box' },
+      el('p', { class: 'small' }, t('postingAs', who.fid), ' ', state.me.publicKey ? el('span', { class: 'mono' }, `${state.me.publicKey.slice(0, 12)}…`) : null),
+      el('p', { class: 'muted small' }, who.owner ? t('keyOwner') : t('keyHere')),
+      el('button', { type: 'button', class: 'key-delete', onclick: async () => { logOut(); await loadMe(); window.dispatchEvent(new Event('fatline:me')); location.hash = '#/'; } }, t('deleteKey')),
+      el('p', { class: 'muted small' }, t('keyStays')))
     : el('p', { class: 'muted small' }, t('needKey'));
   main.replaceChildren(
     el('h1', { class: 'app-title' }, t('settings')),

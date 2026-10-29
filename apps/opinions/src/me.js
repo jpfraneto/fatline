@@ -26,6 +26,6 @@ export async function mePage({ route }) {
         el('p', { class: 'muted' }, [p.username ? `@${p.username}` : null, `FID ${who.fid}`].filter(Boolean).join(' · ')))),
     castComposer({ onDone: () => setTimeout(route, 1500) }),
     el('p', { class: 'me-foot muted small' },
-      who.owner ? t('ownerHere') : el('button', { type: 'button', class: 'linkish', onclick: async () => { logOut(); await loadMe(); window.dispatchEvent(new Event('fatline:me')); } }, t('logOut'))),
+      el('button', { type: 'button', class: 'linkish', onclick: async () => { logOut(); await loadMe(); window.dispatchEvent(new Event('fatline:me')); } }, t('logOut'))),
   );
 }
