@@ -61,7 +61,7 @@ If two of them disagree, the higher one wins. Fix the lower one, or say so. Neve
 **Secrets.** Seed phrases and private keys only go through hidden prompts or environment variables. Never into a chat with an agent, logs, commits, screenshots or video. Never `cat`, print, copy or upload these; checking that a file exists is fine:
 
 - on this machine: the repo's `.fatline/` (wallets, app keys, `compute.secret.json`; git-ignored), `~/.fatline-*` (seed, Bankr and Telegram files), `~/.sume-key`, any `.env`, `fatline.config.json` (git-ignored);
-- on the master: `/root/.fatline/attester.key` (the hatchery's signing key), `/root/.fatline/app-custody.key` (signs Sign in with Farcaster for @fatline), `/root/.fatline-client/write.token`, `bankr.key`, `stripe.env`.
+- on the master: `/root/.fatline/attester.key` (the hatchery's signing key), `/root/.fatline/app-custody.key` (signs Sign in with Farcaster for @fatline), `/root/.fatline/openrouter.key` (draws each hatched Fatliner's art, real money), `/root/.fatline-client/write.token`, `bankr.key`, `stripe.env`.
 
 If a secret shows up in output, stop, tell the owner, and don't repeat it.
 

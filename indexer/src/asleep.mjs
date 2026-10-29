@@ -24,6 +24,7 @@ export function ago(ms, now = Date.now()) {
 
 /** The place's picture: its being, else its stone's egg, else the egg; served by fatline.ink's own copy. */
 function artFor(tk, art) {
+  if (!art.beings?.[tk.fid] && tk.being) return tk.being; // drawn by the master when it hatched
   const u = art.beings?.[tk.fid]?.image ?? art.eggs?.[tk.stone]?.image ?? art.egg?.image ?? '';
   const id = String(u).match(/arweave\.net\/([\w-]{43})/)?.[1];
   return id ? `${SITE}/api/art/${id}` : `${SITE}/img/fatline-app.png`;

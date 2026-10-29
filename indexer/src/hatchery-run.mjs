@@ -18,12 +18,13 @@ import { join } from 'node:path';
 import { createPublicClient, createWalletClient, encodeFunctionData, fallback, http, parseAbi, recoverTypedDataAddress, keccak256, toBytes } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { base, baseSepolia, foundry } from 'viem/chains';
-import { loadConfig } from './config.mjs';
+import { loadConfig, ROOT } from './config.mjs';
 import { eggTypes, hatchDomain, hatchOf, hatchTypes } from './egg.mjs';
 import { Hatchery } from './hatchery.mjs';
 import { EVERY_MS, World } from './world.mjs';
 import { readCast } from './cast-page.mjs';
 import { payPolicy, triggerPayments } from './pay-trigger.mjs';
+import { makeBeings } from './beings.mjs';
 
 export const fatlinersAbi = parseAbi([
   'function takeEgg((uint256 fid, address to, address server, string url, bytes32 dna, uint64 laidAt, string surname, uint8 stone, uint256 deadline) e, bytes[] signatures, uint256 position, bytes32[] proof)',
@@ -204,6 +205,26 @@ async function serve() {
   };
   const noWorld = () => Promise.reject(Object.assign(new Error('This hatchery has no contract to read.'), { status: 404 }));
 
+  // Beings: a hatched Fatliner's own art, drawn here once it hatches (beings.mjs), only where the owner put an
+  // OpenRouter key (<data>/openrouter.key). Its history is read from this server's own nodes.
+  const artJson = () => { try { return JSON.parse(readFileSync(join(ROOT, 'apps/site/fatliners-art.json'), 'utf8')); } catch { return {}; } };
+  const beings = world ? makeBeings({
+    dataDir: config.dataDir,
+    tokens: () => world.tokens(),
+    drawn: (fid) => Boolean(artJson().beings?.[fid]),
+    draw: async (fid, { outRoot, key }) => {
+      const { prepare } = await import('../../fatliners/src/pfp/pipeline.mjs');
+      const { generatePortrait, DEFAULT_MODEL } = await import('../../fatliners/src/pfp/openrouter-image.mjs');
+      const r = await prepare({ fid, outRoot, log: () => {}, source: { kind: 'nodes', config, offline: false, networks: ['farcaster', 'hypersnap'],
+        overrides: { farcaster: process.env.FATLINE_BEINGS_SNAPCHAIN ?? 'http://127.0.0.1:3381', hypersnap: process.env.FATLINE_BEINGS_HYPERSNAP ?? 'http://127.0.0.1:4381' } } });
+      if (!r.dir) throw new Error(r.message ?? r.status);
+      const model = process.env.FATLINE_BEINGS_MODEL ?? DEFAULT_MODEL;
+      const g = await generatePortrait(r.dir, { key, model });
+      return { portrait: g.portrait, model, promptSha256: r.prompt?.sha256 ?? null };
+    },
+  }) : null;
+  const beingOf = (fid) => artJson().beings?.[fid]?.image ?? beings?.list()[fid]?.image ?? null;
+
   async function gatherHatch(fid) {
     if (!hc.contract) throw Object.assign(new Error('Fatliners is not deployed yet.'), { status: 409 });
     const read = (functionName, args = []) => reader.readContract({ address: hc.contract, abi: fatlinersAbi, functionName, args });
@@ -238,7 +259,14 @@ async function serve() {
 
   const routes = [
     ['GET', /^\/$/, () => hatchery.info()],
-    ['GET', /^\/world$/, () => (world ? world.view(warmthOf) : noWorld())],
+    ['GET', /^\/world$/, () => (world ? world.view(warmthOf, beingOf) : noWorld())],
+    // The beings drawn here, and each one's portrait (fatline.ink/beings/<fid>.png).
+    ['GET', /^\/beings$/, () => (beings ? { beings: beings.list() } : noWorld())],
+    ['GET', /^\/beings\/(\d{1,12})\.png$/, ([, fid]) => {
+      const png = beings?.png(fid);
+      if (!png) throw Object.assign(new Error('No being drawn here for that FID.'), { status: 404 });
+      return { raw: png, type: 'image/png' };
+    }],
     ['GET', /^\/world\/events$/, (m, body, req) => (world ? { events: world.events(new URL(req.url, 'http://x').searchParams.get('limit')) } : noWorld())],
     // One cast, read from this server's own node (fatline.ink/c/<who>/<hash> shows it). ?network=hypersnap for the other one.
     ['GET', /^\/cast\/([^/]{1,41})\/(0x[0-9a-fA-F]{8,40})$/, (m, body, req) => {
@@ -292,7 +320,9 @@ async function serve() {
         for await (const chunk of req) { raw += chunk; if (raw.length > 20_000) throw Object.assign(new Error('Too big.'), { status: 413 }); }
         body = raw ? JSON.parse(raw) : {};
       }
-      send(200, await route[2](path.match(route[1]), body, req));
+      const out = await route[2](path.match(route[1]), body, req);
+      if (out?.raw) { res.writeHead(200, { 'content-type': out.type, 'cache-control': 'public, max-age=86400' }); return res.end(out.raw); }
+      send(200, out);
     } catch (err) {
       send(err.status ?? 500, { error: err.message });
     }
@@ -375,7 +405,9 @@ async function serve() {
     if (mine.length) payments = await triggerPayments({ client: reader, wallet, vaults: mine, policy: payPolicy(config.pay) });
   };
   routes.push(['GET', /^\/pay$/, () => ({ server: hatchery.address, payments })]);
-  if (world) { read().then(() => pay().catch(() => {})); setInterval(() => read().then(() => pay().catch(() => {})), EVERY_MS); }
+  // After each read: pay, then draw any Fatliner that hatched without art.
+  const hourly = () => read().then(() => pay().catch(() => {})).then(() => beings?.run().catch((err) => console.log(`[beings] ${err.message}`)));
+  if (world) { hourly(); setInterval(hourly, EVERY_MS); }
 }
 
 async function init() {

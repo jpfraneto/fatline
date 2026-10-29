@@ -56,9 +56,9 @@ function contract(tk) {
   return b;
 }
 
-/** A Fatliner: its own art once it is made; until then its keeper's own face. */
+/** A Fatliner: its own art once it is drawn (usually within the hour after it hatches); until then its keeper's face. */
 function being(tk, { art, genesis, users }) {
-  const own = art.beings?.[tk.fid]?.image;
+  const own = art.beings?.[tk.fid]?.image ?? tk.being; // in fatliners-art.json, or drawn by the master when it hatched
   const face = users[tk.linkedFid || tk.fid]?.pfp;
   const name = tk.fid === genesis ? `Aster ${titled(tk.surname)}` : titled(tk.surname);
   return look(el('article', { class: 'wb' },

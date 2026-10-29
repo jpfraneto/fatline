@@ -189,3 +189,33 @@ test('calibration: required, part of the cache key, and traits spread across dif
   assert.equal(orbitAt(Q.q80 + 0.01, 0), 'fine net');
   assert.equal(orbitAt(Q.q80 + 0.01, B.q80), 'constellation');
 });
+
+test('OpenRouter: the prompt verbatim, the reference attached, the portrait kept once; refusals explained, the key never in errors', async () => {
+  const { generatePortrait: viaOpenRouter } = await import('../src/pfp/openrouter-image.mjs');
+  const out = tmp();
+  const json = { schema: 'fatliners.input/1', fid: 900004, history: both(asFid('syn-painter', 900004)), readNetworks: ['farcaster', 'hypersnap'] };
+  const { dir } = await prepare({ fid: 900004, source: { kind: 'file', json }, outRoot: out });
+  const png = readFileSync(REF);
+  let calls = 0;
+  const fetchImpl = async (url, init) => {
+    calls++;
+    assert.equal(url, 'https://openrouter.ai/api/v1/images');
+    assert.equal(init.headers.authorization, 'Bearer sk-or-test');
+    const body = JSON.parse(init.body);
+    assert.equal(body.model, 'openai/gpt-image-2');
+    assert.equal(body.prompt, readFileSync(join(dir, 'pfp.prompt.txt'), 'utf8').trim(), 'prompt passed verbatim');
+    assert.equal(Buffer.from(body.input_references[0].image_url.url.split(',')[1], 'base64').length, used.bytes, 'the reference is attached');
+    return new Response(JSON.stringify({ data: [{ b64_json: png.toString('base64') }], usage: { cost: 0.13 } }), { status: 200 });
+  };
+  const g1 = await viaOpenRouter(dir, { key: 'sk-or-test', fetchImpl });
+  assert.equal(g1.status, 'generated');
+  assert.equal(g1.generation.costUsd, 0.13);
+  assert.ok(existsSync(join(dir, 'metadata.json')));
+  assert.equal((await viaOpenRouter(dir, { key: 'sk-or-test', fetchImpl })).status, 'cached');
+  assert.equal(calls, 1, 'never drawn twice');
+  const out2 = tmp();
+  const { dir: dir2 } = await prepare({ fid: 900005, source: { kind: 'file', json: { ...json, fid: 900005 } }, outRoot: out2 });
+  const refuse = async () => new Response(JSON.stringify({ error: { message: 'Insufficient credits' } }), { status: 402 });
+  await assert.rejects(viaOpenRouter(dir2, { key: 'sk-or-test', fetchImpl: refuse }), (e) => /402: Insufficient credits/.test(e.message) && !e.message.includes('sk-or'));
+  await assert.rejects(viaOpenRouter(dir2, { key: '', fetchImpl }), /No OpenRouter key/);
+});

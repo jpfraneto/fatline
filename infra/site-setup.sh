@@ -70,7 +70,8 @@ $GLOBAL
 		reverse_proxy localhost:8791
 	}
 	# The world: the hatchery's own copy of the Fatliners contract (indexer/src/world.mjs), read once an hour.
-	@world path /world /world/*
+	# And the beings it drew when they hatched (indexer/src/beings.mjs): /beings and /beings/<fid>.png.
+	@world path /world /world/* /beings /beings/*
 	handle @world {
 		reverse_proxy localhost:8791
 	}

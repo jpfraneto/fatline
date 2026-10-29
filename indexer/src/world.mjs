@@ -235,7 +235,7 @@ export class World {
   }
 
   /** What GET /world answers. warmth(fid): this hatchery's checks of that egg, if it keeps any. */
-  view(warmth = () => null) {
+  view(warmth = () => null, being = () => null) {
     const syncedAt = Number(this.get('syncedAt') ?? 0) || null;
     const fees = JSON.parse(this.get('fees') ?? '{}');
     return {
@@ -243,7 +243,7 @@ export class World {
       syncedBlock: this.get('block') === null ? null : Number(this.get('block')),
       syncedAt, nextAt: syncedAt ? syncedAt + EVERY_MS : null, error: this.lastError,
       ...(JSON.parse(this.get('summary') ?? '{}')),
-      tokens: this.tokens().filter((t) => t.stage !== 'none').map((t) => ({ ...t, earned: this.earned(t.vault, fees), warmth: warmth(t.fid) })),
+      tokens: this.tokens().filter((t) => t.stage !== 'none').map((t) => ({ ...t, earned: this.earned(t.vault, fees), being: t.stage === 'fatliner' ? being(t.fid) : null, warmth: warmth(t.fid) })),
     };
   }
 }

@@ -70,6 +70,9 @@ for (const l of all) {
   if (l.topics[0] === FID_LINKED) t.asleep = BigInt(l.topics[2]) === 0n;
 }
 const g = deployments.Fatliners.genesis;
+// The beings the master's hatchery drew when they hatched (indexer/src/beings.mjs); this job runs on that server.
+const drawn = await fetch(process.env.FATLINE_BEINGS_URL ?? 'http://127.0.0.1:8791/beings', { signal: AbortSignal.timeout(5000) })
+  .then((r) => (r.ok ? r.json() : null)).then((j) => j?.beings ?? {}).catch(() => ({}));
 
 mkdirSync(out, { recursive: true });
 let written = 0;
@@ -92,7 +95,7 @@ for (const [fid, t] of tokens) {
     ? {
       name: isGenesis ? title : `${title} · Fatliner #${fid}`,
       description: `${isGenesis ? 'Aster, the first Fatliner. ' : ''}One of the 777 Fatliners: it hatched from the egg of Farcaster account #${fid} after a Fatline node kept it warm for three days. Its surname, ${surname}, was read from that account's history and is the ticker of its coin.${asleep} https://fatline.ink/f/${surname}`,
-      ...(art.beings[fid] ?? art.eggs?.[t.stone] ?? art.egg),
+      ...(art.beings[fid] ?? drawn[fid] ?? art.eggs?.[t.stone] ?? art.egg),
       external_url: `https://fatline.ink/f/${surname}`,
       attributes: attrs,
     }

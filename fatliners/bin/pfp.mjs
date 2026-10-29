@@ -12,6 +12,7 @@
 //   --only <network>     read one network only (farcaster | hypersnap); the result says so
 //   --prompt-version v   default: the latest in src/pfp/pipeline.mjs PROMPTS
 //   --generate           also make the image (Codex's built-in image tool, the owner's ChatGPT login)
+//   --provider p         codex (default) | openrouter (OPENROUTER_API_KEY in the environment; --model, default openai/gpt-image-2)
 //   --revise             with --generate: make a new revision even if a portrait was accepted
 //   --jobs n             parallel generations (default 3)
 //   --snapshot-at ms     cutoff (default: the collection snapshot, 2026-10-22 00:00 UTC)
@@ -29,6 +30,7 @@ const { values: a } = parseArgs({ args: rest, options: {
   fid: { type: 'string' }, input: { type: 'string' }, reference: { type: 'string' }, offline: { type: 'boolean', default: false },
   only: { type: 'string' }, 'prompt-version': { type: 'string', default: LATEST_PROMPT }, generate: { type: 'boolean', default: false },
   revise: { type: 'boolean', default: false }, jobs: { type: 'string', default: '3' }, 'snapshot-at': { type: 'string' },
+  provider: { type: 'string', default: 'codex' }, model: { type: 'string' },
   'node-farcaster': { type: 'string' }, 'node-hypersnap': { type: 'string' }, quiet: { type: 'boolean', default: false },
 } });
 const rel = (p) => relative(process.cwd(), p) || '.';
@@ -86,7 +88,12 @@ for (const j of jobs) {
 }
 
 if (a.generate) {
-  const { generatePortrait } = await import('../src/pfp/codex-image.mjs');
+  const viaOpenRouter = a.provider === 'openrouter';
+  if (viaOpenRouter && !process.env.OPENROUTER_API_KEY) die('Set OPENROUTER_API_KEY in the environment (never on the command line).');
+  const adapter = await import(viaOpenRouter ? '../src/pfp/openrouter-image.mjs' : '../src/pfp/codex-image.mjs');
+  const generatePortrait = viaOpenRouter
+    ? (dir, o) => adapter.generatePortrait(dir, { ...o, key: process.env.OPENROUTER_API_KEY, ...(a.model ? { model: a.model } : {}) })
+    : adapter.generatePortrait;
   const queue = results.filter((r) => r.dir);
   const n = Math.max(1, Number(a.jobs) || 1);
   let failed = 0;
