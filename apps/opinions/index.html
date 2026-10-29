@@ -23,12 +23,12 @@
     <!-- How to run a Fatline of your own (apps/site/manual.js): a line on a phone, a column beside the client on a wide screen. -->
     <aside id="manual"></aside>
 
+    <!-- The bar, as in the iOS app: Today, Fatline, you (your face, or the Farcaster arch to sign in), and the pen. -->
     <nav class="tabs" id="tabs">
-      <a href="#/" data-tab="home" data-t="tabHome"></a>
-      <a href="#/fatline" data-tab="fatline" data-t="tabFatline"></a>
-      <a href="#/voices" data-tab="voices" data-t="tabVoices"></a>
-      <a href="#/people" data-tab="people" data-t="tabPeople"></a>
-      <a href="#/archive" data-tab="archive" data-t="tabArchive"></a>
+      <a href="#/" data-tab="home"><span class="glyph" data-glyph="stream"></span><span class="tab-name" data-t="tabHome"></span></a>
+      <a href="#/fatline" data-tab="fatline"><span class="glyph" data-glyph="star"></span><span class="tab-name" data-t="tabFatline"></span></a>
+      <a href="#/voices" data-tab="voices"><span class="glyph" data-glyph="voice"></span><span class="tab-name" data-t="tabVoices"></span></a>
+      <a href="#/people" data-tab="me" id="me-tab" class="tab-me"><span class="me-face" id="me-face"></span></a>
     </nav>
 
     <main id="main"></main>

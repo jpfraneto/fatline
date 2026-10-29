@@ -10,6 +10,8 @@
 //   manual.open({ scroll: true });  manual.close();  manual.setLang('es');
 
 export const AGENT_PROMPT = 'Help me run a Fatline: https://fatline.ink/skill.md';
+// For someone whose Snapchain or Hypersnap node already runs: no renting, no install, it joins as it is.
+export const NODE_PROMPT = 'I already run a Farcaster node. Bring it into Fatline: https://fatline.ink/skill.md';
 export const INSTALL = 'curl -fsSL https://fatline.ink/install.sh | sh';
 export const JOIN_CHECK = 'curl -fsSL https://fatline.ink/join.sh | bash -s -- --check';
 
@@ -41,6 +43,8 @@ export const TEXT = {
     agentWhere: 'Paste it into Claude Code, Codex or another coding agent that can run commands.',
     agentWhat: 'It walks you through setting up your own node and client, asks before spending any money, and keeps you in control.',
     desk: 'Open a terminal (on a Mac: ⌘ Space, then Terminal), start your agent, paste.',
+    nodeK: 'Or, if you already run a Farcaster node, just give your agent this:',
+    node: 'It joins your Snapchain or Hypersnap node as it is: nothing to rent, nothing to pay, your node untouched.',
     share: 'Share',
     copy: 'Copy', copied: 'Copied', selected: 'Selected: copy it', copiedSay: 'Copied to the clipboard.',
     guidedK: 'Guided install',
@@ -59,7 +63,7 @@ export const TEXT = {
       ]],
       node: ['Run Snapchain or Hypersnap', 'Pick one. A full copy of Farcaster streams onto your server (a ~400 GB snapshot): it answers in about an hour and a half, then catches up over a few more. Snapchain is run by Farcaster; Hypersnap is a community fork that keeps full history.'],
       client: ['Open your client', 'It serves `http://localhost:8787`, reading from your node, and always says which node that is.'],
-      identity: ['Connect your identity, when you want to', 'To post, press Cast in your client: it gives the client its own key for your account (not a new account), approved in the Farcaster app or with one signature from the wallet that owns it. No seed phrase, ever. Then `fatline egg` lays an egg your node keeps warm: three warm days and it hatches into one of the 777 Fatliners.'],
+      identity: ['Connect your identity, when you want to', 'To post, press Cast in your client: it gives the client its own key for your account (not a new account), approved in the Farcaster app. No seed phrase, ever. Then `fatline egg` lays an egg your node keeps warm: three warm days and it hatches into one of the 777 Fatliners.'],
     },
     alreadyK: 'Already run a node?',
     already: 'On its server. This only looks: version, sync, and what joining would change.',
@@ -81,6 +85,8 @@ export const TEXT = {
     agentWhere: 'Pégala en Claude Code, Codex u otro agente de código que pueda ejecutar comandos.',
     agentWhat: 'Te guía para montar tu propio nodo y tu cliente, pregunta antes de gastar dinero y te deja a ti el control.',
     desk: 'Abre una terminal (en un Mac: ⌘ Espacio, luego Terminal), inicia tu agente y pega.',
+    nodeK: 'O, si ya corres un nodo de Farcaster, solo dale esto a tu agente:',
+    node: 'Suma tu nodo de Snapchain o Hypersnap tal como está: nada que arrendar, nada que pagar, tu nodo intacto.',
     share: 'Compartir',
     copy: 'Copiar', copied: 'Copiado', selected: 'Seleccionado: cópialo', copiedSay: 'Copiado al portapapeles.',
     guidedK: 'Instalación guiada',
@@ -99,7 +105,7 @@ export const TEXT = {
       ]],
       node: ['Corre Snapchain o Hypersnap', 'Elige uno. Una copia completa de Farcaster llega a tu servidor (una instantánea de ~400 GB): responde en cerca de hora y media y se pone al día en unas horas más. Snapchain lo corre Farcaster; Hypersnap es un fork comunitario que guarda toda la historia.'],
       client: ['Abre tu cliente', 'Sirve `http://localhost:8787`, leyendo desde tu nodo, y siempre dice cuál nodo es.'],
-      identity: ['Conecta tu identidad, cuando quieras', 'Para publicar, toca Cast en tu cliente: le da al cliente su propia llave para tu cuenta (no es una cuenta nueva), aprobada en la app de Farcaster o con una firma de la billetera dueña de la cuenta. Nunca una frase semilla. Después, `fatline egg` pone un huevo que tu nodo mantiene tibio: tres días tibios y nace uno de los 777 Fatliners.'],
+      identity: ['Conecta tu identidad, cuando quieras', 'Para publicar, toca Cast en tu cliente: le da al cliente su propia llave para tu cuenta (no es una cuenta nueva), aprobada en la app de Farcaster. Nunca una frase semilla. Después, `fatline egg` pone un huevo que tu nodo mantiene tibio: tres días tibios y nace uno de los 777 Fatliners.'],
     },
     alreadyK: '¿Ya corres un nodo?',
     already: 'En su servidor. Esto solo mira: versión, sincronía y lo que cambiaría al unirse.',
@@ -179,6 +185,8 @@ const CSS = `
 .flm-k b { font-weight: 600; min-width: 1.6em; }
 .flm-note { color: var(--flm-muted); font-size: 13.5px; }
 .flm-what { font-size: 15px; }
+.flm-node { display: grid; gap: 8px; margin-top: 6px; padding-top: 12px; border-top: .7px solid var(--flm-line); }
+.flm-nodek { margin: 0; font-size: 15px; font-weight: 600; }
 .flm-cmd { display: flex; align-items: stretch; min-width: 0; border-radius: 12px 5px 12px 5px; overflow: hidden;
   border: .7px solid var(--flm-line); background: rgba(0, 0, 0, .38); }
 .flm-cmd code { flex: 1; min-width: 0; margin: 0; padding: 10px 12px; background: none; border: 0; color: var(--flm-ink);
@@ -357,6 +365,11 @@ export function mountManual(target, { lang = 'en', dock = false, openUrl = null 
               ${cmd(AGENT_PROMPT, { big: true })}
               <p class="flm-what">${esc(L.agentWhere)} ${esc(L.agentWhat)}</p>
               <p class="flm-desk">${esc(L.desk)}</p>
+              <div class="flm-node">
+                <p class="flm-nodek">${esc(L.nodeK)}</p>
+                ${cmd(NODE_PROMPT)}
+                <p class="flm-note">${esc(L.node)}</p>
+              </div>
               ${canShare() ? `<div class="flm-row"><button type="button" class="flm-share">${esc(L.share)}</button></div>` : ''}
             </li>
             <li class="flm-step flm-rise" style="--i:2">

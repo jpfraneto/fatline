@@ -1,9 +1,7 @@
 // Voices (long-form, onchain) and My people (casts from the chosen network, without noise).
 import { parseAbi } from 'viem';
 import { $, api, el, label, short, showSource, state, store, t, timeAgo, wallet } from './lib.js';
-import { castActions, castComposer, followButton } from './post.js';
-import { dayFeed } from './day.js';
-import { loggedIn, logOut, loginButton } from './fatline-login.js';
+import { castActions } from './post.js';
 
 const voicesAbi = parseAbi(['function say(string text, uint256 parentId, uint256 fid) returns (uint256)']);
 const MAX_BYTES = 16_384;
@@ -158,40 +156,3 @@ export async function voicePage(id) {
   ].filter(Boolean));
 }
 
-export function peoplePage({ route }) {
-  const main = $('#main');
-  const input = el('input', { placeholder: t('addPlaceholder'), autocapitalize: 'off', autocomplete: 'off' });
-  const status = el('p', { class: 'status' });
-  const chips = el('div', { class: 'chips' }, ...state.people.map((p) => el('span', { class: 'chip' }, `@${p.username ?? p.fid}`,
-    followButton(p.fid),
-    el('button', { type: 'button', 'aria-label': t('remove'), onclick: () => { state.people = state.people.filter((x) => x.fid !== p.fid); store.set('people', state.people); route(); } }, '×'))));
-  const form = el('form', {
-    class: 'add',
-    onsubmit: async (e) => {
-      e.preventDefault();
-      try {
-        const user = await api('/api/user', { network: state.network, q: input.value.trim() });
-        if (!state.people.some((p) => p.fid === user.fid)) state.people.push({ fid: user.fid, username: user.username });
-        store.set('people', state.people);
-        route();
-      } catch {
-        status.textContent = t('notFound');
-      }
-    },
-  }, input, el('button', { type: 'submit' }, t('add')));
-  // Logged in with Fatline: your people are the people you follow on Farcaster, read from this node.
-  const who = loggedIn();
-  if (who) {
-    return main.replaceChildren(castComposer({ onDone: () => setTimeout(route, 1500) }),
-      el('p', { class: 'fl-who' }, t('youAre', who.username ? `@${who.username}` : `FID ${who.fid}`), ' ',
-        el('button', { type: 'button', class: 'linkish', onclick: () => { logOut(); route(); } }, t('logOut'))),
-      dayFeed(who.fid, 'The people you follow, read from this node.'));
-  }
-  const header = [castComposer({ onDone: () => setTimeout(route, 1500) }),
-    el('div', { class: 'fl-invite' }, el('p', {}, t('loginInvite')), loginButton(() => route())),
-    el('p', { class: 'muted' }, t('peopleHelp')), form, status, chips];
-  // Your own casts show up among your people, so you can see what you posted.
-  const fids = [...new Set([...state.people.map((p) => p.fid), ...(state.me?.fid ? [state.me.fid] : [])])];
-  if (!fids.length) return main.replaceChildren(...header);
-  return feedPage({ fids, header, route });
-}

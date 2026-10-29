@@ -43,7 +43,7 @@ The agent reads [the skill](../skill.md) and asks before every step:
 1. **Where your node lives.** A server rented by the day in USDC on Base (about 11 USDC a day, no card, no account), your own Hetzner account (about $2.60 a day), a server you already have, or this computer. It shows the price first.
 2. **Paying.** You approve each payment in your own wallet: a QR code for your phone, or a browser wallet. The agent never sees a key or a seed phrase.
 3. **Your network.** Snapchain or Hypersnap. The node downloads a copy of the network and catches up in a few hours.
-4. **Your client** opens at `localhost:8787`. Press **Cast** to post: the first time, it gives the client its own key for your account (not a new account), approved in the Farcaster app or with one signature from the wallet that owns your account. You can cast before your node is in sync; until then casts go out through Fatline's master node, and the client says so. [How it works](tutorial.html#post).
+4. **Your client** opens at `localhost:8787`. Press **Cast** to post: the first time, it gives the client its own key for your account (not a new account), approved in the Farcaster app (Sign in with Farcaster, the only way in on any Fatline client). You can cast before your node is in sync; until then casts go out through Fatline's master node, and the client says so. [How it works](tutorial.html#post).
 
 ### By hand
 
@@ -112,7 +112,7 @@ fatline egg --node http://<your server>:3381
 
 `fatline identity` gives Fatline a key for your account (a QR code for the Farcaster app; no app? use the Cast button's wallet sign-in in `fatline client`). `fatline egg` shows the rules, then a QR code: you approve with the wallet tied to your Farcaster account, and the egg is yours. Three warm days and it hatches. Watch it on [the hatchery](https://fatline.ink/).
 
-Or hand both steps to your agent: `Help me run a Fatline: https://fatline.ink/skill.md` and tell it your node's address.
+Or hand both steps to your agent: `I already run a Farcaster node. Bring it into Fatline: https://fatline.ink/skill.md` and tell it your node's address.
 
 ## Hatch a Fatliner
 

@@ -1,14 +1,16 @@
 import { appsPage, launchPage } from './apps.js';
-import { feedPage, peoplePage, voicePage } from './feed.js';
+import { feedPage, voicePage } from './feed.js';
 import { $, api, el, showSource, state, store, t } from './lib.js';
 import { settingsPage } from './settings.js';
 import { archivePage, coinPage, leaveLive, nodePage } from './fatline.js';
 import { dayPage } from './day.js';
 import { directoryPage } from './directory.js';
 import { loadMe } from './post.js';
-import { castButton } from './castbutton.js';
+import { castButton, openCast } from './castbutton.js';
 import { cockpitPage, leaveCockpit } from './cockpit.js';
-import { signPage } from './signpage.js';
+import { mePage } from './me.js';
+import { loggedIn, profileOf } from './fatline-login.js';
+import { ARCH, STAR, STREAM, VOICE } from './glyphs.js';
 import { placePage } from './place.js';
 import { birthPage } from './birth.js';
 import { enterMiniApp, inMiniApp, openUrl } from './miniapp.js';
@@ -38,26 +40,39 @@ function renderChrome() {
   if (planet) { planet.textContent = glyph; planet.style.setProperty('--planet', color); }
   document.querySelectorAll('[data-t]').forEach((n) => { n.textContent = t(n.dataset.t); });
   $('#settings-link').setAttribute('aria-label', t('settings'));
+  const glyphs = { stream: STREAM, star: STAR, voice: VOICE };
+  document.querySelectorAll('[data-glyph]').forEach((n) => { if (!n.firstChild) n.innerHTML = glyphs[n.dataset.glyph]; });
+  renderMe();
   // Voices (long posts onchain) only where a Voices contract is configured; otherwise no tab at all.
   const voicesTab = document.querySelector('#tabs a[data-tab="voices"]');
   if (voicesTab) voicesTab.hidden = !state.config?.voices?.address;
+}
+
+// The face in the bar: yours once signed in, else the Farcaster arch, glowing, asking you in.
+async function renderMe() {
+  const face = $('#me-face');
+  if (!face) return;
+  const who = loggedIn();
+  $('#me-tab').setAttribute('aria-label', who ? t('you') : t('signIn'));
+  if (!who) { face.className = 'me-face fc-glow'; face.innerHTML = ARCH; return; }
+  face.className = 'me-face';
+  face.replaceChildren(el('span', { class: 'me-dot' }));
+  const p = await profileOf(who.fid);
+  if (p.pfp && loggedIn()?.fid === who.fid) face.replaceChildren(el('img', { src: p.pfp, alt: '' }));
 }
 
 const fail = (err) => $('#main').replaceChildren(el('p', { class: 'warn' }, err.message));
 
 function route() {
   const hash = location.hash.slice(1) || '/';
-  const tab = hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'people' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/fatline') || hash.startsWith('/here') || hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') ? 'fatline' : 'home';
+  const tab = hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'me' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/fatline') || hash.startsWith('/here') || hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') ? 'fatline' : 'home';
   document.querySelectorAll('#tabs a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.tab === tab)));
-  if (tab !== 'voices' && tab !== 'people') showSource(null);
+  if (tab !== 'voices') showSource(null);
   window.scrollTo(0, 0);
   leaveLive();
   leaveCockpit();
   $('#main').classList.remove('fatline-page', 'birth-page');
 
-  // The phone half of signing in with a wallet (signpage.js): ?sign=<session>, from the QR on a computer.
-  const signing = new URLSearchParams(location.search).get('sign');
-  if (signing && /^[0-9a-f]{32}$/.test(signing)) return signPage(signing);
   // The canonical page of a coin (or of a coinless app's vault): #/coin/<chainId>/<address>.
   const coin = hash.match(/^\/coin\/([^/]+)\/([^/?#]+)/);
   if (coin) return coinPage(coin[1], coin[2]);
@@ -78,7 +93,7 @@ function route() {
     if (!state.config.voices?.address) { location.replace('#/'); return; }
     return feedPage({ route }).catch(fail);
   }
-  if (hash.startsWith('/people')) return peoplePage({ route });
+  if (hash.startsWith('/people')) return mePage({ route }).catch(fail);
   if (hash.startsWith('/settings')) return settingsPage({ onChange: () => { renderChrome(); route(); } }).catch(fail);
   if (hash.startsWith('/apps')) return appsPage().catch(fail);
   if (hash.startsWith('/fatline')) return directoryPage().catch(fail);
@@ -99,6 +114,10 @@ async function boot() {
   await loadMe();
   if (!inMiniApp() || state.me?.canWrite) document.body.append(castButton()); // visitors only look
   renderChrome();
+  // Signed out, the face in the bar signs you in, right there (the pen does too).
+  $('#me-tab').addEventListener('click', (e) => { if (!loggedIn()) { e.preventDefault(); openCast(); } });
+  // Signed in or out: the face changes, and the page shows it (Today through your eyes).
+  window.addEventListener('fatline:me', () => { renderMe(); route(); });
   window.addEventListener('hashchange', route);
   route();
 }

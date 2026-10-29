@@ -303,7 +303,7 @@ cmd_client() { # your client; on first run, prove who you are (you are your FID)
   if [ ! -f "$ROOT/.fatline/identity.json" ] && [ -t 0 ] && [ -t 1 ]; then
     printf 'Connect your Farcaster account first (scan a QR code with your phone)? [Y/n] '
     read -r ok
-    case "$ok" in n|N) ;; *) (cmd_connect) || { echo; echo "Not connected; starting the client anyway. That's fine: connect only shows who you are."; echo "To cast, press Cast in the client (Farcaster app QR, its link, or a browser wallet). Later: fatline connect"; echo; } ;; esac
+    case "$ok" in n|N) ;; *) (cmd_connect) || { echo; echo "Not connected; starting the client anyway. That's fine: connect only shows who you are."; echo "To cast, press the pen in the client and sign in with Farcaster (a QR code, or its link). Later: fatline connect"; echo; } ;; esac
   fi
   # Open the client in the browser once it is up (not on a server without a screen).
   if [ -t 1 ] && { [ "$(uname)" = Darwin ] || [ -n "${DISPLAY:-}${WAYLAND_DISPLAY:-}" ]; }; then export FATLINE_OPEN=1; fi

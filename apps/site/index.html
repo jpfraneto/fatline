@@ -43,6 +43,7 @@
   .me { display: flex; align-items: center; gap: 10px; }
   .me img { width: 30px; height: 30px; border-radius: 50%; }
   .me b { font-weight: 600; }
+  .me .me-place { margin-left: 6px; color: #b9a3ec; font-weight: 600; text-decoration: none; }
   .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: 3px; background: var(--card); }
   .toggle button { font: 500 12px var(--mono); letter-spacing: .06em; color: var(--muted); background: none; border: 0; border-radius: 999px; padding: 7px 12px; cursor: pointer; }
   .toggle button[aria-pressed="true"] { background: var(--accent); color: #0b0b0b; }
@@ -401,7 +402,7 @@ getJson('/status.json').then(async (s) => {
   setInterval(refreshMoney, 60 * 1000);
 });
 
-// Inside Farcaster: if you have an egg or a Fatliner, your own client (served by your own server) is where you live.
+// Inside Farcaster: who you are, and, if you keep a Fatline, a link to it. No jump: here you see every place.
 (async () => {
   if (window.parent === window && !window.ReactNativeWebView) return; // not inside a Farcaster host
   try {
@@ -419,8 +420,12 @@ getJson('/status.json').then(async (s) => {
     if (mine) {
       const home = CLIENT_AT[u.fid] ?? `https://${mine.label}.fatline.ink`;
       const up = await fetch(`${home}/api/health`, { signal: AbortSignal.timeout(5000) }).then((r) => r.ok).catch(() => false);
-      // Its own mini app (its own domain, so the Farcaster app gives it the wallet), not a jump inside this one.
-      if (up) { try { await sdk.actions.openMiniApp({ url: `${home}/` }); } catch { location.replace(`${home}/`); } }
+      if (!up) return;
+      // Its own mini app (its own domain, so the Farcaster app gives it the wallet), when you choose to go.
+      const a = document.createElement('a');
+      a.href = `${home}/`; a.className = 'me-place'; a.textContent = 'Your Fatline →';
+      a.addEventListener('click', async (e) => { e.preventDefault(); try { await sdk.actions.openMiniApp({ url: `${home}/` }); } catch { location.href = `${home}/`; } });
+      me.append(a);
     }
   } catch {}
 })();

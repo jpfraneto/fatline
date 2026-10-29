@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '../..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 // A browser file with no package.json of its own: loaded as a module from its text (it imports nothing).
-const { AGENT_PROMPT, INSTALL, JOIN_CHECK, BY_HAND, LINKS, TEXT } = await import(`data:text/javascript,${encodeURIComponent(read('apps/site/manual.js'))}`);
+const { AGENT_PROMPT, NODE_PROMPT, INSTALL, JOIN_CHECK, BY_HAND, LINKS, TEXT } = await import(`data:text/javascript,${encodeURIComponent(read('apps/site/manual.js'))}`);
 
 const readme = read('README.md');
 const docs = read('apps/site/docs/index.md');
@@ -21,6 +21,13 @@ test('the agent line is the one the README and the docs give', () => {
   assert.equal(AGENT_PROMPT, 'Help me run a Fatline: https://fatline.ink/skill.md');
   assert.ok(readme.includes(AGENT_PROMPT), 'README.md');
   assert.ok(docs.includes(AGENT_PROMPT), 'apps/site/docs/index.md');
+});
+
+test('the line for someone who already runs a node is the one the README and the docs give, and the skill answers it', () => {
+  assert.equal(NODE_PROMPT, 'I already run a Farcaster node. Bring it into Fatline: https://fatline.ink/skill.md');
+  assert.ok(readme.includes(NODE_PROMPT), 'README.md');
+  assert.ok(docs.includes(NODE_PROMPT), 'apps/site/docs/index.md');
+  assert.ok(skill.includes('## Already runs a node?'), 'skill.md has the section the agent follows');
 });
 
 test('the guided install is the installer line itself', () => {

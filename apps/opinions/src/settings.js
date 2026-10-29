@@ -24,6 +24,7 @@ export async function settingsPage({ onChange }) {
     el('h2', {}, t('nodes')), nodes,
     el('h2', {}, t('language')), langs,
     el('h2', {}, 'Farcaster'), identity,
+    el('h2', {}, t('tabArchive')), el('p', { class: 'muted small' }, el('a', { href: '#/archive' }, `${t('tabArchive')} →`)),
   );
   const status = await api('/api/networks').catch(() => []);
   // One choice per network: automatic, or exactly one node. The choice is stored in this browser.

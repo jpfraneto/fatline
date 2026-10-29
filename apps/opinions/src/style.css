@@ -560,20 +560,58 @@ body::after {
 /* Inscriptions: small caps, letter-spaced, like the iOS labels. */
 h2, .ck-h, .label, .vw-label, .kind { font: 500 11px var(--serif); letter-spacing: .28em; text-transform: uppercase; color: var(--mist); }
 
-/* The bar at the bottom: a floating veil with the places, the pen on the right (castbutton.js). */
+/* The bar at the bottom, as in the iOS app: a floating veil you can't read through; Today and Fatline as a glyph over an
+   inscription, then your face (or the Farcaster arch, glowing, to sign in), then the pen (castbutton.js) at the right end. */
 .tabs { position: fixed; z-index: 40; left: 50%; transform: translateX(-50%); bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  width: min(640px, calc(100% - 24px)); margin: 0; padding: 10px 92px 10px 14px; border: 0; justify-content: space-around; gap: 4px;
-  border-radius: var(--veil); background: rgba(20, 17, 44, .62); backdrop-filter: blur(22px) saturate(1.3); -webkit-backdrop-filter: blur(22px) saturate(1.3);
-  box-shadow: inset 0 0 0 .7px rgba(237, 186, 84, .25), 0 18px 50px rgba(0, 0, 0, .45); }
-.tabs a { border: 0; margin: 0; padding: 12px 4px; font: 500 10.5px var(--serif); letter-spacing: .2em; text-transform: uppercase; color: var(--faint); text-align: center; flex: 1; }
-.tabs a[aria-current="true"] { color: var(--parchment); border: 0; text-shadow: 0 0 14px color-mix(in srgb, var(--pole) 70%, transparent); }
-.tabs a[aria-current="true"]::before { content: ""; display: block; width: 18px; height: 2px; margin: 0 auto 7px; border-radius: 2px; background: var(--pole); box-shadow: 0 0 10px var(--pole); }
-@media (max-width: 480px) { .tabs { padding-right: 84px; } .tabs a { letter-spacing: .08em; font-size: 9.5px; } }
-.castbutton-wrap { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); right: max(calc(50% - 320px + 10px), calc(22px + env(safe-area-inset-right, 0px))); }
-/* The pen: a seal of seven gently swelling sides, gold to peach. */
-.castbutton { width: 66px; height: 66px; border-radius: 0; color: #1d1206; font: 600 14px var(--serif);
+  width: min(560px, calc(100% - 28px)); margin: 0; padding: 8px 76px 8px 8px; border: 0; justify-content: space-around; align-items: center; gap: 0;
+  border-radius: 30px 12px 30px 12px; background: rgba(15, 13, 36, .94); backdrop-filter: blur(24px) saturate(1.4); -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  box-shadow: inset 0 0 0 .7px rgba(237, 186, 84, .18), 0 18px 50px rgba(0, 0, 0, .5); }
+.tabs a { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 46px;
+  border: 0; margin: 0; padding: 0; text-decoration: none; color: var(--faint); -webkit-tap-highlight-color: transparent; }
+.tabs a[hidden] { display: none; }
+.tabs .glyph { display: block; width: 26px; height: 20px; transition: transform .35s cubic-bezier(.34, 1.56, .64, 1), color .2s; }
+.tabs .glyph svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.tabs .tab-name { font: 500 9px var(--serif); letter-spacing: .24em; text-transform: uppercase; padding-left: .24em; color: var(--faint); }
+.tabs a[aria-current="true"] .glyph { color: var(--pole); transform: scale(1.12); filter: drop-shadow(0 0 6px color-mix(in srgb, var(--pole) 60%, transparent)); }
+.tabs a[aria-current="true"] .tab-name { color: var(--parchment); }
+.tabs a[aria-current="true"]::before { content: none; }
+/* You: your face in a ring, or the Farcaster arch glowing in its purple, asking you in. */
+.tab-me .me-face { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
+  box-shadow: 0 0 0 1.6px transparent; transition: transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+.tab-me .me-face img { width: 100%; height: 100%; object-fit: cover; filter: saturate(.6); opacity: .8; }
+.tab-me .me-dot { width: 100%; height: 100%; background: var(--raise); }
+.tab-me[aria-current="true"] .me-face { box-shadow: 0 0 0 1.6px var(--pole); transform: scale(1.06); }
+.tab-me[aria-current="true"] .me-face img { filter: none; opacity: 1; }
+.fc-glow, .fc-badge { background: #855dcd; color: #fff; }
+.tab-me .me-face.fc-glow { width: 36px; height: 36px; border-radius: 11px; padding: 8px; animation: fc-glow 2.4s ease-in-out infinite; }
+.fc-glow svg, .fc-badge svg, .fc-mark svg { width: 100%; height: 100%; display: block; }
+@keyframes fc-glow { 0%, 100% { box-shadow: 0 0 10px 1px rgba(133, 93, 205, .55); } 50% { box-shadow: 0 0 22px 6px rgba(133, 93, 205, .9); } }
+@media (prefers-reduced-motion: reduce) { .tab-me .me-face.fc-glow { animation: none; box-shadow: 0 0 16px 3px rgba(133, 93, 205, .7); } }
+.castbutton-wrap { bottom: calc(18px + env(safe-area-inset-bottom, 0px)); right: max(calc(50% - 280px + 12px), calc(26px + env(safe-area-inset-right, 0px))); }
+/* The pen: a seal of seven gently swelling sides, gold to peach, square-and-pencil inside. */
+.castbutton { width: 54px; height: 54px; border-radius: 0; color: #1d1206; display: grid; place-items: center; padding: 0;
   background: radial-gradient(circle at 35% 30%, #fff1c9, var(--gold) 45%, var(--peach));
-  clip-path: polygon(50% 0%, 89% 19%, 98% 61%, 72% 95%, 28% 95%, 2% 61%, 11% 19%); box-shadow: none; filter: drop-shadow(0 0 16px rgba(237, 186, 84, .55)); }
+  clip-path: polygon(50% 0%, 89% 19%, 98% 61%, 72% 95%, 28% 95%, 2% 61%, 11% 19%); box-shadow: none; filter: drop-shadow(0 0 12px rgba(237, 186, 84, .6));
+  transition: transform .25s cubic-bezier(.34, 1.56, .64, 1); }
+.castbutton:active { transform: scale(.88); }
+.castbutton .pen { width: 22px; height: 22px; display: block; transform: translate(1px, -1px); }
+.castbutton .pen svg { width: 100%; height: 100%; display: block; }
+.castpanel-why { display: flex; gap: 10px; align-items: center; margin: 0; font-size: 14px; color: var(--muted); }
+.castpanel-why .fc-badge { flex: none; width: 30px; height: 30px; padding: 6px; border-radius: 9px; box-shadow: 0 0 14px rgba(133, 93, 205, .7); }
+
+/* You (me.js). */
+.me-in { max-width: 30rem; margin: 40px auto 0; display: grid; justify-items: center; gap: 14px; text-align: center; }
+.me-in h1 { margin: 6px 0 0; font: 400 30px/1.15 var(--serif); }
+.me-in p { margin: 0; }
+.fc-badge.big { width: 72px; height: 72px; padding: 16px; border-radius: 22px; animation: fc-glow 2.4s ease-in-out infinite; }
+.fc-button { display: inline-flex; align-items: center; gap: 10px; border: 0; border-radius: 999px; padding: 13px 22px; cursor: pointer;
+  background: #855dcd; color: #fff; font: 600 16px var(--serif); box-shadow: 0 0 24px rgba(133, 93, 205, .5); }
+.fc-button .fc-mark { width: 18px; height: 18px; }
+.me-head { display: flex; gap: 16px; align-items: center; margin: 14px 0 20px; }
+.me-head h1 { margin: 0; font: 400 28px/1.15 var(--serif); }
+.me-head p { margin: 2px 0 0; }
+.me-pfp { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex: none; background: var(--raise); box-shadow: 0 0 0 1.6px var(--pole), 0 0 22px color-mix(in srgb, var(--pole) 40%, transparent); }
+.me-foot { margin-top: 18px; }
 
 /* Veils: every card. No right angles; the corners answer each other across the diagonal. */
 .item, .app-card, .economy, .presence, .indexer, .strip-node, .node-option, .vw-egg, details, .exp, .castpanel {
@@ -647,25 +685,16 @@ button[type="submit"], .more { border-radius: 18px 7px 18px 7px; }
 #manual:empty { display: none; }
 body:has(#main.birth-page) #manual { display: none; } /* the hatching is a ceremony: nothing beside it */
 @media (min-width: 1000px) {
-  :root { --fl-col: 600px; --fl-gap: 36px; --fl-side: 320px; --fl-bar: min(640px, var(--fl-col)); }
+  :root { --fl-col: 600px; --fl-gap: 36px; --fl-side: 320px; --fl-bar: min(560px, var(--fl-col)); }
   body { max-width: calc(var(--fl-col) + var(--fl-gap) + var(--fl-side) + 32px); padding-right: calc(16px + var(--fl-gap) + var(--fl-side)); }
   #manual { position: fixed; z-index: 30; margin: 0; width: var(--fl-side);
     top: calc(20px + env(safe-area-inset-top, 0px)); left: calc(50% - (var(--fl-col) + var(--fl-gap) + var(--fl-side)) / 2 + var(--fl-col) + var(--fl-gap));
     max-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
     border-radius: var(--veil); }
   .tabs { left: calc(50% - (var(--fl-gap) + var(--fl-side)) / 2); width: var(--fl-bar); }
-  .castbutton-wrap { right: calc(50% + (var(--fl-gap) + var(--fl-side)) / 2 - var(--fl-bar) / 2 + 10px); }
+  .castbutton-wrap { right: calc(50% + (var(--fl-gap) + var(--fl-side)) / 2 - var(--fl-bar) / 2 + 12px); }
   body:has(#main.birth-page) { max-width: calc(var(--fl-col) + 32px); padding-right: 16px; }
   body:has(#main.birth-page) .tabs { left: 50%; }
-  body:has(#main.birth-page) .castbutton-wrap { right: calc(50% - var(--fl-bar) / 2 + 10px); }
+  body:has(#main.birth-page) .castbutton-wrap { right: calc(50% - var(--fl-bar) / 2 + 12px); }
 }
 @media (min-width: 1200px) { :root { --fl-col: 680px; --fl-gap: 48px; --fl-side: 360px; } }
-
-/* Sign in without the Farcaster app (castbutton.js), and its phone half (signpage.js). */
-.castpanel-find { display: flex; gap: 8px; }
-.castpanel-find input { flex: 1; min-width: 0; }
-.castpanel-out { display: grid; gap: 10px; }
-.castpanel-out code { font-size: 12px; }
-.castpanel .linkish { justify-self: center; opacity: .8; }
-.signpage { max-width: 30rem; margin: 40px auto; padding: 0 16px; display: grid; gap: 12px; }
-.signpage h1 { font: 400 1.8rem var(--serif); margin: 0; }

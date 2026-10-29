@@ -121,13 +121,13 @@ export function dayFeed(fid, whose) {
   return box;
 }
 
-/** Whose day this client shows: who logged in with Fatline, else this place's runner, else this client's account. */
+/** Whose day this client shows: who signed in here, else this place's runner, else this client's account. */
 export async function whoseDay() {
   const me = loggedIn();
   if (me?.fid) return { fid: me.fid, whose: 'The people you follow, read from this node.' };
   const place = await api('/api/place').catch(() => null);
   const owner = place?.owner ?? (place?.fid ? { fid: place.fid } : null);
-  if (owner?.fid) return { fid: owner.fid, whose: `Through ${owner.username ? `@${owner.username}` : `FID ${owner.fid}`}'s eyes: the people they follow. Log in under People to see yours.` };
+  if (owner?.fid) return { fid: owner.fid, whose: `Through ${owner.username ? `@${owner.username}` : `FID ${owner.fid}`}'s eyes: the people they follow. Sign in with Farcaster to see yours.` };
   if (state.me?.fid) return { fid: state.me.fid, whose: 'The people you follow, read from your node.' };
   return null;
 }
