@@ -1,12 +1,16 @@
 // Posting to Farcaster or Hypersnap with this client's own app key.
 // The key lives on the machine running the indexer; the browser only asks it to sign.
 // Every action shows its real state: sending, then confirmed (read back from the node) or pending.
+import { visitorKey, visitorSend } from './visitor.js';
 import { api, chosenNode, el, state, store, t } from './lib.js';
 
 const CAST_MAX_BYTES = 1024; // over 320 bytes it goes out as a long cast
 
 export async function loadMe() {
   try { state.me = await api('/api/me'); } catch { state.me = { fid: null, canWrite: false }; }
+  // Not this server's owner, but signed in here with a key of your own (visitor.js): you cast as yourself.
+  const mine = visitorKey();
+  if (!state.me.canWrite && mine) state.me = { fid: mine.fid, canWrite: true, visitor: true, publicKey: mine.publicKey };
   return state.me;
 }
 
@@ -14,6 +18,7 @@ const canPost = () => Boolean(state.me?.fid && state.me?.canWrite);
 
 /** POST with the write token when this client runs on a server (see Settings). */
 async function send(path, body, network = state.network) {
+  if (state.me?.visitor) return visitorSend(path, { ...body, network, node: chosenNode(network) });
   const token = store.get('writeToken', '');
   const res = await fetch(new URL(path, location.origin), {
     method: 'POST',

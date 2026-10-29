@@ -94,3 +94,37 @@ test('end to end: https passes through untouched to the right server; http too; 
 
   r.close(); names.close(); theirs.close(); caddy.close();
 });
+
+test('a server that does not answer: this server stands in for its name, then hands it back once it answers', async () => {
+  const caddy = await recorder();
+  const later = await recorder(); // their server, back again
+  const closed = netServer(); const deadPort = await listen(closed); closed.close(); // nothing listens here now
+  const names = httpServer((req, res) => res.end(JSON.stringify({ names: [{ label: 'thaituma', host: '127.0.0.1' }] })));
+  const namesPort = await listen(names);
+  const logs = [];
+  const opts = {
+    namesUrl: `http://127.0.0.1:${namesPort}/names`, httpPort: 0, tlsPort: 0,
+    caddyHttp: `127.0.0.1:${caddy.port}`, caddyTls: `127.0.0.1:${caddy.port}`, allowPrivate: true, log: (l) => logs.push(l),
+  };
+  const send = (port, bytes) => new Promise((ok) => { const c = connect(port, '127.0.0.1', () => c.write(bytes)); let out = ''; c.on('data', (d) => (out += d)); c.on('close', () => ok(out)); c.on('error', () => ok(out)); });
+  const hello = await clientHello('thaituma.fatline.ink');
+
+  const r = startRouter({ ...opts, targetHttpPort: deadPort, targetTlsPort: deadPort, downMs: 60_000 });
+  await r.ready;
+  assert.equal(await send(r.tls.address().port, hello), 'ok');
+  assert.ok(caddy.seen.at(-1).equals(hello), 'Caddy got the exact bytes');
+  const challenge = 'GET /.well-known/acme-challenge/t HTTP/1.1\r\nHost: thaituma.fatline.ink\r\n\r\n';
+  assert.equal(await send(r.http.address().port, challenge), 'ok');
+  assert.equal(caddy.seen.at(-1).toString(), challenge, 'its certificate challenge reaches this Caddy too');
+  assert.equal(logs.filter((l) => /did not answer/.test(l)).length, 1, 'said once, not per connection: ' + logs.join(' / '));
+  r.close();
+
+  // downMs over and their server answers again: straight to it.
+  const r2 = startRouter({ ...opts, targetHttpPort: later.port, targetTlsPort: later.port, downMs: 0 });
+  await r2.ready;
+  const n = caddy.seen.length;
+  assert.equal(await send(r2.tls.address().port, hello), 'ok');
+  assert.ok(later.seen.at(-1).equals(hello));
+  assert.equal(caddy.seen.length, n);
+  r2.close(); names.close(); caddy.close(); later.close();
+});

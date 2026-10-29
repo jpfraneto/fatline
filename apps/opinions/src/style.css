@@ -579,6 +579,9 @@ h2, .ck-h, .label, .vw-label, .kind { font: 500 11px var(--serif); letter-spacin
 .item, .app-card, .economy, .presence, .indexer, .strip-node, .node-option, .vw-egg, details, .exp, .castpanel {
   border-radius: var(--veil) !important; background: rgba(255, 255, 255, .055);
   border: .7px solid rgba(237, 186, 84, .22); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+/* The Cast panel floats over the feed: a veil, but one you can't read through. It fits the window; the QR stays scannable. */
+.castpanel { background: rgba(15, 13, 36, .96); max-height: calc(100dvh - 130px); }
+.castpanel-qr { width: min(232px, 100%); justify-self: center; }
 .item { padding: 16px 18px; }
 .list { display: grid; gap: 14px; }
 .text { font: 17px/1.5 var(--serif); }
@@ -636,3 +639,33 @@ button[type="submit"], .more { border-radius: 18px 7px 18px 7px; }
 .dp-state.on { color: var(--ok); } .dp-state.off { color: var(--faint); }
 .dp-said { margin: 0; font: 15px/1.45 var(--serif); color: var(--text); opacity: .9; overflow-wrap: anywhere; }
 .dp-said cite { display: block; margin-top: 4px; font: 12px/1 system-ui, sans-serif; font-style: normal; color: var(--faint); }
+
+/* ---- The instruction manual (apps/site/manual.js). On a phone: one quiet line above the page, opening in place.
+   From 1000px: a column beside the client (the docked cover), and the client, its bar and its pen move left with it.
+   manual.js draws its docked cover from the same 1000px. */
+#manual { margin: 14px 0 6px; }
+#manual:empty { display: none; }
+body:has(#main.birth-page) #manual { display: none; } /* the hatching is a ceremony: nothing beside it */
+@media (min-width: 1000px) {
+  :root { --fl-col: 600px; --fl-gap: 36px; --fl-side: 320px; --fl-bar: min(640px, var(--fl-col)); }
+  body { max-width: calc(var(--fl-col) + var(--fl-gap) + var(--fl-side) + 32px); padding-right: calc(16px + var(--fl-gap) + var(--fl-side)); }
+  #manual { position: fixed; z-index: 30; margin: 0; width: var(--fl-side);
+    top: calc(20px + env(safe-area-inset-top, 0px)); left: calc(50% - (var(--fl-col) + var(--fl-gap) + var(--fl-side)) / 2 + var(--fl-col) + var(--fl-gap));
+    max-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
+    border-radius: var(--veil); }
+  .tabs { left: calc(50% - (var(--fl-gap) + var(--fl-side)) / 2); width: var(--fl-bar); }
+  .castbutton-wrap { right: calc(50% + (var(--fl-gap) + var(--fl-side)) / 2 - var(--fl-bar) / 2 + 10px); }
+  body:has(#main.birth-page) { max-width: calc(var(--fl-col) + 32px); padding-right: 16px; }
+  body:has(#main.birth-page) .tabs { left: 50%; }
+  body:has(#main.birth-page) .castbutton-wrap { right: calc(50% - var(--fl-bar) / 2 + 10px); }
+}
+@media (min-width: 1200px) { :root { --fl-col: 680px; --fl-gap: 48px; --fl-side: 360px; } }
+
+/* Sign in without the Farcaster app (castbutton.js), and its phone half (signpage.js). */
+.castpanel-find { display: flex; gap: 8px; }
+.castpanel-find input { flex: 1; min-width: 0; }
+.castpanel-out { display: grid; gap: 10px; }
+.castpanel-out code { font-size: 12px; }
+.castpanel .linkish { justify-self: center; opacity: .8; }
+.signpage { max-width: 30rem; margin: 40px auto; padding: 0 16px; display: grid; gap: 12px; }
+.signpage h1 { font: 400 1.8rem var(--serif); margin: 0; }

@@ -90,11 +90,12 @@ export async function waitForKey(node, fid, key, timeoutMs = 90_000) {
  * A new app key for `fid`, authorized by its custody account: a local account (from a seed phrase) or a wallet
  * (WalletConnect), anything with { address, signTypedData }. One EIP-712 signature, no transaction, no gas.
  */
-export async function buildKeyAdd({ node, fid, custody, networkName }) {
+export async function buildKeyAdd({ node, fid, custody, networkName, appSigner = null }) {
   const signers = await get(node, '/v1/signersByFid', { fid });
   const nonce = Number(signers?.currentUserNonce ?? 0) + 1;
-  const privateKey = randomBytes(32);
-  const appSigner = new NobleEd25519Signer(privateKey);
+  // appSigner: a key kept somewhere else (a visitor's browser, visitor.mjs): this machine never sees it.
+  const privateKey = appSigner ? null : randomBytes(32);
+  appSigner ??= new NobleEd25519Signer(privateKey);
   const key = (await appSigner.getSignerKey())._unsafeUnwrap();
   const now = getFarcasterTime()._unsafeUnwrap();
   const local = { address: custody.address, type: 'local', signTypedData: (args) => custody.signTypedData(args) };
@@ -105,7 +106,7 @@ export async function buildKeyAdd({ node, fid, custody, networkName }) {
   if (body.isErr()) throw new Error(`Could not build the key authorization: ${body.error.message}`);
   const message = (await makeKeyAdd(body.value, { fid, network: FarcasterNetwork.MAINNET }, appSigner))._unsafeUnwrap();
   const record = {
-    fid, publicKey: hex(key), privateKey: hex(privateKey), scopes: SCOPES.map((s) => MessageType[s]),
+    fid, publicKey: hex(key), ...(privateKey ? { privateKey: hex(privateKey) } : {}), scopes: SCOPES.map((s) => MessageType[s]),
     network: networkName, node: node.url, nonce, addedAt: new Date().toISOString(), state: 'submitted',
   };
   return { message, record };

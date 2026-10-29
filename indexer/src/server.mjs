@@ -20,6 +20,8 @@ import { embedTags, makePlace, manifest } from './miniapp.mjs';
 import { makeCompanion } from './companion.mjs';
 import { makeHome } from './home.mjs';
 import { makeArt, makeBirth, makeCoins } from './birth.mjs';
+import { makeAsleep } from './asleep.mjs';
+import { makeVisitor } from './visitor.mjs';
 import { verifyLogin } from './fatline-login.mjs';
 import { planFatlineLaunch } from './launch-fatline.mjs';
 import { Coins } from './coin.mjs';
@@ -63,10 +65,11 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     const given = (req.headers.authorization ?? '').replace(/^Bearer /, '');
     return Boolean(writeToken && given.length === writeToken.length && timingSafeEqual(Buffer.from(given), Buffer.from(writeToken)));
   };
-  const writer = async (network, node) => {
-    const key = loadAppKey(config.dataDir);
+  // key: this client's own key file, or a visitor's ({ fid, signer }: the key is in their browser, visitor.mjs).
+  const writer = async (network, node, visitorKey = null) => {
+    const key = visitorKey ?? loadAppKey(config.dataDir);
     if (!key) throw Object.assign(new Error('This client has no app key yet. Run fatline identity on the machine that runs it, or log in with the Cast button.'), { status: 409 });
-    const name = network && networks[network] ? network : key.network;
+    const name = network && networks[network] ? network : (key.network ?? config.defaultNetwork);
     const net = networks[name];
     if (!node) return { w: new Writer({ network: net, key }) }; // automatic: the first node in sync
     // A node that is still catching up can't check a new message (it may not know the account's key or storage
@@ -126,6 +129,12 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
   const chainClient = createPublicClient({ chain: hc.chainId === 8453 ? base : hc.chainId === 84532 ? baseSepolia : foundry, transport: http(hc.rpc) });
   const birth = makeBirth({ config, client: chainClient, contract: hc.contract, hatcheries: attesterList(hc), plan: planFatlineLaunch });
   const coinsLive = makeCoins({ client: chainClient, contract: hc.contract });
+  // Anyone signs in and casts here, with a key that stays in their own browser (visitor.mjs).
+  const visitorNet = networks[config.defaultNetwork] ?? Object.values(networks)[0];
+  const visitor = makeVisitor({ config, writer, nodeFor: () => visitorNet.node(), resolveUser: (q) => api.resolve(visitorNet, q) });
+  // Another place's name, while its own server is off: the master's Caddy asks here (asleep.mjs). Never this server's own.
+  const asleep = makeAsleep({ worlds: attesterList(hc), api, network: networks[config.defaultNetwork] ?? Object.values(networks)[0] ?? null,
+    coins: coinsLive, ownLabel: async () => (await place(null)).surname?.toLowerCase() ?? null });
   // Whoever opens this client: what they have (egg, Fatliner, nothing), and their home feed from this server's node.
   const homeNet = networks[config.defaultNetwork] ?? Object.values(networks)[0];
   const home = homeNet ? makeHome({ api, network: homeNet }) : null;
@@ -140,6 +149,8 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
       }
       throw Object.assign(new Error('No hatchery answered.'), { status: 503 });
     }],
+    // Caddy's on-demand question before it takes a certificate for a name (infra/site-setup.sh): only known places.
+    ['GET', /^\/api\/standin\/ask$/, async (q) => { if (await asleep.knows(q.get('domain'))) return { ok: true }; throw Object.assign(new Error('Not a Fatline place.'), { status: 404 }); }],
     ['GET', /^\/api\/viewer\/(\d{1,12})$/, (q, [, fid]) => companion.viewer(fid)],
     // The birth: hatch the egg, then launch its coin, from the holder's own wallet (indexer/src/birth.mjs).
     ['GET', /^\/api\/birth\/(\d{1,12})$/, (q, [, fid]) => birth(fid)],
@@ -216,6 +227,16 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
       if (!key) return { fid: null, canWrite: false };
       return { fid: key.fid, network: key.network, publicKey: key.publicKey, scopes: key.scopes, state: key.state, canWrite: mayWrite(req) };
     }],
+    // Visitors (visitor.mjs): sign in with the Farcaster app or the wallet that owns the account; then each action is
+    // built here and signed in their browser. Nothing here holds their key.
+    ['POST', /^\/api\/visitor\/qr$/, (q, m, b) => visitor.qrStart(b)],
+    ['GET', /^\/api\/visitor\/qr$/, (q) => visitor.qrStatus({ token: q.get('token'), signer: q.get('signer') })],
+    ['GET', /^\/api\/visitor\/who$/, (q) => visitor.who({ q: q.get('q') })],
+    ['POST', /^\/api\/visitor\/wallet$/, (q, m, b) => visitor.walletStart(b)],
+    ['POST', /^\/api\/visitor\/wallet\/sign$/, (q, m, b) => visitor.walletSign(b)],
+    ['GET', /^\/api\/visitor\/wallet$/, (q) => visitor.walletStatus({ session: q.get('session') })],
+    ['POST', /^\/api\/visitor\/act$/, (q, m, b) => visitor.act(b)],
+    ['POST', /^\/api\/visitor\/sign$/, (q, m, b) => visitor.sign(b)],
     ['POST', /^\/api\/cast$/, write((w, b) => w.cast({ text: b.text, parent: b.parent }))],
     ['POST', /^\/api\/cast\/delete$/, write((w, b) => w.deleteCast({ hash: b.hash }))],
     ['POST', /^\/api\/react$/, write((w, b) => w.react({ kind: b.kind, fid: b.fid, hash: b.hash, remove: Boolean(b.remove) }))],
@@ -227,6 +248,11 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     const url = new URL(req.url, 'http://local');
     res.setHeader('access-control-allow-origin', '*');
     if (req.method === 'OPTIONS') return res.writeHead(204, { 'access-control-allow-headers': 'authorization, content-type', 'access-control-allow-methods': 'GET, POST' }).end();
+    // Standing in for another place whose server is off (the master's Caddy sets this header): only its asleep page.
+    if (req.headers['x-fatline-standin'] === '1') {
+      return asleep.serve(req.headers['x-forwarded-host'] ?? req.headers.host, url.pathname, res)
+        .catch((err) => json(res, err.status ?? 502, { error: err.message }));
+    }
 
     // A Fatliner's picture, from this server's own copy (birth.mjs): kept forever, the id is the content.
     const artId = url.pathname.match(/^\/api\/art\/([\w-]{43})$/)?.[1];

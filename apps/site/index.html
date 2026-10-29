@@ -156,6 +156,8 @@
     background: #855dcd; color: #fff; cursor: pointer; box-shadow: 0 0 24px rgba(133, 93, 205, .45); }
   .arch { width: 16px; height: 16px; flex: none; }
   .btn.fc { display: inline-flex; align-items: center; gap: 10px; background: #855dcd; color: #fff; border-color: #855dcd; box-shadow: 0 10px 34px rgba(133, 93, 205, .35); }
+  /* A phone: the arch alone (its word stays for screen readers); the hero's button says it in full. */
+  @media (max-width: 420px) { .nav .launch { padding: 10px 12px; gap: 0; } .launch-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
   @media (max-width: 640px) { .nav-links { display: none; } .nav .toggle button { padding: 6px 9px; font-size: 11px; } .nav-in { gap: 10px; } }
   .hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
   .btn { font: 600 15px var(--body); border-radius: 999px; padding: 13px 22px; cursor: pointer; text-decoration: none; border: 1px solid var(--line); color: var(--ink); background: var(--card); }
@@ -176,16 +178,8 @@
   .open.off { background: none; color: var(--muted); border: 1px dashed var(--line); }
   .hint { color: var(--muted); font-size: 12.5px; }
   .tally { font: 500 13px var(--mono); color: var(--muted); }
-  dialog { max-width: 640px; width: calc(100% - 24px); border: 1px solid var(--line); border-radius: 20px; background: var(--bg2); color: var(--ink); padding: 0; }
-  dialog::backdrop { background: rgba(0, 0, 0, .6); backdrop-filter: blur(4px); }
-  .dlg { padding: 22px 22px 18px; display: grid; gap: 18px; }
-  .dlg h2 { margin: 0; text-align: left; }
-  .dlg h3 { margin: 0 0 8px; font: 700 18px var(--display); }
-  .dlg p { margin: 0 0 10px; color: var(--muted); font-size: 14.5px; }
-  .dlg ol { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14.5px; display: grid; gap: 4px; } .dlg ol b { color: var(--ink); }
-  .dlg .cta { margin: 0; } .dlg .cta code { font-size: 13.5px; padding: 12px 14px; }
-  .dlg .x { justify-self: end; background: none; border: 0; color: var(--muted); font-size: 22px; cursor: pointer; margin: -10px -8px -14px 0; }
-  .dlg .three pre { font-size: 12.5px; padding: 12px 14px; }
+  .hero-manual { max-width: 720px; margin: 26px auto 0; }
+  .hero-manual .flm { scroll-margin-top: 76px; } /* below the sticky navbar */
 </style>
 </head>
 <body>
@@ -197,7 +191,7 @@
     <button type="button" data-net="snapchain" aria-pressed="true">Snapchain</button>
     <button type="button" data-net="hypersnap" aria-pressed="false">Hypersnap</button>
   </div>
-  <button type="button" class="launch" data-launch><svg class="arch" viewBox="128.889 155.556 751.111 688.889" aria-hidden="true"><path fill="currentColor" d="M257.778 155.556h484.444v688.889h-71.111V528.889h-.697c-7.86-87.212-81.156-155.556-170.414-155.556s-162.554 68.344-170.414 155.556h-.697v315.556h-71.111z"/><path fill="currentColor" d="M128.889 253.333l28.889 97.778h24.444v395.556c-12.273 0-22.222 9.949-22.222 22.222v26.667h-4.444c-12.273 0-22.223 9.949-22.223 22.222v26.667h248.889v-26.667c0-12.273-9.949-22.222-22.222-22.222h-4.444v-26.667c0-12.273-9.95-22.222-22.223-22.222h-26.666V253.333zM675.556 746.667c-12.273 0-22.223 9.949-22.223 22.222v26.667h-4.444c-12.273 0-22.222 9.949-22.222 22.222v26.667h248.889v-26.667c0-12.273-9.95-22.222-22.223-22.222h-4.444v-26.667c0-12.273-9.949-22.222-22.222-22.222V351.111h24.444L880 253.333H702.222v493.334z"/></svg>LAUNCH</button>
+  <button type="button" class="launch" data-launch><svg class="arch" viewBox="128.889 155.556 751.111 688.889" aria-hidden="true"><path fill="currentColor" d="M257.778 155.556h484.444v688.889h-71.111V528.889h-.697c-7.86-87.212-81.156-155.556-170.414-155.556s-162.554 68.344-170.414 155.556h-.697v315.556h-71.111z"/><path fill="currentColor" d="M128.889 253.333l28.889 97.778h24.444v395.556c-12.273 0-22.222 9.949-22.222 22.222v26.667h-4.444c-12.273 0-22.223 9.949-22.223 22.222v26.667h248.889v-26.667c0-12.273-9.949-22.222-22.222-22.222h-4.444v-26.667c0-12.273-9.95-22.222-22.223-22.222h-26.666V253.333zM675.556 746.667c-12.273 0-22.223 9.949-22.223 22.222v26.667h-4.444c-12.273 0-22.222 9.949-22.222 22.222v26.667h248.889v-26.667c0-12.273-9.95-22.222-22.223-22.222h-4.444v-26.667c0-12.273-9.949-22.222-22.222-22.222V351.111h24.444L880 253.333H702.222v493.334z"/></svg><span class="launch-word">LAUNCH</span></button>
 </div></nav>
 
 <div class="wrap">
@@ -206,6 +200,8 @@
     <h1>Coins that keep Farcaster running.</h1>
     <p class="lede">Farcaster is a protocol, not a company's server: <b>anyone can keep a full copy</b> of every cast and every follow, and build their own window onto it. Each coin here funds <b>one of those copies</b> and the <b>independent client</b> built on it. Its trading fees, in USDC, pay the rent. Pick any node below and read Farcaster through it.</p>
     <div class="hero-ctas"><button type="button" class="btn fc" data-launch><svg class="arch" viewBox="128.889 155.556 751.111 688.889" aria-hidden="true"><path fill="currentColor" d="M257.778 155.556h484.444v688.889h-71.111V528.889h-.697c-7.86-87.212-81.156-155.556-170.414-155.556s-162.554 68.344-170.414 155.556h-.697v315.556h-71.111z"/><path fill="currentColor" d="M128.889 253.333l28.889 97.778h24.444v395.556c-12.273 0-22.222 9.949-22.222 22.222v26.667h-4.444c-12.273 0-22.223 9.949-22.223 22.222v26.667h248.889v-26.667c0-12.273-9.949-22.222-22.222-22.222h-4.444v-26.667c0-12.273-9.95-22.222-22.223-22.222h-26.666V253.333zM675.556 746.667c-12.273 0-22.223 9.949-22.223 22.222v26.667h-4.444c-12.273 0-22.222 9.949-22.222 22.222v26.667h248.889v-26.667c0-12.273-9.95-22.222-22.223-22.222h-4.444v-26.667c0-12.273-9.949-22.222-22.222-22.222V351.111h24.444L880 253.333H702.222v493.334z"/></svg>Run a copy of Farcaster</button><a class="btn" href="#nodes">Open a client</a></div>
+    <!-- How to run one: the same manual every node's client carries (manual.js). LAUNCH opens it. -->
+    <div class="hero-manual" id="manual"></div>
   </section>
 
   <div class="hatchery-head" id="nodes"><span class="label">The copies of Farcaster</span><span class="tally" id="count">reading the network…</span></div>
@@ -232,53 +228,22 @@
   <footer><a href="/docs/">Docs</a><a href="/manifesto.html">Manifesto</a><a href="https://github.com/jpfraneto/fatline">GitHub</a><a href="https://farcaster.xyz/fatline">@fatline</a></footer>
 </div>
 
-<dialog id="launch"><div class="dlg">
-  <button type="button" class="x" aria-label="Close" data-close>×</button>
-  <h2>Run a copy of Farcaster</h2>
-  <div>
-    <h3>Start a new one</h3>
-    <p>Paste this into your agent (Claude Code, Codex…). It rents the server, installs the node and the client, and shows every price before you say yes.</p>
-    <span class="cta"><code id="prompt">Help me run a Fatline: https://fatline.ink/skill.md</code><button type="button" id="copy">Copy</button></span>
-    <p style="margin-top:10px">Or by hand:</p>
-    <div class="three"><pre><code>curl -fsSL https://fatline.ink/install.sh | sh
-fatline compute          <span class="c"># a server, paid in USDC</span>
-fatline node snapchain   <span class="c"># or: fatline node hypersnap</span>
-fatline client           <span class="c"># your client, on your node</span></code></pre></div>
-  </div>
-  <div>
-    <h3>Connect a node you already run</h3>
-    <p>On its server. It looks first and changes nothing until you say yes:</p>
-    <span class="cta"><code id="join">curl -fsSL https://fatline.ink/join.sh | sudo bash</code><button type="button" data-copy="join">Copy</button></span>
-  </div>
-  <div>
-    <h3>Keep it alive</h3>
-    <ol>
-      <li><b>Lay your egg.</b> The network checks your node every hour.</li>
-      <li><b>Three warm days</b> and it hatches into a Fatliner: your client's name.</li>
-      <li><b>Launch its coin</b> from your client. Its fees pay your node's rent.</li>
-    </ol>
-  </div>
-  <p><a href="/docs/" style="color:var(--ink)">Every step in the docs →</a></p>
-</div></dialog>
 
+<script type="module">
+// The instruction manual (manual.js, the same file in every node's client). LAUNCH, "Run a copy of Farcaster",
+// the empty card and fatline.ink/#launch (every other page's LAUNCH) open it.
+import { mountManual } from '/manual.js';
+const manual = mountManual(document.getElementById('manual'), { lang: 'en' });
+document.addEventListener('click', (e) => { if (e.target.closest('[data-launch]')) { e.preventDefault(); manual.open({ scroll: true, focus: true }); } });
+const fromHash = () => { if (location.hash === '#launch') manual.open({ scroll: true, focus: true }); };
+addEventListener('hashchange', fromHash);
+fromHash();
+</script>
 <script src="/node-health.js"></script>
 <script>
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const getJson = (url, ms = 8000) => fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(ms) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
 
-// LAUNCH: how to start a node, or connect one, and keep it alive.
-const dlg = document.getElementById('launch');
-document.querySelectorAll('[data-launch]').forEach((b) => (b.onclick = () => dlg.showModal()));
-dlg.querySelector('[data-close]').onclick = () => dlg.close();
-dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
-const copyFrom = (id) => async (e) => {
-  const t = document.getElementById(id).textContent;
-  try { await navigator.clipboard.writeText(t); e.target.textContent = 'Copied'; setTimeout(() => (e.target.textContent = 'Copy'), 1600); }
-  catch { const r = document.createRange(); r.selectNodeContents(document.getElementById(id)); getSelection().removeAllRanges(); getSelection().addRange(r); }
-};
-document.getElementById('copy').onclick = copyFrom('prompt');
-document.querySelector('[data-copy="join"]').onclick = copyFrom('join');
-if (location.hash === '#launch') dlg.showModal();
 
 // The network you choose: it tints the page (and, in your client, where you read and cast).
 const setNet = (n) => {
@@ -421,7 +386,6 @@ function draw(art) {
   const grid = document.getElementById('grid');
   grid.innerHTML = nodes.map(card).join('') +
     `<div class="empty"><div><div style="font:700 22px var(--display);color:var(--ink)">Your copy goes here.</div><p>Run a node, keep it warm three days, launch its coin. The network gets one more home.</p><button type="button" class="btn fc" data-launch><svg class="arch" viewBox="128.889 155.556 751.111 688.889" aria-hidden="true"><path fill="currentColor" d="M257.778 155.556h484.444v688.889h-71.111V528.889h-.697c-7.86-87.212-81.156-155.556-170.414-155.556s-162.554 68.344-170.414 155.556h-.697v315.556h-71.111z"/><path fill="currentColor" d="M128.889 253.333l28.889 97.778h24.444v395.556c-12.273 0-22.222 9.949-22.222 22.222v26.667h-4.444c-12.273 0-22.223 9.949-22.223 22.222v26.667h248.889v-26.667c0-12.273-9.949-22.222-22.222-22.222h-4.444v-26.667c0-12.273-9.95-22.222-22.223-22.222h-26.666V253.333zM675.556 746.667c-12.273 0-22.223 9.949-22.223 22.222v26.667h-4.444c-12.273 0-22.222 9.949-22.222 22.222v26.667h248.889v-26.667c0-12.273-9.95-22.222-22.223-22.222h-4.444v-26.667c0-12.273-9.949-22.222-22.222-22.222V351.111h24.444L880 253.333H702.222v493.334z"/></svg>LAUNCH</button></div></div>`;
-  grid.querySelectorAll('[data-launch]').forEach((b) => (b.onclick = () => dlg.showModal()));
   grid.querySelectorAll('[data-ca]').forEach((b) => (b.onclick = async () => {
     try { await navigator.clipboard.writeText(b.dataset.ca); const t = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = t), 1400); } catch {}
   }));

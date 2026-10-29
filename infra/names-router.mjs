@@ -8,7 +8,8 @@
 //   80:  reads the Host line and passes the connection through too (the person's server answers its own
 //        certificate challenges and sends browsers on to https).
 // Anything else (the master's own names, like 46-225-208-199.sslip.io, and the master's own Fatline) goes to the
-// master's Caddy, moved to 127.0.0.1:8080 and :8443.
+// master's Caddy, moved to 127.0.0.1:8080 and :8443. When someone's server does not answer, its name goes to the
+// master's Caddy too, which shows that place asleep with a certificate of its own (on demand, only for known names).
 // The table of names comes from the hatchery (GET /names), read every minute; the last good table is kept on disk.
 //
 // Env: NAMES_URL (http://127.0.0.1:8791/names), NAMES_DOMAIN (fatline.ink), NAMES_SELF (this server's public IPs,
@@ -87,6 +88,7 @@ export function startRouter({
   namesUrl = 'http://127.0.0.1:8791/names', domain = 'fatline.ink', self = [], cache = null,
   httpPort = 80, tlsPort = 443, caddyHttp = '127.0.0.1:8080', caddyTls = '127.0.0.1:8443',
   targetHttpPort = 80, targetTlsPort = 443, refreshMs = 60_000, log = console.log, allowPrivate = false, // tests only
+  connectMs = 4_000, downMs = 60_000,
 } = {}) {
   const ctx = { table: new Map(), domain, self: new Set(self), allowPrivate };
   if (cache) { try { ctx.table = new Map(Object.entries(JSON.parse(readFileSync(cache, 'utf8')))); } catch {} }
@@ -107,13 +109,29 @@ export function startRouter({
   };
 
   // Read the first bytes, decide, then pipe both ways with the bytes already read in front.
-  const pipeTo = (client, first, { host, port }) => {
+  // With a fallback (someone's server): if it does not take the connection within connectMs, this server's Caddy
+  // stands in for the name (an asleep page, indexer/src/asleep.mjs), and that server is skipped for downMs. Once it
+  // answers again, its connections go straight to it. A server that takes the connection and then fails is not
+  // covered: by then its bytes are already on their way.
+  const down = new Map(); // host -> skip it until (ms)
+  const pipeTo = (client, first, { host, port }, fallback = null) => {
+    if (fallback && down.get(host) > Date.now()) return pipeTo(client, first, fallback);
     const up = connect({ host, port });
-    up.setTimeout(30_000, () => up.destroy());
-    up.once('connect', () => { up.setTimeout(0); up.write(first); client.pipe(up); up.pipe(client); });
+    let connected = false;
     const close = () => { client.destroy(); up.destroy(); };
-    up.on('error', close); client.on('error', close);
-    up.on('close', close); client.on('close', close);
+    const standIn = () => {
+      if (connected || !fallback || client.destroyed) return false;
+      if (!(down.get(host) > Date.now())) log(`[names] ${host} did not answer; this server stands in for it`);
+      down.set(host, Date.now() + downMs);
+      up.removeAllListeners(); up.on('error', () => {}); up.destroy();
+      pipeTo(client, first, fallback);
+      return true;
+    };
+    up.setTimeout(fallback ? connectMs : 30_000, () => { if (!standIn()) up.destroy(); });
+    up.once('connect', () => { connected = true; if (fallback) down.delete(host); up.setTimeout(0); up.write(first); client.pipe(up); up.pipe(client); });
+    up.on('error', () => { if (!standIn()) close(); });
+    up.on('close', () => { if (connected || !fallback) close(); });
+    client.on('error', close); client.on('close', close);
   };
   const peek = (client, parse, decide) => {
     let buf = Buffer.alloc(0);
@@ -134,12 +152,13 @@ export function startRouter({
   const tls = createServer((client) => peek(client, parseSni, (sni, first) => {
     const to = resolve(sni, ctx);
     if (to === null) return client.destroy(); // a name nobody holds: no certificate anywhere for it
-    pipeTo(client, first, to === 'self' ? hostPort(caddyTls) : { host: to, port: targetTlsPort });
+    if (to === 'self') pipeTo(client, first, hostPort(caddyTls));
+    else pipeTo(client, first, { host: to, port: targetTlsPort }, hostPort(caddyTls));
     client.resume();
   }));
   const http = createServer((client) => peek(client, parseHttpHead, (head, first) => {
     const to = head && resolve(head.host, ctx);
-    if (to && to !== 'self') { pipeTo(client, first, { host: to, port: targetHttpPort }); return client.resume(); }
+    if (to && to !== 'self') { pipeTo(client, first, { host: to, port: targetHttpPort }, hostPort(caddyHttp)); return client.resume(); }
     // This server's own names: certificate challenges go to Caddy; everything else is sent to https.
     if (head && to === 'self' && head.path.startsWith('/.well-known/acme-challenge/')) { pipeTo(client, first, hostPort(caddyHttp)); return client.resume(); }
     const body = head?.host && to !== null ? '' : 'Not a Fatline name.\n';

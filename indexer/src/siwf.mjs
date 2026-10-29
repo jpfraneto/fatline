@@ -26,17 +26,29 @@ async function api(path, init) {
   throw last;
 }
 
-/** Starts a sign-in. Returns { url (opens the Farcaster app), wait() → the saved key record }. */
-export async function startSignIn(config, { signer } = {}) {
+/** Asks the Farcaster app to approve this public key: { token, url }. Fatline's app account signs the request. */
+export async function requestKey(config, publicKey, { signer } = {}) {
   signer ??= process.env.FATLINE_SIGNER_URL ?? config.deployments?.Fatliners?.genesis?.hatchery ?? 'http://46.225.208.199:8791';
-  const privateKey = randomBytes(32);
-  const publicKey = hex((await new NobleEd25519Signer(privateKey).getSignerKey())._unsafeUnwrap());
   const req = await fetch(`${signer.replace(/\/$/, '')}/signer-request`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key: publicKey }), signal: AbortSignal.timeout(15_000) })
     .then(async (r) => { const b = await r.json().catch(() => ({})); if (!r.ok) throw new Error(b.error ?? `HTTP ${r.status}`); return b; });
   const out = await api('/v2/signed-key-requests', { method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ key: publicKey, requestFid: req.requestFid, signature: req.signature, deadline: req.deadline }) });
   const { token, deeplinkUrl } = out.result?.signedKeyRequest ?? {};
   if (!token || !deeplinkUrl) throw new Error('Farcaster did not return a sign-in link.');
+  return { token, url: deeplinkUrl };
+}
+
+/** Where a key request stands: { state: pending|approved|completed, fid }. */
+export async function keyRequestState(token) {
+  const s = (await api(`/v2/signed-key-request?token=${encodeURIComponent(token)}`))?.result?.signedKeyRequest;
+  return { state: s?.state ?? 'pending', fid: s?.userFid ? Number(s.userFid) : null };
+}
+
+/** Starts a sign-in. Returns { url (opens the Farcaster app), wait() → the saved key record }. */
+export async function startSignIn(config, { signer } = {}) {
+  const privateKey = randomBytes(32);
+  const publicKey = hex((await new NobleEd25519Signer(privateKey).getSignerKey())._unsafeUnwrap());
+  const { token, url: deeplinkUrl } = await requestKey(config, publicKey, { signer });
   return {
     url: deeplinkUrl,
     async wait({ timeoutMs = 10 * 60_000, onState = () => {}, accept = () => {} } = {}) {

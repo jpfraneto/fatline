@@ -8,9 +8,12 @@ import { directoryPage } from './directory.js';
 import { loadMe } from './post.js';
 import { castButton } from './castbutton.js';
 import { cockpitPage, leaveCockpit } from './cockpit.js';
+import { signPage } from './signpage.js';
 import { placePage } from './place.js';
 import { birthPage } from './birth.js';
-import { enterMiniApp, inMiniApp } from './miniapp.js';
+import { enterMiniApp, inMiniApp, openUrl } from './miniapp.js';
+// The same file fatline.ink serves as /manual.js, bundled in here: a node never asks fatline.ink to draw it.
+import { mountManual } from '../../site/manual.js';
 
 // A link from the server's setup, https://<name>.fatline.ink/#key=<write token>: keep the token in this browser (so it
 // can cast through this client), then take it out of the address bar and history.
@@ -23,8 +26,11 @@ if (keyLink) {
 // The day's planet, as in the iOS app: Steiner's sevenfold week, each day under its planet and color.
 const PLANETS = [['☉', '#edba54'], ['☽', '#ad99db'], ['♂', '#c74a66'], ['☿', '#f2db66'], ['♃', '#f2944d'], ['♀', '#66b8a8'], ['♄', '#5c8cdb']];
 
+let manual = null;
+
 function renderChrome() {
   document.documentElement.lang = state.lang;
+  manual?.setLang(state.lang);
   // The network tints everything: Snapchain warm, Hypersnap cool.
   document.documentElement.dataset.net = state.network === 'hypersnap' ? 'hypersnap' : 'snapchain';
   const [glyph, color] = PLANETS[new Date().getDay()];
@@ -49,6 +55,9 @@ function route() {
   leaveCockpit();
   $('#main').classList.remove('fatline-page', 'birth-page');
 
+  // The phone half of signing in with a wallet (signpage.js): ?sign=<session>, from the QR on a computer.
+  const signing = new URLSearchParams(location.search).get('sign');
+  if (signing && /^[0-9a-f]{32}$/.test(signing)) return signPage(signing);
   // The canonical page of a coin (or of a coinless app's vault): #/coin/<chainId>/<address>.
   const coin = hash.match(/^\/coin\/([^/]+)\/([^/?#]+)/);
   if (coin) return coinPage(coin[1], coin[2]);
@@ -82,6 +91,8 @@ function route() {
 
 async function boot() {
   await enterMiniApp();
+  // First, before any data: the manual works even when this node doesn't answer.
+  manual = mountManual($('#manual'), { lang: state.lang, dock: true, openUrl: inMiniApp() ? openUrl : null });
   state.config = await api('/api/config');
   const saved = store.get('network', null);
   state.network = state.config.networks.some((n) => n.name === saved) ? saved : state.config.defaultNetwork;

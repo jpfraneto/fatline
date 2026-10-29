@@ -50,6 +50,14 @@ APP=""
 if [ -n "$CLIENT" ]; then
   APP=$(printf '\t@app_client path /api/* /assets/* /miniapp/* /manifest.webmanifest /icon.svg /.well-known/farcaster.json\n\thandle @app_client {\n\t\treverse_proxy 127.0.0.1:8787\n\t}\n\trewrite /about /index.html\n')
 fi
+# Standing in for a place whose server is off (the names router sends its name here when it does not answer): its asleep
+# page, from this server's client (indexer/src/asleep.mjs). A certificate per name, on demand, only for names the client
+# says are places (never any name). The more specific names above and in fatline-client.caddy win over *.fatline.ink.
+STANDIN=""
+if [ -n "$CLIENT" ] && [ -n "$GLOBAL" ]; then
+  GLOBAL=$(printf '{\n\thttp_port 8080\n\thttps_port 8443\n\tdefault_bind 127.0.0.1\n\ton_demand_tls {\n\t\task http://127.0.0.1:8787/api/standin/ask\n\t}\n}\n')
+  STANDIN=$(printf '*.fatline.ink {\n\ttls {\n\t\ton_demand\n\t}\n\tencode gzip\n\treverse_proxy 127.0.0.1:8787 {\n\t\theader_up X-Fatline-Standin 1\n\t}\n}\n')
+fi
 cat > /etc/caddy/Caddyfile <<EOF
 $GLOBAL
 # Written by Fatline (infra/site-setup.sh): this server is fatline.ink.
@@ -96,6 +104,7 @@ $APP
 }
 $(for h in $HOSTS; do printf '%s {\n\timport fatline\n}\n' "$h"; done)
 $CLIENT
+$STANDIN
 EOF
 caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
 systemctl reload caddy

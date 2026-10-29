@@ -73,7 +73,8 @@ export class Writer {
     this.fallback = fallback;
     this.key = key;
     this.fid = Number(key.fid);
-    this.signer = new NobleEd25519Signer(bytes(key.privateKey));
+    // The key file's own key, or any signer (a visitor's browser signs each message's hash: visitor.mjs).
+    this.signer = key.signer ?? new NobleEd25519Signer(bytes(key.privateKey));
     this.fetch = fetchImpl;
     this.confirmMs = confirmMs;
     this.pollMs = pollMs;

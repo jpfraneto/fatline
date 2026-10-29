@@ -82,7 +82,7 @@ export class WalletLogin {
     const fid = await fidOfCustody(node, address, this.owner ?? savedFid(this.config)); // fast when the FID is known
     if (!fid) {
       this.state = { step: 'idle' };
-      throw Object.assign(new Error(`This wallet doesn't own a Farcaster account. Use the wallet that holds your Farcaster recovery phrase, or the Farcaster app.`), { status: 400 });
+      throw Object.assign(new Error('This wallet does not own a Farcaster account. Use the wallet that owns it, or the Farcaster app.'), { status: 400 });
     }
     try { this.check(fid); } catch (err) { this.state = { step: 'idle' }; throw err; }
     // The library asks the custody wallet for two signatures: the key request (who asks for the key: the account

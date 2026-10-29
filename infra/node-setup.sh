@@ -108,12 +108,13 @@ grep -q '^AGREE_NO_REWARDS_FOR_ME=' .env || echo 'AGREE_NO_REWARDS_FOR_ME=true' 
 # Snapchain's own weekly auto-upgrade needs an operator FID, and weekly is too slow anyway: v0.15.0 shipped
 # on 2026-10-23 with a protocol change active the same day, and our own node stuck on 0.14.3 until upgraded
 # by hand. So Fatline skips Snapchain's crontab and adds its own: ./snapchain.sh upgrade once a day, at a
-# random time (so nodes don't all restart together). It only restarts the node when there is a new version.
+# random time (so nodes don't all restart together), through the upgrader written in step 7. It only restarts the
+# node when there is a new version or its config.toml changed.
 # FATLINE_NO_AUTOUPGRADE=1 turns it off.
 grep -q '^HUB_OPERATOR_FID=' .env || echo "HUB_OPERATOR_FID=${FATLINE_OPERATOR_FID:-0}" >> .env
 grep -q '^SKIP_CRONTAB=' .env || echo 'SKIP_CRONTAB=true' >> .env
 if [ "${FATLINE_NO_AUTOUPGRADE:-}" != 1 ] && command -v crontab >/dev/null; then
-  line="$((RANDOM % 60)) $((RANDOM % 24)) * * * cd $PWD && ./snapchain.sh upgrade >> $PWD/autoupgrade.log 2>&1 # fatline-autoupgrade"
+  line="$((RANDOM % 60)) $((RANDOM % 24)) * * * ${FATLINE_SNAP_UPGRADER:-/usr/local/sbin/fatline-snapchain-upgrade} $PWD >> $PWD/autoupgrade.log 2>&1 # fatline-autoupgrade"
   { crontab -l 2>/dev/null | grep -v 'fatline-autoupgrade'; echo "$line"; } | crontab -
   say "Auto-upgrade on: Snapchain checks for a new version once a day (crontab: fatline-autoupgrade)"
 fi
@@ -238,9 +239,55 @@ if [ "$SNAPSHOT" = stream ]; then
   say "Snapshot unpacked: $(du -sh .rocks | cut -f1)"
 fi
 
-# 7. Start it. Snapchain's script installs the compose file, Grafana and its weekly auto-upgrade.
+# 7. Start it. Snapchain's script installs the compose file and Grafana; then the upgrader writes config.toml on the
+#    host and starts the node without a shell (the image has none since 0.16.0). Same file as infra/autoupgrade.sh's.
+SNAP_UPGRADER="${FATLINE_SNAP_UPGRADER:-/usr/local/sbin/fatline-snapchain-upgrade}"
+write_snap_upgrader() {
+  cat > "$SNAP_UPGRADER" <<'EOF'
+#!/usr/bin/env bash
+# Written by Fatline (infra/autoupgrade.sh, infra/node-setup.sh). Upgrades Snapchain with its own script, then starts
+# it without a shell. Since 0.16.0 (2026-10-28) the image has no /bin/bash, but upstream's compose still writes
+# config.toml from a bash entrypoint: the node crash-looped (exit 127) until this. So we write that same config.toml
+# here, from the compose file's own text plus validators.toml, and run /app/snapchain directly.
+#   fatline-snapchain-upgrade <dir> [--no-upgrade]
+set -uo pipefail
+d="${1:-.}"; cd "$d" || exit 1
+log() { echo "$(date -u +%FT%TZ) $*"; }
+[ "${2:-}" = --no-upgrade ] || ./snapchain.sh upgrade
+[ -f docker-compose.yml ] && [ -f validators.toml ] || { log "no docker-compose.yml or validators.toml in $d"; exit 1; }
+# Upstream's file alone (-f): once our override sets the entrypoint, the merged config no longer has the script.
+docker compose -f docker-compose.yml config --format json | jq -r '.services.snapchain.entrypoint[2] // empty' \
+  | awk '/^cat > config.toml <<EOF$/{f=1;next} /^EOF$/{f=0} f' > config.toml.new
+if ! grep -q '^http_address' config.toml.new; then
+  rm -f config.toml.new
+  log "upstream's compose no longer writes config.toml the way it did; config.toml left as it is: check by hand"
+  exit 1
+fi
+cat validators.toml >> config.toml.new
+changed=0
+[ -d config.toml ] && rmdir config.toml  # docker makes a directory when a mounted file is missing
+if cmp -s config.toml.new config.toml; then rm -f config.toml.new; else mv config.toml.new config.toml; changed=1; log "config.toml written"; fi
+if ! grep -qE 'fatline-noshell|/app/snapchain"' docker-compose.override.yml 2>/dev/null; then
+  [ -s docker-compose.override.yml ] || printf 'services:\n  snapchain:\n' > docker-compose.override.yml
+  cat >> docker-compose.override.yml <<'YML'
+    # fatline-noshell: the image has no shell since 0.16.0; config.toml is written on the host.
+    entrypoint: ["/app/snapchain"]
+    command: ["--config-path", "/app/config.toml"]
+    volumes:
+      - ./config.toml:/app/config.toml:ro
+YML
+  changed=1
+fi
+state=$(docker inspect -f '{{.State.Status}}' "$(docker compose ps -aq snapchain 2>/dev/null | head -1)" 2>/dev/null || true)
+if [ "$changed" = 1 ] || [ "$state" != running ]; then
+  docker compose up -d snapchain && log "snapchain started (was: ${state:-none})"
+fi
+EOF
+  chmod 755 "$SNAP_UPGRADER"
+}
+write_snap_upgrader
 say "Starting Snapchain"
-setsid nohup ./snapchain.sh upgrade < /dev/null > upgrade.log 2>&1 &
+setsid nohup "$SNAP_UPGRADER" "$PWD" < /dev/null > upgrade.log 2>&1 &
 if [ "$SNAPSHOT" = replicate ] && [ ! -f .replicate-done ]; then
   # The copy takes hours (we measured ~17k messages/s on 4 cores, ~15 h for mainnet). Follow Snapchain's log.
   # Its source node must keep its copy point for that long: points older than 24 h are dropped mid-copy.

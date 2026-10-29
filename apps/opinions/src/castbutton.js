@@ -1,8 +1,10 @@
 // The Cast button, bottom right, on every page. With a key: write and cast. Without one: sign in, with the
-// Farcaster app (a QR code on a computer, a button on a phone) or with the wallet that owns your account.
-// Either way this client gets its own key for your account: it can cast, like and follow, never move the account.
+// Farcaster app (a QR code on a computer, a button on a phone) or with the wallet that owns your account (the way
+// in for anyone the Farcaster app banned: the protocol has no account bans). Anyone can, on any Fatline: the key is
+// made and kept in this browser (visitor.js); it can cast, like and follow, never move the account. Never a phrase.
 import { el, state, store } from './lib.js';
 import { castComposer, loadMe } from './post.js';
+import { approved, call, newKey, signHash } from './visitor.js';
 
 const STEPS = {
   starting: 'One moment…',
@@ -67,53 +69,133 @@ export function castButton() {
   };
   const fail = (ui, text) => { ui.msg.textContent = text; ui.msg.classList.add('warn'); ui.retry.hidden = false; };
 
-  const withWallet = async (ui) => {
-    run++;
-    ui.qr.replaceChildren(); ui.app.hidden = true; ui.retry.hidden = true; ui.msg.classList.remove('warn');
-    const eth = window.ethereum;
-    if (!eth) {
-      if (!phone()) return fail(ui, 'No wallet in this browser.');
-      // On a phone: open this page inside the wallet's own browser.
-      const here = `${location.host}${location.pathname}`;
-      ui.msg.classList.remove('warn');
-      ui.msg.replaceChildren('Open this page in your wallet: ',
-        el('a', { href: `https://metamask.app.link/dapp/${here}` }, 'MetaMask'), ' · ',
-        el('a', { href: `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(location.href)}` }, 'Coinbase Wallet'));
-      return;
-    }
-    try {
-      ui.msg.textContent = 'Connect your wallet…';
-      const [address] = await eth.request({ method: 'eth_requestAccounts' });
-      ui.msg.textContent = STEPS.finding;
-      let s = await loginCall('POST', '/api/login/wallet', { address });
-      if (s.typedData) await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1' }] }).catch(() => {});
-      // Two signatures: the key request, then the key. No transaction, no gas.
-      while (s.step === 'signing' && s.typedData) {
-        ui.msg.textContent = `Sign in your wallet (${s.n} of ${s.of}). No transaction, no gas.`;
-        const signature = await eth.request({ method: 'eth_signTypedData_v4', params: [address, JSON.stringify(s.typedData)] })
-          .catch(async (err) => { await loginCall('POST', '/api/login/wallet/sign', { signature: null }).catch(() => {}); throw err; });
-        s = await loginCall('POST', '/api/login/wallet/sign', { signature });
-      }
-      return follow(s, ui);
-    } catch (err) {
-      fail(ui, err?.code === 4001 ? 'You declined. Nothing was added.' : (err.message ?? String(err)));
-    }
-  };
+  const short = (a) => `${a.slice(0, 6)}…${a.slice(-4)}`;
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
+  // 1. The usual way: the Farcaster app approves a key made in this browser. A QR on a computer, a button on a phone.
   const showLogin = async () => {
     const qr = el('div', { class: 'castpanel-qr' });
     const msg = el('p', { class: 'muted small' }, STEPS.starting);
-    const app = el('a', { class: 'ck-speak-btn', href: '#', hidden: true, target: phone() ? '_self' : '_blank', rel: 'noopener' }, phone() ? 'Open Farcaster' : 'Open Farcaster on this computer');
-    if (!phone()) app.className = 'castpanel-link small';
+    const app = el('a', { class: phone() ? 'ck-speak-btn' : 'castpanel-link small', href: '#', hidden: true, target: phone() ? '_self' : '_blank', rel: 'noopener' }, phone() ? 'Open Farcaster' : 'Farcaster on this computer? Open it');
     const retry = el('button', { type: 'button', class: 'quiet', hidden: true, onclick: () => showLogin() }, 'Try again');
     const ui = { msg, qr, app, retry };
-    const wallet = el('button', { type: 'button', class: 'quiet', onclick: () => withWallet(ui) }, 'Use my wallet instead');
-    panel.replaceChildren(head('Sign in'), qr, app, msg, retry, wallet);
+    const noApp = el('button', { type: 'button', class: 'linkish small', onclick: () => showNoApp() }, 'No Farcaster app?');
+    const owner = state.me?.fid ? null : el('button', { type: 'button', class: 'linkish small', onclick: () => showOwnerLogin() }, 'This is my Fatline: give it its key');
+    panel.replaceChildren(head('Sign in with Farcaster'), qr, msg, app, retry, noApp, ...(owner ? [owner] : []));
+    const mine = ++run;
+    polling = true;
     try {
-      await follow(await loginCall('POST'), ui);
+      const key = newKey();
+      const r = await call('/api/visitor/qr', { signer: key.publicKey });
+      if (mine !== run) return;
+      if (!phone()) qr.innerHTML = r.qr; // our own server's SVG
+      app.href = phone() ? r.uri : r.web || r.uri;
+      app.hidden = false;
+      msg.textContent = phone() ? 'The Farcaster app asks you to approve. Then come back here.' : 'Scan with your phone\'s camera. The Farcaster app asks you to approve.';
+      while (polling && mine === run) {
+        await wait(2000);
+        if (!polling || mine !== run) return;
+        const s = await call('/api/visitor/qr', null, { token: r.token, signer: key.publicKey });
+        if (s.step === 'done') return signedIn(s.fid);
+        if (s.step === 'submitting') { qr.replaceChildren(); app.hidden = true; msg.textContent = STEPS.submitting; }
+      }
     } catch (err) {
-      fail(ui, err.message);
+      if (mine === run) fail(ui, err.message);
     }
+  };
+
+  // 2. No Farcaster app (or banned from it): the wallet that holds the account approves. People rarely know which
+  //    wallet that is, so the page finds it from their name first, then shows a QR for that wallet's app.
+  const showNoApp = () => {
+    run++; polling = false;
+    const input = el('input', { type: 'text', placeholder: '@yourname or FID', autocomplete: 'off', autocapitalize: 'none', spellcheck: 'false' });
+    const out = el('div', { class: 'castpanel-out' });
+    const form = el('form', { class: 'castpanel-find', onsubmit: (e) => { e.preventDefault(); find(input.value); } }, input, el('button', { type: 'submit' }, 'Find'));
+    panel.replaceChildren(head('Without the Farcaster app'),
+      el('p', { class: 'small' }, 'Your account is held by a wallet. It approves this browser once. No transaction, no gas.'),
+      form, out,
+      el('button', { type: 'button', class: 'linkish small', onclick: () => showLogin() }, 'Back to the Farcaster app'));
+    input.focus();
+
+    const find = async (q) => {
+      const mine = ++run;
+      polling = true;
+      const msg = el('p', { class: 'muted small' }, 'Looking…');
+      const retry = el('button', { type: 'button', class: 'quiet', hidden: true, onclick: () => find(q) }, 'Try again');
+      const ui = { msg, retry, qr: el('div'), app: el('a') };
+      out.replaceChildren(msg, retry);
+      try {
+        const who = await call('/api/visitor/who', null, { q });
+        const key = newKey();
+        const s = await call('/api/visitor/wallet', { address: who.custody, signer: key.publicKey, fid: who.fid, link: `${location.origin}/?sign=` });
+        if (mine !== run) return;
+        const qr = el('div', { class: 'castpanel-qr' });
+        qr.innerHTML = s.qr ?? ''; // our own server's SVG
+        const here = window.ethereum
+          ? el('button', { type: 'button', class: 'quiet', onclick: () => approveHere(s.session, who.custody, msg) }, 'Or approve with this browser\'s wallet')
+          : null;
+        out.replaceChildren(
+          el('p', { class: 'small' }, el('b', {}, who.username ? `@${who.username}` : `FID ${who.fid}`), ' is held by the wallet ', el('code', {}, short(who.custody)), '.'),
+          ...(phone() ? [el('a', { class: 'ck-speak-btn', href: s.link }, 'Open in that wallet\'s app')] : [qr, el('p', { class: 'small' }, 'Scan this with that wallet\'s app, then approve there.')]),
+          ...(here ? [here] : []),
+          msg,
+          el('p', { class: 'muted small' }, 'Made your account in the Farcaster app? Then that wallet is inside the app: go back and scan the first code.'),
+          retry);
+        msg.textContent = '';
+        // The wallet signs (on the phone, or here); then this browser's key signs its own KEY_ADD and it is done.
+        while (polling && mine === run) {
+          await wait(1500);
+          if (!polling || mine !== run) return;
+          const st = await call('/api/visitor/wallet', null, { session: s.session });
+          if (st.step === 'signing') { msg.textContent = st.n > 1 ? `Signature ${st.n} of ${st.of}…` : ''; continue; }
+          if (st.step === 'keysign') {
+            qr.replaceChildren();
+            msg.textContent = STEPS.submitting;
+            const done = await call('/api/visitor/sign', { id: st.id, signature: signHash(st.hash) });
+            return done.step === 'done' ? signedIn(done.fid) : fail(ui, done.error ?? 'Something went wrong. Nothing was added.');
+          }
+          if (st.step === 'done') return signedIn(st.fid);
+          if (st.step === 'error') return fail(ui, st.error);
+        }
+      } catch (err) {
+        if (mine === run) fail(ui, err.message);
+      }
+    };
+  };
+
+  // The wallet in this browser, if it is the one that holds the account. Only signs: the loop above finishes.
+  const approveHere = async (session, custody, msg) => {
+    const eth = window.ethereum;
+    try {
+      const [address] = await eth.request({ method: 'eth_requestAccounts' });
+      if (address.toLowerCase() !== custody.toLowerCase()) { msg.textContent = `This browser's wallet is ${short(address)}, not ${short(custody)}. Use the QR with that wallet's app.`; return; }
+      let s = await call('/api/visitor/wallet', null, { session });
+      await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1' }] }).catch(() => {});
+      while (s.step === 'signing' && s.typedData) {
+        msg.textContent = `Sign in your wallet (${s.n} of ${s.of}). No transaction, no gas.`;
+        const signature = await eth.request({ method: 'eth_signTypedData_v4', params: [address, JSON.stringify(s.typedData)] });
+        s = await call('/api/visitor/wallet/sign', { session, signature });
+      }
+    } catch (err) {
+      msg.textContent = err?.code === 4001 ? 'You declined. Nothing was added.' : (err.message ?? String(err));
+    }
+  };
+
+  // A server with no key of its own yet: its owner gives it one (kept on the server: it lays the egg). Only that account.
+  const showOwnerLogin = async () => {
+    const qr = el('div', { class: 'castpanel-qr' });
+    const msg = el('p', { class: 'muted small' }, STEPS.starting);
+    const app = el('a', { class: 'castpanel-link small', href: '#', hidden: true, target: phone() ? '_self' : '_blank', rel: 'noopener' }, phone() ? 'Open Farcaster' : 'Open Farcaster on this computer');
+    const retry = el('button', { type: 'button', class: 'quiet', hidden: true, onclick: () => showOwnerLogin() }, 'Try again');
+    const ui = { msg, qr, app, retry };
+    panel.replaceChildren(head('Your Fatline'), qr, app, msg, retry);
+    try { await follow(await loginCall('POST'), ui); } catch (err) { fail(ui, err.message); }
+  };
+
+  const signedIn = async (fid) => {
+    approved(fid);
+    await loadMe();
+    return showComposer();
   };
 
   const open = async () => {
