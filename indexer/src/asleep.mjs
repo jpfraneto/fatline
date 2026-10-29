@@ -53,9 +53,19 @@ export function makeAsleep({ worlds, api = null, network = null, coins = null, o
     return (w.tokens ?? []).find((t) => t.surname && t.surname.toLowerCase() === label && (t.stage === 'egg' || t.stage === 'fatliner')) ?? null;
   }
 
-  /** Caddy's on-demand question: may this server hold a certificate for this name? */
+  /** May this server stand in for this name (show its asleep page)? */
   async function knows(domain) {
     return Boolean(await tokenOf(String(domain ?? '').toLowerCase()).catch(() => null));
+  }
+
+  /**
+   * Caddy's on-demand question: may this server hold a certificate for this name? The places it stands in for,
+   * and its own names too: Caddy asks for every name under *.fatline.ink, fatline.fatline.ink and www included.
+   */
+  async function mayCertify(domain) {
+    const label = labelOf(String(domain ?? ''));
+    if (label && (label === 'fatline' || label === 'www' || label === (await ownLabel().catch(() => null)))) return true;
+    return knows(domain);
   }
 
   async function page(host) {
@@ -157,5 +167,5 @@ export function makeAsleep({ worlds, api = null, network = null, coins = null, o
     return send(200, 'text/html; charset=utf-8', await page(host));
   }
 
-  return { knows, page, serve };
+  return { knows, mayCertify, page, serve };
 }

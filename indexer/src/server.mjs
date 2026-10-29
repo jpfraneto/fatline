@@ -150,7 +150,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
       throw Object.assign(new Error('No hatchery answered.'), { status: 503 });
     }],
     // Caddy's on-demand question before it takes a certificate for a name (infra/site-setup.sh): only known places.
-    ['GET', /^\/api\/standin\/ask$/, async (q) => { if (await asleep.knows(q.get('domain'))) return { ok: true }; throw Object.assign(new Error('Not a Fatline place.'), { status: 404 }); }],
+    ['GET', /^\/api\/standin\/ask$/, async (q) => { if (await asleep.mayCertify(q.get('domain'))) return { ok: true }; throw Object.assign(new Error('Not a Fatline place.'), { status: 404 }); }],
     ['GET', /^\/api\/viewer\/(\d{1,12})$/, (q, [, fid]) => companion.viewer(fid)],
     // The birth: hatch the egg, then launch its coin, from the holder's own wallet (indexer/src/birth.mjs).
     ['GET', /^\/api\/birth\/(\d{1,12})$/, (q, [, fid]) => birth(fid)],

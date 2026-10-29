@@ -51,6 +51,12 @@ test('stands in only for known places, never for this server, fatline.ink or www
   assert.ok(calls() <= 2, 'the world is read once a minute, not per question');
 });
 
+test('a certificate for the places it stands in for and its own names, nothing else', async () => {
+  const { a } = make();
+  for (const d of ['thaituma.fatline.ink', 'fatline.fatline.ink', 'www.fatline.ink', 'fatline.ink']) assert.equal(await a.mayCertify(d), true, d);
+  for (const d of ['nobody.fatline.ink', 'gone.fatline.ink', 'fatline.evil.com', 'a.b.fatline.ink', '', null]) assert.equal(await a.mayCertify(d), false, d);
+});
+
 test('the asleep page: who, why, the last cast (escaped), the coin, how to wake it, and its mini app card', async () => {
   const { a } = make();
   const html = await a.page('thaituma.fatline.ink');
