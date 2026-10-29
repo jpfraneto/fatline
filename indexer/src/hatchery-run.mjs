@@ -215,7 +215,7 @@ async function serve() {
     draw: async (fid, { outRoot, key }) => {
       const { prepare } = await import('../../fatliners/src/pfp/pipeline.mjs');
       const { generatePortrait, DEFAULT_MODEL } = await import('../../fatliners/src/pfp/openrouter-image.mjs');
-      const r = await prepare({ fid, outRoot, log: () => {}, source: { kind: 'nodes', config, offline: false, networks: ['farcaster', 'hypersnap'],
+      const r = await prepare({ fid, outRoot, log: () => {}, source: { kind: 'nodes', config, dbPath: join(config.dataDir, 'indexer.sqlite'), offline: false, networks: ['farcaster', 'hypersnap'],
         overrides: { farcaster: process.env.FATLINE_BEINGS_SNAPCHAIN ?? 'http://127.0.0.1:3381', hypersnap: process.env.FATLINE_BEINGS_HYPERSNAP ?? 'http://127.0.0.1:4381' } } });
       if (!r.dir) throw new Error(r.message ?? r.status);
       const model = process.env.FATLINE_BEINGS_MODEL ?? DEFAULT_MODEL;
