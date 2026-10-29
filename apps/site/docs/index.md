@@ -195,7 +195,7 @@ Nobody needs one of the 777 to keep the network. **A worker** is a wallet made o
 | **Live on Base** | The Fatliners contract, also the launchpad. Eggs are open to every account. Two Fatliners have hatched: Thaituma (#13505) and Aster (#16098, the genesis). One egg is warming: Aenon (#20630). |
 | **Coins** | One: $FATLINE, Aster's, `0xf1a97b6ceb7e635acae271f35a30a6c7b8b9580d`, as the contract's `coinOfFatliner(16098)` returns it. Its fees, in USDC, have paid its server's rent once. |
 | **Running** | A Snapchain node and a Hypersnap node on one server in Nuremberg, the first checker. Thaituma's and Aenon's servers are off; their places show as asleep. Live state: [fatline.ink/nodes](https://fatline.ink/nodes). |
-| **Built, not deployed yet** | The registry (2026-10-29): [fatline.ink/nodes](https://fatline.ink/nodes), `/api/registry`, and Bring your node in every client. Untested with a stranger's node. |
+| **New** | The registry (2026-10-29): [fatline.ink/nodes](https://fatline.ink/nodes), `/api/registry`, and [Bring your node](https://fatline.ink/join). No one outside Fatline has listed a node yet. |
 
 The source lists what is tested and what is not: [README](https://github.com/jpfraneto/fatline#readme).
 
