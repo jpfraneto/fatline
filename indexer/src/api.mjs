@@ -235,6 +235,52 @@ export class Api {
     return { network: network.name, source: network.source(node), voice: withFid, replies, users: await this.usersFor(network, [withFid, ...replies].map((v) => v.fid)) };
   }
 
+  /**
+   * Everything this node holds about one account (the lupa): profile, custody and recovery wallets, when it registered,
+   * verified addresses, storage and how much of it the node keeps, which apps hold keys, and the latest casts.
+   * By exact @username or FID: a node has no search by part of a name.
+   */
+  async person(networkName, q) {
+    const network = this.network(networkName);
+    const user = await this.resolve(network, q);
+    const fid = user.fid;
+    const quiet = (p) => p.catch(() => null);
+    const [ids, storage, verifs, keys, recent] = await Promise.all([
+      quiet(network.get('/v1/onChainEventsByFid', { fid, event_type: 'EVENT_TYPE_ID_REGISTER' })),
+      quiet(network.get('/v1/storageLimitsByFid', { fid })),
+      quiet(network.get('/v1/verificationsByFid', { fid })),
+      this.appsOf(network, fid),
+      quiet(this.casts(network, { fid, limit: 12, replies: true })),
+    ]);
+    const moves = (ids?.data?.events ?? []).filter((e) => e.idRegisterEventBody)
+      .sort((a, b) => (a.blockNumber - b.blockNumber) || (a.logIndex - b.logIndex));
+    const owner = moves.filter((e) => /^(register|transfer)$/i.test(e.idRegisterEventBody.eventType ?? '')).at(-1);
+    const set = (a) => a && !/^0x0*$/.test(a); // a transfer's body leaves the recovery address empty: it did not change
+    const recovery = [...moves].reverse().find((e) => set(e.idRegisterEventBody.recoveryAddress))?.idRegisterEventBody.recoveryAddress ?? null;
+    const store = (name) => {
+      const l = (storage?.data?.limits ?? []).find((x) => x.name === name);
+      return l ? { used: Number(l.used), limit: Number(l.limit) } : null;
+    };
+    const addresses = (verifs?.data?.messages ?? []).map((m) => m.data?.verificationAddAddressBody).filter((b) => b?.address)
+      .map((b) => ({ address: b.protocol === 'PROTOCOL_SOLANA' ? b.address : b.address.toLowerCase(), chain: b.protocol === 'PROTOCOL_SOLANA' ? 'solana' : 'ethereum' }));
+    const byApp = new Map();
+    for (const appFid of keys.values()) byApp.set(appFid ?? 0, (byApp.get(appFid ?? 0) ?? 0) + 1);
+    const casts = recent ? await this.renderCasts(network, recent.casts) : [];
+    const users = await this.usersFor(network, [...byApp.keys()].filter(Boolean));
+    return {
+      network: network.name,
+      source: recent?.source ?? null,
+      user,
+      since: moves[0]?.blockTimestamp ? Number(moves[0].blockTimestamp) * 1000 : null,
+      custody: owner?.idRegisterEventBody.to?.toLowerCase() ?? null,
+      recovery: recovery ? recovery.toLowerCase() : null,
+      addresses,
+      storage: { units: storage?.data?.units ?? null, casts: store('CASTS'), links: store('LINKS'), reactions: store('REACTIONS'), verifications: store('VERIFICATIONS') },
+      apps: [...byApp].map(([appFid, n]) => ({ fid: appFid || null, username: users[appFid]?.username ?? null, keys: n })).sort((a, b) => b.keys - a.keys),
+      casts,
+    };
+  }
+
   async resolve(networkName, name) {
     const network = this.network(networkName);
     const clean = String(name).replace(/^@/, '').toLowerCase();

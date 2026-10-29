@@ -730,3 +730,54 @@ button[type="submit"], .more { border-radius: 18px 7px 18px 7px; }
 @media (prefers-reduced-motion: reduce) { .wb-aura, .we-art, .wf i { animation: none; } }
 .world-foot { text-align: center; margin: 4px 0 26px; color: var(--muted); font: italic 15px var(--serif); }
 .world-manual { margin-bottom: 20px; }
+
+/* ---- The lupa in the head, its page, and a person as this node holds them (person.js). */
+.lupa-link { color: var(--faint); padding: 8px; border-radius: 999px; display: inline-flex; }
+.lupa-link:hover, html:has(.lupa) .lupa-link, html:has(.person) .lupa-link { color: var(--pole); }
+.lupa { max-width: 34rem; margin: 18px auto 0; display: grid; gap: 12px; }
+.lupa-form { display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 16px; border-radius: 30px 12px 30px 12px;
+  background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 .7px rgba(237, 186, 84, .3), 0 0 30px color-mix(in srgb, var(--pole) 15%, transparent); }
+.lupa-glass { font-size: 22px; color: var(--pole); }
+.lupa-form input { flex: 1; min-width: 0; border: 0; background: none; padding: 14px 4px; font: 20px var(--serif); color: var(--text); outline: none; box-shadow: none; }
+.lupa-recent { display: flex; flex-wrap: wrap; gap: 8px; }
+.lupa-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px 5px 5px; border-radius: 999px; background: var(--surface); color: var(--text); text-decoration: none; font-size: 14px; }
+.lupa-chip img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; }
+.person { max-width: 620px; margin: 0 auto; }
+.person h2 { margin: 26px 0 10px; }
+.pf-bio { font: 17px/1.5 var(--serif); margin: 0 0 8px; white-space: pre-wrap; }
+.pf-url a { color: var(--pole); }
+.pf-place { border: 0; cursor: pointer; margin: 8px 0 0; padding: 8px 14px; border-radius: 18px 7px 18px 7px; background: color-mix(in srgb, var(--pole) 14%, transparent); color: var(--text); font: 15px var(--serif); }
+.pf-place b { color: var(--pole); font-weight: 600; }
+.pf-facts { display: grid; gap: 0; margin: 0; border-radius: var(--veil); background: var(--surface); border: .7px solid rgba(237, 186, 84, .2); }
+.pf-fact { display: grid; grid-template-columns: 9.5rem 1fr; gap: 12px; padding: 11px 16px; }
+.pf-fact + .pf-fact { border-top: 1px solid var(--line); }
+.pf-fact dt { font: 500 10px var(--serif); letter-spacing: .22em; text-transform: uppercase; color: var(--mist); padding-top: 4px; }
+.pf-fact dd { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 15px; }
+.pf-fact code { font-size: 13px; color: var(--parchment); }
+.pf-app { color: var(--pole); text-decoration: none; }
+.mo-name { color: var(--text); text-decoration: none; }
+.mo-name:hover { color: var(--pole); }
+@media (max-width: 480px) { .pf-fact { grid-template-columns: 1fr; gap: 2px; } }
+
+/* ---- The SNAP (snap.js): switching networks reboots the client; a wave of current runs through it in the new color. */
+html.snap-off body > *:not(.snap-layer) { filter: brightness(.18) saturate(.2); transition: filter .12s ease-in; }
+html.snap-on body > *:not(.snap-layer) { animation: snap-wake .9s cubic-bezier(.2, .8, .2, 1); }
+@keyframes snap-wake {
+  0% { filter: brightness(2.2) saturate(1.6) drop-shadow(0 0 18px var(--snap-glow)); }
+  12% { filter: brightness(.6); }
+  22% { filter: brightness(1.5) drop-shadow(0 0 10px var(--snap-glow)); }
+  100% { filter: none; } }
+.snap-layer { position: fixed; inset: 0; z-index: 999; pointer-events: none; overflow: hidden; }
+.snap-flash { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 0%, var(--snap-core), var(--snap-glow) 30%, transparent 75%);
+  opacity: 0; animation: snap-flash .5s ease-out .12s; mix-blend-mode: screen; }
+@keyframes snap-flash { 0% { opacity: .9; } 100% { opacity: 0; } }
+.snap-band { position: absolute; left: 0; right: 0; top: 0; height: 120px; margin-top: -60px; mix-blend-mode: screen;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--snap-far) 25%, transparent) 30%, color-mix(in srgb, var(--snap-glow) 55%, transparent) 50%, color-mix(in srgb, var(--snap-far) 25%, transparent) 70%, transparent);
+  filter: blur(6px); }
+.snap-bolts { position: absolute; inset: 0; width: 100%; height: 100%; mix-blend-mode: screen; }
+.snap-bolts path { fill: none; stroke-linejoin: bevel; }
+.snap-bolts .b1 { stroke: var(--snap-core); stroke-width: 2.2; filter: drop-shadow(0 0 6px var(--snap-glow)) drop-shadow(0 0 18px var(--snap-glow)); }
+.snap-bolts .b2 { stroke: var(--snap-glow); stroke-width: 1.2; opacity: .8; filter: drop-shadow(0 0 8px var(--snap-far)); }
+.snap-bolts .b3 { stroke: var(--snap-far); stroke-width: .8; opacity: .6; }
+html.snap-soft body { animation: snap-soft .45s ease-out; }
+@keyframes snap-soft { 0% { box-shadow: inset 0 0 0 100vmax color-mix(in srgb, var(--snap-glow) 25%, transparent); } 100% { box-shadow: none; } }

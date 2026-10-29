@@ -61,7 +61,7 @@ function moment(group, users) {
   const u = users[group[0].fid];
   const head = el('header', { class: 'mo-head' },
     u?.pfp ? el('img', { class: 'mo-pfp', src: u.pfp, alt: '', loading: 'lazy' }) : el('span', { class: 'mo-pfp' }),
-    el('span', { class: 'mo-name' }, name(u, group[0].fid)),
+    el('a', { class: 'mo-name', href: `#/u/${group[0].fid}` }, name(u, group[0].fid)),
     u?.username ? el('span', { class: 'mo-user' }, `@${u.username}`) : null);
   const parts = group.slice().reverse().map((c) => {
     const ch = channelOf(c.parentUrl);

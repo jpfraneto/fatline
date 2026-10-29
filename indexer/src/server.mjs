@@ -207,6 +207,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/voices\/(\d+)$/, (q, [, id]) => api.voice(sel(q), id)],
     ['GET', /^\/api\/thread$/, (q) => api.thread(sel(q), { fid: q.get('fid'), hash: q.get('hash') })],
     ['GET', /^\/api\/user$/, (q) => api.resolve(sel(q), q.get('q') ?? q.get('fid'))],
+    ['GET', /^\/api\/person$/, (q) => api.person(sel(q), q.get('q') ?? q.get('fid') ?? '')],
     // Your egg, as each attester sees it (the client only reads; laying and hatching are CLI steps).
     ['GET', /^\/api\/egg$/, async () => {
       const key = loadAppKey(config.dataDir);

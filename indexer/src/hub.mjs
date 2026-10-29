@@ -168,6 +168,8 @@ const USER_FIELDS = {
   USER_DATA_TYPE_DISPLAY: 'displayName',
   USER_DATA_TYPE_PFP: 'pfp',
   USER_DATA_TYPE_BIO: 'bio',
+  USER_DATA_TYPE_URL: 'url',
+  USER_DATA_TYPE_LOCATION: 'location',
 };
 
 export function normalizeUser(fid, messages = []) {

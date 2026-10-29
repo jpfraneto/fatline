@@ -9,6 +9,8 @@ import { loadMe } from './post.js';
 import { castButton, openCast } from './castbutton.js';
 import { cockpitPage, leaveCockpit } from './cockpit.js';
 import { mePage } from './me.js';
+import { personPage, searchPage } from './person.js';
+import { snap } from './snap.js';
 import { loggedIn, profileOf } from './fatline-login.js';
 import { ARCH, STAR, STREAM, VOICE } from './glyphs.js';
 import { placePage } from './place.js';
@@ -43,7 +45,12 @@ function renderChrome() {
   if (sw && state.config?.networks?.length > 1) {
     sw.replaceChildren(...state.config.networks.map((n) => el('button', {
       type: 'button', role: 'radio', 'aria-checked': String(n.name === state.network), 'data-net': n.name === 'hypersnap' ? 'hypersnap' : 'snapchain', title: n.about ?? '',
-      onclick: () => { if (n.name === state.network) return; state.network = n.name; store.set('network', n.name); renderChrome(); route(); },
+      onclick: () => {
+        if (n.name === state.network) return;
+        state.network = n.name; store.set('network', n.name);
+        // The SNAP: the client reboots onto the other copy of Farcaster, and the current runs through it.
+        snap(n.name === 'hypersnap' ? 'hypersnap' : 'snapchain', { done: () => { renderChrome(); route(); } });
+      },
     }, n.name === 'hypersnap' ? 'Hypersnap' : 'Snapchain')));
   }
   // Voices (long posts onchain) only where a Voices contract is configured; otherwise no tab at all.
@@ -68,9 +75,9 @@ const fail = (err) => $('#main').replaceChildren(el('p', { class: 'warn' }, err.
 
 function route() {
   const hash = location.hash.slice(1) || '/';
-  const tab = hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'me' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/fatline') || hash.startsWith('/here') || hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') ? 'fatline' : 'home';
+  const tab = hash.startsWith('/search') || hash.startsWith('/u/') ? 'search' : hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'me' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/fatline') || hash.startsWith('/here') || hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') ? 'fatline' : 'home';
   document.querySelectorAll('#tabs a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.tab === tab)));
-  if (tab !== 'voices') showSource(null);
+  if (tab !== 'voices' && tab !== 'search') showSource(null);
   window.scrollTo(0, 0);
   leaveLive();
   leaveCockpit();
@@ -79,6 +86,10 @@ function route() {
   // The canonical page of a coin (or of a coinless app's vault): #/coin/<chainId>/<address>.
   const coin = hash.match(/^\/coin\/([^/]+)\/([^/?#]+)/);
   if (coin) return coinPage(coin[1], coin[2]);
+  // The lupa: anyone on Farcaster, as this node holds them.
+  if (hash.startsWith('/search')) return searchPage();
+  const person = hash.match(/^\/u\/([^/?#]{1,64})/);
+  if (person) return personPage(decodeURIComponent(person[1])).catch(fail);
   const archive = hash.match(/^\/archive(?:\/(\d{1,12}))?/);
   if (archive) return archivePage(archive[1]);
   const node = hash.match(/^\/node\/([\w-]{1,64})/);
