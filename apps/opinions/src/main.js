@@ -13,9 +13,7 @@ import { loggedIn, profileOf } from './fatline-login.js';
 import { ARCH, STAR, STREAM, VOICE } from './glyphs.js';
 import { placePage } from './place.js';
 import { birthPage } from './birth.js';
-import { enterMiniApp, inMiniApp, openUrl } from './miniapp.js';
-// The same file fatline.ink serves as /manual.js, bundled in here: a node never asks fatline.ink to draw it.
-import { mountManual } from '../../site/manual.js';
+import { enterMiniApp, inMiniApp } from './miniapp.js';
 
 // A link from the server's setup, https://<name>.fatline.ink/#key=<write token>: keep the token in this browser (so it
 // can cast through this client), then take it out of the address bar and history.
@@ -28,11 +26,8 @@ if (keyLink) {
 // The day's planet, as in the iOS app: Steiner's sevenfold week, each day under its planet and color.
 const PLANETS = [['☉', '#edba54'], ['☽', '#ad99db'], ['♂', '#c74a66'], ['☿', '#f2db66'], ['♃', '#f2944d'], ['♀', '#66b8a8'], ['♄', '#5c8cdb']];
 
-let manual = null;
-
 function renderChrome() {
   document.documentElement.lang = state.lang;
-  manual?.setLang(state.lang);
   // The network tints everything: Snapchain warm, Hypersnap cool.
   document.documentElement.dataset.net = state.network === 'hypersnap' ? 'hypersnap' : 'snapchain';
   const [glyph, color] = PLANETS[new Date().getDay()];
@@ -43,6 +38,14 @@ function renderChrome() {
   const glyphs = { stream: STREAM, star: STAR, voice: VOICE };
   document.querySelectorAll('[data-glyph]').forEach((n) => { if (!n.firstChild) n.innerHTML = glyphs[n.dataset.glyph]; });
   renderMe();
+  // The network switch, always in sight: Snapchain warm, Hypersnap cool.
+  const sw = $('#netswitch');
+  if (sw && state.config?.networks?.length > 1) {
+    sw.replaceChildren(...state.config.networks.map((n) => el('button', {
+      type: 'button', role: 'radio', 'aria-checked': String(n.name === state.network), 'data-net': n.name === 'hypersnap' ? 'hypersnap' : 'snapchain', title: n.about ?? '',
+      onclick: () => { if (n.name === state.network) return; state.network = n.name; store.set('network', n.name); renderChrome(); route(); },
+    }, n.name === 'hypersnap' ? 'Hypersnap' : 'Snapchain')));
+  }
   // Voices (long posts onchain) only where a Voices contract is configured; otherwise no tab at all.
   const voicesTab = document.querySelector('#tabs a[data-tab="voices"]');
   if (voicesTab) voicesTab.hidden = !state.config?.voices?.address;
@@ -106,8 +109,6 @@ function route() {
 
 async function boot() {
   await enterMiniApp();
-  // First, before any data: the manual works even when this node doesn't answer.
-  manual = mountManual($('#manual'), { lang: state.lang, dock: true, openUrl: inMiniApp() ? openUrl : null });
   state.config = await api('/api/config');
   const saved = store.get('network', null);
   state.network = state.config.networks.some((n) => n.name === saved) ? saved : state.config.defaultNetwork;

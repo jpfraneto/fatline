@@ -678,23 +678,55 @@ button[type="submit"], .more { border-radius: 18px 7px 18px 7px; }
 .dp-said { margin: 0; font: 15px/1.45 var(--serif); color: var(--text); opacity: .9; overflow-wrap: anywhere; }
 .dp-said cite { display: block; margin-top: 4px; font: 12px/1 system-ui, sans-serif; font-style: normal; color: var(--faint); }
 
-/* ---- The instruction manual (apps/site/manual.js). On a phone: one quiet line above the page, opening in place.
-   From 1000px: a column beside the client (the docked cover), and the client, its bar and its pen move left with it.
-   manual.js draws its docked cover from the same 1000px. */
-#manual { margin: 14px 0 6px; }
-#manual:empty { display: none; }
-body:has(#main.birth-page) #manual { display: none; } /* the hatching is a ceremony: nothing beside it */
-@media (min-width: 1000px) {
-  :root { --fl-col: 600px; --fl-gap: 36px; --fl-side: 320px; --fl-bar: min(560px, var(--fl-col)); }
-  body { max-width: calc(var(--fl-col) + var(--fl-gap) + var(--fl-side) + 32px); padding-right: calc(16px + var(--fl-gap) + var(--fl-side)); }
-  #manual { position: fixed; z-index: 30; margin: 0; width: var(--fl-side);
-    top: calc(20px + env(safe-area-inset-top, 0px)); left: calc(50% - (var(--fl-col) + var(--fl-gap) + var(--fl-side)) / 2 + var(--fl-col) + var(--fl-gap));
-    max-height: calc(100dvh - 40px - env(safe-area-inset-top, 0px)); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin;
-    border-radius: var(--veil); }
-  .tabs { left: calc(50% - (var(--fl-gap) + var(--fl-side)) / 2); width: var(--fl-bar); }
-  .castbutton-wrap { right: calc(50% + (var(--fl-gap) + var(--fl-side)) / 2 - var(--fl-bar) / 2 + 12px); }
-  body:has(#main.birth-page) { max-width: calc(var(--fl-col) + 32px); padding-right: 16px; }
-  body:has(#main.birth-page) .tabs { left: 50%; }
-  body:has(#main.birth-page) .castbutton-wrap { right: calc(50% - var(--fl-bar) / 2 + 12px); }
-}
-@media (min-width: 1200px) { :root { --fl-col: 680px; --fl-gap: 48px; --fl-side: 360px; } }
+/* ---- The network switch in the head, always in sight: Snapchain warm, Hypersnap cool. */
+.top { gap: 10px; }
+.top .brand { margin-right: auto; }
+.netswitch { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(255, 255, 255, .05); box-shadow: inset 0 0 0 .7px rgba(237, 186, 84, .22); }
+.netswitch:empty { display: none; }
+.netswitch button { border: 0; background: none; cursor: pointer; padding: 6px 12px; border-radius: 999px; color: var(--faint);
+  font: 500 10px var(--serif); letter-spacing: .2em; text-transform: uppercase; transition: background .25s, color .25s, box-shadow .25s; }
+.netswitch button[aria-checked="true"][data-net="snapchain"] { color: #1d1206; background: linear-gradient(135deg, #f5c2ab, #edba54); box-shadow: 0 0 14px rgba(237, 186, 84, .45); }
+.netswitch button[aria-checked="true"][data-net="hypersnap"] { color: #0c1230; background: linear-gradient(135deg, #a9c4ff, #ad99db); box-shadow: 0 0 14px rgba(140, 170, 255, .45); }
+@media (max-width: 420px) { .netswitch button { padding: 6px 9px; letter-spacing: .12em; } }
+
+/* ---- The world (directory.js): you walk in and it is alive. --alive (0 to 1) is what a coin earned; --breath its pace. */
+.world { max-width: 640px; margin: 0 auto; }
+.world-head { text-align: center; margin: 10px 0 26px; }
+.world-head h1 { margin: 0; font: 400 clamp(38px, 10vw, 52px)/1 var(--serif); letter-spacing: .02em; }
+.world-head p { margin: 8px 0 0; font: 500 10.5px var(--serif); letter-spacing: .26em; text-transform: uppercase; color: var(--pole); }
+.world-beings, .world-eggs { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 18px 22px; margin-bottom: 28px; }
+.wb, .we { position: relative; display: grid; justify-items: center; gap: 6px; border: 0; background: none; padding: 0; cursor: pointer; color: var(--text);
+  -webkit-tap-highlight-color: transparent; transition: transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+.wb:hover, .we:hover { transform: translateY(-3px); }
+.wb:active, .we:active { transform: scale(.95); }
+.wb-aura { position: absolute; z-index: -1; left: 50%; top: 44%; width: 120%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--pole) calc(var(--alive) * 70%), transparent), transparent 65%);
+  filter: blur(14px); animation: breathe var(--breath) ease-in-out infinite; }
+.wb-art { width: min(260px, 70vw); aspect-ratio: 3 / 4; object-fit: cover; border-radius: 40px 14px 40px 14px;
+  box-shadow: 0 0 0 .7px rgba(237, 186, 84, calc(.15 + var(--alive) * .5)), 0 0 calc(10px + var(--alive) * 50px) color-mix(in srgb, var(--pole) calc(var(--alive) * 80%), transparent);
+  filter: saturate(calc(.55 + var(--alive) * .5)) brightness(calc(.75 + var(--alive) * .3)); }
+.world-beings .wb:not(:first-child) .wb-art { width: min(180px, 42vw); }
+/* The base being, until its own art is made: Aster's form, in this one's stone. */
+.wb.base .wb-art { filter: grayscale(.35) saturate(calc(.45 + var(--alive) * .4)) brightness(calc(.7 + var(--alive) * .3)); }
+.wb.base.stone-basalt .wb-art { filter: grayscale(.85) brightness(.62) contrast(1.15); }
+.wb.base.stone-ivory .wb-art, .wb.base.stone-marble .wb-art { filter: grayscale(.7) brightness(1.05); }
+.wb.base.stone-moss .wb-art { filter: hue-rotate(55deg) saturate(.7) brightness(.8); }
+.wb.base.stone-opal .wb-art { filter: hue-rotate(200deg) saturate(.6) brightness(.95); }
+.we-art { width: 104px; aspect-ratio: 1; object-fit: cover; border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
+  box-shadow: 0 0 calc(8px + var(--alive) * 30px) color-mix(in srgb, var(--pole) calc(20% + var(--alive) * 60%), transparent);
+  animation: breathe var(--breath) ease-in-out infinite; }
+.wb-name { font: 500 11px var(--serif); letter-spacing: .26em; text-transform: uppercase; color: var(--parchment); padding-left: .26em; }
+.wb-earned { font: 13px var(--serif); color: var(--pole); margin-top: -2px; }
+@keyframes breathe { 0%, 100% { opacity: calc(.55 + var(--alive, .1) * .3); } 50% { opacity: 1; } }
+/* Every place not laid yet: a field of eggs, each breathing at its own pace. */
+.wf { display: grid; grid-template-columns: repeat(auto-fill, minmax(11px, 1fr)); gap: 9px 7px; padding: 6px 4px 10px;
+  mask-image: linear-gradient(to bottom, #000 70%, transparent); -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent); }
+.wf i { display: block; width: 9px; height: 12px; margin: auto; border-radius: 50% 50% 46% 46% / 58% 58% 42% 42%;
+  background: radial-gradient(circle at 40% 32%, #fff6dd, var(--gold) 60%, transparent 75%); opacity: .12;
+  animation: ember var(--t) ease-in-out var(--d) infinite; }
+.wf i.spark { animation-name: spark; }
+@keyframes ember { 0%, 100% { opacity: .08; } 50% { opacity: .26; } }
+@keyframes spark { 0%, 100% { opacity: .1; } 45% { opacity: .2; } 50% { opacity: .75; filter: drop-shadow(0 0 4px var(--gold)); } 55% { opacity: .2; } }
+@media (prefers-reduced-motion: reduce) { .wb-aura, .we-art, .wf i { animation: none; } }
+.world-foot { text-align: center; margin: 4px 0 26px; color: var(--muted); font: italic 15px var(--serif); }
+.world-manual { margin-bottom: 20px; }

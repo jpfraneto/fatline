@@ -33,6 +33,10 @@ export const worldEvents = parseAbi([
   'event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)',
 ]);
 
+// Each Fatline's vault: the coin's trading fees arrive as USDC (Harvested), or wait in Clanker's fee locker (pendingFees).
+const harvestedEvent = parseAbi(['event Harvested(uint256 amount)']);
+const vaultViews = parseAbi(['function pendingFees() view returns (uint256)']);
+
 const views = parseAbi([
   'function stageOf(uint256) view returns (uint8)',
   'function ownerOf(uint256) view returns (address)',
@@ -124,10 +128,50 @@ export class World {
       this.set('pending', '[]');
     }
     if (kept || this.get('summary') === null) await this.refreshSummary();
+    // What each coin has earned, kept apart: a failed read here never holds back the world itself.
+    try { await this.syncFees(head); } catch (err) { this.log(`[world] fees: ${err.message}`); }
     this.set('head', head);
     this.set('syncedAt', this.now());
     this.lastError = null;
     return kept;
+  }
+
+  /**
+   * What each vault's coin has earned in trading fees, ever: every Harvested (fees pulled into the vault as USDC) plus
+   * what waits in the fee locker now. One scan of all vaults per hour; a new vault first catches up alone. Saved only
+   * when the whole pass worked, so a failed hour is read again, never counted twice.
+   */
+  async syncFees(head) {
+    const vaults = [...new Set(this.tokens().map((t) => t.vault).filter(Boolean))];
+    if (!vaults.length) return;
+    const fees = JSON.parse(this.get('fees') ?? '{}'); // vault -> { harvested, pending } (USDC, 6 decimals, as strings)
+    const done = this.get('feesBlock') === null ? null : BigInt(this.get('feesBlock'));
+    const scan = async (addresses, from, to) => {
+      const only = new Set(addresses);
+      for (let a = from; a <= to; a += WINDOW) {
+        const b = a + WINDOW - 1n < to ? a + WINDOW - 1n : to;
+        const logs = await this.client.getLogs({ address: addresses, events: harvestedEvent, fromBlock: a, toBlock: b });
+        for (const l of logs) {
+          const v = l.address?.toLowerCase();
+          if (l.eventName !== 'Harvested' || !only.has(v) || !fees[v]) continue;
+          fees[v].harvested = String(BigInt(fees[v].harvested) + BigInt(l.args.amount));
+        }
+      }
+    };
+    const fresh = vaults.filter((v) => !fees[v]);
+    for (const v of fresh) fees[v] = { harvested: '0', pending: '0' };
+    if (done !== null) for (const v of fresh) await scan([v], this.fromBlock, done);
+    await scan(vaults, done === null ? this.fromBlock : done + 1n, head);
+    const res = await this.client.multicall({ contracts: vaults.map((address) => ({ address, abi: vaultViews, functionName: 'pendingFees' })), allowFailure: true, multicallAddress: MULTICALL3 });
+    vaults.forEach((v, i) => { if (res[i]?.status === 'success' && typeof res[i].result === 'bigint') fees[v].pending = String(res[i].result); });
+    this.set('fees', JSON.stringify(fees));
+    this.set('feesBlock', head);
+  }
+
+  /** USDC a vault's coin has earned, ever (harvested + waiting), as a number; null without a vault. */
+  earned(vault, fees = JSON.parse(this.get('fees') ?? '{}')) {
+    const f = vault ? fees[vault.toLowerCase()] : null;
+    return f ? Number(BigInt(f.harvested) + BigInt(f.pending)) / 1e6 : null;
   }
 
   fidOfVault(vault) {
@@ -193,12 +237,13 @@ export class World {
   /** What GET /world answers. warmth(fid): this hatchery's checks of that egg, if it keeps any. */
   view(warmth = () => null) {
     const syncedAt = Number(this.get('syncedAt') ?? 0) || null;
+    const fees = JSON.parse(this.get('fees') ?? '{}');
     return {
       contract: this.address, chainId: this.chainId,
       syncedBlock: this.get('block') === null ? null : Number(this.get('block')),
       syncedAt, nextAt: syncedAt ? syncedAt + EVERY_MS : null, error: this.lastError,
       ...(JSON.parse(this.get('summary') ?? '{}')),
-      tokens: this.tokens().filter((t) => t.stage !== 'none').map((t) => ({ ...t, warmth: warmth(t.fid) })),
+      tokens: this.tokens().filter((t) => t.stage !== 'none').map((t) => ({ ...t, earned: this.earned(t.vault, fees), warmth: warmth(t.fid) })),
     };
   }
 }

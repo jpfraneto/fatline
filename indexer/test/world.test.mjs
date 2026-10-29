@@ -92,3 +92,31 @@ test('an egg that died leaves the world; a coin is traced to its token by its va
   assert.equal(v.tokens[0].coin, '0x00000000000000000000000000000000000000c1');
   assert.equal(w.events(1)[0].fid, 16098);
 });
+
+test('what each coin earned: every harvest plus what waits, counted once; a new vault catches up alone', async () => {
+  const chain = fakeChain();
+  const V = '0x00000000000000000000000000000000000000ba';
+  chain.tokens[16098].vaultOfFatliner = V;
+  chain.logs.push({ blockNumber: 12_000n, logIndex: 1, transactionHash: '0xh', address: V, eventName: 'Harvested', args: { amount: 7_432_637n } });
+  const base = chain.multicall;
+  chain.multicall = async ({ contracts }) => (contracts[0]?.functionName === 'pendingFees' ? contracts.map(() => ok(500_000n)) : base({ contracts }));
+  const w = new World({ client: chain, address: C, chainId: 8453, fromBlock: 50, file: ':memory:' });
+  await w.sync();
+  const earned = () => w.view().tokens.find((t) => t.fid === 16098).earned;
+  assert.equal(earned(), 7.932637);
+  assert.equal(w.view().tokens.find((t) => t.fid === 13505).earned, null, 'no vault, nothing earned');
+  // Next hour: only the new blocks, and the old harvest is not counted again.
+  chain.head = 26_000n;
+  chain.logs.push({ blockNumber: 25_500n, logIndex: 0, transactionHash: '0xi', address: V, eventName: 'Harvested', args: { amount: 1_000_000n } });
+  await w.sync();
+  assert.equal(earned(), 8.932637);
+  // A second vault appears later: it reads its own past once.
+  const V2 = '0x00000000000000000000000000000000000000bb';
+  chain.logs.push({ blockNumber: 300n, logIndex: 0, transactionHash: '0xj', address: V2, eventName: 'Harvested', args: { amount: 2_000_000n } });
+  chain.tokens[13505].vaultOfFatliner = V2;
+  chain.head = 27_000n;
+  chain.logs.push({ blockNumber: 26_500n, logIndex: 0, transactionHash: '0xk', eventName: 'FatlineBorn', args: { fid: 13505n, vault: V2 } });
+  await w.sync();
+  assert.equal(w.view().tokens.find((t) => t.fid === 13505).earned, 2.5);
+  assert.equal(earned(), 8.932637);
+});
