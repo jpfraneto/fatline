@@ -69,9 +69,9 @@ export function makeBeings({ dataDir, tokens, drawn = () => false, draw, keyFile
     }
   }
 
-  /** { fid: { image } } of every being drawn here. */
+  /** { fid: { image } } of every being drawn here. The URL carries when it was drawn: a new drawing is a new address. */
   function list() {
-    return Object.fromEntries(Object.entries(load().beings).map(([fid, b]) => [fid, { image: b.image }]));
+    return Object.fromEntries(Object.entries(load().beings).map(([fid, b]) => [fid, { image: `${PUBLIC}/${fid}.png?v=${b.at}` }]));
   }
 
   /** The PNG of a being drawn here, or null. */

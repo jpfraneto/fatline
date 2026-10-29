@@ -1,6 +1,16 @@
 # Fatliner PFPs: from any FID to a reference-conditioned portrait
 
-## Status, 2026-10-23: the figurine look (prompt v7, traits v7). Works; not yet run at scale
+## Status, 2026-10-29: one family (prompt v8), drawn by the master when a Fatliner hatches
+
+The owner: "create a master sprite / skeleton based on how aster looks, and then have all the subsequent Fatlines come out from that same family of beings".
+
+- **The family sheet** (`fatliners/assets/FATLINE_FAMILY_SHEET.png`, `family-sheet/1`): Aster as a model sheet in plain base stone, five views (front, three-quarter, profile, back, head). Made once by `fatliners/bin/family.mjs` from Aster's portrait (`fatliners/assets/FATLINE_ASTER.png`, `aster/1`) with `openai/gpt-image-2.5-sunburst` (Aster's model) through OpenRouter, $0.10 for two candidates; the first was chosen. A new sheet is a new reference version and a new prompt version, never an edit.
+- **Prompt v8** attaches two images in order: the sheet (reference 1: the skeleton, kept exactly: head, face, forehead line, body) and Aster (reference 2: how a member is photographed). The history gives what varies: material (Roots), eyes (Voice), the forehead line and its lights (Pulse, Orbit), the crown (Bloom), one prop (temperament), a seeded pose and setting. The v7 seeded head is gone.
+- **Where it runs:** the master's hatchery (`indexer/src/beings.mjs`), after each hourly read of the world, for every Fatliner without art, through `src/pfp/openrouter-image.mjs` (high quality, ≈ $0.02–0.13 each), only with `/root/.fatline/openrouter.key`, at most 4 a day. Served at `fatline.ink/beings/<fid>.png?v=<drawn at>`; the token metadata and every client read it from there. From a terminal: `fatline fatliners prompt --fid <n> --generate --provider openrouter` (key in `OPENROUTER_API_KEY`), or Codex as before (both images attached with `-i`).
+- **First member:** Thaituma (#13505), $0.075. Its v7 portrait is kept on the master as `beings/13505.v7.png` (beings.json `previous`).
+- **Not yet:** the portraits live on the master, not Arweave.
+
+## Before, 2026-10-23: the figurine look (prompt v7, traits v7)
 
 | | | | | |
 |---|---|---|---|---|

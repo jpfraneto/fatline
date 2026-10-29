@@ -35,7 +35,7 @@ test('a hatched Fatliner without art is drawn once; Aster (already drawn) and eg
   assert.equal(await b.run(), 1);
   assert.deepEqual(calls.map((c) => c.fid), [13505]);
   assert.equal(calls[0].key, 'sk-or-test');
-  assert.deepEqual(b.list(), { 13505: { image: 'https://fatline.ink/beings/13505.png' } });
+  assert.deepEqual(b.list(), { 13505: { image: 'https://fatline.ink/beings/13505.png?v=1000000' } });
   assert.deepEqual(b.png(13505), PNG);
   assert.deepEqual(readFileSync(join(dataDir, 'beings', '13505.png')), PNG);
   assert.equal(await b.run(), 0, 'never redrawn by itself');
