@@ -52,11 +52,13 @@ if [ -n "$CLIENT" ]; then
 fi
 # Standing in for a place whose server is off (the names router sends its name here when it does not answer): its asleep
 # page, from this server's client (indexer/src/asleep.mjs). A certificate per name, on demand, only for names the client
-# says are places (never any name). The more specific names above and in fatline-client.caddy win over *.fatline.ink.
+# says are places (never any name). A catch-all (https://), not *.fatline.ink: Caddy 2.10+ lets a wildcard site cover
+# fatline.fatline.ink and www.fatline.ink and then loads no certificate of their own (their TLS fails). The named sites
+# above and in fatline-client.caddy win over the catch-all.
 STANDIN=""
 if [ -n "$CLIENT" ] && [ -n "$GLOBAL" ]; then
   GLOBAL=$(printf '{\n\thttp_port 8080\n\thttps_port 8443\n\tdefault_bind 127.0.0.1\n\ton_demand_tls {\n\t\task http://127.0.0.1:8787/api/standin/ask\n\t}\n}\n')
-  STANDIN=$(printf '*.fatline.ink {\n\ttls {\n\t\ton_demand\n\t}\n\tencode gzip\n\treverse_proxy 127.0.0.1:8787 {\n\t\theader_up X-Fatline-Standin 1\n\t}\n}\n')
+  STANDIN=$(printf 'https:// {\n\ttls {\n\t\ton_demand\n\t}\n\tencode gzip\n\treverse_proxy 127.0.0.1:8787 {\n\t\theader_up X-Fatline-Standin 1\n\t}\n}\n')
 fi
 cat > /etc/caddy/Caddyfile <<EOF
 $GLOBAL
