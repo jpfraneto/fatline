@@ -117,7 +117,12 @@ export class Writer {
     // @names the node knows become real mentions (the person is notified), not just text.
     const named = await withMentions(text, async (name) => (await this.network.get('/v1/userNameProofByName', { name }))?.data?.fid ?? null);
     const body = { ...named, embeds: linkEmbeds(text), embedsDeprecated: [], type };
-    if (parent) body.parentCastId = { fid: Number(parent.fid), hash: bytes(parent.hash) };
+    // A reply (parent: { fid, hash }), or a cast under a URL (parent: { url }), like the node records under fatline.ink/nodes.
+    if (parent?.url != null) {
+      const url = String(parent.url);
+      if (!/^https?:\/\/[^\s]+$/.test(url) || Buffer.byteLength(url) > 256) throw fail('parent.url: an http(s) address, at most 256 bytes.');
+      body.parentUrl = url;
+    } else if (parent) body.parentCastId = { fid: Number(parent.fid), hash: bytes(parent.hash) };
     const message = unwrap(await makeCastAdd(body, this.options, this.signer), 'Could not build the cast');
     return this.#publish('cast', message, (hash) => ['/v1/castById', { fid: this.fid, hash }], true);
   }

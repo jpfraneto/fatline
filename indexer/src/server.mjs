@@ -15,6 +15,7 @@ import { Keeper } from './keeper.mjs';
 import { Writer, loadAppKey } from './writer.mjs';
 import { attesterList, hatcheryConfig } from './hatchery-run.mjs';
 import { NodeMonitor } from './nodes.mjs';
+import { Registry, referencesFrom } from './registry.mjs';
 import { makeCockpit } from './cockpit.mjs';
 import { embedTags, makePlace, manifest } from './miniapp.mjs';
 import { makeCompanion } from './companion.mjs';
@@ -37,7 +38,7 @@ const TYPES = {
   '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon', '.json': 'application/json', '.webmanifest': 'application/manifest+json',
 };
 
-export function buildServer({ config, networks, voices, launchpad, keeper = null, nodes = null, coins = null, archive = null, lifeforce = null }) {
+export function buildServer({ config, networks, voices, launchpad, keeper = null, nodes = null, coins = null, archive = null, lifeforce = null, registryDb = null, registry = null }) {
   const api = new Api({ config, networks, voices, launchpad });
   coins ??= nodes ? new Coins({ launchpad, nodes, networks, config, keeper }) : null;
   const needCoins = () => { if (!coins) throw Object.assign(new Error('Node monitoring is not set up on this server.'), { status: 503 }); return coins; };
@@ -138,8 +139,22 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
   // Whoever opens this client: what they have (egg, Fatliner, nothing), and their home feed from this server's node.
   const homeNet = networks[config.defaultNetwork] ?? Object.values(networks)[0];
   const home = homeNet ? makeHome({ api, network: homeNet }) : null;
+  // The registry (registry.mjs): every node and client that joined Fatline with a cast under fatline.ink/nodes, plus
+  // Fatline's own places, each measured from here once an hour. Read-only, for anyone, any origin.
+  registry ??= registryDb ? new Registry({
+    db: registryDb, networks, references: referencesFrom(config), ownerFid,
+    places: placesFrom(attesterList(hc)), extraNodes: (config.masterNodes ?? []).filter((n) => n.public !== false),
+    users: async (fid) => { const u = await api.resolve(homeNet?.name ?? config.defaultNetwork, String(fid)); return { username: u?.username ?? null, pfp: u?.pfp ?? null }; },
+    coins: async (fids) => (fids.length ? (await coinsLive(fids.join(','))).coins ?? [] : []),
+    measuredBy: process.env.FATLINE_HOST ?? 'this server', log: console.log,
+  }) : null;
+  const needRegistry = () => { if (!registry) throw Object.assign(new Error('The registry is not running on this server.'), { status: 503 }); return registry; };
   const routes = [
     ...(companionOn ? companion.routes : []),
+    ['GET', /^\/api\/registry$/, (q) => needRegistry().list(q)],
+    ['GET', /^\/api\/registry\/check$/, (q, m, b, req) => needRegistry().check({ url: q.get('url'), fid: q.get('fid'), client: q.get('client'), ip: req.socket.remoteAddress })],
+    ['POST', /^\/api\/registry\/refresh$/, () => needRegistry().refresh()],
+    ['GET', /^\/api\/registry\/([a-z0-9-]{1,64})$/, (q, [, id]) => needRegistry().get(id)],
     // Every Fatline's address (<name>.fatline.ink) and FID, as the attesters' hatcheries list them: fatline.ink sends
     // people with an egg to their own client.
     ['GET', /^\/api\/names$/, async () => {
@@ -245,7 +260,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['POST', /^\/api\/resend$/, write((w, b) => w.resend(b.message))],
   ];
 
-  return createServer(async (req, res) => {
+  const httpServer = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://local');
     res.setHeader('access-control-allow-origin', '*');
     if (req.method === 'OPTIONS') return res.writeHead(204, { 'access-control-allow-headers': 'authorization, content-type', 'access-control-allow-methods': 'GET, POST' }).end();
@@ -282,6 +297,34 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     }
     serveApp(config.appDir, url.pathname, res, embedTags(host));
   });
+  httpServer.registry = registry;
+  return httpServer;
+}
+
+/**
+ * Fatline's places, for the registry: every egg and Fatliner in the first hatchery's /world that answers, with the node
+ * its egg names (GET /eggs/<fid>) and its client at <label>.fatline.ink (GET /names). Read once per registry round.
+ */
+export function placesFrom(attesters, { fetchImpl = fetch } = {}) {
+  const get = (url) => fetchImpl(url, { signal: AbortSignal.timeout(10_000) }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  return async () => {
+    for (const a of await attesters().catch(() => [])) {
+      const at = String(a.url).replace(/\/$/, '');
+      const world = await get(`${at}/world`);
+      if (!world?.tokens) continue;
+      const names = (await get(`${at}/names`))?.names ?? [];
+      const live = world.tokens.filter((t) => t.surname && (t.stage === 'egg' || t.stage === 'fatliner'));
+      return Promise.all(live.map(async (t) => {
+        const egg = await get(`${at}/eggs/${t.fid}`);
+        const label = names.find((n) => n.fid === t.fid)?.label ?? t.surname.toLowerCase();
+        return {
+          fid: t.linkedFid || t.fid, tokenFid: t.fid, surname: t.surname, stage: t.stage, node: egg?.node ?? null, network: egg?.network ?? null,
+          client: `https://${label}.fatline.ink`, coin: t.coin ?? null, vault: t.vault ?? null, earned: t.earned ?? null, being: t.being ?? null,
+        };
+      }));
+    }
+    throw new Error('no hatchery answered with its world');
+  };
 }
 
 async function readJson(req) {
@@ -337,7 +380,8 @@ export async function start(config = loadConfig()) {
   if (ownKey?.fid) archive.track(ownKey.fid); // the owner decided: only this client's own FID, for now
   const lifeforce = new LifeForce(networks[config.defaultNetwork]);
   lifeforce.start();
-  const server = buildServer({ config, networks, voices, launchpad, keeper, nodes, archive, lifeforce });
+  const server = buildServer({ config, networks, voices, launchpad, keeper, nodes, archive, lifeforce, registryDb: db });
+  if (process.env.FATLINE_REGISTRY !== '0') server.registry?.start();
   // FATLINE_BIND=127.0.0.1 on a server, where Caddy serves the client over https and nothing else should reach it.
   server.listen(config.port, process.env.FATLINE_BIND || undefined, async () => {
     const url = `http://localhost:${config.port}`;
@@ -354,6 +398,7 @@ export async function start(config = loadConfig()) {
     console.log(`  apps:     ${launchpad.enabled ? `factory ${launchpad.factory} on chain ${launchpad.chainId}` : 'off (no factory address in config)'}`);
     console.log(`  keeper:   ${keeper ? keeper.account.address : 'off'}`);
     console.log(`  nodes:    ${nodes.nodes.length ? nodes.nodes.map((n) => n.id).join(', ') : 'none watched (add masterNodes to the config)'}`);
+    console.log(`  registry: ${server.registry && process.env.FATLINE_REGISTRY !== '0' ? `reads ${'https://fatline.ink/nodes'} hourly, /api/registry` : 'off'}`);
     console.log(`  voices:   ${voices.enabled ? `${voices.address} on chain ${voices.chainId}` : 'off (no contract address in config)'}`);
   });
   return { server, voices, launchpad, keeper, db, nodes, archive };

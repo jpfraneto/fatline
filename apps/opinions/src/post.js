@@ -16,6 +16,9 @@ export async function loadMe() {
 
 const canPost = () => Boolean(state.me?.fid && state.me?.canWrite);
 
+/** A cast (or other action) as whoever is signed in here: the owner's key with its token, or a visitor's browser key. */
+export const castAs = (path, body, network) => send(path, body, network);
+
 /** POST with the write token when this client runs on a server (see Settings). */
 async function send(path, body, network = state.network) {
   if (state.me?.visitor) return visitorSend(path, { ...body, network, node: chosenNode(network) });

@@ -56,6 +56,7 @@ Environment=PORT=$PORT
 Environment=FATLINE_BIND=127.0.0.1
 Environment=FATLINE_DATA=$DATA
 Environment=FATLINE_OWNER_FID=$fid
+Environment=FATLINE_HOST=$host
 $companion
 Restart=always
 RestartSec=3

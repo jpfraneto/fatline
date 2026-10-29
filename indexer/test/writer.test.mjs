@@ -87,6 +87,15 @@ test('replies point at their parent', async () => {
   assert.equal(hex(node.submitted[0].data.castAddBody.parentCastId.hash), parent.hash);
 });
 
+test('a cast can live under a URL: a node record under fatline.ink/nodes', async () => {
+  const node = fakeNode();
+  const writer = new Writer({ network: node.network, key: appKey(), fetchImpl: node.fetchImpl, pollMs: 1 });
+  await writer.cast({ text: 'fatline node\nnode: https://hub.example.com:3381', parent: { url: 'https://fatline.ink/nodes' } });
+  assert.equal(node.submitted[0].data.castAddBody.parentUrl, 'https://fatline.ink/nodes');
+  assert.equal(node.submitted[0].data.castAddBody.parentCastId, undefined);
+  await assert.rejects(writer.cast({ text: 'x', parent: { url: 'javascript:alert(1)' } }), /parent.url/);
+});
+
 test('like, unlike, follow, unfollow and delete are each confirmed', async () => {
   const node = fakeNode();
   const writer = new Writer({ network: node.network, key: appKey(), fetchImpl: node.fetchImpl, pollMs: 1 });

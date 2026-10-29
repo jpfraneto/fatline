@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fatline · bring your node</title>
+<meta name="description" content="Already run a Snapchain or Hypersnap node? Put it on the map: one file on your server, one cast. Nothing to install.">
+<meta property="og:title" content="Bring your node to Fatline">
+<meta property="og:description" content="Already run a Snapchain or Hypersnap node? Put it on the map: one file on your server, one cast. Nothing to install.">
+<meta property="og:image" content="https://fatline.ink/img/og/og.jpg">
+<!-- fatline.ink/join: the short address for bringing a node in. The steps live in the client (any Fatline's #/join);
+     this sends you to the genesis client's, keeping ?node=. The script for servers is a different file: /join.sh. -->
+<meta http-equiv="refresh" content="0; url=https://fatline.fatline.ink/#/join">
+<style>body{background:#0f1420;color:#f3eadb;font:16px/1.5 system-ui,sans-serif;display:grid;place-items:center;min-height:100vh;margin:0}a{color:#7aa8ff}</style>
+</head>
+<body>
+<p>Opening <a id="go" href="https://fatline.fatline.ink/#/join">Bring your node</a>…</p>
+<script>
+const node = new URLSearchParams(location.search).get('node');
+const to = `https://fatline.fatline.ink/#/join${node ? `?node=${encodeURIComponent(node)}` : ''}`;
+document.getElementById('go').href = to;
+location.replace(to);
+</script>
+</body>
+</html>

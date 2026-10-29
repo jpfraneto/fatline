@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fatline · every node, measured</title>
+<meta name="description" content="Independent Farcaster nodes (Snapchain and Hypersnap) and the clients that read them: who runs each one, and whether it is in sync, measured every hour. Bring yours with one cast.">
+<meta property="og:title" content="Fatline · every node, measured">
+<meta property="og:description" content="Independent Farcaster nodes and the clients that read them, measured every hour. Bring yours with one cast.">
+<meta property="og:image" content="https://fatline.ink/img/og/og.jpg">
+<meta property="og:url" content="https://fatline.ink/nodes">
+<link rel="icon" href="/img/fatline-app.png">
+<style>
+  /* fatline.ink/nodes: the address every node record is cast under, so it is also the page those casts link to. */
+  :root { --bg: #0f1420; --ink: #f3eadb; --muted: #a9a08f; --line: rgba(243, 234, 219, .14); --card: rgba(255, 255, 255, .035); --accent: #7aa8ff; --gold: #ffc65c;
+    --ok: #4ade80; --warn: #ffc65c; --bad: #ff6b5a; --display: "Fraunces", Georgia, serif; --body: "Inter", system-ui, sans-serif; --mono: "JetBrains Mono", ui-monospace, monospace; color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: radial-gradient(1100px 700px at 50% -10%, rgba(61, 139, 255, .18), transparent 60%), var(--bg); color: var(--ink); font: 16px/1.55 var(--body); }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 28px max(18px, env(safe-area-inset-left, 0px)) 80px; }
+  h1 { font: 800 clamp(34px, 6vw, 56px)/1.05 var(--display); margin: 26px 0 10px; letter-spacing: -.01em; }
+  h2 { font: 500 12px var(--mono); letter-spacing: .26em; text-transform: uppercase; color: var(--muted); margin: 40px 0 14px; }
+  .lede { color: var(--muted); max-width: 60ch; margin: 0 0 22px; }
+  .lede b { color: var(--ink); font-weight: 600; }
+  .doors { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .door { display: grid; gap: 4px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--ink); text-decoration: none; }
+  .door:hover { border-color: var(--accent); }
+  .door b { font: 700 19px var(--display); }
+  .door span { color: var(--muted); font-size: 14px; }
+  .tally { font: 500 13px var(--mono); color: var(--muted); }
+  .places { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .place { display: grid; gap: 8px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); min-width: 0; }
+  .place a.open { color: var(--ink); text-decoration: none; font: 700 21px var(--display); overflow-wrap: anywhere; }
+  .place small, .row small { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+  .who { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13.5px; }
+  .who img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
+  .list { border: 1px solid var(--line); border-radius: 16px; background: var(--card); overflow: hidden; }
+  .row { display: flex; gap: 12px; align-items: center; padding: 12px 16px; color: var(--ink); text-decoration: none; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row:hover { background: rgba(255, 255, 255, .04); }
+  .row .main { display: grid; flex: 1; min-width: 0; }
+  .row b { font-weight: 600; overflow-wrap: anywhere; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--muted); opacity: .6; }
+  .dot.synced { background: var(--ok); opacity: 1; box-shadow: 0 0 0 3px rgba(74, 222, 128, .18); }
+  .dot.behind { background: var(--warn); opacity: 1; }
+  .dot.unreachable, .dot.invalid { background: var(--bad); opacity: 1; }
+  pre { margin: 10px 0; padding: 12px 14px; border-radius: 12px; background: rgba(0, 0, 0, .35); border: 1px solid var(--line); font: 13px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+  code { font: 13px var(--mono); }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  td { padding: 8px 0; border-top: 1px solid var(--line); vertical-align: top; }
+  td:first-child { width: 30%; padding-right: 12px; font-family: var(--mono); font-size: 13px; }
+  .muted { color: var(--muted); }
+  a { color: var(--accent); }
+  @media (max-width: 560px) { .doors { grid-template-columns: 1fr; } .row .who { display: none; } }
+</style>
+</head>
+<body>
+<nav aria-label="Main"></nav>
+<div class="wrap">
+  <h1>Every node, measured.</h1>
+  <p class="lede">Farcaster lives on <b>independent nodes</b>: Snapchain, run by Farcaster's validators, and Hypersnap, a community fork. Here are the ones that joined Fatline, the <b>clients</b> that read them, and <b>who runs each</b>. Every node is measured once an hour against reference nodes: in sync, catching up, or not answering. Nobody's word for it.</p>
+  <div class="doors">
+    <a class="door" href="https://fatline.ink/join"><b>I already run a node</b><span>Put it on the map: one file on your server, one cast. Nothing to install.</span></a>
+    <a class="door" href="/#launch"><b>I want to start one</b><span>Rent a server or use yours; an agent can walk you through it.</span></a>
+  </div>
+
+  <h2>Places to read Farcaster <span class="tally" id="tally"></span></h2>
+  <div class="places" id="places"><p class="muted">Reading the registry…</p></div>
+  <h2>Nodes</h2>
+  <div class="list" id="nodes"></div>
+  <p class="muted" id="measured"></p>
+
+  <h2 id="api">For developers</h2>
+  <p>The same list, as JSON. Filter by network, or only nodes in sync right now:</p>
+  <pre>curl 'https://fatline.ink/api/registry?network=snapchain&amp;healthy=true'
+curl 'https://fatline.ink/api/registry/&lt;id&gt;'      # one node, with its last 48 measurements</pre>
+  <p>Then talk to the node itself. Fatline never sits between your app and the node.</p>
+  <table>
+    <tr><td>health.state</td><td><b>synced</b>: answers, every shard within 600 blocks of the reference, and returns casts it is asked for by hash. <b>behind</b>: answers, further back. <b>invalid</b>: answers, not like a Farcaster node. <b>unreachable</b>: no answer. <b>unknown</b>: not measured yet. <b>stale</b>: the last measurement is over 2.5 hours old.</td></tr>
+    <tr><td>network</td><td><code>snapchain</code> or <code>hypersnap</code>, measured (Hypersnap answers its <code>/v2</code> user API), not taken from the record.</td></tr>
+    <tr><td>proof.method</td><td><code>egg</code>: a Fatline place, its keeper's signed egg names the node. <code>well-known</code>: the host serves <code>/.well-known/fatline</code> with the operator's FID. <code>dns</code>: a TXT record at <code>_fatline.&lt;host&gt;</code>.</td></tr>
+    <tr><td>measuredBy</td><td>The server that measured. Every Fatline server runs its own registry at <code>/api/registry</code> and measures from where it stands: ask more than one.</td></tr>
+  </table>
+
+  <h2>The records live on Farcaster</h2>
+  <p>A node joins with one cast whose parent is <code>https://fatline.ink/nodes</code>:</p>
+  <pre>fatline node
+node: https://hub.example.com:3381
+client: https://example.com          (optional, a client that reads it)
+name: Example                        (optional)</pre>
+  <p>Any node holds them, so you can read the list without Fatline: <code>GET &lt;any node&gt;/v1/castsByParent?url=https://fatline.ink/nodes</code>. Delete the cast and the node leaves. A record counts only when its host proves it (above); a claim on someone else's node is not listed.</p>
+</div>
+<script src="/nav.js"></script>
+<script>
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const NET = { snapchain: 'Snapchain', hypersnap: 'Hypersnap' };
+const WORD = { synced: 'in sync', behind: 'catching up', unknown: 'not measured yet', stale: 'no recent measurement', invalid: 'answers, not like a node', unreachable: 'not answering' };
+const host = (u) => String(u ?? '').replace(/^https?:\/\//, '');
+const ago = (ms) => { const m = Math.round((Date.now() - ms) / 60000); return m < 1 ? 'just now' : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
+const who = (o) => (o?.fid ? `<span class="who">${o.pfp ? `<img src="${esc(o.pfp)}" alt="" loading="lazy">` : ''}${o.username ? `@${esc(o.username)}` : `FID ${o.fid}`}</span>` : '');
+(async () => {
+  let r = null;
+  for (const u of ['/api/registry', 'https://fatline.ink/api/registry']) {
+    try { const res = await fetch(u, { signal: AbortSignal.timeout(12000) }); if (res.ok) { r = await res.json(); break; } } catch {}
+  }
+  const places = document.getElementById('places'), nodes = document.getElementById('nodes');
+  if (!r) { places.innerHTML = '<p class="muted">The registry did not answer just now.</p>'; return; }
+  const state = (id) => r.nodes.find((n) => n.id === id)?.health.state ?? 'unknown';
+  const rank = (c) => Math.min(9, ...c.nodes.map((n) => ({ synced: 0, behind: 1 }[n.state] ?? 2)));
+  document.getElementById('tally').textContent = `· ${r.clients.length} clients · ${r.nodes.length} nodes · ${r.nodes.filter((n) => n.health.state === 'synced').length} in sync`;
+  places.innerHTML = r.clients.length ? [...r.clients].sort((a, b) => rank(a) - rank(b)).map((c) => `<div class="place">
+      <a class="open" href="${esc(c.url)}">${esc(c.name ?? host(c.url))} →</a><small>${esc(host(c.url))}</small>
+      ${c.nodes.map((n) => `<small><i class="dot ${esc(state(n.id))}" style="display:inline-block;margin-right:6px"></i>${esc(NET[n.network] ?? 'its node')} · ${esc(WORD[state(n.id)] ?? '')}</small>`).join('')}
+      ${who(c.operator)}</div>`).join('') : '<p class="muted">No clients listed yet.</p>';
+  nodes.innerHTML = r.nodes.length ? r.nodes.map((n) => `<a class="row" href="https://fatline.fatline.ink/#/nodes/${esc(n.id)}"><i class="dot ${esc(n.health.state)}"></i>
+      <span class="main"><b>${esc(n.name ?? host(n.url))}</b><small>${esc([NET[n.network], WORD[n.health.state], host(n.url)].filter(Boolean).join(' · '))}</small></span>${who(n.operator)}</a>`).join('')
+    : '<div class="row"><span class="muted">No nodes listed yet. Be the first.</span></div>';
+  document.getElementById('measured').textContent = r.roundAt ? `Measured by ${r.measuredBy}, ${ago(r.roundAt)}. The next round is about an hour after.` : 'The first round is still running.';
+})();
+</script>
+</body>
+</html>

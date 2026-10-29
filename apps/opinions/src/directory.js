@@ -123,6 +123,8 @@ export async function directoryPage() {
     el('header', { class: 'world-head' },
       el('h1', {}, 'Fatline'),
       el('p', {}, [`${beings.length} ${beings.length === 1 ? 'Fatliner' : 'Fatliners'}`, `${eggs.length} ${eggs.length === 1 ? 'egg' : 'eggs'}`, `${waiting} waiting`].join(' · '))),
+    // Every node and client that joined, Fatliner or not (nodes.js), and bringing yours in.
+    el('p', { class: 'world-links' }, el('a', { href: '#/nodes' }, 'Every node and client →'), el('a', { href: '#/join' }, 'Bring your node')),
     el('div', { class: 'world-beings' }, ...beings.map((tk) => being(tk, { art, genesis, users }))),
     eggs.length ? el('div', { class: 'world-eggs' }, ...eggs.map((tk) => egg(tk, { art, users }))) : null,
     field(waiting),

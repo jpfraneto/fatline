@@ -31,6 +31,7 @@ export const LINKS = {
   source: 'https://github.com/jpfraneto/fatline',
   install: 'https://github.com/jpfraneto/fatline/blob/main/apps/site/install.sh',
   join: 'https://fatline.ink/docs/#bring-your-node',
+  list: 'https://fatline.ink/join',
 };
 
 export const TEXT = {
@@ -45,6 +46,8 @@ export const TEXT = {
     desk: 'Open a terminal (on a Mac: ⌘ Space, then Terminal), start your agent, paste.',
     nodeK: 'Or, if you already run a Farcaster node, just give your agent this:',
     node: 'It joins your Snapchain or Hypersnap node as it is: nothing to rent, nothing to pay, your node untouched.',
+    list: 'Or just put it on the map, no install: one file and one cast.',
+    listLink: 'List your node',
     share: 'Share',
     copy: 'Copy', copied: 'Copied', selected: 'Selected: copy it', copiedSay: 'Copied to the clipboard.',
     guidedK: 'Guided install',
@@ -87,6 +90,8 @@ export const TEXT = {
     desk: 'Abre una terminal (en un Mac: ⌘ Espacio, luego Terminal), inicia tu agente y pega.',
     nodeK: 'O, si ya corres un nodo de Farcaster, solo dale esto a tu agente:',
     node: 'Suma tu nodo de Snapchain o Hypersnap tal como está: nada que arrendar, nada que pagar, tu nodo intacto.',
+    list: 'O solo ponlo en el mapa, sin instalar nada: un archivo y un cast.',
+    listLink: 'Lista tu nodo',
     share: 'Compartir',
     copy: 'Copiar', copied: 'Copiado', selected: 'Seleccionado: cópialo', copiedSay: 'Copiado al portapapeles.',
     guidedK: 'Instalación guiada',
@@ -369,6 +374,7 @@ export function mountManual(target, { lang = 'en', dock = false, openUrl = null 
                 <p class="flm-nodek">${esc(L.nodeK)}</p>
                 ${cmd(NODE_PROMPT)}
                 <p class="flm-note">${esc(L.node)}</p>
+                <p class="flm-note">${esc(L.list)} ${link('list', L.listLink)}.</p>
               </div>
               ${canShare() ? `<div class="flm-row"><button type="button" class="flm-share">${esc(L.share)}</button></div>` : ''}
             </li>

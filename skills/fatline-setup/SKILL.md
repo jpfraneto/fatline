@@ -58,7 +58,14 @@ The contract (the only one): Fatliners `0xb54CD4A4E56D2549557b1284AB0BEA2D076a30
 - **Which network?** `farcaster` (Snapchain) or `hypersnap`. If they don't mind, `farcaster`.
 
 ## Already runs a node?
-If the person already has a Snapchain or Hypersnap node on a server, skip renting and installing: on **that server**, as root, they run (or you run, over their SSH, after their yes):
+If the person already has a Snapchain or Hypersnap node on a server, skip renting and installing. Ask which they want:
+
+**A. Put it on the map** (no install, nothing to pay). Their node gets a public page and is measured hourly at https://fatline.ink/nodes.
+1. Check it from outside: `curl 'https://fatline.ink/api/registry/check?url=<node url>&fid=<their FID>'`. It says the network, sync, and whether the proof is found. If `unreachable`, its HTTP API port (3381, or 4381 for Hypersnap here) must be open to the internet.
+2. The proof, on **their** server, after their yes: a file at `http://<host>/.well-known/fatline` (port 80 or 443) holding `fid: <their FID>` (for nginx or Caddy serving /var/www/html: `sudo mkdir -p /var/www/html/.well-known && echo 'fid: <FID>' | sudo tee /var/www/html/.well-known/fatline`), or a DNS TXT record `_fatline.<host>` = `fid=<FID>`. Run step 1 again until the proof is found.
+3. The record is a cast from **their** account, so they publish it themselves: send them to https://fatline.ink/join?node=<node url> (Sign in with Farcaster, then Publish). You never cast for them.
+
+**B. Keep an egg warm** (installs the hatchery; adds a Fatliner and a coin that can pay the rent). On **that server**, as root, they run (or you run, over their SSH, after their yes):
 ```sh
 curl -fsSL https://fatline.ink/join.sh | sudo bash        # --check first only looks: version, sync, ports
 ```

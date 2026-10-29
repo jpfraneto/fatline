@@ -5,6 +5,7 @@ import { settingsPage } from './settings.js';
 import { archivePage, coinPage, leaveLive, nodePage } from './fatline.js';
 import { dayPage } from './day.js';
 import { directoryPage } from './directory.js';
+import { joinPage, nodeProfilePage, nodesPage } from './nodes.js';
 import { loadMe } from './post.js';
 import { castButton, openCast } from './castbutton.js';
 import { cockpitPage, leaveCockpit } from './cockpit.js';
@@ -75,7 +76,7 @@ const fail = (err) => $('#main').replaceChildren(el('p', { class: 'warn' }, err.
 
 function route() {
   const hash = location.hash.slice(1) || '/';
-  const tab = hash.startsWith('/search') || hash.startsWith('/u/') ? 'search' : hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'me' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/fatline') || hash.startsWith('/here') || hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') ? 'fatline' : 'home';
+  const tab = hash.startsWith('/search') || hash.startsWith('/u/') ? 'search' : hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'me' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/fatline') || hash.startsWith('/here') || hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') || hash.startsWith('/join') ? 'fatline' : 'home';
   document.querySelectorAll('#tabs a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.tab === tab)));
   if (tab !== 'voices' && tab !== 'search') showSource(null);
   window.scrollTo(0, 0);
@@ -92,6 +93,11 @@ function route() {
   if (person) return personPage(decodeURIComponent(person[1])).catch(fail);
   const archive = hash.match(/^\/archive(?:\/(\d{1,12}))?/);
   if (archive) return archivePage(archive[1]);
+  // The registry: every node and client that joined Fatline (nodes.js). #/nodes, #/nodes/<id>, #/join.
+  const listed = hash.match(/^\/nodes\/([a-z0-9-]{1,64})/);
+  if (listed) return nodeProfilePage(listed[1]).catch(fail);
+  if (hash === '/nodes' || hash.startsWith('/nodes?')) return nodesPage().catch(fail);
+  if (hash.startsWith('/join')) return joinPage().catch(fail);
   const node = hash.match(/^\/node\/([\w-]{1,64})/);
   if (node) return nodePage(node[1]);
   // Older links: #/app/<address> now lives at the coin route.

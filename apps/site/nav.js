@@ -15,7 +15,7 @@
   const link = (href, text, opt) => `<a href="${href}"${opt ? ' class="fl-opt"' : ''}${here.startsWith(href) && href !== '/' ? ' aria-current="page"' : ''}>${text}</a>`;
   const bar = document.createElement('nav');
   bar.className = 'fl-nav'; bar.setAttribute('aria-label', 'Main');
-  bar.innerHTML = `<div class="fl-nav-in"><a class="fl-mark" href="/">FATLINE</a><div class="fl-links">${link('/#nodes', 'Nodes', true)}${link('/docs/', 'Docs')}${link('/manifesto.html', 'Manifesto')}</div>`
+  bar.innerHTML = `<div class="fl-nav-in"><a class="fl-mark" href="/">FATLINE</a><div class="fl-links">${link('/nodes', 'Nodes', true)}${link('/docs/', 'Docs')}${link('/manifesto.html', 'Manifesto')}</div>`
     + `<a class="fl-launch" href="/#launch">${ARCH}LAUNCH</a></div>`;
   const style = document.createElement('style'); style.textContent = css;
   document.head.append(style);

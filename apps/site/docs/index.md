@@ -65,7 +65,12 @@ fatline client           # your client at localhost:8787, reading from your node
 
 ## Already run a node? Bring it in
 
-Snapchain or Hypersnap, on any server you run: it can join the Fatline network as it is. Two steps, and nothing to pay.
+Snapchain or Hypersnap, on any server you run: it joins as it is. Two ways, both free:
+
+- **Put it on the map** (no install): your node gets a public page, is measured every hour, and shows up for people and developers. One file on your server and one cast. [Bring your node](https://fatline.ink/join), or read [the registry](#the-registry) below.
+- **Keep an egg warm** (installs the hatchery): everything above, plus an egg that hatches into a Fatliner after three warm days, and a coin whose fees can pay your node's rent. The steps follow.
+
+### Keep an egg warm
 
 ![Bring your own node: one line on its server, and your node keeps an egg warm](../img/join/join.gif)
 
@@ -114,6 +119,54 @@ fatline egg --node http://<your server>:3381
 
 Or hand both steps to your agent: `I already run a Farcaster node. Bring it into Fatline: https://fatline.ink/skill.md` and tell it your node's address.
 
+## The registry
+
+Every node and client that joined Fatline, who runs each, and whether each node is in sync right now: [fatline.ink/nodes](https://fatline.ink/nodes). A node doesn't need a Fatliner, a coin or Fatline's software to be listed. A client doesn't need a node of its own.
+
+**The records live on Farcaster.** A node joins with one cast whose parent is `https://fatline.ink/nodes`:
+
+```
+fatline node
+node: https://hub.example.com:3381
+client: https://example.com
+name: Example
+```
+
+`client:` (a client that reads this node, up to 4) and `name:` are optional; so are `usdc:` (an address on Base where people can send support) and `cost:` (what the server costs a month, in USD, in the operator's own words). A record with only `client:` lines lists a client; `reads: <node>` says which node it reads. Every node holds these casts, so anyone can read the list without Fatline: `GET <any node>/v1/castsByParent?url=https://fatline.ink/nodes`. Delete the cast and the node leaves. [Bring your node](https://fatline.ink/join) checks the address, shows the proof to put in place, and publishes the cast from your account.
+
+**Proof.** A record is listed only when the address agrees, so nobody can list someone else's node:
+
+| Proof | What it is |
+|---|---|
+| `well-known` | `http(s)://<host>/.well-known/fatline` (port 80 or 443) holds `fid: <your FID>`. For a client, at its own address. |
+| `dns` | A TXT record at `_fatline.<host>` holds `fid=<your FID>`. |
+| `egg` | A Fatline place: its keeper's signed egg names the node, and the hatcheries check it hourly. Other nodes and clients on the same machine, cast by the same keeper, are covered. |
+
+A proof found counts for 30 days after it was last seen, and is looked for again weekly. The first account to prove a node keeps it; a later claim is not listed.
+
+**Health, measured.** Once an hour the server reads each node's `/v1/info`, compares every shard with its own reference nodes for the same network, and asks it for two casts by hash that any node in sync must hold. Never the node's own word (its `blockDelay` is not used).
+
+| `health.state` | Means |
+|---|---|
+| `synced` | Answers, every shard within 600 blocks (~10 min) of the reference, and returned the casts. |
+| `behind` | Answers like a node, but at least one shard is further back. |
+| `invalid` | Answers, but not like a Farcaster node: no shards, a shard missing, or a cast missing. |
+| `unreachable` | No answer: refused, timed out, an HTTP error, or not a public address. |
+| `unknown` | Not measured yet, or no reference node answered, so nothing could be judged. |
+| `stale` | The last measurement is more than 2.5 hours old. It is shown with its time, never as now. |
+
+The network is measured too: Hypersnap answers its `/v2/farcaster/user/bulk` API, Snapchain does not. Snapchain and Hypersnap are never mixed.
+
+**For developers.** Read-only JSON, any origin:
+
+```sh
+curl 'https://fatline.ink/api/registry'                                  # every listed node and client
+curl 'https://fatline.ink/api/registry?network=snapchain&healthy=true'  # only Snapchain nodes in sync now
+curl 'https://fatline.ink/api/registry/<id>'                            # one node, with its last 48 measurements
+```
+
+Each node has `id`, `url`, `network`, `operator` (`fid`, `username`, `pfp`), `proof`, `clients`, `fatliner`, `funding` and `health` (`state`, `checkedAt`, `lastSyncedAt`, `behindBlocks`, `latencyMs`, `version`, `dataCheck`, `measuredBy`). Then call the node directly: Fatline never sits between your app and the node, and has no gateway. Every Fatline server runs the same registry at `/api/registry` and measures from where it stands, so you can ask more than one. These are hourly measurements from one place, not an uptime promise.
+
 ## Hatch a Fatliner
 
 Coins belong only to Fatliners, and a Fatliner is earned by keeping a node alive.
@@ -135,14 +188,14 @@ The rules, as the contract enforces them:
 
 Nobody needs one of the 777 to keep the network. **A worker** is a wallet made on your own machine, no account and no being, that rents a node and keeps a full copy of Farcaster. Its reward is its own node and client. `fatline worker new`, or ask your agent for a worker.
 
-## What is true today (2026-10-28)
+## What is true today (2026-10-29)
 
 | | |
 |---|---|
-| **Live on Base** | The Fatliners contract, also the launchpad. Eggs are open to every account. The first Fatliner has hatched: Thaituma (#13505). |
-| **Running** | A Snapchain node and a Hypersnap node on one server in Nuremberg, the first checker. Live state: [fatline.ink](https://fatline.ink/). |
-| **Waiting** | Aster (#16098), the genesis egg, for its hatch signatures. Vault payments to the server's card run in dry-run only. |
-| **Not yet** | $FATLINE, the first coin (no other coin can launch before it). The reveal of each being's art. |
+| **Live on Base** | The Fatliners contract, also the launchpad. Eggs are open to every account. Two Fatliners have hatched: Thaituma (#13505) and Aster (#16098, the genesis). One egg is warming: Aenon (#20630). |
+| **Coins** | One: $FATLINE, Aster's, `0xf1a97b6ceb7e635acae271f35a30a6c7b8b9580d`, as the contract's `coinOfFatliner(16098)` returns it. Its fees, in USDC, have paid its server's rent once. |
+| **Running** | A Snapchain node and a Hypersnap node on one server in Nuremberg, the first checker. Thaituma's and Aenon's servers are off; their places show as asleep. Live state: [fatline.ink/nodes](https://fatline.ink/nodes). |
+| **Built, not deployed yet** | The registry (2026-10-29): [fatline.ink/nodes](https://fatline.ink/nodes), `/api/registry`, and Bring your node in every client. Untested with a stranger's node. |
 
 The source lists what is tested and what is not: [README](https://github.com/jpfraneto/fatline#readme).
 
