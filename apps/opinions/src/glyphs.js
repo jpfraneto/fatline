@@ -15,6 +15,9 @@ export const VOICE = '<svg viewBox="0 0 26 20" aria-hidden="true" focusable="fal
 // Square and pencil (SF Symbol square.and.pencil), for the seal.
 export const PEN = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><g fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><path d="M17.6 2.9a2.1 2.1 0 0 1 3 3L12 14.5l-4 1 1-4z"/></g></svg>';
 
+// Around: a drop and the rings it sends out.
+export const RIPPLE = '<svg viewBox="0 0 26 20" aria-hidden="true" focusable="false"><circle cx="13" cy="10" r="2.2" fill="currentColor"/><g fill="none" stroke="currentColor" stroke-linecap="round"><ellipse cx="13" cy="10" rx="6.5" ry="4.6" stroke-width="1.2"/><ellipse cx="13" cy="10" rx="11.5" ry="8.4" stroke-width=".8" opacity=".6"/></g></svg>';
+
 /** A span holding one of the glyphs above (our own markup, never data). */
 export function glyph(markup, cls = 'glyph') {
   const s = document.createElement('span');

@@ -20,6 +20,7 @@ import { makeCockpit } from './cockpit.mjs';
 import { embedTags, makePlace, manifest } from './miniapp.mjs';
 import { makeCompanion } from './companion.mjs';
 import { makeHome } from './home.mjs';
+import { makeAround } from './around.mjs';
 import { makeArt, makeBirth, makeCoins } from './birth.mjs';
 import { makeAsleep } from './asleep.mjs';
 import { makeVisitor } from './visitor.mjs';
@@ -139,6 +140,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
   // Whoever opens this client: what they have (egg, Fatliner, nothing), and their home feed from this server's node.
   const homeNet = networks[config.defaultNetwork] ?? Object.values(networks)[0];
   const home = homeNet ? makeHome({ api, network: homeNet }) : null;
+  const around = makeAround({ api });
   // The registry (registry.mjs): every node and client that joined Fatline with a cast under fatline.ink/nodes, plus
   // Fatline's own places, each measured from here once an hour. Read-only, for anyone, any origin.
   registry ??= registryDb ? new Registry({
@@ -172,6 +174,8 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/coins$/, (q) => coinsLive(q.get('fids'))],
     // Log in with Fatline (fatline-login.mjs): any app, any origin, asks this node who signed. No keys involved.
     ['POST', /^\/api\/auth\/verify$/, (q, m, b) => verifyLogin({ message: b?.message, signature: b?.signature, domain: b?.domain, nonce: b?.nonce, network: (Object.hasOwn(networks, String(b?.network)) && networks[b.network]) || homeNet, client: chainClient })],
+    // Around you: what your casts set moving, who said your name, who began following you (around.mjs). Endless.
+    ['GET', /^\/api\/around\/(\d{1,12})$/, (q, [, fid]) => around(sel(q), fid, { cursor: q.get('cursor') })],
     ['GET', /^\/api\/home\/(\d{1,12})$/, (q, [, fid]) => { if (!home) throw Object.assign(new Error('No node here.'), { status: 503 }); return home(fid, { before: q.get('before'), limit: q.get('limit') }); }],
     // The cockpit: you, your nodes, your egg or Fatliner, and its hatching, in one answer (the client's home).
     ['GET', /^\/api\/cockpit$/, () => cockpit()],

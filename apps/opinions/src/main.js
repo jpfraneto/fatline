@@ -13,7 +13,8 @@ import { mePage } from './me.js';
 import { personPage, searchPage } from './person.js';
 import { snap } from './snap.js';
 import { loggedIn, profileOf } from './fatline-login.js';
-import { ARCH, STAR, STREAM, VOICE } from './glyphs.js';
+import { ARCH, RIPPLE, STAR, STREAM, VOICE } from './glyphs.js';
+import { aroundPage } from './around.js';
 import { placePage } from './place.js';
 import { birthPage } from './birth.js';
 import { enterMiniApp, inMiniApp } from './miniapp.js';
@@ -38,7 +39,7 @@ function renderChrome() {
   if (planet) { planet.textContent = glyph; planet.style.setProperty('--planet', color); }
   document.querySelectorAll('[data-t]').forEach((n) => { n.textContent = t(n.dataset.t); });
   $('#settings-link').setAttribute('aria-label', t('settings'));
-  const glyphs = { stream: STREAM, star: STAR, voice: VOICE };
+  const glyphs = { stream: STREAM, star: STAR, voice: VOICE, ripple: RIPPLE };
   document.querySelectorAll('[data-glyph]').forEach((n) => { if (!n.firstChild) n.innerHTML = glyphs[n.dataset.glyph]; });
   renderMe();
   // The network switch, always in sight: Snapchain warm, Hypersnap cool.
@@ -76,7 +77,7 @@ const fail = (err) => $('#main').replaceChildren(el('p', { class: 'warn' }, err.
 
 function route() {
   const hash = location.hash.slice(1) || '/';
-  const tab = hash.startsWith('/search') || hash.startsWith('/u/') ? 'search' : hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'me' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/fatline') || hash.startsWith('/here') || hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') || hash.startsWith('/join') ? 'fatline' : 'home';
+  const tab = hash.startsWith('/search') || hash.startsWith('/u/') ? 'search' : hash.startsWith('/archive') ? 'archive' : hash.startsWith('/voices') || hash.startsWith('/voice/') ? 'voices' : hash.startsWith('/people') ? 'me' : hash.startsWith('/around') ? 'around' : hash.startsWith('/settings') ? 'settings' : hash.startsWith('/fatline') || hash.startsWith('/here') || hash.startsWith('/apps') || hash.startsWith('/launch') || hash.startsWith('/coin') || hash.startsWith('/node') || hash.startsWith('/join') ? 'fatline' : 'home';
   document.querySelectorAll('#tabs a').forEach((a) => a.setAttribute('aria-current', String(a.dataset.tab === tab)));
   if (tab !== 'voices' && tab !== 'search') showSource(null);
   window.scrollTo(0, 0);
@@ -113,6 +114,7 @@ function route() {
     if (!state.config.voices?.address) { location.replace('#/'); return; }
     return feedPage({ route }).catch(fail);
   }
+  if (hash.startsWith('/around')) return aroundPage().catch(fail);
   if (hash.startsWith('/people')) return mePage({ route }).catch(fail);
   if (hash.startsWith('/settings')) return settingsPage({ onChange: () => { renderChrome(); route(); } }).catch(fail);
   if (hash.startsWith('/apps')) return appsPage().catch(fail);

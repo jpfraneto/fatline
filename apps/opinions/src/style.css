@@ -869,3 +869,40 @@ html.snap-soft body { animation: snap-soft .45s ease-out; }
 .rg-give { padding: 8px 14px; border-radius: 18px 7px 18px 7px; background: color-mix(in srgb, var(--pole) 18%, transparent); color: var(--text); text-decoration: none; font: 600 15px var(--serif); }
 .rg-give:hover { background: color-mix(in srgb, var(--pole) 30%, transparent); }
 .rg-money { margin-top: 8px; } .rg-money summary { cursor: pointer; color: var(--muted); font-size: 14px; }
+
+/* Around (around.js): the tab's number is ∞, always. Then the flow: your cast, faint, and what it set moving under it. */
+.tabs a.tab-around { position: relative; }
+.tab-badge { position: absolute; top: 1px; left: calc(50% + 7px); min-width: 22px; height: 16px; padding: 0 5px; border-radius: 9px;
+  display: grid; place-items: center; font: 700 15px/1 var(--serif); color: #1d1206; background: var(--pole);
+  box-shadow: 0 0 0 2px rgba(15, 13, 36, .94), 0 0 10px color-mix(in srgb, var(--pole) 55%, transparent); animation: ar-breathe 4.8s ease-in-out infinite; }
+@keyframes ar-breathe { 0%, 100% { box-shadow: 0 0 0 2px rgba(15, 13, 36, .94), 0 0 6px color-mix(in srgb, var(--pole) 35%, transparent); }
+  50% { box-shadow: 0 0 0 2px rgba(15, 13, 36, .94), 0 0 16px color-mix(in srgb, var(--pole) 75%, transparent); } }
+.ar { margin: 0 0 14px; padding: 14px 18px 8px; border-radius: var(--veil); background: var(--surface); border: 1px solid var(--line); }
+.ar-yours { padding: 0 0 10px; border-bottom: 1px solid var(--line); }
+.ar-yours time, .ar-who time, .ar-line time { font-size: 12px; letter-spacing: .08em; color: var(--faint); }
+.ar-yours p { margin: 4px 0 0; color: var(--mist); font: 16px/1.45 var(--serif); white-space: pre-wrap; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+.ar-faces { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 10px 0 2px; }
+.ar-mark { width: 22px; color: var(--pole); font-size: 15px; text-align: center; }
+.ar-face { width: 28px; height: 28px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; flex: none;
+  background: var(--raise); color: var(--mist); font-size: 12px; text-decoration: none; text-transform: uppercase; box-shadow: 0 0 0 1.5px rgba(15, 13, 36, .9); }
+.ar-face { position: relative; }
+.ar-face img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.ar-pic { display: block; margin-top: 8px; max-width: 160px; max-height: 160px; border-radius: 12px 4px 12px 4px; object-fit: cover; }
+.ar-link { margin: 6px 0 0; color: var(--pole); font-size: 14px; overflow-wrap: anywhere; }
+.ar-more { color: var(--faint); font-size: 13px; margin-left: 6px; }
+p.ar-more { margin: 6px 0 4px; }
+.ar-said { padding: 12px 0 8px; }
+.ar-said + .ar-said, .ar-faces + .ar-said { border-top: 1px solid var(--line); }
+.ar-who { display: flex; align-items: center; gap: 9px; }
+.ar-who time { margin-left: auto; }
+.ar-text { margin: 6px 0 0; font: 18px/1.5 var(--serif); color: var(--text); white-space: pre-wrap; overflow-wrap: anywhere; }
+.ar-kind { margin: 0; font: 500 11px var(--serif); letter-spacing: .24em; text-transform: uppercase; color: var(--pole); }
+.ar-line { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 10px 18px; color: var(--mist); }
+.ar-line a { color: var(--text); text-decoration: none; font-weight: 600; }
+.ar-line time { margin-left: auto; white-space: nowrap; }
+.ar-tail { text-align: center; padding: 26px 0 130px; color: var(--muted); display: grid; justify-items: center; gap: 6px; }
+.ar-inf { font: 400 34px/1 var(--serif); color: var(--pole); animation: ar-turn 6s ease-in-out infinite; }
+@keyframes ar-turn { 0%, 100% { opacity: .35; transform: scale(.92); } 50% { opacity: 1; transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .tab-badge, .ar-inf { animation: none; } }
+@media (max-width: 400px) { .tabs .tab-name { letter-spacing: .08em; padding-left: .08em; font-size: 8.5px; } .tabs { padding-left: 4px; } }
