@@ -1,68 +1,76 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeAround } from '../src/around.mjs';
+import { frontier, makeAround } from '../src/around.mjs';
 
 const ME = 7;
+const EPOCH = 1609459200;
+const ms = (fc) => (fc + EPOCH) * 1000;
 const cast = (fid, ts, extra = {}) => ({ hash: `0x${fid}c${ts}`, data: { type: 'MESSAGE_TYPE_CAST_ADD', fid, timestamp: ts, castAddBody: { text: `t${ts}`, ...extra } } });
+const react = (fid, ts, type = 'REACTION_TYPE_LIKE') => ({ data: { type: 'MESSAGE_TYPE_REACTION_ADD', fid, timestamp: ts, reactionBody: { type } } });
 
-// A node, in memory: lists come newest first, two to a page, with page tokens like a real node.
+// A node, in memory: lists newest first, two to a page, with page tokens like a real node.
 function fakeNode() {
-  const mine = [100, 90, 80, 70, 60, 50, 40].map((ts) => cast(ME, ts));
-  const mentions = [95, 85, 84, 55, 45, 30, 10].map((ts) => cast(20 + ts, ts, { mentions: [ME] }));
-  const follows = [99, 61, 59, 5].map((ts) => ({ hash: `0xf${ts}`, data: { type: 'MESSAGE_TYPE_LINK_ADD', fid: 300 + ts, timestamp: ts, linkBody: { type: 'follow', targetFid: ME } } }));
+  const mine = [100, 90, 80, 70, 60, 50].map((ts) => cast(ME, ts));
+  const mentions = [95, 85, 55, 10].map((ts) => cast(20 + ts, ts, { mentions: [ME] }));
+  const follows = [99, 61, 5].map((ts) => ({ data: { type: 'MESSAGE_TYPE_LINK_ADD', fid: 300 + ts, timestamp: ts, linkBody: { type: 'follow', targetFid: ME } } }));
   const page = (list, token) => { const at = Number(token ?? 0); const next = at + 2 < list.length ? String(at + 2) : ''; return { messages: list.slice(at, at + 2), nextPageToken: next }; };
-  const reads = [];
+  const reactions = { '0x7c100': [react(41, 101), react(ME, 102), react(42, 103, 'REACTION_TYPE_RECAST')], '0x7c50': [react(43, 200)] }; // a like today on an old cast
   return {
-    reads,
     name: 'farcaster',
-    source: (n) => ({ node: n.url }),
     get: async (path, p) => {
-      reads.push(path);
-      const node = { url: 'http://node' };
-      if (path === '/v1/castsByFid') return { data: page(mine, p.pageToken), node };
-      if (path === '/v1/castsByMention') return { data: page(mentions, p.pageToken), node };
-      if (path === '/v1/linksByTargetFid') return { data: page(follows, p.pageToken), node };
-      if (path === '/v1/castsByParent') return { data: { messages: p.hash === '0x7c80' ? [cast(11, 81), cast(ME, 82)] : [] } }; // my own reply is not news
-      if (path === '/v1/reactionsByCast') {
-        const r = (fid, type) => ({ data: { type: 'MESSAGE_TYPE_REACTION_ADD', fid, timestamp: 101, reactionBody: { type } } });
-        return { data: { messages: p.target_hash === '0x7c100' ? [...Array.from({ length: 9 }, (_, i) => r(40 + i, 'REACTION_TYPE_LIKE')), r(ME, 'REACTION_TYPE_LIKE'), r(50, 'REACTION_TYPE_RECAST')] : [] } };
-      }
+      if (path === '/v1/castsByFid') return { data: page(mine, p.pageToken) };
+      if (path === '/v1/castsByMention') return { data: page(mentions, p.pageToken) };
+      if (path === '/v1/linksByTargetFid') return { data: page(follows, p.pageToken) };
+      if (path === '/v1/castsByParent') return { data: { messages: p.hash === '0x7c80' ? [cast(11, 81), cast(ME, 82)] : [] } }; // your own reply is not news
+      if (path === '/v1/reactionsByCast') return { data: { messages: reactions[p.target_hash] ?? [] } };
+      if (path === '/v1/castById') return { data: null };
       throw new Error(`unexpected ${path}`);
     },
   };
 }
 
-test('around: every mention and follow once, in the stretch of your casts it belongs to, then the end', async () => {
-  const network = fakeNode();
-  const api = { network: () => network, renderCasts: async (n, c) => c, usersFor: async (n, fids) => Object.fromEntries(fids.map((f) => [f, { username: `u${f}` }])) };
-  const around = makeAround({ api, castsPerPage: 2 });
-  const pages = [];
-  let cursor = null;
-  for (let i = 0; i < 20; i++) {
-    const p = await around('farcaster', ME, { cursor });
-    pages.push(p);
-    cursor = p.next;
-    if (!cursor) break;
-  }
-  assert.equal(cursor, null, 'it ends once history runs out');
-  const all = pages.flatMap((p) => p.items);
-  const fc = (i) => (i.cast?.timestamp ?? i.at);
-  for (const p of pages) assert.deepEqual(p.items.map(fc), [...p.items.map(fc)].sort((a, b) => b - a), 'newest first in each page');
-  const mentionTs = all.filter((i) => i.kind === 'mention').map((i) => i.cast.fid - 20);
-  assert.deepEqual(mentionTs, [95, 85, 84, 55, 45, 30, 10]);
-  assert.deepEqual(all.filter((i) => i.kind === 'follow').map((i) => i.fid - 300), [99, 61, 59, 5]);
+const apiFor = (network) => ({ network: () => network, renderCasts: async (n, c) => c, usersFor: async (n, fids) => Object.fromEntries(fids.map((f) => [f, { username: `u${f}` }])) });
 
-  // Only casts that set something moving; faces capped, the rest "and others"; your own like and reply left out.
-  const echoes = all.filter((i) => i.kind === 'echo');
-  assert.deepEqual(echoes.map((e) => e.cast.id), ['0x7c100', '0x7c80']);
-  assert.equal(echoes[0].likes.length, 7); assert.equal(echoes[0].moreLikes, true); assert.ok(!echoes[0].likes.includes(ME));
-  assert.deepEqual(echoes[0].recasts, [50]);
-  assert.deepEqual(echoes[1].replies.map((r) => r.fid), [11]);
-  assert.equal(pages[0].source.node, 'http://node');
+test('around: everything once, newest first across pages, then the end', async () => {
+  const around = makeAround({ api: apiFor(fakeNode()), castsPerStretch: 2 });
+  const all = [];
+  let before = null;
+  for (let i = 0; i < 30; i++) {
+    const p = await around('farcaster', ME, { before, limit: 3 });
+    all.push(...p.items);
+    before = p.next;
+    if (!before) break;
+  }
+  assert.equal(before, null, 'it ends once history runs out');
+  assert.deepEqual(all.map((e) => e.at), [...all.map((e) => e.at)].sort((a, b) => b - a), 'newest first, across every page');
+  assert.equal(new Set(all.map((e) => e.key)).size, all.length, 'nothing twice');
+  const kinds = all.map((e) => `${e.kind}@${(e.at / 1000) - EPOCH}`);
+  // The like at 200 is on your oldest cast, read only after the flow had passed that moment: it is not shown (the
+  // limit of reading a node without an index of reactions to you). Everything else is, in order.
+  assert.deepEqual(kinds, ['recast@103', 'like@101', 'follow@99', 'mention@95', 'mention@85', 'reply@81', 'follow@61', 'mention@55', 'mention@10', 'follow@5']);
+  assert.equal(all.find((e) => e.kind === 'reply').yours.id, '0x7c80', 'a reply says which cast of yours');
+});
+
+test('around: the top is read fresh; a page reaches only as far as it is complete', async () => {
+  let t = 0;
+  const around = makeAround({ api: apiFor(fakeNode()), castsPerStretch: 2, now: () => t });
+  const first = await around('farcaster', ME, { limit: 2 });
+  assert.equal(first.items.length, 2);
+  assert.ok(first.items.every((e, i, a) => !i || a[i - 1].at >= e.at));
+  t += 60_000;
+  const again = await around('farcaster', ME, { limit: 2 });
+  assert.ok(again.at > first.at, 'read again after a minute');
+});
+
+test('frontier: two newest-first runs (one per shard) are complete down to the newer of their ends', () => {
+  const m = (ts) => ({ data: { timestamp: ts } });
+  assert.equal(frontier([m(90), m(80), m(70), m(60), m(50)]), ms(50));
+  assert.equal(frontier([m(90), m(30), m(85), m(75)]), ms(75));
+  assert.equal(frontier([]), null);
 });
 
 test('around: a bad cursor or account is refused', async () => {
-  const around = makeAround({ api: { network: () => fakeNode() } });
+  const around = makeAround({ api: apiFor(fakeNode()) });
   await assert.rejects(around('farcaster', 'x'), /Which account/);
-  await assert.rejects(around('farcaster', ME, { cursor: '%%%' }), /not one this server made/);
+  await assert.rejects(around('farcaster', ME, { before: '%%%' }), /not one this server made/);
 });

@@ -174,8 +174,8 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/coins$/, (q) => coinsLive(q.get('fids'))],
     // Log in with Fatline (fatline-login.mjs): any app, any origin, asks this node who signed. No keys involved.
     ['POST', /^\/api\/auth\/verify$/, (q, m, b) => verifyLogin({ message: b?.message, signature: b?.signature, domain: b?.domain, nonce: b?.nonce, network: (Object.hasOwn(networks, String(b?.network)) && networks[b.network]) || homeNet, client: chainClient })],
-    // Around you: what your casts set moving, who said your name, who began following you (around.mjs). Endless.
-    ['GET', /^\/api\/around\/(\d{1,12})$/, (q, [, fid]) => around(sel(q), fid, { cursor: q.get('cursor') })],
+    // Around you: everything that happened around you, newest first (around.mjs). Endless.
+    ['GET', /^\/api\/around\/(\d{1,12})$/, (q, [, fid]) => around(sel(q), fid, { before: q.get('before'), limit: q.get('limit') })],
     ['GET', /^\/api\/home\/(\d{1,12})$/, (q, [, fid]) => { if (!home) throw Object.assign(new Error('No node here.'), { status: 503 }); return home(fid, { before: q.get('before'), limit: q.get('limit') }); }],
     // The cockpit: you, your nodes, your egg or Fatliner, and its hatching, in one answer (the client's home).
     ['GET', /^\/api\/cockpit$/, () => cockpit()],

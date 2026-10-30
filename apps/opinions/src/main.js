@@ -114,7 +114,9 @@ function route() {
     if (!state.config.voices?.address) { location.replace('#/'); return; }
     return feedPage({ route }).catch(fail);
   }
-  if (hash.startsWith('/around')) return aroundPage().catch(fail);
+  // Around: everything that happens around you (or around anyone: #/around/<fid or name>), newest first.
+  const near = hash.match(/^\/around(?:\/([^/?#]{1,64}))?/);
+  if (near) return aroundPage(near[1] ? decodeURIComponent(near[1]) : null).catch(fail);
   if (hash.startsWith('/people')) return mePage({ route }).catch(fail);
   if (hash.startsWith('/settings')) return settingsPage({ onChange: () => { renderChrome(); route(); } }).catch(fail);
   if (hash.startsWith('/apps')) return appsPage().catch(fail);
