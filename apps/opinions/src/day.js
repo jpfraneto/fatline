@@ -6,6 +6,7 @@
 import { $, api, el, state, store } from './lib.js';
 import { loggedIn } from './fatline-login.js';
 import { castCard, drive, sideKeys } from './flow.js';
+import { newPill } from './fresh.js';
 
 const DAY_MS = 24 * 3600_000;
 const FRESH_MS = 3 * 60_000;
@@ -33,33 +34,51 @@ async function fetchDay(fid, onPage = null) {
   return { at: Date.now(), items: day.length ? day : items.slice(0, 12), quiet: !day.length, users };
 }
 
-function draw(box, day, whose) {
+/**
+ * The day, for fid. whose: the line that says through whose eyes. Returns the element; it fills itself.
+ * The same cards as For you, newest first. Older casts join at the bottom as they are read; newer ones never push
+ * what you are reading: they wait behind the pill (fresh.js).
+ */
+export function dayFeed(fid, whose) {
   const date = new Date().toLocaleDateString(state.lang, { weekday: 'long', day: 'numeric', month: 'long' });
-  const voices = new Set(day.items.map((c) => c.fid)).size;
-  // The same cards as For you, newest first: reply, recast, quote and like under each one.
-  box.replaceChildren(
-    el('header', { class: 'day-head' },
-      el('p', { class: 'day-date' }, date),
-      el('h1', { class: 'day-title' }, day.quiet ? 'A quiet day.' : 'Everything, in order'),
-      el('p', { class: 'day-whose' }, whose)),
-    el('div', { class: 'ar-flow' }, ...day.items.map((c) => castCard(c, day.users))),
-    day.partial ? el('p', { class: 'ck-loading' }, 'Reading more…') : el('footer', { class: 'day-end' },
+  const title = el('h1', { class: 'day-title' }, 'Everything, in order');
+  const flow = el('div', { class: 'ar-flow' });
+  const end = el('div', {}, el('p', { class: 'ck-loading' }, 'Reading the day from this node…'));
+  const box = el('section', { class: 'day' },
+    el('header', { class: 'day-head' }, el('p', { class: 'day-date' }, date), title, el('p', { class: 'day-whose' }, whose)), flow, end);
+  const pill = newPill(box);
+  const shown = new Set();
+
+  const ending = (day) => {
+    const voices = new Set(day.items.map((c) => c.fid)).size;
+    title.textContent = day.quiet ? 'A quiet day.' : 'Everything, in order';
+    end.replaceChildren(day.partial ? el('p', { class: 'ck-loading' }, 'Reading more…') : el('footer', { class: 'day-end' },
       el('span', { class: 'day-seal', 'aria-hidden': 'true' }, '✦'),
       el('p', {}, day.quiet ? 'Nothing new in the last day. Those were the last things said.' : `That's the day. ${voices} ${voices === 1 ? 'person' : 'people'} spoke.`),
       el('p', { class: 'muted' }, 'Come back tomorrow.')));
-}
+  };
+  const redraw = (day) => {
+    shown.clear();
+    flow.replaceChildren(...day.items.map((c) => { shown.add(c.id); return castCard(c, day.users); }));
+    ending(day);
+  };
+  const fill = (day) => {
+    if (!shown.size) { redraw(day); return; }
+    const last = Math.min(...[...flow.children].map((n) => Number(n.dataset.at)).filter(Boolean), Infinity);
+    const unseen = day.items.filter((c) => !shown.has(c.id));
+    // Older than everything shown: below, where it moves nothing.
+    const older = unseen.filter((c) => c.timestamp < last);
+    flow.append(...older.map((c) => { shown.add(c.id); return castCard(c, day.users); }));
+    const newer = unseen.length - older.length;
+    ending(day);
+    if (newer) pill.offer(newer, () => redraw(day));
+  };
 
-/** The day, for fid. whose: the line that says through whose eyes. Returns the element; it fills itself. */
-export function dayFeed(fid, whose) {
-  const box = el('section', { class: 'day' });
   const old = cached(fid);
-  if (old?.items) draw(box, old, whose);
-  else box.append(el('p', { class: 'ck-loading' }, 'Reading the day from this node…'));
+  if (old?.items) redraw(old);
   if (!old || Date.now() - old.at > FRESH_MS) {
-    // Drawn again only when something changed, so whatever you are reading or have chosen stays put.
-    const same = (d) => old?.items?.map((c) => c.id).join() === d.items.map((c) => c.id).join();
-    fetchDay(fid, old ? null : (d) => { if (d.items.length) draw(box, d, whose); }).then((d) => { keep(fid, d); if (!old || !same(d)) draw(box, d, whose); })
-      .catch((err) => { if (!old) box.replaceChildren(el('p', { class: 'muted' }, err.message)); });
+    fetchDay(fid, old ? null : (d) => { if (d.items.length) fill(d); }).then((d) => { keep(fid, d); fill(d); })
+      .catch((err) => { if (!old) end.replaceChildren(el('p', { class: 'muted' }, err.message)); });
   }
   return box;
 }

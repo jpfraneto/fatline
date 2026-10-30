@@ -7,6 +7,7 @@ import { loggedIn } from './fatline-login.js';
 import { castCard, drive, face, nameOf, sideKeys } from './flow.js';
 import { dayFeed } from './day.js';
 import { followButton } from './post.js';
+import { newPill } from './fresh.js';
 
 const FRESH_MS = 6 * 60_000;
 
@@ -60,6 +61,7 @@ export async function forYouPage() {
     el('footer', { class: 'day-end' }, el('span', { class: 'day-seal', 'aria-hidden': 'true' }, '✦'),
       el('p', {}, 'That is what is worth answering, for now.'), el('p', { class: 'muted' }, el('a', { href: '#/day' }, 'Everything, in order →')))), sideKeys());
 
+  const pill = newPill(main.querySelector('.foryou'));
   const draw = (v) => list.replaceChildren(...v.items.map((i) => card(i, v.users)));
   const old = store.get(key, null);
   if (old?.items?.length) draw(old);
@@ -81,9 +83,10 @@ export async function forYouPage() {
     store.set(key, value);
     const same = old?.items?.map((i) => i.cast.id).join() === v.items.map((i) => i.cast.id).join();
     if (same) return;
-    // New picks: in place while nobody is reading yet; otherwise a quiet pill at the top.
-    if (!old?.items?.length || (scrollY < 60 && !document.querySelector('.ar-sel'))) { note.replaceChildren(); draw(value); return; }
-    note.replaceChildren(el('button', { type: 'button', class: 'fy-pill', onclick: () => { note.replaceChildren(); draw(value); scrollTo({ top: 0, behavior: 'smooth' }); } }, 'New picks ↑'));
+    // New picks never move what you are reading: at the top they come in at once, otherwise behind the pill.
+    note.querySelector('.new-pill')?.remove(); // the meanwhile day's own, if it had one
+    const fresh = v.items.filter((i) => !old?.items?.some((o) => o.cast.id === i.cast.id)).length || v.items.length;
+    pill.offer(fresh, () => { note.replaceChildren(); draw(value); }, old?.items?.length ? `↑ ${fresh} new` : '↑ Your picks are ready');
   } catch (err) {
     if (!old?.items?.length) note.prepend(el('p', { class: 'muted' }, err.message));
   }

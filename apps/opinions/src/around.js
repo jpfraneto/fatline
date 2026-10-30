@@ -6,6 +6,7 @@
 //   - #/around/<fid or name> shows anyone's: it is all public, on every node.
 import { $, api, el, state, store } from './lib.js';
 import { followButton } from './post.js';
+import { newPill } from './fresh.js';
 import { loggedIn } from './fatline-login.js';
 import { castBar, castBody, drive, face, isImage, nameOf, sideKeys, when } from './flow.js';
 
@@ -90,6 +91,8 @@ export async function aroundPage(q = null) {
     flow, tail), sideKeys());
 
   const seen = new Set();
+  const waiting = [];
+  const pill = newPill(main.querySelector('.around'));
   const cacheKey = `around:${state.network}:${w.fid}`;
   const read = (before) => api(`/api/around/${w.fid}`, { network: state.network, ...(before ? { before } : {}) });
   const fresh = (items) => items.filter((e) => !seen.has(e.key) && seen.add(e.key));
@@ -132,7 +135,9 @@ export async function aroundPage(q = null) {
     if (!add.length) return;
     const rows = groups(add).map((g) => row(g, page.users));
     for (const r of rows) r.classList.add('ar-new');
-    flow.prepend(...rows);
+    // Never under your eyes: newer ones wait with the others behind the pill.
+    waiting.unshift(...rows);
+    pill.offer(waiting.length, () => flow.prepend(...waiting.splice(0)));
   }
   const live = setInterval(top, LIVE_MS);
   const watcher = new IntersectionObserver((e) => { if (e.some((x) => x.isIntersecting)) more(); }, { rootMargin: '900px 0px' });

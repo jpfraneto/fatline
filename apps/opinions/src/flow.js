@@ -28,7 +28,7 @@ const channelOf = (url) => String(url ?? '').match(/\/channel\/([\w-]+)$/)?.[1] 
 export function castCard(c, users, ...extra) {
   const u = users[c.fid];
   const ch = channelOf(c.parentUrl);
-  return el('article', { class: 'ar fy ar-item', 'data-key': c.id, tabindex: '-1' },
+  return el('article', { class: 'ar fy ar-item', 'data-key': c.id, 'data-at': c.timestamp, tabindex: '-1' },
     el('header', { class: 'ar-who' }, face(c.fid, users),
       el('span', {}, el('a', { href: `#/u/${c.fid}` }, nameOf(u, c.fid)), u?.username && u?.displayName ? el('span', { class: 'fy-user' }, ` @${u.username}`) : null,
         ch ? el('span', { class: 'fy-ch' }, ` /${ch}`) : null),
