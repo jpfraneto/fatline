@@ -11,6 +11,7 @@ export async function loadMe() {
   // Not this server's owner, but signed in here with a key of your own (visitor.js): you cast as yourself.
   const mine = visitorKey();
   if (!state.me.canWrite && mine) state.me = { fid: mine.fid, canWrite: true, visitor: true, publicKey: mine.publicKey };
+  store.set('me', state.me); // the next visit opens with it at once (main.js), and checks again
   return state.me;
 }
 

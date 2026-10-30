@@ -133,8 +133,8 @@ export function makePlace({ cockpit, contract, rpc, ownerFid }) {
     return { address, vault, uri, balanceUsdc: balance != null ? Number(balance) / 1e6 : null, aliveUntil: aliveUntil ? Number(aliveUntil) : null };
   }
 
-  return async function place(host) {
-    if (cache.value && Date.now() - cache.at < 20_000) return { ...cache.value, host: host ?? null, label: labelOf(host) };
+  let pending = null;
+  async function build() {
     const c = await cockpit(ownerFid);
     const fid = c.me?.fid ?? null;
     const tk = c.token ?? {};
@@ -149,6 +149,16 @@ export function makePlace({ cockpit, contract, rpc, ownerFid }) {
       at: Date.now(),
     };
     cache = { at: Date.now(), value };
+    return value;
+  }
+
+  // The first thing a visitor's page asks, so it never waits: the last answer comes at once, and a fresh one is read
+  // behind it when that one is over 20 seconds old. Only the very first answer waits for the reading.
+  return async function place(host) {
+    const stale = !cache.value || Date.now() - cache.at > 20_000;
+    // A failed reading keeps the last answer (never an unhandled error); with no answer yet, the asker sees the error.
+    if (stale && !pending) pending = build().catch((err) => { if (!cache.value) throw err; return cache.value; }).finally(() => { pending = null; });
+    const value = cache.value ?? await pending;
     return { ...value, host: host ?? null, label: labelOf(host) };
   };
 }

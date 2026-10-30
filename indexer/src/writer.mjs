@@ -108,15 +108,18 @@ export class Writer {
 
   // Each action builds a message, and says how to read it back (or, for removals, how to see it gone).
 
-  async cast({ text, parent } = {}) {
+  async cast({ text, parent, quote } = {}) {
     text = String(text ?? '').trim();
-    if (!text) throw fail('Write something first.');
+    if (!text && !quote) throw fail('Write something first.');
     const size = Buffer.byteLength(text);
     if (size > LONG_CAST_MAX_BYTES) throw fail(`A cast holds ${LONG_CAST_MAX_BYTES} bytes; this is ${size}. Longer opinions go in Voices.`);
     const type = size > CAST_MAX_BYTES ? CastType.LONG_CAST : CastType.CAST;
     // @names the node knows become real mentions (the person is notified), not just text.
     const named = await withMentions(text, async (name) => (await this.network.get('/v1/userNameProofByName', { name }))?.data?.fid ?? null);
-    const body = { ...named, embeds: linkEmbeds(text), embedsDeprecated: [], type };
+    // A quote (quote: { fid, hash }) embeds the cast it quotes, first; links fill what is left of the two embeds.
+    const quoted = quote ? [{ castId: { fid: Number(quote.fid), hash: bytes(quote.hash) } }] : [];
+    if (quote && !(Number(quote.fid) > 0)) throw fail('quote: the fid and hash of a cast.');
+    const body = { ...named, embeds: [...quoted, ...linkEmbeds(text)].slice(0, 2), embedsDeprecated: [], type };
     // A reply (parent: { fid, hash }), or a cast under a URL (parent: { url }), like the node records under fatline.ink/nodes.
     if (parent?.url != null) {
       const url = String(parent.url);

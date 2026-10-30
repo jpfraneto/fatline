@@ -96,6 +96,20 @@ test('a cast can live under a URL: a node record under fatline.ink/nodes', async
   await assert.rejects(writer.cast({ text: 'x', parent: { url: 'javascript:alert(1)' } }), /parent.url/);
 });
 
+test('a quote embeds the cast it quotes, first, and may say nothing else', async () => {
+  const node = fakeNode();
+  const writer = new Writer({ network: node.network, key: appKey(), fetchImpl: node.fetchImpl, pollMs: 1 });
+  const quote = { fid: 3, hash: '0x' + 'ab'.repeat(20) };
+  await writer.cast({ text: 'look https://a.example/1 https://b.example/2', quote });
+  const body = node.submitted[0].data.castAddBody;
+  assert.equal(body.embeds.length, 2);
+  assert.equal(body.embeds[0].castId.fid, 3);
+  assert.equal(body.embeds[1].url, 'https://a.example/1');
+  await writer.cast({ text: '', quote });
+  assert.equal(node.submitted[1].data.castAddBody.embeds[0].castId.fid, 3);
+  await assert.rejects(writer.cast({ text: '' }), /Write something/);
+});
+
 test('like, unlike, follow, unfollow and delete are each confirmed', async () => {
   const node = fakeNode();
   const writer = new Writer({ network: node.network, key: appKey(), fetchImpl: node.fetchImpl, pollMs: 1 });

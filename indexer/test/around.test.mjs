@@ -51,15 +51,18 @@ test('around: everything once, newest first across pages, then the end', async (
   assert.equal(all.find((e) => e.kind === 'reply').yours.id, '0x7c80', 'a reply says which cast of yours');
 });
 
-test('around: the top is read fresh; a page reaches only as far as it is complete', async () => {
+test('around: the top is read again behind the scenes; a page reaches only as far as it is complete', async () => {
   let t = 0;
   const around = makeAround({ api: apiFor(fakeNode()), castsPerStretch: 2, now: () => t });
   const first = await around('farcaster', ME, { limit: 2 });
   assert.equal(first.items.length, 2);
   assert.ok(first.items.every((e, i, a) => !i || a[i - 1].at >= e.at));
   t += 60_000;
+  const stale = await around('farcaster', ME, { limit: 2 });
+  assert.equal(stale.at, first.at, 'after a minute it still answers at once, from what it read');
+  await new Promise((r) => setTimeout(r, 20)); // while the top is read again behind the scenes
   const again = await around('farcaster', ME, { limit: 2 });
-  assert.ok(again.at > first.at, 'read again after a minute');
+  assert.ok(again.at > first.at, 'then the fresh reading takes over');
 });
 
 test('frontier: two newest-first runs (one per shard) are complete down to the newer of their ends', () => {

@@ -21,6 +21,7 @@ import { embedTags, makePlace, manifest } from './miniapp.mjs';
 import { makeCompanion } from './companion.mjs';
 import { makeHome } from './home.mjs';
 import { makeAround } from './around.mjs';
+import { makeDiscover } from './discover.mjs';
 import { makeArt, makeBirth, makeCoins } from './birth.mjs';
 import { makeAsleep } from './asleep.mjs';
 import { makeVisitor } from './visitor.mjs';
@@ -141,6 +142,22 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
   const homeNet = networks[config.defaultNetwork] ?? Object.values(networks)[0];
   const home = homeNet ? makeHome({ api, network: homeNet }) : null;
   const around = makeAround({ api });
+  // For you (discover.mjs): the landing, worth answering. "Near" is who has been around you this week.
+  const nearOf = async (fid) => new Set((await around(homeNet?.name ?? config.defaultNetwork, fid)).items.filter((i) => i.at > Date.now() - 7 * 86_400_000).map((i) => i.fid));
+  const discover = homeNet ? makeDiscover({ api, network: homeNet, near: nearOf }) : null;
+  // The people this client is for are read ahead, so their pages open at once: its owner, and whoever asked lately.
+  const warm = new Map(); // fid -> last asked
+  const keepWarm = (fid) => { fid = Number(fid); if (fid > 0 && (warm.has(fid) || warm.size < 40)) warm.set(fid, Date.now()); };
+  const warmAll = async () => {
+    const own = loadAppKey(config.dataDir)?.fid ?? ownerFid;
+    if (own) keepWarm(own);
+    for (const [fid, asked] of warm) {
+      if (Date.now() - asked > 3 * 86_400_000 && fid !== own) { warm.delete(fid); continue; }
+      await around(homeNet?.name ?? config.defaultNetwork, fid).catch(() => {});
+      await discover?.(fid).catch(() => {});
+      await home?.(fid).catch(() => {});
+    }
+  };
   // The registry (registry.mjs): every node and client that joined Fatline with a cast under fatline.ink/nodes, plus
   // Fatline's own places, each measured from here once an hour. Read-only, for anyone, any origin.
   registry ??= registryDb ? new Registry({
@@ -175,7 +192,8 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     // Log in with Fatline (fatline-login.mjs): any app, any origin, asks this node who signed. No keys involved.
     ['POST', /^\/api\/auth\/verify$/, (q, m, b) => verifyLogin({ message: b?.message, signature: b?.signature, domain: b?.domain, nonce: b?.nonce, network: (Object.hasOwn(networks, String(b?.network)) && networks[b.network]) || homeNet, client: chainClient })],
     // Around you: everything that happened around you, newest first (around.mjs). Endless.
-    ['GET', /^\/api\/around\/(\d{1,12})$/, (q, [, fid]) => around(sel(q), fid, { before: q.get('before'), limit: q.get('limit') })],
+    ['GET', /^\/api\/around\/(\d{1,12})$/, (q, [, fid]) => { keepWarm(fid); return around(sel(q), fid, { before: q.get('before'), limit: q.get('limit') }); }],
+    ['GET', /^\/api\/discover\/(\d{1,12})$/, (q, [, fid]) => { if (!discover) throw Object.assign(new Error('No node here.'), { status: 503 }); keepWarm(fid); return discover(fid); }],
     ['GET', /^\/api\/home\/(\d{1,12})$/, (q, [, fid]) => { if (!home) throw Object.assign(new Error('No node here.'), { status: 503 }); return home(fid, { before: q.get('before'), limit: q.get('limit') }); }],
     // The cockpit: you, your nodes, your egg or Fatliner, and its hatching, in one answer (the client's home).
     ['GET', /^\/api\/cockpit$/, () => cockpit()],
@@ -257,7 +275,7 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     ['GET', /^\/api\/visitor\/wallet$/, (q) => visitor.walletStatus({ session: q.get('session') })],
     ['POST', /^\/api\/visitor\/act$/, (q, m, b) => visitor.act(b)],
     ['POST', /^\/api\/visitor\/sign$/, (q, m, b) => visitor.sign(b)],
-    ['POST', /^\/api\/cast$/, write((w, b) => w.cast({ text: b.text, parent: b.parent }))],
+    ['POST', /^\/api\/cast$/, write((w, b) => w.cast({ text: b.text, parent: b.parent, quote: b.quote }))],
     ['POST', /^\/api\/cast\/delete$/, write((w, b) => w.deleteCast({ hash: b.hash }))],
     ['POST', /^\/api\/react$/, write((w, b) => w.react({ kind: b.kind, fid: b.fid, hash: b.hash, remove: Boolean(b.remove) }))],
     ['POST', /^\/api\/follow$/, write((w, b) => w.follow({ fid: b.fid, remove: Boolean(b.remove) }))],
@@ -302,6 +320,8 @@ export function buildServer({ config, networks, voices, launchpad, keeper = null
     serveApp(config.appDir, url.pathname, res, embedTags(host));
   });
   httpServer.registry = registry;
+  httpServer.warm = warmAll;
+  httpServer.place = place;
   return httpServer;
 }
 
@@ -369,7 +389,10 @@ function serveApp(dir, pathname, res, headTags = '') {
   if (!file.startsWith(dir)) return res.writeHead(403).end();
   if (existsSync(file) && statSync(file).isDirectory()) file = join(file, 'index.html');
   if (!existsSync(file)) file = join(dir, 'index.html'); // single-page app routes
-  res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
+  // Built files carry their content in their name: a browser keeps them for good. The page itself is always asked again.
+  const hashed = /\/assets\/[^/]+-[\w-]{8,}\.\w+$/.test(file);
+  res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream',
+    'cache-control': hashed ? 'public, max-age=31536000, immutable' : 'no-cache' });
   // The page itself carries this place's card for Farcaster (fc:miniapp), so a cast of its address opens it.
   if (headTags && file === join(dir, 'index.html')) return res.end(readFileSync(file, 'utf8').replace('</head>', `    ${headTags}  </head>`));
   createReadStream(file).pipe(res);
@@ -401,6 +424,14 @@ export async function start(config = loadConfig()) {
   lifeforce.start();
   const server = buildServer({ config, networks, voices, launchpad, keeper, nodes, archive, lifeforce, registryDb: db });
   if (process.env.FATLINE_REGISTRY !== '0') server.registry?.start();
+  // Read ahead for the people this client is for (Around, For you, home), so their pages open at once; and keep this
+  // place's card ready (it is the first thing a visitor's page asks).
+  if (process.env.FATLINE_WARM !== '0') {
+    let warming = false;
+    const warm = async () => { if (warming) return; warming = true; try { await server.place?.(null).catch(() => {}); await server.warm?.(); } finally { warming = false; } };
+    setTimeout(warm, 3_000).unref?.();
+    setInterval(warm, 4 * 60_000).unref?.();
+  }
   // FATLINE_BIND=127.0.0.1 on a server, where Caddy serves the client over https and nothing else should reach it.
   server.listen(config.port, process.env.FATLINE_BIND || undefined, async () => {
     const url = `http://localhost:${config.port}`;

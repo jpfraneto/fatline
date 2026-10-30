@@ -79,7 +79,7 @@ export function makeVisitor({ config, writer, nodeFor, resolveUser = null, ttlMs
   }
 
   const ACTIONS = {
-    '/api/cast': (w, b) => w.cast({ text: b.text, parent: b.parent }),
+    '/api/cast': (w, b) => w.cast({ text: b.text, parent: b.parent, quote: b.quote }),
     '/api/cast/delete': (w, b) => w.deleteCast({ hash: b.hash }),
     '/api/react': (w, b) => w.react({ kind: b.kind, fid: b.fid, hash: b.hash, remove: Boolean(b.remove) }),
     '/api/follow': (w, b) => w.follow({ fid: b.fid, remove: Boolean(b.remove) }),

@@ -112,17 +112,24 @@ export function makeAround({ api, castsPerStretch = CASTS_PER_STRETCH, now = () 
       cut = { at: Number(m[1]), key: m[2] };
     }
     const id = `${network.name}:${network.pinnedTo ?? ''}:${fid}`;
-    let s = kept.get(id);
-    // The top of the flow is always fresh; deeper pages keep reading the same snapshot.
-    if (!s || (!cut && now() - s.at > FRESH_MS)) { s = fresh(network, fid); kept.set(id, s); if (kept.size > 200) kept.delete(kept.keys().next().value); }
-
     const after = (e) => !cut || order(cut, e) < 0;
-    for (let i = 0; i < 8; i++) {
-      const h = horizon(s);
-      const ready = [...s.events.values()].filter((e) => after(e) && e.at >= h);
-      if (ready.length >= limit || finished(s)) break;
-      await extend(s);
+    const fill = async (s) => {
+      for (let i = 0; i < 8; i++) {
+        const h = horizon(s);
+        const ready = [...s.events.values()].filter((e) => after(e) && e.at >= h);
+        if (ready.length >= limit || finished(s)) break;
+        await extend(s);
+      }
+      return s;
+    };
+    let s = kept.get(id);
+    if (!s) { s = fresh(network, fid); kept.set(id, s); if (kept.size > 200) kept.delete(kept.keys().next().value); }
+    else if (!cut && now() - s.at > FRESH_MS && !s.refreshing) {
+      // The top is read again, behind the scenes: this answer comes from what was read a minute ago, at once.
+      const next = fresh(network, fid);
+      s.refreshing = fill(next).then(() => { kept.set(id, next); }).catch(() => {}).finally(() => { s.refreshing = null; });
     }
+    await fill(s);
     const h = horizon(s);
     const page = [...s.events.values()].filter((e) => after(e) && e.at >= h).sort(order).slice(0, limit);
     const more = !finished(s) || [...s.events.values()].some((e) => after(e)) && page.length === limit;

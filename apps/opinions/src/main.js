@@ -14,7 +14,9 @@ import { personPage, searchPage } from './person.js';
 import { snap } from './snap.js';
 import { loggedIn, profileOf } from './fatline-login.js';
 import { ARCH, RIPPLE, STAR, STREAM, VOICE } from './glyphs.js';
-import { aroundPage } from './around.js';
+import { aroundPage, leaveAround } from './around.js';
+import { forYouPage, leaveForYou } from './foryou.js';
+import { startKeys } from './keys.js';
 import { placePage } from './place.js';
 import { birthPage } from './birth.js';
 import { enterMiniApp, inMiniApp } from './miniapp.js';
@@ -83,6 +85,8 @@ function route() {
   window.scrollTo(0, 0);
   leaveLive();
   leaveCockpit();
+  leaveAround();
+  leaveForYou();
   $('#main').classList.remove('fatline-page', 'birth-page');
 
   // The canonical page of a coin (or of a coinless app's vault): #/coin/<chainId>/<address>.
@@ -124,16 +128,30 @@ function route() {
   if (hash.startsWith('/here')) return cockpitPage().catch(fail);
   // Opened from a cast inside Farcaster, or at #/place: the place as a visitor sees it.
   if (hash.startsWith('/place') || inMiniApp()) return placePage().catch(fail);
-  // Home: today's feed, through someone's eyes (day.js).
-  return dayPage().catch(fail);
+  // The day, in order, through someone's eyes (day.js).
+  if (hash.startsWith('/day')) return dayPage().catch(fail);
+  // Home: For you, casts worth answering (foryou.js).
+  return forYouPage().catch(fail);
 }
 
 async function boot() {
-  await enterMiniApp();
-  state.config = await api('/api/config');
+  // Opens at once from what this device knew last (the server's setup, who you are, this place), then checks quietly.
+  const [, config] = await Promise.all([enterMiniApp(), (async () => {
+    const fresh = api('/api/config').then((c) => { store.set('config', c); return c; });
+    const kept = store.get('config', null);
+    if (kept) { fresh.catch(() => {}); return kept; }
+    return fresh;
+  })()]);
+  state.config = config;
+  api('/api/place').then((p) => store.set('place', p)).catch(() => {});
   const saved = store.get('network', null);
   state.network = state.config.networks.some((n) => n.name === saved) ? saved : state.config.defaultNetwork;
-  await loadMe();
+  const keptMe = store.get('me', null);
+  const meNow = loadMe();
+  if (keptMe) {
+    state.me = keptMe;
+    meNow.then((m) => { if (m.fid !== keptMe.fid || m.canWrite !== keptMe.canWrite) { renderMe(); route(); } });
+  } else await meNow;
   if (!inMiniApp() || state.me?.canWrite) document.body.append(castButton()); // visitors only look
   renderChrome();
   // Signed out, the face in the bar signs you in, right there (the pen does too).
@@ -141,6 +159,7 @@ async function boot() {
   // Signed in or out: the face changes, and the page shows it (Today through your eyes).
   window.addEventListener('fatline:me', () => { renderMe(); route(); });
   window.addEventListener('hashchange', route);
+  startKeys();
   route();
 }
 
