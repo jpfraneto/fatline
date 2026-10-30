@@ -45,13 +45,17 @@ enum Farcaster {
         return Array(seen.prefix(2))
     }
 
-    static func castAddBody(text: String, parent: CastRef?, embeds: [String]) -> Proto {
+    /// A quote puts the quoted cast first among the embeds; links fill what is left of the two.
+    static func castAddBody(text: String, parent: CastRef?, embeds: [String], quote: CastRef? = nil) -> Proto {
         var b = Proto()
         b.packed(2, []) // mentions (ts-proto writes the empty packed field; kept so bytes match)
         if let parent { b.message(3, castId(parent)) }
-        b.string(4, text)
+        if !text.isEmpty { b.string(4, text) } // ts-proto leaves an empty string out (a quote may say nothing)
         b.packed(5, []) // mentionsPositions
-        for url in embeds { var e = Proto(); e.string(1, url); b.message(6, e) }
+        var all: [Proto] = []
+        if let quote { var e = Proto(); e.message(2, castId(quote)); all.append(e) }
+        for url in embeds { var e = Proto(); e.string(1, url); all.append(e) }
+        for e in all.prefix(2) { b.message(6, e) }
         if text.utf8.count > castMaxBytes { b.uint(8, 1) } // LONG_CAST
         return b
     }
@@ -66,8 +70,8 @@ enum Farcaster {
         return d.bytes
     }
 
-    static func castAdd(fid: UInt64, text: String, parent: CastRef? = nil, timestamp: UInt64 = timestamp()) -> [UInt8] {
-        messageData(type: .castAdd, fid: fid, timestamp: timestamp, body: (5, castAddBody(text: text, parent: parent, embeds: linkEmbeds(text))))
+    static func castAdd(fid: UInt64, text: String, parent: CastRef? = nil, quote: CastRef? = nil, timestamp: UInt64 = timestamp()) -> [UInt8] {
+        messageData(type: .castAdd, fid: fid, timestamp: timestamp, body: (5, castAddBody(text: text, parent: parent, embeds: linkEmbeds(text), quote: quote)))
     }
     static func castRemove(fid: UInt64, hash: String, timestamp: UInt64 = timestamp()) -> [UInt8] {
         var b = Proto(); b.data(1, Hex.bytes(hash))

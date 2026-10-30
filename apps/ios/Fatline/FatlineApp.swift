@@ -6,6 +6,11 @@ struct FatlineApp: App {
     @State private var constellation = Constellation()
     @Environment(\.scenePhase) private var phase
 
+    init() {
+        // Faces and pictures kept across launches, so a warm start shows them at once.
+        URLCache.shared = URLCache(memoryCapacity: 64 << 20, diskCapacity: 400 << 20)
+    }
+
     var body: some Scene {
         WindowGroup {
             Root()
@@ -24,7 +29,7 @@ struct FatlineApp: App {
     }
 }
 
-enum Tab: Hashable { case feed, fatlines, me }
+enum Tab: Hashable { case feed, around, fatlines, me }
 
 /// Where a tap can take you, inside any tab.
 enum Route: Hashable { case thread(Cast), person(UInt64) }
@@ -64,28 +69,64 @@ struct Stack<Content: View>: View {
 
 struct Root: View {
     @Environment(Store.self) private var store
-    @State private var tab: Tab = ["fatlines": .fatlines, "self": .me][UserDefaults.standard.string(forKey: "tab") ?? ""] ?? .feed
+    // launch argument "-tab around" (or fatlines, self) opens on that tab (for screenshots)
+    @State private var tab: Tab = ["around": .around, "fatlines": .fatlines, "self": .me][UserDefaults.standard.string(forKey: "tab") ?? ""] ?? .feed
     @State private var speaking = false
     @State private var settings = false
+    @State private var energy: EnergyRequest?
+    @State private var panel: CGRect = .zero
+    @State private var energySent = false
 
     var body: some View {
         ZStack(alignment: .bottom) {
             Lazure(net: store.net)
             ZStack {
                 Stack(tab: .feed) { FeedView(settings: $settings) }.opacity(tab == .feed ? 1 : 0).allowsHitTesting(tab == .feed)
+                Stack(tab: .around) { AroundView(visible: tab == .around) }.opacity(tab == .around ? 1 : 0).allowsHitTesting(tab == .around)
                 Stack(tab: .fatlines) { FatlinesView() }.opacity(tab == .fatlines ? 1 : 0).allowsHitTesting(tab == .fatlines)
                 Stack(tab: .me) { PersonView(fid: nil, settings: $settings) }.opacity(tab == .me ? 1 : 0).allowsHitTesting(tab == .me)
             }
             .safeAreaPadding(.bottom, 76)
-            Bar(tab: $tab, write: { Haptic.medium(); speaking = true })
+            .ignoresSafeArea(.keyboard)
+            .environment(\.energize) { kind, cast, point in
+                panel = .zero; energySent = false
+                withAnimation(.spring(duration: 0.45, bounce: 0.2)) { energy = EnergyRequest(kind: kind, cast: cast, from: point) }
+            }
+            Bar(tab: $tab, write: { Haptic.medium(); speaking = true }).ignoresSafeArea(.keyboard)
+            if let e = energy {
+                Color.black.opacity(0.45).ignoresSafeArea().onTapGesture { closeEnergy() }.transition(.opacity)
+                if panel.height > 0 {
+                    EnergyThread(from: e.from, to: CGPoint(x: min(max(e.from.x, panel.minX + 44), panel.maxX - 44), y: panel.minY + 1),
+                                 color: Ink.pole(store.net), sent: energySent)
+                        .id(e.id)
+                        .transition(.opacity)
+                }
+                EnergyPanel(request: e, close: closeEnergy, sent: { withAnimation(.easeOut(duration: 0.3)) { energySent = true } })
+                    .id(e.id)
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { panel = $0 }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+            // Likes and recasts: a bubble each, never in the way of what you write.
+            BubbleShelf()
+            SparkLayer()
             if let t = store.toast { Toast(text: t).onTapGesture { store.toast = nil } }
         }
         .sheet(isPresented: $speaking) { Compose(parent: nil) }
+        .onChange(of: tab) { closeEnergy() }
         .sheet(isPresented: $settings) { SettingsView() }
         .onChange(of: store.toast) { _, t in
             guard t != nil else { return }
             Task { try? await Task.sleep(for: .seconds(4)); store.toast = nil }
         }
+    }
+}
+
+extension Root {
+    func closeEnergy() {
+        guard energy != nil else { return }
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+        withAnimation(.spring(duration: 0.35)) { energy = nil }
+        panel = .zero
     }
 }
 
@@ -110,6 +151,7 @@ private struct Bar: View {
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
             item(.feed, "Feed") { StreamGlyph() }
+            item(.around, "Around", badge: "∞") { DropGlyph() }
             item(.fatlines, "Fatlines") { StarGlyph() }
             Button { select(.me) } label: {
                 ZStack {
@@ -149,11 +191,20 @@ private struct Bar: View {
         tab = t
     }
 
-    private func item<G: View>(_ t: Tab, _ name: String, @ViewBuilder glyph: () -> G) -> some View {
+    private func item<G: View>(_ t: Tab, _ name: String, badge: String? = nil, @ViewBuilder glyph: () -> G) -> some View {
         Button { select(t) } label: {
             VStack(spacing: 5) {
                 glyph().frame(width: 26, height: 20).foregroundStyle(tab == t ? Ink.pole(store.net) : Ink.faint)
                     .scaleEffect(tab == t ? 1.12 : 1)
+                    .overlay(alignment: .topTrailing) {
+                        // Around's number: always ∞, never a count.
+                        if let badge {
+                            Text(badge).font(.system(size: 10, weight: .bold)).foregroundStyle(Ink.night)
+                                .padding(.horizontal, 3).frame(minWidth: 15, minHeight: 13)
+                                .background(Capsule().fill(Ink.pole(store.net)))
+                                .offset(x: 10, y: -6)
+                        }
+                    }
                 Inscription(name, color: tab == t ? Ink.parchment : Ink.faint, size: 9)
             }
             .frame(maxWidth: .infinity, minHeight: 46)

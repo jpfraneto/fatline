@@ -211,6 +211,17 @@ struct Hub {
         return page?.messages?.count ?? 0
     }
 
+    /// One page of any list a node keeps (newest first when reverse).
+    func page(_ path: String, _ params: [String: String]) async throws -> MessagesPage? {
+        try await get(path, params, as: MessagesPage.self)
+    }
+
+    /// Whether this account's like (or recast) of a cast is on the node: how "sent" is confirmed.
+    func reaction(fid: UInt64, kind: ReactionKind, target: CastRef) async throws -> Bool {
+        try await get("/v1/reactionById", ["fid": "\(fid)", "reaction_type": kind == .like ? "Like" : "Recast",
+                                            "target_fid": "\(target.fid)", "target_hash": target.hash], as: HubMessage.self) != nil
+    }
+
     func events(shard: Int, from: UInt64) async throws -> EventsPage? {
         try await get("/v1/events", ["shard_index": "\(shard)", "from_event_id": "\(from)", "pageSize": "1000"], as: EventsPage.self)
     }

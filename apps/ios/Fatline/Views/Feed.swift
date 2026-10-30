@@ -23,65 +23,102 @@ struct FeedView: View {
     @Environment(\.go) private var go
     @Binding var settings: Bool
     @State private var atTop = true
+    @State private var latestHeld = Held<Cast>()
+    @State private var picksHeld = Held<Pick>()
+    /// The landing is For you; Latest is everyone you follow, newest first.
+    @AppStorage("feedMode") private var mode = "foryou"
+    private var forYou: Bool { mode == "foryou" }
 
     var body: some View {
         ScrollViewReader { reader in
             ScrollView {
                 LazyVStack(spacing: 14) {
                     header.id("top")
-                    if store.feed.isEmpty {
-                        VStack(spacing: 14) { Breathing(size: CGSize(width: 90, height: 34)); Inscription("gathering") }.padding(.top, 80)
-                    }
-                    ForEach(store.feed) { c in
-                        CastCard(cast: c, glow: store.fresh.contains(c.id))
-                            .transition(.asymmetric(insertion: .scale(scale: 0.92).combined(with: .opacity), removal: .opacity))
-                    }
+                    if forYou { picks } else { latest }
                 }
                 .padding(.horizontal, 14)
                 .padding(.bottom, 20)
-                .animation(.spring(duration: 0.5, bounce: 0.25), value: store.feed.first?.id)
+                .animation(.spring(duration: 0.5, bounce: 0.25), value: forYou ? picksHeld.shown.first?.id : latestHeld.shown.first?.id)
             }
             .scrollIndicators(.hidden)
-            .refreshable { Haptic.light(); store.gather() }
+            .refreshable {
+                Haptic.light()
+                if forYou { await store.forYou.build(store) } else { store.gather() }
+            }
             .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y < 60 } action: { _, top in
                 atTop = top
-                if top { store.unseen = 0 }
+                if top { latestHeld.release(); picksHeld.release() }
             }
-            .overlay(alignment: .top) {
-                if store.unseen > 0 && !atTop {
-                    Button {
-                        Haptic.light()
-                        withAnimation(.spring(duration: 0.6)) { reader.scrollTo("top", anchor: .top) }
-                        store.unseen = 0
-                    } label: {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrow.up").font(.system(size: 12, weight: .bold))
-                            Text("\(store.unseen) new").font(.serif(14, .semibold))
-                        }
-                        .foregroundStyle(Ink.night)
-                        .padding(.horizontal, 16).padding(.vertical, 9)
-                        .background(Capsule().fill(LinearGradient(colors: [Ink.pole(store.net), Ink.peach], startPoint: .leading, endPoint: .trailing)))
-                        .shadow(color: Ink.pole(store.net).opacity(0.6), radius: 10)
-                    }
-                    .buttonStyle(Press())
-                    .padding(.top, 6)
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                }
+            // New casts never move what you are reading: they wait behind the pill.
+            .onChange(of: store.feed.map(\.id), initial: true) { latestHeld.offer(store.feed, atTop: atTop, time: { $0.timestamp }) }
+            .onChange(of: store.forYou.picks.map(\.id), initial: true) { picksHeld.offer(store.forYou.picks, atTop: atTop) }
+            .newPill(forYou ? picksHeld.waiting : latestHeld.waiting) {
+                latestHeld.release(); picksHeld.release()
+                withAnimation(.spring(duration: 0.6)) { reader.scrollTo("top", anchor: .top) }
             }
-            .animation(.spring(duration: 0.4), value: store.unseen > 0 && !atTop)
             .onChange(of: store.retap) { _, t in
                 if t.tab == .feed { withAnimation(.spring(duration: 0.6)) { reader.scrollTo("top", anchor: .top) } }
             }
         }
     }
 
+    @ViewBuilder private var latest: some View {
+        if store.feed.isEmpty {
+            VStack(spacing: 14) { Breathing(size: CGSize(width: 90, height: 34)); Inscription("gathering") }.padding(.top, 80)
+        }
+        ForEach(latestHeld.shown) { c in
+            CastCard(cast: c, glow: store.fresh.contains(c.id))
+                .transition(.asymmetric(insertion: .scale(scale: 0.92).combined(with: .opacity), removal: .opacity))
+        }
+    }
+
+    @ViewBuilder private var picks: some View {
+        let m = store.forYou
+        if m.picks.isEmpty {
+            VStack(spacing: 14) {
+                if let f = m.failed, !m.building {
+                    Text(f).font(.serif(13)).foregroundStyle(Ink.peach).multilineTextAlignment(.center)
+                    Button { Task { await m.build(store) } } label: { Text("Again").font(.serif(14, .semibold)).foregroundStyle(Ink.pole(store.net)) }
+                } else if !m.building && m.builtAt != nil {
+                    Text("Nothing new in the last day and a half.").font(.serif(13)).foregroundStyle(Ink.faint)
+                } else {
+                    Breathing(size: CGSize(width: 90, height: 34)); Inscription("gathering")
+                }
+            }
+            .padding(.top, 80)
+        }
+        ForEach(picksHeld.shown) { p in
+            CastCard(cast: p.cast, why: p.why)
+                .transition(.opacity)
+        }
+        if !m.picks.isEmpty {
+            Button { Haptic.select(); withAnimation(.spring(duration: 0.4)) { mode = "latest" } } label: {
+                Text("Everything, newest first").font(.serif(13)).foregroundStyle(Ink.faint)
+            }
+            .padding(.vertical, 18)
+        }
+    }
+
+    private func modeButton(_ m: String, _ title: String) -> some View {
+        Button {
+            guard mode != m else { return }
+            Haptic.select()
+            withAnimation(.spring(duration: 0.4)) { mode = m }
+            if m == "foryou", store.forYou.stale(store) { Task { await store.forYou.build(store) } }
+        } label: {
+            Text(title).font(.serif(mode == m ? 26 : 16, .light)).foregroundStyle(mode == m ? Ink.parchment : Ink.faint)
+        }
+        .buttonStyle(.plain)
+    }
+
     private var header: some View {
         let p = Planet.today
         return VStack(spacing: 10) {
             HStack(alignment: .center) {
-                HStack(spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
                     Text(p.glyph).font(.serif(22)).foregroundStyle(p.color).shadow(color: p.color, radius: 6)
-                    Text("Feed").font(.serif(26, .light)).foregroundStyle(Ink.parchment)
+                    modeButton("foryou", "For you")
+                    modeButton("latest", "Latest")
                 }
                 Spacer()
                 Button { Haptic.select(); settings = true } label: { NetSwitch(compact: true) }.buttonStyle(Press())
@@ -89,7 +126,9 @@ struct FeedView: View {
             HStack {
                 Source()
                 Spacer()
-                if let g = store.gathering {
+                if forYou && store.forYou.building {
+                    Breathing(color: Ink.pole(store.net), size: CGSize(width: 34, height: 14))
+                } else if !forYou, let g = store.gathering {
                     HStack(spacing: 6) { Breathing(color: Ink.pole(store.net), size: CGSize(width: 34, height: 14)); Text("\(g.done)/\(g.total)") }
                         .font(.serif(11)).foregroundStyle(Ink.faint)
                 }
@@ -133,25 +172,37 @@ struct CastCard: View {
     var glow = false
     var big = false
     var tappable = true
+    var verb: String? = nil // "replied", "said your name": shown after the name (Around)
+    var yours: Cast? = nil // the cast of yours this answers: one faint line
+    var why: [Why]? = nil // why it is here (For you)
     @State private var replying = false
     @State private var burst = 0
 
     var body: some View {
         let p = store.profiles[cast.fid]
-        let liked = store.liked.contains(cast.id), recast = store.recast.contains(cast.id)
+        let liked = store.liked.contains(cast.id)
         VStack(alignment: .leading, spacing: 10) {
+            if let why, !why.isEmpty { Reasons(why: why, author: cast.fid) }
             Button { go(.person(cast.fid)) } label: {
                 HStack(spacing: 12) {
                     Aura(profile: p, fid: cast.fid, size: big ? 50 : 40)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(p?.name ?? "fid \(String(cast.fid))").font(.serif(big ? 18 : 16, .semibold)).foregroundStyle(Ink.parchment).lineLimit(1)
+                        HStack(spacing: 5) {
+                            Text(p?.name ?? "fid \(String(cast.fid))").font(.serif(big ? 18 : 16, .semibold)).foregroundStyle(Ink.parchment).lineLimit(1)
+                            if let verb { Text(verb).font(.serif(14)).foregroundStyle(Ink.mist).lineLimit(1).layoutPriority(1) }
+                        }
                         Text(p?.handle ?? "").font(.serif(12)).foregroundStyle(Ink.faint).lineLimit(1)
                     }
                     Spacer()
-                    Text(When.short(cast.date)).font(.serif(12)).foregroundStyle(Ink.faint)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(When.short(cast.date)).font(.serif(12)).foregroundStyle(Ink.faint)
+                        if let ch = cast.parentUrl.flatMap(channelName) { Text("/\(ch)").font(.serif(11)).foregroundStyle(Ink.faint).lineLimit(1) }
+                    }
                 }
             }
             .buttonStyle(.plain)
+            // A reply in Around: which cast of yours it answers, above its words (a quote sits below, framed).
+            if let yours { YoursLine(cast: yours) }
             if !cast.text.isEmpty {
                 Text(.init(cast.rendered(store.names(for: cast))))
                     .font(.serif(big ? 19 : 16.5)).foregroundStyle(Ink.parchment).lineSpacing(3)
@@ -159,13 +210,7 @@ struct CastCard: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             ForEach(Array(cast.embeds.enumerated()), id: \.offset) { _, e in EmbedView(embed: e) }
-            HStack(spacing: 0) {
-                action("arrowshape.turn.up.left", Ink.faint) { Haptic.light(); replying = true }
-                action("arrow.2.squarepath", recast ? Ink.verdigris : Ink.faint, bounce: recast) { Task { await store.react(.recast, cast) } }
-                action(liked ? "heart.fill" : "heart", liked ? Ink.carmine : Ink.faint, bounce: liked) { Task { await store.react(.like, cast) } }
-                Spacer()
-                if let ch = cast.parentUrl.flatMap(channelName) { Text("/\(ch)").font(.serif(11)).foregroundStyle(Ink.faint) }
-            }
+            ActionRow(cast: cast)
         }
         .veil(glow: glow ? Ink.pole(store.net) : nil)
         .overlay { HeartBurst(trigger: burst) }
@@ -188,16 +233,6 @@ struct CastCard: View {
     private var link: URL? {
         guard let u = store.profiles[cast.fid]?.username else { return nil }
         return URL(string: "https://farcaster.xyz/\(u)/\(cast.id.prefix(10))")
-    }
-
-    private func action(_ symbol: String, _ color: Color, bounce: Bool = false, _ run: @escaping () -> Void) -> some View {
-        Button(action: run) {
-            Image(systemName: symbol).font(.system(size: 15)).foregroundStyle(color)
-                .symbolEffect(.bounce.up, value: bounce)
-                .frame(width: 52, height: 30, alignment: .leading)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(Press())
     }
 
     private func channelName(_ url: String) -> String? {

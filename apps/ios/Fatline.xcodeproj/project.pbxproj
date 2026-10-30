@@ -9,33 +9,51 @@
 /* Begin PBXBuildFile section */
 		00D7E8FB5EBAF97E8C5B0CFE /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF9B9DB15CA07D4AD9798135 /* Store.swift */; };
 		137B687F0DCE4127F8A5F10E /* Blake3.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D264D4FBD47545E289D8344 /* Blake3.swift */; };
+		16D86512A59FABA43EEFB84E /* Discover.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2F393FD0C4E13976B81D9AD /* Discover.swift */; };
 		17828E817CFFFA8EC91A66C7 /* FatlineApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24C190BDD999D31D4A6D1D03 /* FatlineApp.swift */; };
 		1BC4F0AA73ABEBD656BD325E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BC16F720715D81F75A9A1FC /* Theme.swift */; };
+		26983DA070F8D3DC8A9FFBC6 /* Held.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76DF708EE9C91D92C43117D7 /* Held.swift */; };
+		28491397F4DD9FEAF57A3F35 /* ForYou.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC33176443EE55626420BFDB /* ForYou.swift */; };
+		29881D393DB2022125115B86 /* Energy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6846DC746187ED1C4F179408 /* Energy.swift */; };
 		29EAF560A5442E3C142AA70B /* Hub.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF3EC987962F15FF08FE8788 /* Hub.swift */; };
 		2E2E9E58D085686C96965449 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = C98A8B1BD6DC43375F4E77B1 /* Message.swift */; };
 		3A7BD78B912A0E4532B7BE2A /* Constellation.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5957821162EE7FCA8082353 /* Constellation.swift */; };
+		45CE3C66D28F32B79343A0C3 /* Disk.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB5A9A71306D680BAF7F3E2B /* Disk.swift */; };
+		495C68D46D17EABEF8ACE9E2 /* AroundReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0798FF3709A79E5EFB59285F /* AroundReader.swift */; };
 		544713DE49FF5D65C905C2A2 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5C900877608C54911CD7B0F /* Settings.swift */; };
 		62CBE74D2EAD78EFAA58FE68 /* Person.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B804172006DC5DC83A4FE89 /* Person.swift */; };
 		6AC9708A092FDDE9850C1909 /* Signer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E87B6DCEF36AFA2BB5EB173 /* Signer.swift */; };
 		6B4B8351663130F143CC894C /* Feed.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F637FA75E05252C798C04F4 /* Feed.swift */; };
+		8C1F71B868F693E2B7C97747 /* Bubbles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C2BE03C047FA897D22C06F /* Bubbles.swift */; };
+		9C42B03C0EB41815AC7DFFB8 /* AroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54C5E29E5E8260FBB05343B9 /* AroundView.swift */; };
 		DACADF728AD93DFE1960D6EE /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A0D3E04D2B32062945E109AD /* Assets.xcassets */; };
 		DFEC4710902D175F20330F31 /* Compose.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1813172E1F5451CFD07FB64E /* Compose.swift */; };
+		E96940DAC160CA425232687A /* Around.swift in Sources */ = {isa = PBXBuildFile; fileRef = 910BE27D61B24872AA8C9CD2 /* Around.swift */; };
 		F48D417BDC56F4B67EEBEAFF /* Fatlines.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E3357F38E6E8181B940D840 /* Fatlines.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0798FF3709A79E5EFB59285F /* AroundReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AroundReader.swift; sourceTree = "<group>"; };
 		1813172E1F5451CFD07FB64E /* Compose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Compose.swift; sourceTree = "<group>"; };
 		24C190BDD999D31D4A6D1D03 /* FatlineApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FatlineApp.swift; sourceTree = "<group>"; };
+		32C2BE03C047FA897D22C06F /* Bubbles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Bubbles.swift; sourceTree = "<group>"; };
 		3D264D4FBD47545E289D8344 /* Blake3.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Blake3.swift; sourceTree = "<group>"; };
 		3E3357F38E6E8181B940D840 /* Fatlines.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fatlines.swift; sourceTree = "<group>"; };
 		4E87B6DCEF36AFA2BB5EB173 /* Signer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Signer.swift; sourceTree = "<group>"; };
+		54C5E29E5E8260FBB05343B9 /* AroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AroundView.swift; sourceTree = "<group>"; };
 		5BC16F720715D81F75A9A1FC /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		6846DC746187ED1C4F179408 /* Energy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Energy.swift; sourceTree = "<group>"; };
+		76DF708EE9C91D92C43117D7 /* Held.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Held.swift; sourceTree = "<group>"; };
 		7B804172006DC5DC83A4FE89 /* Person.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Person.swift; sourceTree = "<group>"; };
 		7F637FA75E05252C798C04F4 /* Feed.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Feed.swift; sourceTree = "<group>"; };
+		910BE27D61B24872AA8C9CD2 /* Around.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Around.swift; sourceTree = "<group>"; };
 		A0D3E04D2B32062945E109AD /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A2F393FD0C4E13976B81D9AD /* Discover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Discover.swift; sourceTree = "<group>"; };
 		AC66E3B3121488B23B0D2023 /* Fatline.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Fatline.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B434264860F24C5E61431F90 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B5C900877608C54911CD7B0F /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		BB5A9A71306D680BAF7F3E2B /* Disk.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Disk.swift; sourceTree = "<group>"; };
+		BC33176443EE55626420BFDB /* ForYou.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForYou.swift; sourceTree = "<group>"; };
 		BF3EC987962F15FF08FE8788 /* Hub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hub.swift; sourceTree = "<group>"; };
 		C98A8B1BD6DC43375F4E77B1 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
 		E5957821162EE7FCA8082353 /* Constellation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constellation.swift; sourceTree = "<group>"; };
@@ -46,7 +64,12 @@
 		3E3DD024F7427742F07B04C1 /* Store */ = {
 			isa = PBXGroup;
 			children = (
+				910BE27D61B24872AA8C9CD2 /* Around.swift */,
+				0798FF3709A79E5EFB59285F /* AroundReader.swift */,
 				E5957821162EE7FCA8082353 /* Constellation.swift */,
+				A2F393FD0C4E13976B81D9AD /* Discover.swift */,
+				BB5A9A71306D680BAF7F3E2B /* Disk.swift */,
+				BC33176443EE55626420BFDB /* ForYou.swift */,
 				EF9B9DB15CA07D4AD9798135 /* Store.swift */,
 			);
 			path = Store;
@@ -55,9 +78,13 @@
 		4CA05350C26425FF8DE86755 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				54C5E29E5E8260FBB05343B9 /* AroundView.swift */,
+				32C2BE03C047FA897D22C06F /* Bubbles.swift */,
 				1813172E1F5451CFD07FB64E /* Compose.swift */,
+				6846DC746187ED1C4F179408 /* Energy.swift */,
 				3E3357F38E6E8181B940D840 /* Fatlines.swift */,
 				7F637FA75E05252C798C04F4 /* Feed.swift */,
+				76DF708EE9C91D92C43117D7 /* Held.swift */,
 				7B804172006DC5DC83A4FE89 /* Person.swift */,
 				B5C900877608C54911CD7B0F /* Settings.swift */,
 			);
@@ -184,12 +211,21 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E96940DAC160CA425232687A /* Around.swift in Sources */,
+				495C68D46D17EABEF8ACE9E2 /* AroundReader.swift in Sources */,
+				9C42B03C0EB41815AC7DFFB8 /* AroundView.swift in Sources */,
 				137B687F0DCE4127F8A5F10E /* Blake3.swift in Sources */,
+				8C1F71B868F693E2B7C97747 /* Bubbles.swift in Sources */,
 				DFEC4710902D175F20330F31 /* Compose.swift in Sources */,
 				3A7BD78B912A0E4532B7BE2A /* Constellation.swift in Sources */,
+				16D86512A59FABA43EEFB84E /* Discover.swift in Sources */,
+				45CE3C66D28F32B79343A0C3 /* Disk.swift in Sources */,
+				29881D393DB2022125115B86 /* Energy.swift in Sources */,
 				17828E817CFFFA8EC91A66C7 /* FatlineApp.swift in Sources */,
 				F48D417BDC56F4B67EEBEAFF /* Fatlines.swift in Sources */,
 				6B4B8351663130F143CC894C /* Feed.swift in Sources */,
+				28491397F4DD9FEAF57A3F35 /* ForYou.swift in Sources */,
+				26983DA070F8D3DC8A9FFBC6 /* Held.swift in Sources */,
 				29EAF560A5442E3C142AA70B /* Hub.swift in Sources */,
 				2E2E9E58D085686C96965449 /* Message.swift in Sources */,
 				62CBE74D2EAD78EFAA58FE68 /* Person.swift in Sources */,

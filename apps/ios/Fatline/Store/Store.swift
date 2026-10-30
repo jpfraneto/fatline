@@ -23,7 +23,11 @@ final class Store {
     // You
     var signer: SignerRecord? = SignIn.loadRecord()
     var signingIn = false
-    var me: UInt64 { signer?.state == "active" ? (signer?.fid ?? Store.ownerFid) : Store.ownerFid }
+    /// Whose surroundings: your key's account; without one, the launch argument "-viewFID <fid>", else the owner's.
+    var me: UInt64 {
+        if signer?.state == "active", let f = signer?.fid { return f }
+        return UInt64(UserDefaults.standard.string(forKey: "viewFID") ?? "") ?? Store.ownerFid
+    }
     var canCast: Bool { signer?.state == "active" && SignIn.loadKey() != nil }
 
     // The stream
@@ -39,7 +43,10 @@ final class Store {
     var lastBreath: Date?
     var toast: String?
     var retap = Retap(tab: .feed, n: 0)
-    var unseen = 0 // casts that arrived live since you last looked at the top
+    var bubbles: [Bubble] = [] // likes and recasts on their way, one bubble each
+
+    let around = AroundModel()
+    let forYou = ForYouModel()
 
     var keepAwake: Bool = UserDefaults.standard.object(forKey: "keepAwake") as? Bool ?? true {
         didSet { UserDefaults.standard.set(keepAwake, forKey: "keepAwake"); UIApplication.shared.isIdleTimerDisabled = keepAwake }
@@ -87,6 +94,12 @@ final class Store {
         lastEvent = [:]
         gather()
         startLive()
+        rearound()
+    }
+
+    /// Around and For you, read again (another node, network or account).
+    func rearound() {
+        Task { await around.refresh(self); await forYou.build(self) }
     }
 
     // MARK: Boot
@@ -101,9 +114,14 @@ final class Store {
         if stale { lastEvent = [:]; gather() }
         startLive()
         Task { await ensureProfiles([me]) }
+        // What was on screen is shown already (from disk); the node is asked again quietly.
+        Task {
+            await around.refresh(self)
+            if forYou.stale(self) { await forYou.build(self) }
+        }
     }
 
-    func sleep() { stopLive(); saveCache() }
+    func sleep() { stopLive(); saveCache(); around.save() }
 
     // MARK: Gathering: the newest casts of everyone you follow, asked of the node one account at a time
 
@@ -115,6 +133,7 @@ final class Store {
     private func runGather() async {
         guard let hub else { toast = "No \(net.label) node answers."; return }
         let me = self.me
+        if fids(changedFrom: me) { feed = [] }
         do {
             let list = try await hub.following(fid: me)
             follows = list
@@ -191,8 +210,6 @@ final class Store {
         if let c = Cast(m), c.parent == nil, !feed.contains(where: { $0.id == c.id }) {
             feed.insert(c, at: feed.firstIndex { $0.timestamp < c.timestamp } ?? feed.count)
             fresh.insert(c.id)
-            unseen += 1
-            Haptic.soft()
             Task { await ensureProfiles([c.fid] + c.mentions) }
         } else if d.type == "MESSAGE_TYPE_CAST_REMOVE", let h = d.castRemoveBody?.targetHash {
             feed.removeAll { $0.id == h }
@@ -240,7 +257,7 @@ final class Store {
         if r.state == "active" {
             toast = "Your key is in. Cast away."
             Haptic.success()
-            if r.fid != Store.ownerFid { gather() }
+            if r.fid != Store.ownerFid { gather(); rearound() }
         }
     }
 
@@ -260,30 +277,53 @@ final class Store {
         return (signed.hash, .confirmed)
     }
 
-    func cast(_ text: String, parent: CastRef? = nil) async throws -> Cast {
+    /// A cast, a reply (parent) or a quote (quote: the cast it embeds first). `confirmed`: read back from the node.
+    @discardableResult
+    func cast(_ text: String, parent: CastRef? = nil, quote: CastRef? = nil) async throws -> (cast: Cast, confirmed: Bool) {
         let ts = Farcaster.timestamp()
-        let data = Farcaster.castAdd(fid: me, text: text, parent: parent, timestamp: ts)
+        let data = Farcaster.castAdd(fid: me, text: text, parent: parent, quote: quote, timestamp: ts)
         let (hash, _) = try await send(data)
-        let c = Cast(id: hash, fid: me, text: text, timestamp: ts, embeds: Farcaster.linkEmbeds(text).map(Embed.url), parent: parent)
+        let embeds = Array(((quote.map { [Embed.cast($0)] } ?? []) + Farcaster.linkEmbeds(text).map(Embed.url)).prefix(2))
+        let c = Cast(id: hash, fid: me, text: text, timestamp: ts, embeds: embeds, parent: parent)
         if parent == nil { feed.insert(c, at: 0); fresh.insert(c.id) }
         // Read it back from the same node, so "sent" means the node has it.
         if let hub {
             for _ in 0..<15 {
-                if (try? await hub.cast(c.ref)) != nil { return c }
+                if (try? await hub.cast(c.ref)) != nil { return (c, true) }
                 try? await Task.sleep(for: .seconds(1))
             }
             toast = "\(hub.node.label) took it; it isn't showing yet."
         }
-        return c
+        return (c, false)
     }
 
-    func react(_ kind: ReactionKind, _ c: Cast) async {
+    /// Like or recast (or take it back), each in its own bubble: it opens, a current runs round it while the node takes
+    /// it, it lights up when the node shows it, then it pops. `from`: where the finger was (the spark leaves from there).
+    /// True once the node shows it (or shows it gone).
+    @discardableResult
+    func react(_ kind: ReactionKind, _ c: Cast, from: CGPoint? = nil) async -> Bool {
         let on = kind == .like ? liked.contains(c.id) : recast.contains(c.id)
         func set(_ v: Bool) { if kind == .like { if v { liked.insert(c.id) } else { liked.remove(c.id) } } else { if v { recast.insert(c.id) } else { recast.remove(c.id) } } }
         set(!on)
         on ? Haptic.light() : Haptic.medium()
+        let b = Bubble(kind: kind, undo: on, who: profiles[c.fid]?.handle ?? "fid \(c.fid)", from: from)
+        bubbles.append(b)
+        func end(_ s: Bubble.State, _ note: String, after: Double) {
+            if let i = bubbles.firstIndex(where: { $0.id == b.id }) { bubbles[i].state = s; bubbles[i].note = note }
+            Task { try? await Task.sleep(for: .seconds(after)); bubbles.removeAll { $0.id == b.id } }
+        }
         do { try await send(Farcaster.reaction(fid: me, kind: kind, target: c.ref, remove: on)) }
-        catch { set(on); Haptic.fail(); toast = error.localizedDescription }
+        catch { set(on); Haptic.fail(); end(.failed, error.localizedDescription, after: 5); return false }
+        guard let hub else { end(.pending, "sent", after: 2); return false }
+        for _ in 0..<12 {
+            if let has = try? await hub.reaction(fid: me, kind: kind, target: c.ref), has != on {
+                end(.done, "on \(hub.node.label)", after: 1.8)
+                return true
+            }
+            try? await Task.sleep(for: .seconds(1))
+        }
+        end(.pending, "sent; not showing yet", after: 3)
+        return false
     }
 
     func follows(_ fid: UInt64) -> Bool { follows.contains(fid) }
@@ -303,23 +343,41 @@ final class Store {
 
     private struct Cache: Codable {
         var feed: [Cast]; var follows: [UInt64]; var profiles: [UInt64: Profile]; var liked: [String]; var recast: [String]; var savedAt: Date
-        var lastEvent: [Int: UInt64]?; var net: Net?
+        var lastEvent: [Int: UInt64]?; var net: Net?; var fid: UInt64?
     }
-    private var cacheURL: URL {
-        let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("stream.json")
+    private var cacheFid: UInt64?
+    /// The stream was gathered for someone else (another key, or another -viewFID): start it again.
+    private func fids(changedFrom f: UInt64) -> Bool {
+        defer { cacheFid = f }
+        if let c = cacheFid, c != f { follows = []; return true }
+        return false
     }
     func saveCache() {
-        let c = Cache(feed: Array(feed.prefix(400)), follows: follows, profiles: profiles, liked: Array(liked), recast: Array(recast), savedAt: Date(), lastEvent: lastEvent, net: net)
-        if let data = try? JSONEncoder().encode(c) { try? data.write(to: cacheURL, options: .atomic) }
+        let c = Cache(feed: Array(feed.prefix(400)), follows: follows, profiles: profiles, liked: Array(liked), recast: Array(recast), savedAt: Date(), lastEvent: lastEvent, net: net, fid: me)
+        Disk.save(c, "stream.json")
         savedAt = c.savedAt
     }
     private func loadCache() {
-        guard let data = try? Data(contentsOf: cacheURL), let c = try? JSONDecoder().decode(Cache.self, from: data) else { return }
+        // Kept in Caches; before 2026-10-30 it was in Application Support.
+        let old = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("stream.json")
+        guard let c = Disk.load(Cache.self, "stream.json") ?? (try? Data(contentsOf: old)).flatMap({ try? JSONDecoder().decode(Cache.self, from: $0) }) else { return }
+        cacheFid = c.fid
+        if let f = c.fid, f != me { profiles = c.profiles; return }
         feed = c.feed; follows = c.follows; profiles = c.profiles; liked = Set(c.liked); recast = Set(c.recast); savedAt = c.savedAt
         if c.net == net { lastEvent = c.lastEvent ?? [:] }
     }
 }
 
 struct Retap: Equatable { let tab: Tab; let n: Int }
+
+/// One like or recast on its way to the node.
+struct Bubble: Identifiable, Equatable {
+    enum State: Equatable { case busy, done, pending, failed }
+    let id = UUID()
+    let kind: ReactionKind
+    let undo: Bool
+    let who: String
+    let from: CGPoint?
+    var state: State = .busy
+    var note = "signing…"
+}
