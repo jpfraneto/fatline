@@ -1074,3 +1074,14 @@ kbd { display: inline-block; min-width: 1.2em; padding: 1px 6px; border: 1px sol
 .new-pill[hidden] { display: none; }
 @keyframes pill-in { from { opacity: 0; transform: translate(-50%, -12px); } }
 @media (prefers-reduced-motion: reduce) { .new-pill { animation: none; } }
+
+/* A cast inside a cast (a quote): framed and smaller, under what was said about it. */
+.ar-quote { margin-top: 10px; padding: 10px 14px 12px; border: 1px solid rgba(255, 255, 255, .13); border-radius: 14px; background: rgba(255, 255, 255, .03); }
+.ar-quote-who { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 14px; color: var(--faint); min-width: 0; }
+.ar-quote-who img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; flex: none; }
+.ar-quote-who a { color: var(--text); font-weight: 600; text-decoration: none; }
+.ar-quote-who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ar-quote-who time { margin-left: auto; font-size: 12px; }
+.ar-quote-text { margin: 6px 0 0; font: 16px/1.45 var(--serif); color: var(--mist); white-space: pre-wrap; overflow-wrap: anywhere;
+  display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
+.ar-quote-pic { display: block; margin-top: 8px; max-width: min(100%, 220px); max-height: 160px; border-radius: 10px; object-fit: cover; }

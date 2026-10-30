@@ -6,11 +6,11 @@ import { $, api, date, el, showSource, state, store } from './lib.js';
 import { followButton } from './post.js';
 import { loggedIn } from './fatline-login.js';
 import { openPlace } from './miniapp.js';
+import { castCard } from './flow.js';
 
 const RECENT = 'lupa:recent';
 const titled = (s) => s.charAt(0) + s.slice(1).toLowerCase();
 const n = (x) => Number(x).toLocaleString(state.lang);
-const hhmm = (ms) => new Date(ms).toLocaleString(state.lang, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 function remember(user) {
   const list = store.get(RECENT, []).filter((u) => u.fid !== user.fid);
@@ -81,9 +81,7 @@ export async function personPage(q) {
         : el('span', { class: 'pf-app muted' }, `unknown${a.keys > 1 ? ` ×${a.keys}` : ''}`)))) : null),
     el('h2', {}, 'Latest'),
     p.casts.length
-      ? el('div', { class: 'pf-casts' }, ...p.casts.map((c) => el('article', { class: 'mo' },
-        el('div', { class: 'mo-when' }, el('time', {}, hhmm(c.timestamp)), c.parent ? el('span', { class: 'mo-ch' }, 'reply') : null),
-        c.text ? el('p', { class: 'mo-text' }, c.text) : el('p', { class: 'muted' }, '(no text)'))))
+      ? el('div', { class: 'pf-casts ar-flow' }, ...p.casts.map((c) => castCard(c, { [u.fid]: u })))
       : el('p', { class: 'muted' }, 'Nothing on this node yet.')));
   // Their place in the Fatline world, if they have one.
   fetch('https://fatline.ink/world').then((r) => r.json()).then((w) => {

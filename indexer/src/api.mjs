@@ -40,6 +40,8 @@ export function appFilter({ hide = [], only = [], unknown = 'show' } = {}) {
 const CACHE_MS = 10 * 60_000;
 const MAX_FIDS = 50;
 
+const MAX_QUOTES = 60; // quoted casts read per page, at most
+
 class TtlCache {
   constructor(ms) { this.ms = ms; this.map = new Map(); }
   async get(key, load) {
@@ -65,6 +67,7 @@ export class Api {
     this.users = new TtlCache(CACHE_MS);
     this.verified = new TtlCache(CACHE_MS);
     this.signers = new TtlCache(CACHE_MS);
+    this.quotes = new TtlCache(CACHE_MS);
   }
 
   /** signer key -> app FID, for one author. One request per author per 10 minutes. */
@@ -146,10 +149,20 @@ export class Api {
   }
 
   async renderCasts(network, casts) {
-    const mentioned = casts.flatMap((c) => c.mentions);
-    const names = await this.usersFor(network, mentioned);
+    // A quote shows the cast it quotes: read from this node (kept 10 minutes), with its author, inside the embed.
+    const wanted = new Map();
+    for (const c of casts) for (const e of c.embeds ?? []) if (e?.cast?.hash && wanted.size < MAX_QUOTES) wanted.set(e.cast.hash, e.cast);
+    const quoted = new Map((await Promise.all([...wanted.values()].map(async (q) => [q.hash, await this.quotes.get(`${network.name}:${q.hash}`, async () => {
+      const { data } = await network.get('/v1/castById', { fid: q.fid, hash: q.hash });
+      return data?.data?.type === 'MESSAGE_TYPE_CAST_ADD' ? normalizeCast(data, network.name) : null;
+    }).catch(() => null)]))).filter(([, q]) => q));
+    const mentioned = [...casts, ...quoted.values()].flatMap((c) => c.mentions);
+    const names = await this.usersFor(network, [...mentioned, ...[...quoted.values()].map((q) => q.fid)]);
     const usernames = new Map(Object.values(names).map((u) => [u.fid, u.username]));
-    return casts.map((c) => ({ ...c, text: renderMentions(c, usernames) }));
+    const inside = (q) => ({ fid: q.fid, hash: q.id, text: renderMentions(q, usernames), embeds: q.embeds.filter((e) => typeof e === 'string'), timestamp: q.timestamp,
+      author: names[q.fid] ? { username: names[q.fid].username, displayName: names[q.fid].displayName, pfp: names[q.fid].pfp } : null });
+    return casts.map((c) => ({ ...c, text: renderMentions(c, usernames),
+      embeds: (c.embeds ?? []).map((e) => (e?.cast?.hash && quoted.has(e.cast.hash) ? { cast: inside(quoted.get(e.cast.hash)) } : e)) }));
   }
 
   async casts(networkName, { fid, before, limit = 30, replies = false }) {

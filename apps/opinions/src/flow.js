@@ -16,10 +16,25 @@ export function face(fid, users) {
     el('span', {}, (u?.username ?? u?.displayName ?? '·').slice(0, 1)), pic);
 }
 
-/** What a cast says: its text and its first picture. */
+/** A cast inside a cast (a quote): framed, smaller, with who said it. The server reads it from the node. */
+function quoted(q) {
+  if (q.text == null && !q.author) return null; // not on this node
+  const a = q.author;
+  const pic = (q.embeds ?? []).find((e) => typeof e === 'string' && isImage(e));
+  const img = a?.pfp ? el('img', { src: a.pfp, alt: '', loading: 'lazy' }) : null;
+  img?.addEventListener('error', () => img.remove());
+  return el('div', { class: 'ar-quote' },
+    el('p', { class: 'ar-quote-who' }, img, el('a', { href: `#/u/${q.fid}` }, a?.displayName || (a?.username ? `@${a.username}` : `FID ${q.fid}`)),
+      a?.username && a?.displayName ? el('span', {}, ` @${a.username}`) : null, q.timestamp ? when(q.timestamp) : null),
+    q.text ? el('p', { class: 'ar-quote-text' }, q.text) : null,
+    pic ? el('img', { class: 'ar-quote-pic', src: pic, alt: '', loading: 'lazy' }) : null);
+}
+
+/** What a cast says: its text, its first picture, and the casts it quotes. */
 export function castBody(c) {
   const pics = (c.embeds ?? []).filter((e) => typeof e === 'string' && isImage(e));
-  return [c.text ? el('p', { class: 'ar-text' }, c.text) : null, pics[0] ? el('img', { class: 'ar-pic', src: pics[0], alt: '', loading: 'lazy' }) : null];
+  return [c.text ? el('p', { class: 'ar-text' }, c.text) : null, pics[0] ? el('img', { class: 'ar-pic', src: pics[0], alt: '', loading: 'lazy' }) : null,
+    ...(c.embeds ?? []).filter((e) => e?.cast).map((e) => quoted(e.cast))];
 }
 
 const channelOf = (url) => String(url ?? '').match(/\/channel\/([\w-]+)$/)?.[1] ?? null;
@@ -31,7 +46,7 @@ export function castCard(c, users, ...extra) {
   return el('article', { class: 'ar fy ar-item', 'data-key': c.id, 'data-at': c.timestamp, tabindex: '-1' },
     el('header', { class: 'ar-who' }, face(c.fid, users),
       el('span', {}, el('a', { href: `#/u/${c.fid}` }, nameOf(u, c.fid)), u?.username && u?.displayName ? el('span', { class: 'fy-user' }, ` @${u.username}`) : null,
-        ch ? el('span', { class: 'fy-ch' }, ` /${ch}`) : null),
+        ch ? el('span', { class: 'fy-ch' }, ` /${ch}`) : null, c.parent ? el('span', { class: 'fy-user' }, ' · reply') : null),
       when(c.timestamp)),
     ...castBody(c), ...extra, castBar(c, u));
 }
