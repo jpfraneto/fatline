@@ -3,7 +3,7 @@ import { feedPage, voicePage } from './feed.js';
 import { $, api, el, showSource, state, store, t } from './lib.js';
 import { settingsPage } from './settings.js';
 import { archivePage, coinPage, leaveLive, nodePage } from './fatline.js';
-import { dayPage } from './day.js';
+import { dayPage, leaveDay } from './day.js';
 import { directoryPage } from './directory.js';
 import { joinPage, nodeProfilePage, nodesPage } from './nodes.js';
 import { loadMe } from './post.js';
@@ -87,6 +87,7 @@ function route() {
   leaveCockpit();
   leaveAround();
   leaveForYou();
+  leaveDay();
   $('#main').classList.remove('fatline-page', 'birth-page');
 
   // The canonical page of a coin (or of a coinless app's vault): #/coin/<chainId>/<address>.

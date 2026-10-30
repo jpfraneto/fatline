@@ -4,7 +4,7 @@
 // Everything, in order, is still there: #/day.
 import { $, api, el, state, store } from './lib.js';
 import { loggedIn } from './fatline-login.js';
-import { castBar, castBody, drive, face, nameOf, sideKeys, when } from './flow.js';
+import { castCard, drive, face, nameOf, sideKeys } from './flow.js';
 import { dayFeed } from './day.js';
 import { followButton } from './post.js';
 
@@ -22,16 +22,9 @@ function why(w, users) {
 }
 
 function card(item, users) {
-  const c = item.cast;
-  const u = users[c.fid];
   const isNew = item.why.some((w) => w.kind === 'new');
-  return el('article', { class: 'ar fy ar-item', 'data-key': c.id, tabindex: '-1' },
-    el('header', { class: 'ar-who' }, face(c.fid, users),
-      el('span', {}, el('a', { href: `#/u/${c.fid}` }, nameOf(u, c.fid)), u?.username && u?.displayName ? el('span', { class: 'fy-user' }, ` @${u.username}`) : null),
-      when(c.timestamp)),
-    ...castBody(c),
-    item.why.length ? el('div', { class: 'fy-whys' }, ...item.why.map((w) => why(w, users)), isNew ? followButton(c.fid) : null) : null,
-    castBar(c, u));
+  return castCard(item.cast, users,
+    item.why.length ? el('div', { class: 'fy-whys' }, ...item.why.map((w) => why(w, users)), isNew ? followButton(item.cast.fid) : null) : null);
 }
 
 async function whose() {
@@ -50,7 +43,9 @@ export function leaveForYou() { stop(); stop = () => {}; }
 export async function forYouPage() {
   stop();
   const main = $('#main');
+  const hash = location.hash;
   const w = await whose();
+  if (location.hash !== hash) return; // left while asking: the page now open stays
   if (!w) { location.replace('#/fatline'); return; }
   const key = `foryou:${w.fid}`;
   const list = el('div', { class: 'ar-flow' });

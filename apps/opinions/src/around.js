@@ -19,13 +19,21 @@ function yours(y) {
   return el('p', { class: 'ar-yours' }, pic ? el('img', { src: pic, alt: '', loading: 'lazy' }) : null, y.text || (pic ? '' : 'your cast'));
 }
 
+/** Above a reply: which cast of yours it answers, one line, the way a thread reads (not a quote, which sits below). */
+function replyTo(y) {
+  if (!y) return null;
+  const pic = (y.embeds ?? []).find((e) => typeof e === 'string' && isImage(e));
+  return el('p', { class: 'ar-to' }, el('span', { class: 'ar-to-mark', 'aria-hidden': 'true' }, '↩'), 'to your cast ',
+    pic && !y.text ? el('img', { src: pic, alt: '', loading: 'lazy' }) : el('span', { class: 'ar-to-said' }, y.text ? `“${y.text.replace(/\s+/g, ' ')}”` : ''));
+}
+
 function row(g, users) {
   const [first] = g;
   if (first.kind === 'reply' || first.kind === 'mention') {
     return el('article', { class: `ar ar-${first.kind} ar-item`, 'data-key': first.key, tabindex: '-1' },
       el('header', { class: 'ar-who' }, face(first.fid, users),
         el('span', {}, el('a', { href: `#/u/${first.fid}` }, nameOf(users[first.fid], first.fid)), ` ${VERB[first.kind]}`), when(first.at)),
-      ...castBody(first.cast), first.kind === 'reply' ? yours(first.yours) : null, castBar(first.cast, users[first.fid]));
+      first.kind === 'reply' ? replyTo(first.yours) : null, ...castBody(first.cast), castBar(first.cast, users[first.fid]));
   }
   const who = g.map((e) => e.fid);
   const names = who.length === 1 ? el('a', { href: `#/u/${first.fid}` }, nameOf(users[first.fid], first.fid))

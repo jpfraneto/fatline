@@ -22,6 +22,20 @@ export function castBody(c) {
   return [c.text ? el('p', { class: 'ar-text' }, c.text) : null, pics[0] ? el('img', { class: 'ar-pic', src: pics[0], alt: '', loading: 'lazy' }) : null];
 }
 
+const channelOf = (url) => String(url ?? '').match(/\/channel\/([\w-]+)$/)?.[1] ?? null;
+
+/** One cast, as For you and the day show it: who, when, what they said, then extra (why it is here), then the bar. */
+export function castCard(c, users, ...extra) {
+  const u = users[c.fid];
+  const ch = channelOf(c.parentUrl);
+  return el('article', { class: 'ar fy ar-item', 'data-key': c.id, tabindex: '-1' },
+    el('header', { class: 'ar-who' }, face(c.fid, users),
+      el('span', {}, el('a', { href: `#/u/${c.fid}` }, nameOf(u, c.fid)), u?.username && u?.displayName ? el('span', { class: 'fy-user' }, ` @${u.username}`) : null,
+        ch ? el('span', { class: 'fy-ch' }, ` /${ch}`) : null),
+      when(c.timestamp)),
+    ...castBody(c), ...extra, castBar(c, u));
+}
+
 const ICON = { reply: '↩', recast: '↻', quote: '❝', like: '♥' };
 const LABEL = { reply: 'Reply', recast: 'Recast', quote: 'Quote', like: 'Like' };
 const KEY = { reply: 'R', recast: '⇧R', quote: 'Q', like: 'L' };

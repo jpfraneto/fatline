@@ -877,7 +877,7 @@ html.snap-soft body { animation: snap-soft .45s ease-out; }
   box-shadow: 0 0 0 2px rgba(15, 13, 36, .94), 0 0 10px color-mix(in srgb, var(--pole) 55%, transparent); animation: ar-breathe 4.8s ease-in-out infinite; }
 @keyframes ar-breathe { 0%, 100% { box-shadow: 0 0 0 2px rgba(15, 13, 36, .94), 0 0 6px color-mix(in srgb, var(--pole) 35%, transparent); }
   50% { box-shadow: 0 0 0 2px rgba(15, 13, 36, .94), 0 0 16px color-mix(in srgb, var(--pole) 75%, transparent); } }
-.ar-flow { display: grid; gap: 10px; }
+.ar-flow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
 .ar { padding: 14px 18px 12px; border-radius: var(--veil); background: var(--surface); border: 1px solid var(--line); }
 .ar-who { display: flex; align-items: center; gap: 9px; color: var(--mist); }
 .ar-who a, .ar-what a { color: var(--text); text-decoration: none; font-weight: 600; }
@@ -888,6 +888,10 @@ html.snap-soft body { animation: snap-soft .45s ease-out; }
   color: var(--faint); font-size: 14px; line-height: 1.4; overflow: hidden; }
 .ar-yours { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; }
 .ar-yours img { width: 22px; height: 22px; border-radius: 5px; object-fit: cover; vertical-align: middle; margin-right: 6px; }
+.ar-to { display: flex; align-items: baseline; gap: 6px; margin: 8px 0 -2px; color: var(--faint); font-size: 13px; min-width: 0; }
+.ar-to-mark { color: var(--pole); }
+.ar-to-said { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-style: italic; }
+.ar-to img { width: 20px; height: 20px; border-radius: 5px; object-fit: cover; align-self: center; }
 .ar-line { display: flex; align-items: flex-start; gap: 12px; padding: 6px 18px; }
 .ar-line time { margin-left: auto; padding-top: 4px; white-space: nowrap; font-size: 12px; color: var(--faint); }
 .ar-what { min-width: 0; flex: 1; }
@@ -948,6 +952,25 @@ html.snap-soft body { animation: snap-soft .45s ease-out; }
 .en-who img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; }
 .en-said { margin: 6px 0 0; color: var(--mist); font: 16px/1.45 var(--serif); white-space: pre-wrap; overflow-wrap: anywhere;
   display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+/* A reply: their cast above, a thread line from their face down to yours, then what you write. */
+.en-parent { position: relative; border-left: 0; padding: 0 0 16px 30px; margin-bottom: 0; }
+.en-parent::before { content: ''; position: absolute; left: 10px; top: 28px; bottom: 2px; width: 2px; border-radius: 2px; background: rgba(255, 255, 255, .16); }
+.en-parent .en-who { margin-left: -30px; }
+.en-parent .en-said { -webkit-line-clamp: 5; }
+.en-answer { display: flex; gap: 8px; align-items: flex-start; }
+.en-me { position: relative; flex: none; width: 22px; height: 22px; margin-top: 2px; border-radius: 50%; overflow: hidden; background: color-mix(in srgb, var(--pole) 35%, var(--raise)); }
+.en-me img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.en-answer textarea { flex: 1; min-width: 0; }
+.en-dot { width: 22px; height: 22px; border-radius: 50%; background: var(--raise); flex: none; }
+/* A quote: one card, as it will look once sent. What you write on top; their cast inside, smaller, framed. */
+.en-draft { border-radius: 14px; border: 1px solid var(--line); background: rgba(0, 0, 0, .28); padding: 0 0 12px; }
+.en-draft:focus-within { border-color: color-mix(in srgb, var(--pole) 60%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pole) 16%, transparent); }
+.en-form .en-draft textarea, .en-form .en-draft textarea:focus { min-height: 84px; border: 0; background: none; box-shadow: none; }
+.en-embed { margin: 0 12px; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, .14); border-radius: 12px; background: rgba(255, 255, 255, .03); }
+.en-embed .en-who { font-size: 14px; }
+.en-embed .en-who img, .en-embed .en-dot { width: 18px; height: 18px; }
+.en-embed .en-said { font-size: 14px; -webkit-line-clamp: 4; }
+.en-pic { display: block; margin-top: 8px; max-height: 120px; max-width: 100%; border-radius: 8px; object-fit: cover; }
 .en-form textarea { box-sizing: border-box; width: 100%; min-height: 120px; padding: 12px 14px; resize: none; border-radius: 14px; border: 1px solid var(--line);
   background: rgba(0, 0, 0, .28); color: var(--text); font: 18px/1.5 var(--serif); }
 .en-form textarea:focus { outline: none; border-color: color-mix(in srgb, var(--pole) 60%, transparent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pole) 16%, transparent); }
@@ -1000,6 +1023,48 @@ kbd { display: inline-block; min-width: 1.2em; padding: 1px 6px; border: 1px sol
 .fy-wait { padding: 20px 0 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
 .fy-wait .ar-inf { font-size: 24px; }
 .fy-day { margin-top: 10px; opacity: .85; }
-.fy-day .day-title { display: none; }
+.fy-day .day-title, .fy-day .day-date { display: none; }
+.fy-ch { color: var(--pole); font-weight: 400; font-size: 13px; opacity: .8; }
 .fy-pill { position: sticky; top: 12px; z-index: 30; display: block; margin: 0 auto 12px; padding: 7px 16px; border: 0; border-radius: 999px; cursor: pointer;
   background: var(--pole); color: #1d1206; font: 600 13px var(--sans); box-shadow: 0 6px 24px color-mix(in srgb, var(--pole) 40%, transparent); }
+
+/* Bubbles (energy.js): one per like or recast, separate from what you are writing. A spark flies in from the button,
+   a current runs around the bubble's edge while the node takes it, it lights up when it lands, then it pops. */
+@property --bb-turn { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+.bb-shelf { position: fixed; z-index: 50; right: 20px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; align-items: flex-end; gap: 8px; pointer-events: none; }
+.bb { --bb-turn: 0deg; position: relative; display: flex; align-items: center; gap: 10px; max-width: min(340px, calc(100vw - 40px)); padding: 9px 16px 9px 12px; border-radius: 999px;
+  background: rgba(15, 13, 36, .94); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); color: var(--mist); font-size: 13px; cursor: pointer; pointer-events: auto;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .45), 0 0 18px color-mix(in srgb, var(--pole) 18%, transparent);
+  animation: bb-open .38s cubic-bezier(.2, 1.4, .4, 1) both; }
+/* The edge: a thin ring, and the current running around it. */
+.bb::before { content: ''; position: absolute; inset: 0; padding: 1.5px; border-radius: inherit; pointer-events: none;
+  background: conic-gradient(from var(--bb-turn), transparent 0 62%, color-mix(in srgb, var(--pole) 40%, transparent) 75%, #fff8e8 86%, var(--pole) 90%, transparent 100%),
+    color-mix(in srgb, var(--pole) 22%, transparent);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+.bb-busy::before { animation: bb-current .9s linear infinite; }
+.bb-done::before, .bb-pending::before { background: var(--pole); }
+.bb-done { animation: bb-open .38s cubic-bezier(.2, 1.4, .4, 1) both, bb-flash .7s ease-out; }
+.bb-failed::before { background: #ff8a7a; }
+.bb-icon { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; flex: none; font-size: 13px; color: var(--pole);
+  background: color-mix(in srgb, var(--pole) 16%, transparent); }
+.bb-busy .bb-icon { animation: bb-hum .9s ease-in-out infinite; }
+.bb-done .bb-icon { background: var(--pole); color: #1d1206; }
+.bb-failed .bb-icon { color: #ff8a7a; background: rgba(255, 138, 122, .14); }
+.bb-words { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bb-words b { color: var(--text); font-weight: 600; }
+.bb-status { margin-left: 8px; color: var(--faint); font-size: 12px; }
+.bb-done .bb-status { color: var(--pole); }
+.bb-failed .bb-status { color: #ff8a7a; white-space: normal; }
+.bb-pop { animation: bb-pop .4s cubic-bezier(.5, 0, .7, .4) forwards; }
+.bb-spark { position: fixed; z-index: 51; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50%; pointer-events: none;
+  background: #fff8e8; box-shadow: 0 0 8px 2px var(--pole), 0 0 22px 6px color-mix(in srgb, var(--pole) 50%, transparent); }
+.ar-act.en-zap { color: var(--pole); animation: bb-zap .6s ease-out; }
+@keyframes bb-current { to { --bb-turn: 360deg; } }
+@keyframes bb-open { from { opacity: 0; transform: translateY(10px) scale(.6); } to { opacity: 1; transform: none; } }
+@keyframes bb-flash { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pole) 70%, transparent), 0 10px 30px rgba(0, 0, 0, .45); }
+  100% { box-shadow: 0 0 0 14px transparent, 0 10px 30px rgba(0, 0, 0, .45); } }
+@keyframes bb-hum { 50% { transform: scale(1.18); box-shadow: 0 0 12px var(--pole); } }
+@keyframes bb-pop { 30% { transform: scale(1.08); opacity: 1; } to { transform: scale(.2); opacity: 0; } }
+@keyframes bb-zap { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--pole) 60%, transparent); } to { box-shadow: 0 0 0 12px transparent; } }
+@media (max-width: 700px) { .bb-shelf { right: 50%; transform: translateX(50%); align-items: center; } }
+@media (prefers-reduced-motion: reduce) { .bb, .bb-busy::before, .bb-busy .bb-icon, .bb-pop, .bb-done { animation: none; } }
